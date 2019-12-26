@@ -1,8 +1,9 @@
 ---
 title: "Time for a New Blog"
-date: 2019-08-18T10:58:00+02:00
+date: 2019-12-26T10:00:00+01:00
 draft: false
-description: "It has been quite a while since the last post on my old personal blog; since then, I’ve mostly focused on writing about my day-work on the Debezium blog as well as some posts about more general technical topics on the Hibernate team blog."
+description: "It has been quite a while since the last post on my old personal blog; since then, I’ve mostly focused on writing about my day-work on the Debezium blog as well as some posts about more general technical topics on the Hibernate team blog. Now recently I had some ideas for things I wanted to write about..."
+disqus: false
 ---
 
 It has been quite a while since the last post on my old [personal blog](http://musingsofaprogrammingaddict.blogspot.com/);
