@@ -1,0 +1,106 @@
+---
+title: "Automatically Deploying A Hugo Website via GitHub Actions"
+date: 2019-12-26T10:00:00+01:00
+draft: false
+description: "As a software engineer, I like to automate tedious tasks as much as possible. The deployment of this website is no exception: it is built using Hugo and hosted on GitHub pages; so wouldn't it be nice if the rendered website would automatically be published whenever an update is pushed to its source code repository?"
+disqus: false
+---
+
+As a software engineer, I like to automate tedious tasks as much as possible.
+The deployment of this website is no exception:
+it is built using the https://gohugo.io/[Hugo] static site generator and hosted on https://pages.github.com/[GitHub pages];
+so wouldn't it be nice if the rendered website would automatically be published whenever an update is pushed to its source code repository?
+
+With the advent of https://github.com/features/actions[GitHub Actions], tasks like this can easily be implemented without having to rely on any external CI service.
+Instead, many ready-made actions can be obtained from the https://github.com/marketplace?type=actions[GitHub marketplace] and easily be configured as per our needs.
+E.g. triggered by a push to a specified branch in a GitHub repository,
+they can execute tasks like project builds, tests and many others,
+running in virtual machines based on Linux, Windows and even macOS.
+So let's see what's needed for building a Hugo website and deploying it to GitHub Pages.
+
+== GitHub Actions To the Rescue
+
+Using my favourite search engine,
+I came across two GitHub actions which do everything we need:
+
+* https://github.com/marketplace/actions/hugo-setup[GitHub Actions for Hugo]
+* https://github.com/marketplace/actions/github-pages-action[GitHub Actions for GitHub Pages]
+
+There https://github.com/marketplace/actions/deploy-to-github-pages[are] https://github.com/marketplace/actions/github-pages-deploy[multiple] https://github.com/marketplace/actions/github-pages[alternatives] for GitHub Pages deployment.
+I chose this one basically because it seems to be the most popular one (as per number of GitHub stars), and because it's by the same author as the Hugo one, so they should nicely play together.
+
+== Registering a Deploy Key
+
+In order for the GitHub action to deploy the website,
+a GitHub https://developer.github.com/v3/guides/managing-deploy-keys/[deploy key] must be registered.
+
+To do so, create a new SSH key pair on your machine like so:
+
+[source,shell,indent=0]
+----
+ssh-keygen -t rsa -b 4096 -C "$(git config user.email)" -f gh-pages -N ""
+----
+
+This will create two files, the public key (_gh-pages.pub_) and the private key (_gh-pages_).
+Go to https://github.com/<your-user-or-organisation>/<your-repo>/settings/keys and click "Add deploy key".
+Paste in the *public* part of your key pair and check the "Allow write access" box.
+
+No go to https://github.com/<your-user-or-organisation>/<your-repo>/settings/secrets and click "Add new secret". Choose `ACTIONS_DEPLOY_KEY` as the name and paste the *private* part of your key pair into the "Value" field.
+
+The key will be stored in an encrypted way as per GitHub's documentation
+Nevertheless I'd recommend to use a specific key pair just for this purpose, instead of re-using any other key pair.
+That way, impact will be reduced to this particular usage, should the private key get leaked somehow.
+
+== Defining the Workflow
+
+With the key in place, it's time to set up the actual GitHub Actions workflow.
+This is simply done by creating the file _.github/workflows/gh-pages-deployment.yml_ in your repository with the following contents.
+GitHub Actions workflows are YAML files, because https://twitter.com/brunoborges/status/1098472238469111808[YOLO] ;)
+
+[source,yaml,indent=0]
+----
+name: GitHub Pages
+
+on:                             # <1>
+  push:
+    branches:
+    - master
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1 # <2>
+      with:
+        submodules: true
+
+    - name: Install AsciiDoctor # <3>
+      run: sudo apt-get install asciidoctor
+
+    - name: Setup Hugo          # <4>
+      uses: peaceiris/actions-hugo@v2
+      with:
+        hugo-version: '0.57.2'
+
+    - name: Build               # <5>
+      run: hugo
+
+    - name: Deploy              # <6>
+      uses: peaceiris/actions-gh-pages@v2
+      env:
+        ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+        PUBLISH_BRANCH: gh-pages
+        PUBLISH_DIR: ./public
+----
+<1> Run this action whenever changes are pushed to the _master_ branch
+<2> The first step in the job: check out the source code
+<3> Install https://asciidoctor.org/[AsciiDoctor] (in case you use Hugo with AsciiDoc files, like I do)
+<4> Set up Hugo via the aforementioned GitHub Actions for Hugo
+<5> Run the `hugo` command; here you could add parameters such as `-F` for also building future posts
+<6> Deploy the website to GitHub pages; the contents of Hugo's build directory _public_ will be pushed to the _gh-pages_ branch of the upstream repository, using the deploy key configured before
+
+And that's all we need; once the file is committed and pushed to the upstream repository,
+the deployment workflow will be executed upon each push to the master branch.
+
+You can find the complete workflow definition used for publishing this website https://github.com/gunnarmorling/morling.dev/blob/master/.github/workflows/gh-pages-deployment.yml[here].
+Also check out the documentation of https://github.com/marketplace/actions/hugo-setup[GitHub Actions for Hugo] and https://github.com/marketplace/actions/github-pages-action[GitHub Actions for GitHub Pages] to learn more about their capabilities and the options they offer.
