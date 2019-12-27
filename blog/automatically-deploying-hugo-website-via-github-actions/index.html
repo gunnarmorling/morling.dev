@@ -16,6 +16,10 @@
 
 	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
 	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
 	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
 	
 
@@ -155,7 +159,7 @@ GitHub Actions workflows are YAML files, because <a href="https://twitter.com/br
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">name: GitHub Pages
 
-on:                             <b class="conum">(1)</b>
+on:                                     <i class="conum" data-value="1"></i><b>(1)</b>
   push:
     branches:
     - master
@@ -164,22 +168,22 @@ jobs:
   build-deploy:
     runs-on: ubuntu-18.04
     steps:
-    - uses: actions/checkout@v1 <b class="conum">(2)</b>
+    - uses: actions/checkout@v1         <i class="conum" data-value="2"></i><b>(2)</b>
       with:
         submodules: true
 
-    - name: Install AsciiDoctor <b class="conum">(3)</b>
+    - name: Install AsciiDoctor         <i class="conum" data-value="3"></i><b>(3)</b>
       run: sudo apt-get install asciidoctor
 
-    - name: Setup Hugo          <b class="conum">(4)</b>
+    - name: Setup Hugo                  <i class="conum" data-value="4"></i><b>(4)</b>
       uses: peaceiris/actions-hugo@v2
       with:
         hugo-version: '0.57.2'
 
-    - name: Build               <b class="conum">(5)</b>
+    - name: Build                       <i class="conum" data-value="5"></i><b>(5)</b>
       run: hugo
 
-    - name: Deploy              <b class="conum">(6)</b>
+    - name: Deploy                      <i class="conum" data-value="6"></i><b>(6)</b>
       uses: peaceiris/actions-gh-pages@v2
       env:
         ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
@@ -188,26 +192,32 @@ jobs:
 </div>
 </div>
 <div class="colist arabic">
-<ol>
-<li>
-<p>Run this action whenever changes are pushed to the <em>master</em> branch</p>
-</li>
-<li>
-<p>The first step in the job: check out the source code</p>
-</li>
-<li>
-<p>Install <a href="https://asciidoctor.org/">AsciiDoctor</a> (in case you use Hugo with AsciiDoc files, like I do)</p>
-</li>
-<li>
-<p>Set up Hugo via the aforementioned GitHub Actions for Hugo</p>
-</li>
-<li>
-<p>Run the <code>hugo</code> command; here you could add parameters such as <code>-F</code> for also building future posts</p>
-</li>
-<li>
-<p>Deploy the website to GitHub pages; the contents of Hugo&#8217;s build directory <em>public</em> will be pushed to the <em>gh-pages</em> branch of the upstream repository, using the deploy key configured before</p>
-</li>
-</ol>
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Run this action whenever changes are pushed to the <em>master</em> branch</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The first step in the job: check out the source code</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Install <a href="https://asciidoctor.org/">AsciiDoctor</a> (in case you use Hugo with AsciiDoc files, like I do)</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Set up Hugo via the aforementioned GitHub Actions for Hugo</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Run the <code>hugo</code> command; here you could add parameters such as <code>-F</code> for also building future posts</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Deploy the website to GitHub pages; the contents of Hugo&#8217;s build directory <em>public</em> will be pushed to the <em>gh-pages</em> branch of the upstream repository, using the deploy key configured before</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>And that&#8217;s all we need; once the file is committed and pushed to the upstream repository,
