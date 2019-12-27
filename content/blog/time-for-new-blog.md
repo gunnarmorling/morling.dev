@@ -2,11 +2,12 @@
 title: "Time for a New Blog"
 date: 2019-12-26T10:00:00+01:00
 draft: false
-description: "It has been quite a while since the last post on my old personal blog; since then, I’ve mostly focused on writing about my day-work on the Debezium blog as well as some posts about more general technical topics on the Hibernate team blog. Now recently I had some ideas for things I wanted to write about..."
 ---
 
 It has been quite a while since the last post on my old [personal blog](http://musingsofaprogrammingaddict.blogspot.com/);
 since then, I've mostly focused on writing about my day-work on the [Debezium blog](https://debezium.io/blog/) as well as [some posts](https://in.relation.to/gunnar-morling/) about more general technical topics on the Hibernate team blog.
+
+<!--more-->
 
 Now recently I had some ideas for things I wanted to write about, which didn't feel like a good fit for neither of those two.
 So it was time to re-boot a personal blog.
