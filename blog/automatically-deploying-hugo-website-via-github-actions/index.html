@@ -129,7 +129,7 @@ a GitHub <a href="https://developer.github.com/v3/guides/managing-deploy-keys/">
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-shell" data-lang="shell">ssh-keygen -t rsa -b 4096 -C "$(git config user.email)" -f gh-pages -N ""</code></pre>
+<pre class="rouge highlight"><code data-lang="shell">ssh-keygen <span class="nt">-t</span> rsa <span class="nt">-b</span> 4096 <span class="nt">-C</span> <span class="s2">"</span><span class="si">$(</span>git config user.email<span class="si">)</span><span class="s2">"</span> <span class="nt">-f</span> gh-pages <span class="nt">-N</span> <span class="s2">""</span></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -157,38 +157,71 @@ GitHub Actions workflows are YAML files, because <a href="https://twitter.com/br
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">name: GitHub Pages
+<pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+</pre></td><td class="code"><pre><span class="na">name</span><span class="pi">:</span> <span class="s">GitHub Pages</span>
 
-on:                                     <i class="conum" data-value="1"></i><b>(1)</b>
-  push:
-    branches:
-    - master
+<span class="na">on</span><span class="pi">:</span>                                     <i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="na">push</span><span class="pi">:</span>
+    <span class="na">branches</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">master</span>
 
-jobs:
-  build-deploy:
-    runs-on: ubuntu-18.04
-    steps:
-    - uses: actions/checkout@v1         <i class="conum" data-value="2"></i><b>(2)</b>
-      with:
-        submodules: true
+<span class="na">jobs</span><span class="pi">:</span>
+  <span class="na">build-deploy</span><span class="pi">:</span>
+    <span class="na">runs-on</span><span class="pi">:</span> <span class="s">ubuntu-18.04</span>
+    <span class="na">steps</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/checkout@v1</span>         <i class="conum" data-value="2"></i><b>(2)</b>
+      <span class="na">with</span><span class="pi">:</span>
+        <span class="na">submodules</span><span class="pi">:</span> <span class="no">true</span>
 
-    - name: Install AsciiDoctor         <i class="conum" data-value="3"></i><b>(3)</b>
-      run: sudo apt-get install asciidoctor
+    <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Install AsciiDoctor</span>         <i class="conum" data-value="3"></i><b>(3)</b>
+      <span class="na">run</span><span class="pi">:</span> <span class="s">sudo apt-get install asciidoctor</span>
 
-    - name: Setup Hugo                  <i class="conum" data-value="4"></i><b>(4)</b>
-      uses: peaceiris/actions-hugo@v2
-      with:
-        hugo-version: '0.57.2'
+    <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Setup Hugo</span>                  <i class="conum" data-value="4"></i><b>(4)</b>
+      <span class="na">uses</span><span class="pi">:</span> <span class="s">peaceiris/actions-hugo@v2</span>
+      <span class="na">with</span><span class="pi">:</span>
+        <span class="na">hugo-version</span><span class="pi">:</span> <span class="s1">'</span><span class="s">0.57.2'</span>
 
-    - name: Build                       <i class="conum" data-value="5"></i><b>(5)</b>
-      run: hugo
+    <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Build</span>                       <i class="conum" data-value="5"></i><b>(5)</b>
+      <span class="na">run</span><span class="pi">:</span> <span class="s">hugo</span>
 
-    - name: Deploy                      <i class="conum" data-value="6"></i><b>(6)</b>
-      uses: peaceiris/actions-gh-pages@v2
-      env:
-        ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-        PUBLISH_BRANCH: gh-pages
-        PUBLISH_DIR: ./public</code></pre>
+    <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Deploy</span>                      <i class="conum" data-value="6"></i><b>(6)</b>
+      <span class="na">uses</span><span class="pi">:</span> <span class="s">peaceiris/actions-gh-pages@v2</span>
+      <span class="na">env</span><span class="pi">:</span>
+        <span class="na">ACTIONS_DEPLOY_KEY</span><span class="pi">:</span> <span class="s">${{ secrets.ACTIONS_DEPLOY_KEY }}</span>
+        <span class="na">PUBLISH_BRANCH</span><span class="pi">:</span> <span class="s">gh-pages</span>
+        <span class="na">PUBLISH_DIR</span><span class="pi">:</span> <span class="s">./public</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
