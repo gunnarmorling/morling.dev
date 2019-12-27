@@ -5,6 +5,9 @@ draft: false
 description: "As a software engineer, I like to automate tedious tasks as much as possible. The deployment of this website is no exception: it is built using Hugo and hosted on GitHub pages; so wouldn't it be nice if the rendered website would automatically be published whenever an update is pushed to its source code repository?"
 disqus: false
 ---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
 
 As a software engineer, I like to automate tedious tasks as much as possible.
 The deployment of this website is no exception:
@@ -57,11 +60,11 @@ With the key in place, it's time to set up the actual GitHub Actions workflow.
 This is simply done by creating the file _.github/workflows/gh-pages-deployment.yml_ in your repository with the following contents.
 GitHub Actions workflows are YAML files, because https://twitter.com/brunoborges/status/1098472238469111808[YOLO] ;)
 
-[source,yaml,indent=0]
+[source,yaml,indent=0,linenums=true]
 ----
 name: GitHub Pages
 
-on:                             # <1>
+on:                                     # <1>
   push:
     branches:
     - master
@@ -70,22 +73,22 @@ jobs:
   build-deploy:
     runs-on: ubuntu-18.04
     steps:
-    - uses: actions/checkout@v1 # <2>
+    - uses: actions/checkout@v1         # <2>
       with:
         submodules: true
 
-    - name: Install AsciiDoctor # <3>
+    - name: Install AsciiDoctor         # <3>
       run: sudo apt-get install asciidoctor
 
-    - name: Setup Hugo          # <4>
+    - name: Setup Hugo                  # <4>
       uses: peaceiris/actions-hugo@v2
       with:
         hugo-version: '0.57.2'
 
-    - name: Build               # <5>
+    - name: Build                       # <5>
       run: hugo
 
-    - name: Deploy              # <6>
+    - name: Deploy                      # <6>
       uses: peaceiris/actions-gh-pages@v2
       env:
         ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
