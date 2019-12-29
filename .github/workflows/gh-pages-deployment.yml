@@ -13,19 +13,8 @@ jobs:
       with:
         submodules: true
 
-    - name: Install Ruby Dev
-      run: sudo apt-get install ruby-dev
-
-    - name: Install AsciiDoctor and Rouge
-      run: sudo gem install asciidoctor rouge
-
-    - name: Setup Hugo
-      uses: peaceiris/actions-hugo@v2
-      with:
-        hugo-version: '0.62.0'
-
     - name: Build
-      run: hugo
+      run: docker run --rm -v $PWD:/src quay.io/gunnarmorling/hugo-builder bash -c "cd /src && /hugo/hugo"
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v2
