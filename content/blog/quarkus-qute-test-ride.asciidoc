@@ -438,6 +438,39 @@ The same would happen when accessing the edit dialog directly via its URL or whe
 
 image::qute_tab.png[]
 
+== Bonus: Using WebJars
+
+In a thread on Twitter James Ward https://twitter.com/_JamesWard/status/1213148846324367360[brought up] the idea of pulling in required resources such as Bootstrap via WebJars instead of getting them from a CDN.
+https://www.webjars.org/[WebJars] is a useful utility for obtaining all sorts of client-side libraries with Java build tools such as Maven or Gradle.
+
+For Bootstrap, the following dependency must be added to the Maven _pom.xml_ file:
+
+[source,xml,indent=0,linenums=true]
+----
+<dependency>
+  <groupId>org.webjars</groupId>
+  <artifactId>bootstrap</artifactId>
+  <version>4.4.1</version>
+</dependency>
+----
+
+The Bootstrap CSS can then be included within the _base.html_ template like so:
+
+[source,html,indent=0,linenums=true]
+----
+...
+<head>
+  ...
+  <link rel="stylesheet" href="/webjars/bootstrap/4.4.1/css/bootstrap.min.css">
+  ...
+</head>
+...
+----
+
+This is all that's needed in order to use Bootstrap via WebJars.
+Note this will work on the JVM and also with a native binary via https://www.graalvm.org/[GraalVM]:
+WebJars resources are located under _META-INF/resources_, and Quarkus https://quarkus.io/guides/writing-native-applications-tips#including-resources[automatically adds] all resources from there when building a native image.
+
 == Wrap Up
 
 This concludes my quick tour through server-side web applications with Quarkus and its new Qute extension.
