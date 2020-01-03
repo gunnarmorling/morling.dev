@@ -6,6 +6,7 @@ draft: false
 :source-highlighter: rouge
 :rouge-style: base16.dark
 :icons: font
+:imagesdir: /images
 
 One of the long-awaited features in Quarkus was support for server-side templating:
 until recently, Quarkus supported only client-side web frameworks which obtain there data by calling a REST API on the backend.
@@ -426,7 +427,16 @@ E.g. here's the form for entering the search term with that modification:
 The magic trick of Unpoly is that links and forms with the `up-target` attribute are intercepted by Unpoly and executed via AJAX calls.
 The specified fragments from the result page are then used to replace parts of the already loaded page, instead of having the browser load the full response page.
 The result is the fast user experience shown in the video above.
+
+Unpoly also allows to show page fragments in modal dialogs,
+allowing to remain on the same page also when showing forms such as the one for editing a todo:
+
+image::qute_modal.png[]
+
 Note that if JavaScript is disabled, the application gracefully falls back to full page loads. I.e. it will still be fully functional, just with a slightly degraded user experience.
+The same would happen when accessing the edit dialog directly via its URL or when opening the "Edit" link in a new tab or window:
+
+image::qute_tab.png[]
 
 == Wrap Up
 
