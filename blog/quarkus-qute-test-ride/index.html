@@ -980,6 +980,60 @@ The same would happen when accessing the edit dialog directly via its URL or whe
 </div>
 </div>
 <div class="sect1">
+<h2 id="_bonus_using_webjars">Bonus: Using WebJars</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In a thread on Twitter James Ward <a href="https://twitter.com/_JamesWard/status/1213148846324367360">brought up</a> the idea of pulling in required resources such as Bootstrap via WebJars instead of getting them from a CDN.
+<a href="https://www.webjars.org/">WebJars</a> is a useful utility for obtaining all sorts of client-side libraries with Java build tools such as Maven or Gradle.</p>
+</div>
+<div class="paragraph">
+<p>For Bootstrap, the following dependency must be added to the Maven <em>pom.xml</em> file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="nt">&lt;dependency&gt;</span>
+  <span class="nt">&lt;groupId&gt;</span>org.webjars<span class="nt">&lt;/groupId&gt;</span>
+  <span class="nt">&lt;artifactId&gt;</span>bootstrap<span class="nt">&lt;/artifactId&gt;</span>
+  <span class="nt">&lt;version&gt;</span>4.4.1<span class="nt">&lt;/version&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The Bootstrap CSS can then be included within the <em>base.html</em> template like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="html"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre>...
+<span class="nt">&lt;head&gt;</span>
+  ...
+  <span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">'stylesheet'</span> <span class="na">href=</span><span class="s">'webjars/bootstrap/4.4.1/css/bootstrap.min.css'</span><span class="nt">&gt;</span>
+  ...
+<span class="nt">&lt;/head&gt;</span>
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is all that&#8217;s needed in order to use Bootstrap via WebJars.
+Note this will work on the JVM and also with a native binary via <a href="https://www.graalvm.org/">GraalVM</a>:
+WebJars resources are located under <em>META-INF/resources</em>, and Quarkus <a href="https://quarkus.io/guides/writing-native-applications-tips#including-resources">automatically adds</a> all resources from there when building a native image.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_wrap_up">Wrap Up</h2>
 <div class="sectionbody">
 <div class="paragraph">
