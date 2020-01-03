@@ -1,0 +1,441 @@
+---
+title: "Quarkus Qute – A Test Ride"
+date: 2020-01-03T10:00:00+01:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+
+One of the long-awaited features in Quarkus was support for server-side templating:
+until recently, Quarkus supported only client-side web frameworks which obtain there data by calling a REST API on the backend.
+This has changed with https://quarkus.io/blog/quarkus-1-1-0-final-released/[Quarkus 1.1]: it comes with a brand-new template engine named https://quarkus.io/guides/qute[Qute],
+which allows to build web applications using server-side templates.
+
+<!--more-->
+
+When looking at frameworks for building web applications, there's two large categories:
+
+* client-side solutions based on JavaScript such as https://reactjs.org/[React], https://vuejs.org/[vue.js] or https://angular.io/[Angular]
+* server-side frameworks such as https://docs.spring.io/spring/docs/current/spring-framework-reference/web.html[Spring Web MVC], https://jakarta.ee/specifications/faces/[JSF] or https://www.mvc-spec.org/[MVC 1.0] (in the Java world)
+
+Both have their indivdual strengths and weaknesses and it'd be not very wise to always prefer one over the other.
+Instead, the choice should be based on specific requirements
+(e.g. what kind of interactivity is needed)
+and prerequisites (e.g. the skillset of the team building the application).
+
+Being mostly experienced with Java, server-side solutions are appealing to me,
+as they allow me to use the language I know and tooling (build tools, IDEs) I'm familiar and most productive with.
+So when Qute was announced, it instantly caught my attention and I had to give it a test ride.
+In this post I want to share some of the experiences I made.
+
+Note this isn't a comprehensive tutorial for building web apps with Qute,
+instead, I'd like to discuss a few things that stuck out to me.
+You can find a complete working example here on https://github.com/gunnarmorling/quarkus-qute[GitHub].
+It implements a basic CRUD application for managing personal todos,
+persisted in a Postgres database.
+Here's a video that shows the demo in action:
+
+{{< youtube B6VD5Oi0-2c >}}
+
+
+== The Basics
+
+The Qute engine is based on RESTEasy/JAX-RS.
+As such, Qute web applications are implemented by defining resource types with methods answering to specific HTTP verbs and accept headers.
+The only difference being, that HTML pages are returned instead of JSON as in your typical REST-ful data API.
+The individual pages are created by processing template files.
+Here's a basic example for returning all the Todo records in our application:
+
+[source,java,indent=0,linenums=true]
+----
+@Path("/todo")
+public class TodoResource {
+
+    @Inject
+    Template todos;
+
+    @GET                                                   // <1>
+    @Consumes(MediaType.TEXT_HTML)                         // <2>
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance listTodos() {
+        return todos.data("todos", Todo.findAll().list()); // <3>
+    }
+}
+----
+<1> Processes HTTP GET requests for /todo
+<2> This method consumes and produces the `text/html` media type
+<3> Obtain all todos from the database and feed them to the `todos` template
+
+The `Todo` class is as JPA entity implemented via https://quarkus.io/guides/hibernate-orm-panache[Hibernate Panache]:
+
+[source,java,indent=0,linenums=true]
+----
+@Entity
+public class Todo extends PanacheEntity {
+
+    public String title;
+    public int priority;
+    public boolean completed;
+}
+----
+
+Panache is a perfect fit for this kind of CRUD applications.
+It helps with common tasks such as id mapping,
+and by means of the https://en.wikipedia.org/wiki/Active_record_pattern[active record pattern] you get query methods like `findAll()` "for free".
+
+To produce an HTML page for displaying the result list,
+the `todos` template is used.
+Templates are located under _src/main/resources/templates_.
+As you would expect it, changes to template files are immediatly picked up when running Quarkus in Dev Mode.
+By default, the template name is derived from the field name of the injected `Template` instance,
+i.e. in this case the _src/main/resources/templates/todos.html_ template will be used.
+It could look like this:
+
+[source,html,indent=0,linenums=true]
+----
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <!-- CSS ... -->
+    <link rel="stylesheet" href="...">
+
+    <title>My Todos</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1>My Todos</h1>
+
+      <table class="table table-striped table-bordered">
+        <thead>
+          <tr>
+            <th scope="col" class="fit">Id</th>
+            <th scope="col" >Title</th>
+            <th scope="col" class="fit">Priority</th>
+            <th scope="col" class="fit">Completed</th>
+          </tr>
+        </thead>
+
+        {#if todos.size == 0} <1>
+        <tr>
+          <td colspan="4">No data found.</td>
+        </tr>
+        {#else}
+
+        {#for todo in todos}  <2>
+        <tr>
+          <th scope="row">#{todo.id}</th>
+          <td>
+            {todo.title}      <3>
+          </td>
+          <td>
+            {todo.priority}   <4>
+          </td>
+          <td> <5>
+            <div class="custom-control custom-checkbox">
+              <input type="checkbox" class="custom-control-input" disabled id="completed-{todo.id}" {#if todo.completed}checked{/if}>
+              <label class="custom-control-label" for="completed-{todo.id}"></label>
+            </div>
+          </td>
+        </tr>
+        {/for}
+        {/if}
+      </table>
+    </div>
+  </body>
+</html>
+----
+<1> If the injected `todos` list is empty, display a placeholder row
+<2> Otherwise, iterate over the `todos` list and add a table row for each one
+<3> Table cell for title
+<4> Table cell for priority
+<5> Table cell for completion status, rendered as a checkbox
+
+If you've worked with other templating engine before, this will look very familiar to you.
+You can refer to injected objects and their properties to display their values, have conditional logic, iterate over collections etc.
+A very nice aspect about Qute templates is that they are processed at build time, following the Quarkus notion of "compile-time boot".
+This means if there is an error in a template such as unbalanced control keywords, you'll find out about this at build time instead of only at runtime.
+
+The https://quarkus.io/guides/qute-reference[reference documentation] describes the syntax and all options in depth.
+Note that things are still in flux here, e.g. I couldn't work with boolean operators in conditions.
+
+== Combining HTML and Data APIs
+
+Thanks to HTTP content negotiation, you can easily combine resource methods for returning HTML and JSON for API-style consumers in a single endpoint.
+Just add another resource method for handling the required media type, e.g. "application/json":
+
+[source,java,indent=0,linenums=true]
+----
+@GET
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public List<Todo> listTodosJson() {
+    return Todo.findAll().list();
+}
+----
+
+A standard HTTP request issued by a web browser would now be answered with the HTML page, whereas an AJAX request with the "application/json" accept header (or a manual invocation via _curl_) would yield the JSON representation.
+I really like that idea of considering HTML and JSON-based representations as two different "views" of the same API essentially.
+
+== Template Organization
+
+If a web application has multiple pages or "views", chances are there are many similarities between those.
+E.g. there might be a common header and footer for all pages,
+or one and the same form is used on multiple pages.
+
+To avoid duplication in the templates in such cases, Qute supports the notion of includes.
+E.g. let's say there's a common form for creating new and editing existing todos.
+This can be put into its own template:
+
+[source,html,indent=0,linenums=true]
+----
+<1>
+<form action="/todo/{#if update}{todo.id}/edit{#else}new{/if}" method="POST" name="todoForm" enctype="multipart/form-data">
+  <div class="form-row align-items-center">
+    <div class="col-sm-3 my-1">
+      <label class="sr-only" for="title">Title</label>
+      <2>
+      <input type="text" name="title" class="form-control" id="title" placeholder="Title" required autofocus {#if update}value="{todo.title}"{/if}>
+    </div>
+
+    <div class="col-auto my-1">
+      <select class="custom-select"  name="priority">
+        <option disabled value="">Priority</option>
+        {#for prio in priorities}
+        <option value="{prio}" {#if todo.priority == prio}selected{/if}>{prio}</option>
+        {/for}
+      </select>
+    </div>
+
+    <3>
+    {#if update}
+    <div class="col-auto my-1">
+      <div class="form-check">
+        <input type="checkbox" name="completed" class="form-check-input" id="completed" {#if todo.completed}checked{/if}>
+        <label class="form-check-label" for="completed">Completed</label>
+      </div>
+    </div>
+    {/if}
+
+    <4>
+    <button type="submit" class="btn btn-primary">{#if update}Update{#else}Create{/if}</button>
+  </div>
+</form>
+----
+<1> Post to different path for update and create
+<2> Display existing title and priority in case of an update
+<3> Show checkbox for completion status in case of an update
+<4> Choose button caption depending on use case
+
+In order to display this form right under the table with all todos,
+the template can simply be included like so:
+
+[source,html,indent=0,linenums=true]
+----
+<h2>New Todo</h2>
+{#include todo-form.html}{/include}
+----
+
+It's also possible to extract the outer shell of multiple pages into a shared template ("template inheritance").
+This allows to extract common headers and footers into one single template with placeholders for the inner parts.
+
+For that, create a template with the common outer structure:
+
+[source,html,indent=0,linenums=true]
+----
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <!-- CSS ... -->
+    <link rel="stylesheet" href="...">
+
+    <title>{#insert title}Default Title{/}</title> <1>
+  </head>
+  <body>
+    <div class="container">
+      <h1>{#insert title}Default Title{/}</h1>     <1>
+
+      {#insert contents}No contents!{/}            <2>
+    </div>
+  </body>
+</html>
+----
+<1> Derived templates define a section `title` which will be inserted here
+<2> Derived templates define a section `contents` which will be inserted here
+
+Other templates can then extend the base one,
+e.g. like so for the "Edit Todo" page:
+
+[source,html,indent=0,linenums=true]
+----
+{#include base.html}                                <1>
+{#title}Edit Todo #{todo.id}{/title}                <2>
+{#contents}                                         <3>
+{#include todo-form.html}{/include}                 <4>
+{/contents}
+{/include}
+----
+<1> Include the base template
+<2> Define the title section
+<3> Define the contents section
+<4> Include the template for displaying the todo form
+
+As so often, a balance needs to be found between extracting common parts and still being able to comprehend the overall structure without having to pursue a large number of template references.
+But in any case with includes and inserts Qute puts the neccessary tools into your hands.
+
+== Error Handling
+
+For a great user experience robust error handling is a must.
+E.g. might happen that a user loads the "Edit Todo" dialog and while they're in the process of editing, that record gets deleted by someone else.
+When saving, a proper error message should be displayed to the first user.
+Here's the resource method implementation for that:
+
+[source,java,indent=0,linenums=true]
+----
+@POST
+@Consumes(MediaType.MULTIPART_FORM_DATA)
+@Transactional
+@Path("/{id}/edit")
+public Object updateTodo(
+    @PathParam("id") long id,
+    @MultipartForm TodoForm todoForm) {
+
+    Todo loaded = Todo.findById(id);      <1>
+
+    if (loaded == null) {                 <2>
+        return error.data("error", "Todo with id " + id + " has been deleted after loading this form.");
+    }
+
+    loaded = todoForm.updateTodo(loaded); <3>
+
+    return Response.status(301)           <4>
+        .location(URI.create("/todo"))
+        .build();
+}
+----
+<1> Load the todo record to be updated
+<2> If it doesn't exist, render the "error" template
+<3> Otherwise, update the record; as `loaded` is an attached entity, no call to persist is needed
+<4> redirect the user to the main page, avoiding issues with reloading etc. (https://en.wikipedia.org/wiki/Post/Redirect/Get[post-redirect-get] pattern)
+
+Note that `TemplateInstance` as returned from the `Template#data()` method doesn't extend the JAX-RS `Response` class.
+Therefore the return type of the method must be declared as `Object` in this case.
+
+== Search
+
+Thanks to Hibernate Panache it's quite simple to refine the todo list and only return those whose title matches a given search term.
+Also ordering the list in some meaningful way would be nice.
+All we need is an optional query parameter for specifying the search term and a custom query method:
+
+[source,java,indent=0,linenums=true]
+----
+@GET
+@Consumes(MediaType.TEXT_HTML)
+@Produces(MediaType.TEXT_HTML)
+public TemplateInstance listTodos(@QueryParam("filter") String filter) {
+    return todos.data("todos", find(filter));
+}
+
+@GET
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public List<Todo> listTodosJson(@QueryParam("filter") String filter) {
+    return find(filter);
+}
+
+private List<Todo> find(String filter) {
+    Sort sort = Sort.ascending("completed")    // <1>
+        .and("priority", Direction.Descending)
+        .and("title", Direction.Ascending);
+
+    if (filter != null && !filter.isEmpty()) { // <2>
+        return Todo.find("LOWER(title) LIKE LOWER(?1)", sort, "%" + filter + "%").list();
+    }
+    else {
+        return Todo.findAll(sort).list();      // <3>
+    }
+}
+----
+<1> First sort by completion status, then priority, then by title
+<2> If a filter is given, apply the search term lower-cased and with wildcards, i.e. using a `WHERE` clause such as `where lower(todo0_.title) like lower(%searchterm%)`
+<3> Otherwise, return all todos
+
+To enter the search term, a form is added next to the table of todos:
+
+[source,html,indent=0,linenums=true]
+----
+<1>
+<form action="/todo" method="GET" name="search">
+  <div class="form-row align-items-center">
+    <div class="col-sm-3 my-1">
+      <label class="sr-only" for="filter">Search</label>
+      <2>
+      <input type="text" name="filter" class="form-control" id="filter" placeholder="Search By Title" required {#if filtered}value="{filter}"{/if}>
+    </div>
+
+    <3>
+    <input class="btn btn-primary" value="Search" type="submit">&nbsp;
+    <a class="btn btn-secondary {#if !filtered}disabled{/if}" href="/todo" role="button">Clear Filter</a>
+  </div>
+</form>
+----
+<1> Invoke this page with the entered search as query parameter
+<2> Input for the search term; show the previously entered term, if any
+<3> A button for clearing the result list if a search term has been entered; otherwise the button will be disabled
+
+== Smoother User Experience via Unpoly
+
+The last thing I wanted to explore is how the usability and performance of the application can be improved by means of some client-side enhancements.
+By default, a web app rendered on the server-side like ours requires full page loads when going from one page to the other.
+This is where single page applications (SPAs) implemented with client-side frameworks shine:
+just parts of the document object model tree in the browser will be replaced e.g. when loading a result list via AJAX,
+resulting in a much smoother and faster user experience.
+
+Does this mean we have to give up on server-side rendering altogether if we're after this kind of UX?
+Luckily not, as small helper libraries such as https://unpoly.com/[Unpoly], https://intercoolerjs.org/[Intercooler] or https://github.com/turbolinks/turbolinks[Turbolinks] can be leveraged to replace just page fragments instead of requiring full page loads.
+This results in a smooth SPA-like user experience without having to opt into the full client-side programming model.
+For the Todo example I've obtained great results using Unpoly.
+After importing its JavaScript file, all that's needed is to add the `up-target` attribute to links or forms.
+
+E.g. here's the form for entering the search term with that modification:
+
+[source,html,indent=0,linenums=true]
+----
+<1>
+<form action="/todo" method="GET" name="search" up-target=".container">
+  <div class="form-row align-items-center">
+    <div class="col-sm-3 my-1">
+      <label class="sr-only" for="filter">Search</label>
+      <input type="text" name="filter" class="form-control" id="filter" placeholder="Search By Title" required {#if filtered}value="{filter}"{/if}>
+    </div>
+
+    <input class="btn btn-primary" value="Search" type="submit">&nbsp;
+    
+    <2>
+    <a class="btn btn-secondary {#if !filtered}disabled{/if}" href="/todo" role="button" up-target=".container">Clear Filter</a>
+  </div>
+</form>
+----
+<1> When receiving the result of the form submission, replace the `<div>` with CSS class `container` of the current page with the one from the response
+<2> Do the same when following the "Clear Filter" link
+
+The magic trick of Unpoly is that links and forms with the `up-target` attribute are intercepted by Unpoly and executed via AJAX calls.
+The specified fragments from the result page are then used to replace parts of the already loaded page, instead of having the browser load the full response page.
+The result is the fast user experience shown in the video above.
+Note that if JavaScript is disabled, the application gracefully falls back to full page loads. I.e. it will still be fully functional, just with a slightly degraded user experience.
+
+== Wrap Up
+
+This concludes my quick tour through server-side web applications with Quarkus and its new Qute extension.
+Where only web applications based on REST APIs called by client-side web applications were supported before, Qute is a great addition to the list of Quarkus extensions, allowing to choose different architecture styles based on your needs and preferences.
+
+Note that Qute currently is in "Experimental" state, i.e. it's a great time to give it a try and share your feedback, but be prepared for possible immaturities and potential changes down the road.
+E.g. I noticed that complex boolean expressions in template conditions https://github.com/quarkusio/quarkus/issues/6369[aren't support yet].
+Also it would be great to get build-time feedback upon https://github.com/quarkusio/quarkus/issues/6391[invalid variable references] in templates.
+
+To learn more, refer to the Qute https://quarkus.io/guides/qute[quide] and its https://quarkus.io/guides/qute-reference[reference documentation].
+You can find the complete source code of the Todo example including instructions for building and running in this https://github.com/gunnarmorling/quarkus-qute[GitHub repo].
