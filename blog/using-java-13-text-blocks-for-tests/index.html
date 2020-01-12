@@ -32,7 +32,6 @@ while keeping your main code still compatible with older Java versions.
 
 	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
 	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
-	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
 
 	
 	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
@@ -244,7 +243,7 @@ implemented using <a href="http://rest-assured.io/">RESTAssured</a> and <a href=
   <span class="kd">public</span> <span class="kt">void</span> <span class="nf">canPostNewTodoAndReceiveId</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
     <span class="n">given</span><span class="o">()</span>
       <span class="o">.</span><span class="na">when</span><span class="o">()</span>
-        <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="s">"""                                          <i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="s">"""                                          // <b class="conum">(1)</b>
               {
                 "</span><span class="n">title</span><span class="s">" : "</span><span class="nc">Learn</span> <span class="nc">Java</span><span class="s">",
                 "</span><span class="n">completed</span><span class="s">" : false
@@ -255,7 +254,7 @@ implemented using <a href="http://rest-assured.io/">RESTAssured</a> and <a href=
         <span class="o">.</span><span class="na">post</span><span class="o">(</span><span class="s">"/hello"</span><span class="o">)</span>
       <span class="o">.</span><span class="na">then</span><span class="o">()</span>
         <span class="o">.</span><span class="na">statusCode</span><span class="o">(</span><span class="mi">201</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="n">matchesJson</span><span class="o">(</span><span class="s">"""                              <i class="conum" data-value="2"></i><b>(2)</b>
+        <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="n">matchesJson</span><span class="o">(</span><span class="s">"""                              // <b class="conum">(2)</b>
                           {
                             "</span><span class="n">id</span><span class="s">" : 1,
                             "</span><span class="n">title</span><span class="s">" : "</span><span class="nc">Learn</span> <span class="nc">Java</span><span class="s">",
@@ -269,16 +268,14 @@ implemented using <a href="http://rest-assured.io/">RESTAssured</a> and <a href=
 </div>
 </div>
 <div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Text block with the JSON request to send</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Text block with the expected JSON response</td>
-</tr>
-</table>
+<ol>
+<li>
+<p>Text block with the JSON request to send</p>
+</li>
+<li>
+<p>Text block with the expected JSON response</p>
+</li>
+</ol>
 </div>
 <div class="paragraph">
 <p>Indeed that&#8217;s much nicer to read, e.g. when comparing the request JSON to the code you&#8217;d typically write without text blocks.
@@ -327,7 +324,7 @@ while keeping the main code of a project compatible with Java 8.</p>
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-note" title="Note"></i>
+<div class="title">💡</div>
 </td>
 <td class="content">
 <div class="paragraph">
@@ -380,7 +377,7 @@ E.g. here is what you&#8217;d use for Maven:</p>
 </pre></td><td class="code"><pre>...
 <span class="nt">&lt;properties&gt;</span>
   ...
-  <span class="nt">&lt;maven.compiler.release&gt;</span>8<span class="nt">&lt;/maven.compiler.release&gt;</span>      <i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="nt">&lt;maven.compiler.release&gt;</span>8<span class="nt">&lt;/maven.compiler.release&gt;</span>      <b class="conum">(1)</b>
   ...
 <span class="nt">&lt;/properties&gt;</span>
 <span class="nt">&lt;build&gt;</span>
@@ -393,8 +390,8 @@ E.g. here is what you&#8217;d use for Maven:</p>
         <span class="nt">&lt;execution&gt;</span>
           <span class="nt">&lt;id&gt;</span>default-testCompile<span class="nt">&lt;/id&gt;</span>
           <span class="nt">&lt;configuration&gt;</span>
-            <span class="nt">&lt;release&gt;</span>13<span class="nt">&lt;/release&gt;</span>                         <i class="conum" data-value="2"></i><b>(2)</b>
-            <span class="nt">&lt;compilerArgs&gt;</span>--enable-preview<span class="nt">&lt;/compilerArgs&gt;</span> <i class="conum" data-value="3"></i><b>(3)</b>
+            <span class="nt">&lt;release&gt;</span>13<span class="nt">&lt;/release&gt;</span>                         <b class="conum">(2)</b>
+            <span class="nt">&lt;compilerArgs&gt;</span>--enable-preview<span class="nt">&lt;/compilerArgs&gt;</span> <b class="conum">(3)</b>
           <span class="nt">&lt;/configuration&gt;</span>
         <span class="nt">&lt;/execution&gt;</span>
       <span class="nt">&lt;/executions&gt;</span>
@@ -408,20 +405,17 @@ E.g. here is what you&#8217;d use for Maven:</p>
 </div>
 </div>
 <div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Compile for release 8 by default, i.e. the main code</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Compile test code for release 13</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Also pass the <code>--enable-preview</code> option when compiling the test code</td>
-</tr>
-</table>
+<ol>
+<li>
+<p>Compile for release 8 by default, i.e. the main code</p>
+</li>
+<li>
+<p>Compile test code for release 13</p>
+</li>
+<li>
+<p>Also pass the <code>--enable-preview</code> option when compiling the test code</p>
+</li>
+</ol>
 </div>
 <div class="paragraph">
 <p>Also at runtime preview features must be explicitly enabled.
