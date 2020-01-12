@@ -1,0 +1,257 @@
+---
+title: "Using Java 13 Text Blocks (Only) for Your Tests"
+date: 2020-01-13T17:30:00+01:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+
+When Java 9 was introduced in 2017,
+it was the last major version published under the old release scheme.
+Since then, a https://www.infoq.com/news/2017/09/Java6Month/[six month release cadence] has been adopted.
+This means developers don't have to wait years for new APIs and language features,
+but they can get their hands onto the latest additions twice a year.
+In this post I'd like to describe how you can try out new language features such as http://openjdk.java.net/jeps/355[Java 13 text blocks] in the test code of your project,
+while keeping your main code still compatible with older Java versions.
+
+<!--more-->
+
+One goal of the increased release cadence is to shorten the feedback loop for the OpenJDK team:
+have developers in the field try out new functionality early on, collect feedback based on that, adjust as needed.
+To aid with that process, the JDK has two means of publishing preliminary work before new APIs and language features are cast in stone:
+
+* https://openjdk.java.net/jeps/11[Incubator JDK modules]
+* https://openjdk.java.net/jeps/12[Preview language and VM features]
+
+An example for the former is the new HTTP client API, which was an incubator module in JDK 9 and 10,
+before it got http://openjdk.java.net/jeps/321[standardized] as a regular API in JDK 11.
+Examples for preview language features are http://openjdk.java.net/jeps/325[switch expressions]
+(added as a preview feature in Java 12) and text blocks (added in Java 13).
+
+Now especially text blocks are a feature which many developers have missed in Java for a long time.
+They are really useful when embedding other languages, or just any kind of longer text into your Java program,
+e.g. multi-line SQL statements, JSON documents and others.
+So you might want to go and use them as quickly as possible,
+but depending on your specific situation and requirements, you may no be able to move to Java 13 just yet.
+
+In particular when working on libraries, compatibility with older Java versions is a high priority in order to not cut off a large number of potential users.
+E.g. in the JetBrains https://www.jetbrains.com/lp/devecosystem-2019/java/[Developer Ecosystem Survey] from early 2019,
+83% of participants said that Java 8 is a version they regularly use.
+This matches with what I've observed myself during conversations e.g. at conferences.
+Now this share may have reduced a bit since then
+(I couldn't find any newer numbers),
+but at this point in time it still seems save to say that libraries should support Java 8 to not limit their audience in a signficant way.
+
+So while __building__ on Java 13 is fine,
+requiring it at __runtime__ for libraries isn't.
+Does this mean as a library author you cannot use text blocks then for many years to come?
+For your main code (i.e. the one shipped to users) it indeed does mean that,
+but things look different when it comes to test code.
+
+== An Example
+
+One case where text blocks come in extremely handy is testing of REST APIs,
+where JSON requests need to created and responses may have to be compared to a JSON string with the expected value.
+Here's an example of using text blocks in a test of a https://quarkus.io/[Quarkus-based] REST service,
+implemented using http://rest-assured.io/[RESTAssured] and https://github.com/skyscreamer/JSONassert[JSONAssert]:
+
+[source,java,indent=0,linenums=true]
+----
+@QuarkusTest
+public class TodoResourceTest {
+
+  @Test
+  public void canPostNewTodoAndReceiveId() throws Exception {
+    given()
+      .when()
+        .body("""                                          // <1>
+              {
+                "title" : "Learn Java",
+                "completed" : false
+              }
+              """
+        )
+        .contentType(ContentType.JSON)
+        .post("/hello")
+      .then()
+        .statusCode(201)
+        .body(matchesJson("""                              // <2>
+                          {
+                            "id" : 1,
+                            "title" : "Learn Java",
+                            "completed" : false
+                          }
+                          """)
+        );
+  }
+}
+----
+<1> Text block with the JSON request to send
+<2> Text block with the expected JSON response
+
+Indeed that's much nicer to read, e.g. when comparing the request JSON to the code you'd typically write without text blocks.
+Concatenating multiple lines, escaping quotes and explicitly specifying line breaks make this quite cumbersome:
+
+[source,java,indent=0,linenums=true]
+----
+.body(
+      "{\n" +
+      "  \"title\" : \"Learn Java 13\",\n" +
+      "  \"completed\" : false\n" +
+      "}"
+)
+----
+
+Now let's see what's needed in terms of configuration to enable usage of Java 13 text blocks for tests,
+while keeping the main code of a project compatible with Java 8.
+
+== Configuration
+
+Two options of the Java compiler `javac` come into play here:
+
+* `--release`: specifies the Java version to compile for
+* `--enable-preview`: allows to use language features currently in "preview" status such as text blocks as of Java 13/14
+
+[NOTE]
+====
+The `--release` option was introduced in Java 9 and should be preferred over the more widely known pair of `--source` and `--target`.
+The reason being that `--release` will prevent any accidental usage of APIs only introduced in later versions.
+
+E.g. say you were to write code such as `List.of("Foo", "Bar")`;
+the `of()` methods on `java.util.List` were only introduced in Java 9, so compiling with `--release 8` will raise a compilation error in this case.
+When using the older options, this situation wouldn't be detected at compile time,
+making the problem only apparent when actually running the application on the older Java version.
+====
+
+Build tools typically allow to use different configurations for the compilation of main and test code.
+E.g. here is what you'd use for Maven:
+
+[source,xml,indent=0,linenums=true]
+----
+...
+<properties>
+  ...
+  <maven.compiler.release>8</maven.compiler.release>      <1>
+  ...
+</properties>
+<build>
+  <plugins>
+    ...
+    <plugin>
+      <artifactId>maven-compiler-plugin</artifactId>
+      <version>3.8.1</version>
+      <executions>
+        <execution>
+          <id>default-testCompile</id>
+          <configuration>
+            <release>13</release>                         <2>
+            <compilerArgs>--enable-preview</compilerArgs> <3>
+          </configuration>
+        </execution>
+      </executions>
+    </plugin>
+    ...
+  </plugins>
+  ...
+</build>
+...
+----
+<1> Compile for release 8 by default, i.e. the main code
+<2> Compile test code for release 13
+<3> Also pass the `--enable-preview` option when compiling the test code
+
+Also at runtime preview features must be explicitly enabled.
+Therefore the `java` command must be accordingly configured when executing the tests,
+e.g. like so when using the Maven Surefire plug-in:
+
+[source,xml,indent=0,linenums=true]
+----
+...
+<plugin>
+  <artifactId>maven-surefire-plugin</artifactId>
+  <version>2.22.1</version>
+  <configuration>
+    <argLine>--enable-preview</argLine>
+  </configuration>
+</plugin>
+...
+----
+
+With this configuration in place,
+text blocks can now be used in tests as the one above,
+but not in the main code of the program.
+Doing so would result in a compilation error.
+
+Note your IDE might still let you do this kind of mistake.
+At least Eclipse chose for me the maximum of main (8) and test code (13) release levels when importing the project.
+But running the build on the command line via Maven or on your CI server will detect this situation.
+
+As Java 13 now is required to __build__ this code base,
+it's a good idea to make this prerequisite explicit in the build process itself.
+The Maven https://maven.apache.org/enforcer/index.html[enforcer plug-in] comes in handy for that,
+allowing to express this requirement using its https://maven.apache.org/enforcer/enforcer-rules/requireJavaVersion.html[Java version rule]:
+
+[source,xml,indent=0,linenums=true]
+----
+...
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-enforcer-plugin</artifactId>
+  <version>3.0.0-M3</version>
+  <executions>
+    <execution>
+      <id>enforce-java</id>
+      <goals>
+        <goal>enforce</goal>
+      </goals>
+      <configuration>
+        <rules>
+          <requireJavaVersion>
+            <version>[13,)</version>
+          </requireJavaVersion>
+        </rules>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
+...
+----
+
+The plug-in will fail the build when being run on a version before Java 13.
+
+== Should You Do This?
+
+Having seen how you can use preview features in test code, the question is:
+should you actually do this?
+A few things should be kept in mind for answering that.
+First of all, preview features are really that, a *preview*.
+This means that details may change in future Java revisions.
+Or, albeit unlikely,
+such feature may even be dropped altogether,
+should the JDK team arrive at the conclusion that it is fundamentally flawed.
+
+Another important factor is the minimum Java language version supported by the JDK compiler.
+As of Java 13, the oldest supported release is 7;
+i.e. using JDK 13, you can produce byte code that can be run with Java versions as old as Java 7.
+In order to keep the Java compiler maintainable, support for older versions is dropped every now and then.
+Right now, there's no formal process in place which would describe when support for a specific version is going to be removed
+(defining such policy is the goal of https://openjdk.java.net/jeps/182[JEP 182]).
+
+As per JDK developer Joe Darcy, "link:https://mail.openjdk.java.net/pipermail/compiler-dev/2020-January/014206.html[there are no plans to remove support for --release 7 in JDK 15]".
+Conversely, this means that support for release 7 theoretically _could_ be removed in JDK 16 and support for release 8 _could_ be removed in JDK 17.
+In that case you'd be caught between a rock and a hard place:
+Once you're on a non-LTS ("long-term support") release like JDK 13, you'll need to upgrade to JDK 14, 15 etc. as soon as they are out,
+in order to not be cut off from bug fixes and security patches.
+Now while doing so, you'd be forced to increase the release level of your main code, once support for release 8 gets dropped, which may not desirable.
+Or you'd have to apply some nice awk/sed magic to replace all those shiny text blocks with traditional concatenated and escaped strings,
+so you can go back to the current LTS release, Java 11.
+Not nice, but surely doable.
+
+That being said, this all doesn't seem like a likely scenario to me.
+JEP 182 expresses a desire "that source code 10 or more years old should still be able to be compiled";
+hence I think it's save to assume that JDK 17 (the next release planned to receive long-term support) will still support release 8,
+which will be seven years old when 17 gets released as planned in September 2021.
+In that case you'd be on the safe side, receiving update releases and being able to keep your main code Java 8 compatible for quite a few years to come.
+
+Needless to say, it's a call that you need to make, deciding for yourself wether the benefits of using new language features such as text blocks is worth it in your specific situation or not.
