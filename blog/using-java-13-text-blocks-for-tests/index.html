@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Using Java 13 Text Blocks (Only) for Your Tests - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Using Java 13 Text Blocks (Only) for Your Tests" />
+<meta property="og:description" content="
+When Java 9 was introduced in 2017,
+it was the last major version published under the old release scheme.
+Since then, a six month release cadence has been adopted.
+This means developers don&#8217;t have to wait years for new APIs and language features,
+but they can get their hands onto the latest additions twice a year.
+In this post I&#8217;d like to describe how you can try out new language features such as Java 13 text blocks in the test code of your project,
+while keeping your main code still compatible with older Java versions.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/using-java-13-text-blocks-for-tests/" />
+<meta property="article:published_time" content="2020-01-13T17:30:00+01:00" />
+<meta property="article:modified_time" content="2020-01-13T17:30:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Using Java 13 Text Blocks (Only) for Your Tests"/>
+<meta name="twitter:description" content="
+When Java 9 was introduced in 2017,
+it was the last major version published under the old release scheme.
+Since then, a six month release cadence has been adopted.
+This means developers don&#8217;t have to wait years for new APIs and language features,
+but they can get their hands onto the latest additions twice a year.
+In this post I&#8217;d like to describe how you can try out new language features such as Java 13 text blocks in the test code of your project,
+while keeping your main code still compatible with older Java versions.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet">
+
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+	<script src="https://www.morling.dev/js/main.js"></script>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<ul class="flat">
+						<a href="https://www.morling.dev/blog/index.xml" title="RSS Feed"><i data-feather="rss"></i></a><a href="https://github.com/gunnarmorling" title="GitHub"><i data-feather="github"></i></a><a href="https://twitter.com/gunnarmorling" title="Twitter"><i data-feather="twitter"></i></a><a href="https://gitlab.com/gunnar.morling" title="GitLab"><i data-feather="gitlab"></i></a></ul>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<ul class="flat">
+						<a href="https://www.morling.dev/blog/index.xml" title="RSS Feed"><i data-feather="rss"></i></a><a href="https://github.com/gunnarmorling" title="GitHub"><i data-feather="github"></i></a><a href="https://twitter.com/gunnarmorling" title="Twitter"><i data-feather="twitter"></i></a><a href="https://gitlab.com/gunnar.morling" title="GitLab"><i data-feather="gitlab"></i></a></ul>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+		<div class="post-header">
+			<h1 class="title">Using Java 13 Text Blocks (Only) for Your Tests</h1>
+			<div class="meta">Posted at Jan 13, 2020</div>
+		</div>
+
+		<div class="markdown">
+			<div class="paragraph">
+<p>When Java 9 was introduced in 2017,
+it was the last major version published under the old release scheme.
+Since then, a <a href="https://www.infoq.com/news/2017/09/Java6Month/">six month release cadence</a> has been adopted.
+This means developers don&#8217;t have to wait years for new APIs and language features,
+but they can get their hands onto the latest additions twice a year.
+In this post I&#8217;d like to describe how you can try out new language features such as <a href="http://openjdk.java.net/jeps/355">Java 13 text blocks</a> in the test code of your project,
+while keeping your main code still compatible with older Java versions.</p>
+</div>
+<div class="paragraph">
+<p>One goal of the increased release cadence is to shorten the feedback loop for the OpenJDK team:
+have developers in the field try out new functionality early on, collect feedback based on that, adjust as needed.
+To aid with that process, the JDK has two means of publishing preliminary work before new APIs and language features are cast in stone:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://openjdk.java.net/jeps/11">Incubator JDK modules</a></p>
+</li>
+<li>
+<p><a href="https://openjdk.java.net/jeps/12">Preview language and VM features</a></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>An example for the former is the new HTTP client API, which was an incubator module in JDK 9 and 10,
+before it got <a href="http://openjdk.java.net/jeps/321">standardized</a> as a regular API in JDK 11.
+Examples for preview language features are <a href="http://openjdk.java.net/jeps/325">switch expressions</a>
+(added as a preview feature in Java 12) and text blocks (added in Java 13).</p>
+</div>
+<div class="paragraph">
+<p>Now especially text blocks are a feature which many developers have missed in Java for a long time.
+They are really useful when embedding other languages, or just any kind of longer text into your Java program,
+e.g. multi-line SQL statements, JSON documents and others.
+So you might want to go and use them as quickly as possible,
+but depending on your specific situation and requirements, you may no be able to move to Java 13 just yet.</p>
+</div>
+<div class="paragraph">
+<p>In particular when working on libraries, compatibility with older Java versions is a high priority in order to not cut off a large number of potential users.
+E.g. in the JetBrains <a href="https://www.jetbrains.com/lp/devecosystem-2019/java/">Developer Ecosystem Survey</a> from early 2019,
+83% of participants said that Java 8 is a version they regularly use.
+This matches with what I&#8217;ve observed myself during conversations e.g. at conferences.
+Now this share may have reduced a bit since then
+(I couldn&#8217;t find any newer numbers),
+but at this point in time it still seems save to say that libraries should support Java 8 to not limit their audience in a signficant way.</p>
+</div>
+<div class="paragraph">
+<p>So while <em>building</em> on Java 13 is fine,
+requiring it at <em>runtime</em> for libraries isn&#8217;t.
+Does this mean as a library author you cannot use text blocks then for many years to come?
+For your main code (i.e. the one shipped to users) it indeed does mean that,
+but things look different when it comes to test code.</p>
+</div>
+<div class="sect1">
+<h2 id="_an_example">An Example</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>One case where text blocks come in extremely handy is testing of REST APIs,
+where JSON requests need to created and responses may have to be compared to a JSON string with the expected value.
+Here&#8217;s an example of using text blocks in a test of a <a href="https://quarkus.io/">Quarkus-based</a> REST service,
+implemented using <a href="http://rest-assured.io/">RESTAssured</a> and <a href="https://github.com/skyscreamer/JSONassert">JSONAssert</a>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+</pre></td><td class="code"><pre><span class="nd">@QuarkusTest</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">TodoResourceTest</span> <span class="o">{</span>
+
+  <span class="nd">@Test</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">canPostNewTodoAndReceiveId</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+    <span class="n">given</span><span class="o">()</span>
+      <span class="o">.</span><span class="na">when</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="s">"""                                          <i class="conum" data-value="1"></i><b>(1)</b>
+              {
+                "</span><span class="n">title</span><span class="s">" : "</span><span class="nc">Learn</span> <span class="nc">Java</span><span class="s">",
+                "</span><span class="n">completed</span><span class="s">" : false
+              }
+              """</span>
+        <span class="o">)</span>
+        <span class="o">.</span><span class="na">contentType</span><span class="o">(</span><span class="nc">ContentType</span><span class="o">.</span><span class="na">JSON</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">post</span><span class="o">(</span><span class="s">"/hello"</span><span class="o">)</span>
+      <span class="o">.</span><span class="na">then</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">statusCode</span><span class="o">(</span><span class="mi">201</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="n">matchesJson</span><span class="o">(</span><span class="s">"""                              <i class="conum" data-value="2"></i><b>(2)</b>
+                          {
+                            "</span><span class="n">id</span><span class="s">" : 1,
+                            "</span><span class="n">title</span><span class="s">" : "</span><span class="nc">Learn</span> <span class="nc">Java</span><span class="s">",
+                            "</span><span class="n">completed</span><span class="s">" : false
+                          }
+                          """</span><span class="o">)</span>
+        <span class="o">);</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Text block with the JSON request to send</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Text block with the expected JSON response</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Indeed that&#8217;s much nicer to read, e.g. when comparing the request JSON to the code you&#8217;d typically write without text blocks.
+Concatenating multiple lines, escaping quotes and explicitly specifying line breaks make this quite cumbersome:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="o">.</span><span class="na">body</span><span class="o">(</span>
+      <span class="s">"{\n"</span> <span class="o">+</span>
+      <span class="s">"  \"title\" : \"Learn Java 13\",\n"</span> <span class="o">+</span>
+      <span class="s">"  \"completed\" : false\n"</span> <span class="o">+</span>
+      <span class="s">"}"</span>
+<span class="o">)</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now let&#8217;s see what&#8217;s needed in terms of configuration to enable usage of Java 13 text blocks for tests,
+while keeping the main code of a project compatible with Java 8.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuration">Configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Two options of the Java compiler <code>javac</code> come into play here:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>--release</code>: specifies the Java version to compile for</p>
+</li>
+<li>
+<p><code>--enable-preview</code>: allows to use language features currently in "preview" status such as text blocks as of Java 13/14</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>--release</code> option was introduced in Java 9 and should be preferred over the more widely known pair of <code>--source</code> and <code>--target</code>.
+The reason being that <code>--release</code> will prevent any accidental usage of APIs only introduced in later versions.</p>
+</div>
+<div class="paragraph">
+<p>E.g. say you were to write code such as <code>List.of("Foo", "Bar")</code>;
+the <code>of()</code> methods on <code>java.util.List</code> were only introduced in Java 9, so compiling with <code>--release 8</code> will raise a compilation error in this case.
+When using the older options, this situation wouldn&#8217;t be detected at compile time,
+making the problem only apparent when actually running the application on the older Java version.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Build tools typically allow to use different configurations for the compilation of main and test code.
+E.g. here is what you&#8217;d use for Maven:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+</pre></td><td class="code"><pre>...
+<span class="nt">&lt;properties&gt;</span>
+  ...
+  <span class="nt">&lt;maven.compiler.release&gt;</span>8<span class="nt">&lt;/maven.compiler.release&gt;</span>      <i class="conum" data-value="1"></i><b>(1)</b>
+  ...
+<span class="nt">&lt;/properties&gt;</span>
+<span class="nt">&lt;build&gt;</span>
+  <span class="nt">&lt;plugins&gt;</span>
+    ...
+    <span class="nt">&lt;plugin&gt;</span>
+      <span class="nt">&lt;artifactId&gt;</span>maven-compiler-plugin<span class="nt">&lt;/artifactId&gt;</span>
+      <span class="nt">&lt;version&gt;</span>3.8.1<span class="nt">&lt;/version&gt;</span>
+      <span class="nt">&lt;executions&gt;</span>
+        <span class="nt">&lt;execution&gt;</span>
+          <span class="nt">&lt;id&gt;</span>default-testCompile<span class="nt">&lt;/id&gt;</span>
+          <span class="nt">&lt;configuration&gt;</span>
+            <span class="nt">&lt;release&gt;</span>13<span class="nt">&lt;/release&gt;</span>                         <i class="conum" data-value="2"></i><b>(2)</b>
+            <span class="nt">&lt;compilerArgs&gt;</span>--enable-preview<span class="nt">&lt;/compilerArgs&gt;</span> <i class="conum" data-value="3"></i><b>(3)</b>
+          <span class="nt">&lt;/configuration&gt;</span>
+        <span class="nt">&lt;/execution&gt;</span>
+      <span class="nt">&lt;/executions&gt;</span>
+    <span class="nt">&lt;/plugin&gt;</span>
+    ...
+  <span class="nt">&lt;/plugins&gt;</span>
+  ...
+<span class="nt">&lt;/build&gt;</span>
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Compile for release 8 by default, i.e. the main code</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Compile test code for release 13</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Also pass the <code>--enable-preview</code> option when compiling the test code</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Also at runtime preview features must be explicitly enabled.
+Therefore the <code>java</code> command must be accordingly configured when executing the tests,
+e.g. like so when using the Maven Surefire plug-in:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre>...
+<span class="nt">&lt;plugin&gt;</span>
+  <span class="nt">&lt;artifactId&gt;</span>maven-surefire-plugin<span class="nt">&lt;/artifactId&gt;</span>
+  <span class="nt">&lt;version&gt;</span>2.22.1<span class="nt">&lt;/version&gt;</span>
+  <span class="nt">&lt;configuration&gt;</span>
+    <span class="nt">&lt;argLine&gt;</span>--enable-preview<span class="nt">&lt;/argLine&gt;</span>
+  <span class="nt">&lt;/configuration&gt;</span>
+<span class="nt">&lt;/plugin&gt;</span>
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With this configuration in place,
+text blocks can now be used in tests as the one above,
+but not in the main code of the program.
+Doing so would result in a compilation error.</p>
+</div>
+<div class="paragraph">
+<p>Note your IDE might still let you do this kind of mistake.
+At least Eclipse chose for me the maximum of main (8) and test code (13) release levels when importing the project.
+But running the build on the command line via Maven or on your CI server will detect this situation.</p>
+</div>
+<div class="paragraph">
+<p>As Java 13 now is required to <em>build</em> this code base,
+it&#8217;s a good idea to make this prerequisite explicit in the build process itself.
+The Maven <a href="https://maven.apache.org/enforcer/index.html">enforcer plug-in</a> comes in handy for that,
+allowing to express this requirement using its <a href="https://maven.apache.org/enforcer/enforcer-rules/requireJavaVersion.html">Java version rule</a>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+</pre></td><td class="code"><pre>...
+<span class="nt">&lt;plugin&gt;</span>
+  <span class="nt">&lt;groupId&gt;</span>org.apache.maven.plugins<span class="nt">&lt;/groupId&gt;</span>
+  <span class="nt">&lt;artifactId&gt;</span>maven-enforcer-plugin<span class="nt">&lt;/artifactId&gt;</span>
+  <span class="nt">&lt;version&gt;</span>3.0.0-M3<span class="nt">&lt;/version&gt;</span>
+  <span class="nt">&lt;executions&gt;</span>
+    <span class="nt">&lt;execution&gt;</span>
+      <span class="nt">&lt;id&gt;</span>enforce-java<span class="nt">&lt;/id&gt;</span>
+      <span class="nt">&lt;goals&gt;</span>
+        <span class="nt">&lt;goal&gt;</span>enforce<span class="nt">&lt;/goal&gt;</span>
+      <span class="nt">&lt;/goals&gt;</span>
+      <span class="nt">&lt;configuration&gt;</span>
+        <span class="nt">&lt;rules&gt;</span>
+          <span class="nt">&lt;requireJavaVersion&gt;</span>
+            <span class="nt">&lt;version&gt;</span>[13,)<span class="nt">&lt;/version&gt;</span>
+          <span class="nt">&lt;/requireJavaVersion&gt;</span>
+        <span class="nt">&lt;/rules&gt;</span>
+      <span class="nt">&lt;/configuration&gt;</span>
+    <span class="nt">&lt;/execution&gt;</span>
+  <span class="nt">&lt;/executions&gt;</span>
+<span class="nt">&lt;/plugin&gt;</span>
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The plug-in will fail the build when being run on a version before Java 13.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_should_you_do_this">Should You Do This?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Having seen how you can use preview features in test code, the question is:
+should you actually do this?
+A few things should be kept in mind for answering that.
+First of all, preview features are really that, a <strong>preview</strong>.
+This means that details may change in future Java revisions.
+Or, albeit unlikely,
+such feature may even be dropped altogether,
+should the JDK team arrive at the conclusion that it is fundamentally flawed.</p>
+</div>
+<div class="paragraph">
+<p>Another important factor is the minimum Java language version supported by the JDK compiler.
+As of Java 13, the oldest supported release is 7;
+i.e. using JDK 13, you can produce byte code that can be run with Java versions as old as Java 7.
+In order to keep the Java compiler maintainable, support for older versions is dropped every now and then.
+Right now, there&#8217;s no formal process in place which would describe when support for a specific version is going to be removed
+(defining such policy is the goal of <a href="https://openjdk.java.net/jeps/182">JEP 182</a>).</p>
+</div>
+<div class="paragraph">
+<p>As per JDK developer Joe Darcy, "<a href="https://mail.openjdk.java.net/pipermail/compiler-dev/2020-January/014206.html">there are no plans to remove support for --release 7 in JDK 15</a>".
+Conversely, this means that support for release 7 theoretically <em>could</em> be removed in JDK 16 and support for release 8 <em>could</em> be removed in JDK 17.
+In that case you&#8217;d be caught between a rock and a hard place:
+Once you&#8217;re on a non-LTS ("long-term support") release like JDK 13, you&#8217;ll need to upgrade to JDK 14, 15 etc. as soon as they are out,
+in order to not be cut off from bug fixes and security patches.
+Now while doing so, you&#8217;d be forced to increase the release level of your main code, once support for release 8 gets dropped, which may not desirable.
+Or you&#8217;d have to apply some nice awk/sed magic to replace all those shiny text blocks with traditional concatenated and escaped strings,
+so you can go back to the current LTS release, Java 11.
+Not nice, but surely doable.</p>
+</div>
+<div class="paragraph">
+<p>That being said, this all doesn&#8217;t seem like a likely scenario to me.
+JEP 182 expresses a desire "that source code 10 or more years old should still be able to be compiled";
+hence I think it&#8217;s save to assume that JDK 17 (the next release planned to receive long-term support) will still support release 8,
+which will be seven years old when 17 gets released as planned in September 2021.
+In that case you&#8217;d be on the safe side, receiving update releases and being able to keep your main code Java 8 compatible for quite a few years to come.</p>
+</div>
+<div class="paragraph">
+<p>Needless to say, it&#8217;s a call that you need to make, deciding for yourself wether the benefits of using new language features such as text blocks is worth it in your specific situation or not.</p>
+</div>
+</div>
+</div>
+		</div>
+
+		<div class="post-tags">
+			
+				
+			
+		</div><div id="disqus_thread"></div>
+<script type="text/javascript">
+	(function () {
+		
+		
+		if (window.location.hostname == "localhost")
+			return;
+
+		var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+		var disqus_shortname = 'morlingdev';
+		dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+		(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+	})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by
+		Disqus.</a></noscript>
+<a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2020 Gunnar Morling |  Built with <a href="https://gohugo.io">Hugo</a> and <a href="https://github.com/vividvilla/ezhil">Ezhil theme</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>feather.replace()</script>
+</body>
+</html>
