@@ -19,8 +19,8 @@ echo "Removing existing files"
 rm -rf public/*
 
 echo "Generating site"
-hugo
-# docker run --rm -v $PWD:/src gunnarmorling/hugo-builder bash -c "cd /src && /hugo/hugo"
+hugo -F
+# docker run --rm -v $PWD:/src gunnarmorling/hugo-builder bash -c "cd /src && /hugo/hugo -F"
 
 echo "Updating gh-pages branch"
 cd public && git add --all && git commit -m "Publishing to gh-pages (publish.sh)"
