@@ -1,0 +1,373 @@
+---
+title: "Enforcing Java Record Invariants With Bean Validation"
+date: 2020-01-20T17:30:00+01:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+
+Record types are one of the most awaited features in Java 14;
+https://openjdk.java.net/jeps/359[they promise] to "provide a compact syntax for declaring classes which are transparent holders for shallowly immutable data".
+One example where records should be beneficial are data transfer objects (DTOs),
+as e.g. found in the remoting layer of enterprise applications.
+Typically, certain rules should be applied to the attributes of such DTO,
+e.g. in terms of allowed values.
+The goal of this blog post is to explore how such invariants can be enforced on record types,
+using annotation-based constraints as provided by the https://beanvalidation.org/[Bean Validation API].
+
+== Record Invariants and Bean Validation
+
+Records (a preview feature as of Java 14) help to cut down the ceremony when defining plain data holder objects.
+In a nutshell, you solely need to declare the attributes that should make up the state of the record type
+("components" in terms of JEP 359),
+and quite a few things you'd otherwise have to implement by hand will be created for you automatically:
+
+* a private final field and a corresponding read accessor for each component
+* a constructor for passing in all component values
+* `toString()`, `equals()` and `hashCode()` methods.
+
+As an example, here's a record `Car` with three components:
+
+[source,java,indent=0,linenums=true]
+----
+public record Car(String manufacturer, String licensePlate,
+    int seatCount) {
+}
+----
+
+Now let's assume a few https://en.wikipedia.org/wiki/Class_invariant[class invariants] should be applied to this record
+(inspired by https://docs.jboss.org/hibernate/stable/validator/reference/en-US/html_single/#validator-gettingstarted-createmodel[an example] from the Hibernate Validator reference guide):
+
+* `manufacturer` is a non-blank string
+* `license` plate is never `null` and has a length of 2 to 14 characters
+* `seatCount` is at least 2
+
+Class invariants like these are specific conditions or rules applying to the state of a class
+(as manifesting in its fields),
+which always are guaranteed to be satisfied for the lifetime of an instance of the class.
+
+The Bean Validation API defines a way for expressing and validating constraints using Java annotations.
+By putting constraint annotations to the components of a record type,
+it's a perfect means of describing the invariants from above:
+
+[source,java,indent=0,linenums=true]
+----
+public record Car(
+  @NotBlank String manufacturer,
+  @NotNull @Size(min = 2, max = 14) String licensePlate,
+  @Min(2) int seatCount) {
+}
+----
+
+Of course declaring constraints using annotations by itself won't magically enforce these invariants.
+In order to do so, the `javax.validation.Validator` API must be invoked at suitable points in the object lifecycle,
+so to avoid any of the invariants to be violated.
+As records are immutable, it is sufficient to validate the constraints once when creating a new `Car` instance.
+If no constraints are violated, the created instance is guaranteed to always satisfy its invariants.
+
+== Implementation
+
+The key question now is how to validate the invariants while constructing new `Car` instances.
+This is where Bean Validation's https://jakarta.ee/specifications/bean-validation/2.0/bean-validation_2.0.html#validationapi-validatorapi-methodlevelvalidationmethods[API for method validation] comes in:
+it allows to validate pre- and post-conditions that should be satisfied when a Java method or constructor gets invoked.
+Pre-conditions are expressed by applying constraints to method and constructor parameters,
+whereas post-conditions are expressed by putting constraints to a method or constructor itself.
+
+This can be leveraged for enforcing record invariants:
+as it turns out, any annotations on the components of a record type are also copied to the corresponding parameters of the generated constructor.
+I.e. the `Car` record implicitly has a constructor which looks like this:
+
+[source,java,indent=0,linenums=true]
+----
+public Car(
+    @NotBlank String manufacturer,
+    @NotNull @Size(min = 2, max = 14) String licensePlate,
+    @Min(2) int seatCount) {
+
+  this.manufacturer = manufacturer;
+  this.licensePlate = licensePlate;
+  this.seatCount = seatCount;
+}
+----
+
+That's exactly what we need:
+by validating these parameter constraints upon instantiation of the `Car` class,
+we can make sure that only valid objects can ever be created,
+ensuring that the record type's invariants are always guaranteed.
+
+What's missing is a way for automatically validating them upon constructor invocation.
+The idea for that is to enhance the byte code of the implicit `Car` constructor so that it passes the incoming parameter values to Bean Validation's `ExecutableValidator#validateConstructorParameters()` method and raises a constraint violation exception in case of any invalid parameter values.
+
+We're going to use the excellent https://bytebuddy.net/[ByteBuddy] library for this job.
+Here's a slightly simplified implementation for invoking the executable validator
+(you can find the complete source code of this example in https://github.com/gunnarmorling/records-bean-validation[this GitHub repository]):
+
+[source,java,indent=0,linenums=true]
+----
+public class ValidationInterceptor {
+
+  private static final Validator validator = Validation       <1>
+      .buildDefaultValidatorFactory()
+      .getValidator();
+
+  public static <T> void validate(@Origin Constructor<T> constructor,
+      @AllArguments Object[] args) {                          <2>
+
+    Set<ConstraintViolation<T>> violations = validator        <3>
+        .forExecutables()
+        .validateConstructorParameters(constructor, args);
+
+    if (!violations.isEmpty()) {
+      String message = violations.stream()                    <4>
+          .sorted(ValidationInterceptor::compare)
+          .map(cv -> getParameterName(cv) + " - " + cv.getMessage())
+          .collect(Collectors.joining(System.lineSeparator()));
+
+      throw new ConstraintViolationException(                 <5>
+          "Invalid instantiation of record type " + 
+          constructor.getDeclaringClass().getSimpleName() + 
+          System.lineSeparator() + message, 
+          violations);
+    }
+  }
+
+  private static int compare(ConstraintViolation<?> o1,
+      ConstraintViolation<?> o2) {
+    
+    return Integer.compare(getParameterIndex(o1),
+        getParameterIndex(o2));
+  }
+
+  private static String getParameterName(ConstraintViolation<?> cv) {
+    // traverse property path to extract parameter name
+  }
+
+  private static int getParameterIndex(ConstraintViolation<?> cv) {
+    // traverse property path to extract parameter index
+  }
+}
+----
+<1> Obtain a Bean Validation `Validator` instance
+<2> The `@Origin` and `@AllArguments` annotations are the hint to ByteBuddy that the invoked constructor and parameter values should be passed to this method from within the enhanced constructor
+<3> Validate the passed constructor arguments using Bean Validation
+<4> If there's at least one violated constraint, create a message comprising all constraint violation messages, ordered by parameter index
+<5> Raise a `ConstraintViolationException`, containing the message created before as well as all the constraint violations
+
+Having implemented the validation interceptor,
+the code of the record constructor must be enhanced by ByteBuddy,
+so that it invokes the inceptor.
+ByteBuddy provides different ways for doing so, e.g. at application start-up using a Java agent.
+For this example, we're going to employ build-time enhancement via the https://github.com/raphw/byte-buddy/tree/master/byte-buddy-maven-plugin[ByteBuddy Maven plug-in].
+The enhancement logic itself is implemented in a custom `net.bytebuddy.build.Plugin`:
+
+[source,java,indent=0,linenums=true]
+----
+public class ValidationWeavingPlugin implements Plugin {
+
+  @Override
+  public boolean matches(TypeDescription target) {            <1>
+    return target.getDeclaredMethods()
+        .stream()
+        .filter(m -> m.isConstructor() && hasConstrainedParameter(m))
+        .findFirst()
+        .isPresent();
+  }
+
+  @Override
+  public Builder<?> apply(Builder<?> builder,
+      TypeDescription typeDescription,
+      ClassFileLocator classFileLocator) {
+      
+    return builder.constructor(this::hasConstrainedParameter) <2>
+        .intercept(SuperMethodCall.INSTANCE.andThen(
+            MethodDelegation.to(ValidationInterceptor.class)));
+  }
+
+  private boolean hasConstrainedParameter(MethodDescription method) {
+    return method.getParameters()                             <3>
+        .asDefined()
+        .stream()
+        .filter(p -> isConstrained(p))
+        .findFirst()
+        .isPresent();
+  }
+
+  private boolean isConstrained(
+      ParameterDescription.InDefinedShape parameter) {        <4>
+
+    return !parameter.getDeclaredAnnotations()
+        .asTypeList()
+        .filter(hasAnnotation(annotationType(Constraint.class)))
+        .isEmpty();
+  }
+
+  @Override
+  public void close() throws IOException {
+  }
+}
+----
+<1> Determines whether a type should be enhanced or not; this is the case if there's at least one constructor that has one more more constrained parameters
+<2> Applies the actual enhancement: into each constrained constructor the call to `ValidationInterceptor` gets injected
+<3> Determines whether a method or constructor has at least one constrained parameter
+<4> Determines whether a parameter has at least one constraint annotation (an annotation meta-annotated with `@Constraint`; for the sake of simplicity the case of constraint inheritance is ignored here)
+
+The next step is to configure the ByteBuddy Maven plug-in in the _pom.xml_ of the project:
+
+[source,xml,indent=0,linenums=true]
+----
+<plugin>
+  <groupId>net.bytebuddy</groupId>
+  <artifactId>byte-buddy-maven-plugin</artifactId>
+  <version>${version.bytebuddy}</version>
+  <executions>
+    <execution>
+      <goals>
+        <goal>transform</goal>
+      </goals>
+    </execution>
+  </executions>
+  <configuration>
+    <transformations>
+      <transformation>
+        <plugin>
+          dev.morling.demos.recordvalidation.implementation.ValidationWeavingPlugin
+        </plugin>
+      </transformation>
+    </transformations>
+  </configuration>
+</plugin>
+----
+
+This plug-in runs in the `process-classes` phase by default, so it can access and enhance the class files generated during compilation.
+If you were to build the project now, you could use the _javap_ tool to examine the byte code of the `Car` class,and you'd see that the implicit constructor of that class contains an invocation of the `ValidationInterceptor#validate()` method.
+
+As an example, let's consider the following attempt to instantiate a `Car` object,
+which violates the invariants of that record type:
+
+[source,java,indent=0,linenums=true]
+----
+Car invalid = new Car("", "HH-AB-123", 1);
+----
+
+A constraint violation like this will be thrown immediately:
+
+[source,shell,indent=0,linenums=true]
+----
+javax.validation.ConstraintViolationException:
+Invalid instantiation of record type Car
+manufacturer - must not be blank
+seatCount - must be greater than or equal to 2
+	at dev.morling.demos.recordvalidation.RecordValidationTest.canValidate(RecordValidationTest.java:20)
+----
+
+If all constraints are satisfied, no exception will be thrown and the caller obtains the new `Car` instance,
+whose invariants are guaranteed to be met for the remainder of the object's lifetime.
+
+== Advantages
+
+Having shown how Bean Validation can be leveraged to enforce the invariants of Java record types,
+it is time to reflect:
+is this this approach worth the additional complexity incurred by adding a library such as Bean Validation and hooking it up using byte code enhancement?
+After all, you could also validate incoming parameter values using methods such as `Objects#requireNonNull()`.
+
+As so often, you need to make such decision based on your specific requirements and needs.
+Here are some advantages I can see about the Bean Validation approach:
+
+* *Invariants become part of the API:* Constraint annotations on public API members such as the implicit record constructor are easily discoverable by users of such type; they are listed in generated JavaDoc,
+you can see them when hovering over an invocation in your IDE (once records are supported);
+when used on the DTOs of a REST layer,
+the invariants could also be added to automatically generated API documentation.
+All this makes it easy for users of the type to understand the invariants and also avoids potential inconsistencies between a manual validation implementation and corresponding hand-written documentation
+* *Providing constraint metadata:* The Bean Validation constraint meta-data API can be used to obtain information about the constraints of Java types; for instance this can be used to implement client-side validation of constraints in a web application
+* *Less code:* Putting constraint annotations directly to the record components themselves avoids the need for implementing these checks manually in an explicit canonical constructor
+* *I18N support:* Bean Validation provides means of internationalizing constraint violation messages; if your record types are instantiated based on user input (e.g. when using them as data types in a REST API), this allows for localized error messages in the UI
+* *Returning all constraints at once:* For UIs it's typically beneficial to return all the constraint violations at once instead of showing them one by one; while doable in a hand-written implementation, it requires a bit of effort, whereas you get this "for free" when using Bean Validation which always returns a set of all the violations
+* *Lots of ready-made constraints:* Bean Validation comes with a range of constraints out of the box;
+in addition libraries such as Hibernate Validator and others provide many more ready-to-use constraints,
+coming in handy for instance when implementing domain-specific value types with complex validation rules:
++
+[source,java,indent=0,linenums=true]
+----
+public record EmailAddress(
+    @Email @NotNull @Size(min=1, max=250) String value) {
+}
+----
+* *Support for validation groups:* Bean Validation's concept of validation groups allows you to validate only sub-sets of constraints in specific contexts; e.g. based on location and applying legal requirements
+* *Dynamic constraint definition:* Using Hibernate Validator, constraints can also be https://docs.jboss.org/hibernate/stable/validator/reference/en-US/html_single/#section-programmatic-api[declared dynamically] using a fluent API. This can be very useful when your validation requirements vary at runtime,
+e.g. if you need to apply different constraint configurations for different tenants.
+
+== Limitations
+
+One area where this current proof-of-concept implementation falls a bit short is the validation of invariants that apply to multiple components.
+For instance consider a record type representing an interval with a `begin` and an `end` attribute,
+where you'd like to enforce the invariant that `end` is larger than `begin`.
+
+Bean Validation addresses this sort of requirement via class-level constraints and,
+for method and constructor validation,
+cross-parameter constraints.
+Class-level constraints are not really suitable for our purposes,
+because we want to validate the invariants _before_ an object instance is created.
+
+Cross-parameter constraints on the other hand are exactly what we'd need.
+As they must be given on a constructor or method,
+the canonical constructor of a record must be explicitly declared in this case.
+Using Hibernate Validator's `@ParameterScriptAssert` constraint, the invariant from above could be expressed like so:
+
+[source,java,indent=0,linenums=true]
+----
+public record Interval(int begin, int end) {
+
+  @ParameterScriptAssert(lang="javascript", script="end > begin")
+  public Interval {
+  }
+}
+----
+
+This works as expected, but there's one caveat:
+any annotations from the record components are not propagated to the corresponding parameters of the canoncial constructor in this case.
+This means that any constraints given on the individual components would be lost.
+Right now it's not https://mail.openjdk.java.net/pipermail/amber-dev/2020-January/005485.html[quite clear] to me whether that's an intended behavior or rather a bug in the current record implementation.
+
+If indeed it _is_ intentional, than there'd be no way other than specifying the constraints explicitly on the parameters of a fully manually implemented constructor:
+
+[source,java,indent=0,linenums=true]
+----
+public record Interval(int begin, int end) {
+
+  @ParameterScriptAssert(lang="javascript", script="end > begin")
+  public Interval(@Positive int begin, @Positive int end) {
+    this.begin = begin;
+    this.end = end;
+  }
+}
+----
+
+This works, but of course we're losing a bit of the conciseness promised by records.
+
+== Wrap-Up
+
+In this blog post we've explored how invariants on Java 14 record types can be enforced using the Bean Validation API.
+With just a bit of byte code magic the task gets manageable:
+by validating invariants expressed by constraint annotations on record components right at instantiation time,
+only valid record instances will ever be exposed to callers.
+Key for that is the fact that any annotations from record components are automatically propagated to the corresponding parameters of the canonical record constructor.
+That way they can be validated using Bean Validation's method validation API.
+It remains to be seen, whether invariants based on multiple record components also can be enforced as easily.
+
+From the perspective of the Bean Validation specification,
+it'll surely make sense to explore support for record types.
+While not as powerful as enforcing invariants at construction time via byte code enhancement,
+it might also be useful to support the validation of component values via their read accessors.
+For that, the notion of "properties" would have to be relaxed,
+as the read accessors of records don't have the JavaBeans `get` prefix currently expected by Bean Validation.
+It also should be considered to expand the Bean Validation metadata API accordingly.
+
+I would also be very happy to learn about your thoughts around this topic.
+While Bean Validation 3.0
+(as part of https://eclipse-ee4j.github.io/jakartaee-platform/jakartaee9/JakartaEE9ReleasePlan[Jakarta EE 9])
+in all likelyhood won't bring any changes besides the transition to the `jakarta.*` package namespace,
+this may be an area where we could evolve the specification for Jakarta EE 10.
+
+If you'd like to experiment with the validation of record types yourself,
+you can find the complete source code on https://github.com/gunnarmorling/records-bean-validation[GitHub].
