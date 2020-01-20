@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Enforcing Java Record Invariants With Bean Validation - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Enforcing Java Record Invariants With Bean Validation" />
+<meta property="og:description" content="Record types are one of the most awaited features in Java 14; they promise to &#34;provide a compact syntax for declaring classes which are transparent holders for shallowly immutable data&#34;. One example where records should be beneficial are data transfer objects (DTOs), as e.g. found in the remoting layer of enterprise applications. Typically, certain rules should be applied to the attributes of such DTO, e.g. in terms of allowed values. The goal of this blog post is to explore how such invariants can be enforced on record types, using annotation-based constraints as provided by the Bean Validation API." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/enforcing-java-record-invariants-with-bean-validation/" />
+<meta property="article:published_time" content="2020-01-20T17:30:00+01:00" />
+<meta property="article:modified_time" content="2020-01-20T17:30:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Enforcing Java Record Invariants With Bean Validation"/>
+<meta name="twitter:description" content="Record types are one of the most awaited features in Java 14; they promise to &#34;provide a compact syntax for declaring classes which are transparent holders for shallowly immutable data&#34;. One example where records should be beneficial are data transfer objects (DTOs), as e.g. found in the remoting layer of enterprise applications. Typically, certain rules should be applied to the attributes of such DTO, e.g. in terms of allowed values. The goal of this blog post is to explore how such invariants can be enforced on record types, using annotation-based constraints as provided by the Bean Validation API."/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet">
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+		<div class="post-header">
+			<h1 class="title">Enforcing Java Record Invariants With Bean Validation</h1>
+			<div class="meta">Posted at Jan 20, 2020</div>
+		</div>
+
+		<div class="markdown">
+			<div class="paragraph">
+<p>Record types are one of the most awaited features in Java 14;
+<a href="https://openjdk.java.net/jeps/359">they promise</a> to "provide a compact syntax for declaring classes which are transparent holders for shallowly immutable data".
+One example where records should be beneficial are data transfer objects (DTOs),
+as e.g. found in the remoting layer of enterprise applications.
+Typically, certain rules should be applied to the attributes of such DTO,
+e.g. in terms of allowed values.
+The goal of this blog post is to explore how such invariants can be enforced on record types,
+using annotation-based constraints as provided by the <a href="https://beanvalidation.org/">Bean Validation API</a>.</p>
+</div>
+<div class="sect1">
+<h2 id="_record_invariants_and_bean_validation">Record Invariants and Bean Validation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Records (a preview feature as of Java 14) help to cut down the ceremony when defining plain data holder objects.
+In a nutshell, you solely need to declare the attributes that should make up the state of the record type
+("components" in terms of JEP 359),
+and quite a few things you&#8217;d otherwise have to implement by hand will be created for you automatically:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>a private final field and a corresponding read accessor for each component</p>
+</li>
+<li>
+<p>a constructor for passing in all component values</p>
+</li>
+<li>
+<p><code>toString()</code>, <code>equals()</code> and <code>hashCode()</code> methods.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>As an example, here&#8217;s a record <code>Car</code> with three components:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="n">record</span> <span class="nf">Car</span><span class="o">(</span><span class="nc">String</span> <span class="n">manufacturer</span><span class="o">,</span> <span class="nc">String</span> <span class="n">licensePlate</span><span class="o">,</span>
+    <span class="kt">int</span> <span class="n">seatCount</span><span class="o">)</span> <span class="o">{</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now let&#8217;s assume a few <a href="https://en.wikipedia.org/wiki/Class_invariant">class invariants</a> should be applied to this record
+(inspired by <a href="https://docs.jboss.org/hibernate/stable/validator/reference/en-US/html_single/#validator-gettingstarted-createmodel">an example</a> from the Hibernate Validator reference guide):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>manufacturer</code> is a non-blank string</p>
+</li>
+<li>
+<p><code>license</code> plate is never <code>null</code> and has a length of 2 to 14 characters</p>
+</li>
+<li>
+<p><code>seatCount</code> is at least 2</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Class invariants like these are specific conditions or rules applying to the state of a class
+(as manifesting in its fields),
+which always are guaranteed to be satisfied for the lifetime of an instance of the class.</p>
+</div>
+<div class="paragraph">
+<p>The Bean Validation API defines a way for expressing and validating constraints using Java annotations.
+By putting constraint annotations to the components of a record type,
+it&#8217;s a perfect means of describing the invariants from above:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="n">record</span> <span class="nf">Car</span><span class="o">(</span>
+  <span class="nd">@NotBlank</span> <span class="nc">String</span> <span class="n">manufacturer</span><span class="o">,</span>
+  <span class="nd">@NotNull</span> <span class="nd">@Size</span><span class="o">(</span><span class="n">min</span> <span class="o">=</span> <span class="mi">2</span><span class="o">,</span> <span class="n">max</span> <span class="o">=</span> <span class="mi">14</span><span class="o">)</span> <span class="nc">String</span> <span class="n">licensePlate</span><span class="o">,</span>
+  <span class="nd">@Min</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span> <span class="kt">int</span> <span class="n">seatCount</span><span class="o">)</span> <span class="o">{</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Of course declaring constraints using annotations by itself won&#8217;t magically enforce these invariants.
+In order to do so, the <code>javax.validation.Validator</code> API must be invoked at suitable points in the object lifecycle,
+so to avoid any of the invariants to be violated.
+As records are immutable, it is sufficient to validate the constraints once when creating a new <code>Car</code> instance.
+If no constraints are violated, the created instance is guaranteed to always satisfy its invariants.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_implementation">Implementation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The key question now is how to validate the invariants while constructing new <code>Car</code> instances.
+This is where Bean Validation&#8217;s <a href="https://jakarta.ee/specifications/bean-validation/2.0/bean-validation_2.0.html#validationapi-validatorapi-methodlevelvalidationmethods">API for method validation</a> comes in:
+it allows to validate pre- and post-conditions that should be satisfied when a Java method or constructor gets invoked.
+Pre-conditions are expressed by applying constraints to method and constructor parameters,
+whereas post-conditions are expressed by putting constraints to a method or constructor itself.</p>
+</div>
+<div class="paragraph">
+<p>This can be leveraged for enforcing record invariants:
+as it turns out, any annotations on the components of a record type are also copied to the corresponding parameters of the generated constructor.
+I.e. the <code>Car</code> record implicitly has a constructor which looks like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="nf">Car</span><span class="o">(</span>
+    <span class="nd">@NotBlank</span> <span class="nc">String</span> <span class="n">manufacturer</span><span class="o">,</span>
+    <span class="nd">@NotNull</span> <span class="nd">@Size</span><span class="o">(</span><span class="n">min</span> <span class="o">=</span> <span class="mi">2</span><span class="o">,</span> <span class="n">max</span> <span class="o">=</span> <span class="mi">14</span><span class="o">)</span> <span class="nc">String</span> <span class="n">licensePlate</span><span class="o">,</span>
+    <span class="nd">@Min</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span> <span class="kt">int</span> <span class="n">seatCount</span><span class="o">)</span> <span class="o">{</span>
+
+  <span class="k">this</span><span class="o">.</span><span class="na">manufacturer</span> <span class="o">=</span> <span class="n">manufacturer</span><span class="o">;</span>
+  <span class="k">this</span><span class="o">.</span><span class="na">licensePlate</span> <span class="o">=</span> <span class="n">licensePlate</span><span class="o">;</span>
+  <span class="k">this</span><span class="o">.</span><span class="na">seatCount</span> <span class="o">=</span> <span class="n">seatCount</span><span class="o">;</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>That&#8217;s exactly what we need:
+by validating these parameter constraints upon instantiation of the <code>Car</code> class,
+we can make sure that only valid objects can ever be created,
+ensuring that the record type&#8217;s invariants are always guaranteed.</p>
+</div>
+<div class="paragraph">
+<p>What&#8217;s missing is a way for automatically validating them upon constructor invocation.
+The idea for that is to enhance the byte code of the implicit <code>Car</code> constructor so that it passes the incoming parameter values to Bean Validation&#8217;s <code>ExecutableValidator#validateConstructorParameters()</code> method and raises a constraint violation exception in case of any invalid parameter values.</p>
+</div>
+<div class="paragraph">
+<p>We&#8217;re going to use the excellent <a href="https://bytebuddy.net/">ByteBuddy</a> library for this job.
+Here&#8217;s a slightly simplified implementation for invoking the executable validator
+(you can find the complete source code of this example in <a href="https://github.com/gunnarmorling/records-bean-validation">this GitHub repository</a>):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ValidationInterceptor</span> <span class="o">{</span>
+
+  <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">Validator</span> <span class="n">validator</span> <span class="o">=</span> <span class="nc">Validation</span>       <i class="conum" data-value="1"></i><b>(1)</b>
+      <span class="o">.</span><span class="na">buildDefaultValidatorFactory</span><span class="o">()</span>
+      <span class="o">.</span><span class="na">getValidator</span><span class="o">();</span>
+
+  <span class="kd">public</span> <span class="kd">static</span> <span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="kt">void</span> <span class="nf">validate</span><span class="o">(</span><span class="nd">@Origin</span> <span class="nc">Constructor</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">constructor</span><span class="o">,</span>
+      <span class="nd">@AllArguments</span> <span class="nc">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>                          <i class="conum" data-value="2"></i><b>(2)</b>
+
+    <span class="nc">Set</span><span class="o">&lt;</span><span class="nc">ConstraintViolation</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;&gt;</span> <span class="n">violations</span> <span class="o">=</span> <span class="n">validator</span>        <i class="conum" data-value="3"></i><b>(3)</b>
+        <span class="o">.</span><span class="na">forExecutables</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">validateConstructorParameters</span><span class="o">(</span><span class="n">constructor</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
+
+    <span class="k">if</span> <span class="o">(!</span><span class="n">violations</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+      <span class="nc">String</span> <span class="n">message</span> <span class="o">=</span> <span class="n">violations</span><span class="o">.</span><span class="na">stream</span><span class="o">()</span>                    <i class="conum" data-value="4"></i><b>(4)</b>
+          <span class="o">.</span><span class="na">sorted</span><span class="o">(</span><span class="nl">ValidationInterceptor:</span><span class="o">:</span><span class="n">compare</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">map</span><span class="o">(</span><span class="n">cv</span> <span class="o">-&gt;</span> <span class="n">getParameterName</span><span class="o">(</span><span class="n">cv</span><span class="o">)</span> <span class="o">+</span> <span class="s">" - "</span> <span class="o">+</span> <span class="n">cv</span><span class="o">.</span><span class="na">getMessage</span><span class="o">())</span>
+          <span class="o">.</span><span class="na">collect</span><span class="o">(</span><span class="nc">Collectors</span><span class="o">.</span><span class="na">joining</span><span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">lineSeparator</span><span class="o">()));</span>
+
+      <span class="k">throw</span> <span class="k">new</span> <span class="nf">ConstraintViolationException</span><span class="o">(</span>                 <i class="conum" data-value="5"></i><b>(5)</b>
+          <span class="s">"Invalid instantiation of record type "</span> <span class="o">+</span>
+          <span class="n">constructor</span><span class="o">.</span><span class="na">getDeclaringClass</span><span class="o">().</span><span class="na">getSimpleName</span><span class="o">()</span> <span class="o">+</span>
+          <span class="nc">System</span><span class="o">.</span><span class="na">lineSeparator</span><span class="o">()</span> <span class="o">+</span> <span class="n">message</span><span class="o">,</span>
+          <span class="n">violations</span><span class="o">);</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+
+  <span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">compare</span><span class="o">(</span><span class="nc">ConstraintViolation</span><span class="o">&lt;?&gt;</span> <span class="n">o1</span><span class="o">,</span>
+      <span class="nc">ConstraintViolation</span><span class="o">&lt;?&gt;</span> <span class="n">o2</span><span class="o">)</span> <span class="o">{</span>
+
+    <span class="k">return</span> <span class="nc">Integer</span><span class="o">.</span><span class="na">compare</span><span class="o">(</span><span class="n">getParameterIndex</span><span class="o">(</span><span class="n">o1</span><span class="o">),</span>
+        <span class="n">getParameterIndex</span><span class="o">(</span><span class="n">o2</span><span class="o">));</span>
+  <span class="o">}</span>
+
+  <span class="kd">private</span> <span class="kd">static</span> <span class="nc">String</span> <span class="nf">getParameterName</span><span class="o">(</span><span class="nc">ConstraintViolation</span><span class="o">&lt;?&gt;</span> <span class="n">cv</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// traverse property path to extract parameter name</span>
+  <span class="o">}</span>
+
+  <span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">getParameterIndex</span><span class="o">(</span><span class="nc">ConstraintViolation</span><span class="o">&lt;?&gt;</span> <span class="n">cv</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// traverse property path to extract parameter index</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Obtain a Bean Validation <code>Validator</code> instance</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The <code>@Origin</code> and <code>@AllArguments</code> annotations are the hint to ByteBuddy that the invoked constructor and parameter values should be passed to this method from within the enhanced constructor</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Validate the passed constructor arguments using Bean Validation</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>If there&#8217;s at least one violated constraint, create a message comprising all constraint violation messages, ordered by parameter index</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Raise a <code>ConstraintViolationException</code>, containing the message created before as well as all the constraint violations</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Having implemented the validation interceptor,
+the code of the record constructor must be enhanced by ByteBuddy,
+so that it invokes the inceptor.
+ByteBuddy provides different ways for doing so, e.g. at application start-up using a Java agent.
+For this example, we&#8217;re going to employ build-time enhancement via the <a href="https://github.com/raphw/byte-buddy/tree/master/byte-buddy-maven-plugin">ByteBuddy Maven plug-in</a>.
+The enhancement logic itself is implemented in a custom <code>net.bytebuddy.build.Plugin</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ValidationWeavingPlugin</span> <span class="kd">implements</span> <span class="nc">Plugin</span> <span class="o">{</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">matches</span><span class="o">(</span><span class="nc">TypeDescription</span> <span class="n">target</span><span class="o">)</span> <span class="o">{</span>            <i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="k">return</span> <span class="n">target</span><span class="o">.</span><span class="na">getDeclaredMethods</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">stream</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">filter</span><span class="o">(</span><span class="n">m</span> <span class="o">-&gt;</span> <span class="n">m</span><span class="o">.</span><span class="na">isConstructor</span><span class="o">()</span> <span class="o">&amp;&amp;</span> <span class="n">hasConstrainedParameter</span><span class="o">(</span><span class="n">m</span><span class="o">))</span>
+        <span class="o">.</span><span class="na">findFirst</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">isPresent</span><span class="o">();</span>
+  <span class="o">}</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="nc">Builder</span><span class="o">&lt;?&gt;</span> <span class="n">apply</span><span class="o">(</span><span class="nc">Builder</span><span class="o">&lt;?&gt;</span> <span class="n">builder</span><span class="o">,</span>
+      <span class="nc">TypeDescription</span> <span class="n">typeDescription</span><span class="o">,</span>
+      <span class="nc">ClassFileLocator</span> <span class="n">classFileLocator</span><span class="o">)</span> <span class="o">{</span>
+
+    <span class="k">return</span> <span class="n">builder</span><span class="o">.</span><span class="na">constructor</span><span class="o">(</span><span class="k">this</span><span class="o">::</span><span class="n">hasConstrainedParameter</span><span class="o">)</span> <i class="conum" data-value="2"></i><b>(2)</b>
+        <span class="o">.</span><span class="na">intercept</span><span class="o">(</span><span class="nc">SuperMethodCall</span><span class="o">.</span><span class="na">INSTANCE</span><span class="o">.</span><span class="na">andThen</span><span class="o">(</span>
+            <span class="nc">MethodDelegation</span><span class="o">.</span><span class="na">to</span><span class="o">(</span><span class="nc">ValidationInterceptor</span><span class="o">.</span><span class="na">class</span><span class="o">)));</span>
+  <span class="o">}</span>
+
+  <span class="kd">private</span> <span class="kt">boolean</span> <span class="nf">hasConstrainedParameter</span><span class="o">(</span><span class="nc">MethodDescription</span> <span class="n">method</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="n">method</span><span class="o">.</span><span class="na">getParameters</span><span class="o">()</span>                             <i class="conum" data-value="3"></i><b>(3)</b>
+        <span class="o">.</span><span class="na">asDefined</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">stream</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">filter</span><span class="o">(</span><span class="n">p</span> <span class="o">-&gt;</span> <span class="n">isConstrained</span><span class="o">(</span><span class="n">p</span><span class="o">))</span>
+        <span class="o">.</span><span class="na">findFirst</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">isPresent</span><span class="o">();</span>
+  <span class="o">}</span>
+
+  <span class="kd">private</span> <span class="kt">boolean</span> <span class="nf">isConstrained</span><span class="o">(</span>
+      <span class="nc">ParameterDescription</span><span class="o">.</span><span class="na">InDefinedShape</span> <span class="n">parameter</span><span class="o">)</span> <span class="o">{</span>        <i class="conum" data-value="4"></i><b>(4)</b>
+
+    <span class="k">return</span> <span class="o">!</span><span class="n">parameter</span><span class="o">.</span><span class="na">getDeclaredAnnotations</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">asTypeList</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">filter</span><span class="o">(</span><span class="n">hasAnnotation</span><span class="o">(</span><span class="n">annotationType</span><span class="o">(</span><span class="nc">Constraint</span><span class="o">.</span><span class="na">class</span><span class="o">)))</span>
+        <span class="o">.</span><span class="na">isEmpty</span><span class="o">();</span>
+  <span class="o">}</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">close</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Determines whether a type should be enhanced or not; this is the case if there&#8217;s at least one constructor that has one more more constrained parameters</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Applies the actual enhancement: into each constrained constructor the call to <code>ValidationInterceptor</code> gets injected</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Determines whether a method or constructor has at least one constrained parameter</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Determines whether a parameter has at least one constraint annotation (an annotation meta-annotated with <code>@Constraint</code>; for the sake of simplicity the case of constraint inheritance is ignored here)</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The next step is to configure the ByteBuddy Maven plug-in in the <em>pom.xml</em> of the project:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+</pre></td><td class="code"><pre><span class="nt">&lt;plugin&gt;</span>
+  <span class="nt">&lt;groupId&gt;</span>net.bytebuddy<span class="nt">&lt;/groupId&gt;</span>
+  <span class="nt">&lt;artifactId&gt;</span>byte-buddy-maven-plugin<span class="nt">&lt;/artifactId&gt;</span>
+  <span class="nt">&lt;version&gt;</span>${version.bytebuddy}<span class="nt">&lt;/version&gt;</span>
+  <span class="nt">&lt;executions&gt;</span>
+    <span class="nt">&lt;execution&gt;</span>
+      <span class="nt">&lt;goals&gt;</span>
+        <span class="nt">&lt;goal&gt;</span>transform<span class="nt">&lt;/goal&gt;</span>
+      <span class="nt">&lt;/goals&gt;</span>
+    <span class="nt">&lt;/execution&gt;</span>
+  <span class="nt">&lt;/executions&gt;</span>
+  <span class="nt">&lt;configuration&gt;</span>
+    <span class="nt">&lt;transformations&gt;</span>
+      <span class="nt">&lt;transformation&gt;</span>
+        <span class="nt">&lt;plugin&gt;</span>
+          dev.morling.demos.recordvalidation.implementation.ValidationWeavingPlugin
+        <span class="nt">&lt;/plugin&gt;</span>
+      <span class="nt">&lt;/transformation&gt;</span>
+    <span class="nt">&lt;/transformations&gt;</span>
+  <span class="nt">&lt;/configuration&gt;</span>
+<span class="nt">&lt;/plugin&gt;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This plug-in runs in the <code>process-classes</code> phase by default, so it can access and enhance the class files generated during compilation.
+If you were to build the project now, you could use the <em>javap</em> tool to examine the byte code of the <code>Car</code> class,and you&#8217;d see that the implicit constructor of that class contains an invocation of the <code>ValidationInterceptor#validate()</code> method.</p>
+</div>
+<div class="paragraph">
+<p>As an example, let&#8217;s consider the following attempt to instantiate a <code>Car</code> object,
+which violates the invariants of that record type:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nc">Car</span> <span class="n">invalid</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Car</span><span class="o">(</span><span class="s">""</span><span class="o">,</span> <span class="s">"HH-AB-123"</span><span class="o">,</span> <span class="mi">1</span><span class="o">);</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A constraint violation like this will be thrown immediately:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>javax.validation.ConstraintViolationException:
+Invalid instantiation of record <span class="nb">type </span>Car
+manufacturer - must not be blank
+seatCount - must be greater than or equal to 2
+	at dev.morling.demos.recordvalidation.RecordValidationTest.canValidate<span class="o">(</span>RecordValidationTest.java:20<span class="o">)</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If all constraints are satisfied, no exception will be thrown and the caller obtains the new <code>Car</code> instance,
+whose invariants are guaranteed to be met for the remainder of the object&#8217;s lifetime.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_advantages">Advantages</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Having shown how Bean Validation can be leveraged to enforce the invariants of Java record types,
+it is time to reflect:
+is this this approach worth the additional complexity incurred by adding a library such as Bean Validation and hooking it up using byte code enhancement?
+After all, you could also validate incoming parameter values using methods such as <code>Objects#requireNonNull()</code>.</p>
+</div>
+<div class="paragraph">
+<p>As so often, you need to make such decision based on your specific requirements and needs.
+Here are some advantages I can see about the Bean Validation approach:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Invariants become part of the API:</strong> Constraint annotations on public API members such as the implicit record constructor are easily discoverable by users of such type; they are listed in generated JavaDoc,
+you can see them when hovering over an invocation in your IDE (once records are supported);
+when used on the DTOs of a REST layer,
+the invariants could also be added to automatically generated API documentation.
+All this makes it easy for users of the type to understand the invariants and also avoids potential inconsistencies between a manual validation implementation and corresponding hand-written documentation</p>
+</li>
+<li>
+<p><strong>Providing constraint metadata:</strong> The Bean Validation constraint meta-data API can be used to obtain information about the constraints of Java types; for instance this can be used to implement client-side validation of constraints in a web application</p>
+</li>
+<li>
+<p><strong>Less code:</strong> Putting constraint annotations directly to the record components themselves avoids the need for implementing these checks manually in an explicit canonical constructor</p>
+</li>
+<li>
+<p><strong>I18N support:</strong> Bean Validation provides means of internationalizing constraint violation messages; if your record types are instantiated based on user input (e.g. when using them as data types in a REST API), this allows for localized error messages in the UI</p>
+</li>
+<li>
+<p><strong>Returning all constraints at once:</strong> For UIs it&#8217;s typically beneficial to return all the constraint violations at once instead of showing them one by one; while doable in a hand-written implementation, it requires a bit of effort, whereas you get this "for free" when using Bean Validation which always returns a set of all the violations</p>
+</li>
+<li>
+<p><strong>Lots of ready-made constraints:</strong> Bean Validation comes with a range of constraints out of the box;
+in addition libraries such as Hibernate Validator and others provide many more ready-to-use constraints,
+coming in handy for instance when implementing domain-specific value types with complex validation rules:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="n">record</span> <span class="nf">EmailAddress</span><span class="o">(</span>
+    <span class="nd">@Email</span> <span class="nd">@NotNull</span> <span class="nd">@Size</span><span class="o">(</span><span class="n">min</span><span class="o">=</span><span class="mi">1</span><span class="o">,</span> <span class="n">max</span><span class="o">=</span><span class="mi">250</span><span class="o">)</span> <span class="nc">String</span> <span class="n">value</span><span class="o">)</span> <span class="o">{</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Support for validation groups:</strong> Bean Validation&#8217;s concept of validation groups allows you to validate only sub-sets of constraints in specific contexts; e.g. based on location and applying legal requirements</p>
+</li>
+<li>
+<p><strong>Dynamic constraint definition:</strong> Using Hibernate Validator, constraints can also be <a href="https://docs.jboss.org/hibernate/stable/validator/reference/en-US/html_single/#section-programmatic-api">declared dynamically</a> using a fluent API. This can be very useful when your validation requirements vary at runtime,
+e.g. if you need to apply different constraint configurations for different tenants.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_limitations">Limitations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>One area where this current proof-of-concept implementation falls a bit short is the validation of invariants that apply to multiple components.
+For instance consider a record type representing an interval with a <code>begin</code> and an <code>end</code> attribute,
+where you&#8217;d like to enforce the invariant that <code>end</code> is larger than <code>begin</code>.</p>
+</div>
+<div class="paragraph">
+<p>Bean Validation addresses this sort of requirement via class-level constraints and,
+for method and constructor validation,
+cross-parameter constraints.
+Class-level constraints are not really suitable for our purposes,
+because we want to validate the invariants <em>before</em> an object instance is created.</p>
+</div>
+<div class="paragraph">
+<p>Cross-parameter constraints on the other hand are exactly what we&#8217;d need.
+As they must be given on a constructor or method,
+the canonical constructor of a record must be explicitly declared in this case.
+Using Hibernate Validator&#8217;s <code>@ParameterScriptAssert</code> constraint, the invariant from above could be expressed like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="n">record</span> <span class="nf">Interval</span><span class="o">(</span><span class="kt">int</span> <span class="n">begin</span><span class="o">,</span> <span class="kt">int</span> <span class="n">end</span><span class="o">)</span> <span class="o">{</span>
+
+  <span class="nd">@ParameterScriptAssert</span><span class="o">(</span><span class="n">lang</span><span class="o">=</span><span class="s">"javascript"</span><span class="o">,</span> <span class="n">script</span><span class="o">=</span><span class="s">"end &gt; begin"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">Interval</span> <span class="o">{</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This works as expected, but there&#8217;s one caveat:
+any annotations from the record components are not propagated to the corresponding parameters of the canoncial constructor in this case.
+This means that any constraints given on the individual components would be lost.
+Right now it&#8217;s not <a href="https://mail.openjdk.java.net/pipermail/amber-dev/2020-January/005485.html">quite clear</a> to me whether that&#8217;s an intended behavior or rather a bug in the current record implementation.</p>
+</div>
+<div class="paragraph">
+<p>If indeed it <em>is</em> intentional, than there&#8217;d be no way other than specifying the constraints explicitly on the parameters of a fully manually implemented constructor:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="n">record</span> <span class="nf">Interval</span><span class="o">(</span><span class="kt">int</span> <span class="n">begin</span><span class="o">,</span> <span class="kt">int</span> <span class="n">end</span><span class="o">)</span> <span class="o">{</span>
+
+  <span class="nd">@ParameterScriptAssert</span><span class="o">(</span><span class="n">lang</span><span class="o">=</span><span class="s">"javascript"</span><span class="o">,</span> <span class="n">script</span><span class="o">=</span><span class="s">"end &gt; begin"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nf">Interval</span><span class="o">(</span><span class="nd">@Positive</span> <span class="kt">int</span> <span class="n">begin</span><span class="o">,</span> <span class="nd">@Positive</span> <span class="kt">int</span> <span class="n">end</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">begin</span> <span class="o">=</span> <span class="n">begin</span><span class="o">;</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">end</span> <span class="o">=</span> <span class="n">end</span><span class="o">;</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This works, but of course we&#8217;re losing a bit of the conciseness promised by records.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_wrap_up">Wrap-Up</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this blog post we&#8217;ve explored how invariants on Java 14 record types can be enforced using the Bean Validation API.
+With just a bit of byte code magic the task gets manageable:
+by validating invariants expressed by constraint annotations on record components right at instantiation time,
+only valid record instances will ever be exposed to callers.
+Key for that is the fact that any annotations from record components are automatically propagated to the corresponding parameters of the canonical record constructor.
+That way they can be validated using Bean Validation&#8217;s method validation API.
+It remains to be seen, whether invariants based on multiple record components also can be enforced as easily.</p>
+</div>
+<div class="paragraph">
+<p>From the perspective of the Bean Validation specification,
+it&#8217;ll surely make sense to explore support for record types.
+While not as powerful as enforcing invariants at construction time via byte code enhancement,
+it might also be useful to support the validation of component values via their read accessors.
+For that, the notion of "properties" would have to be relaxed,
+as the read accessors of records don&#8217;t have the JavaBeans <code>get</code> prefix currently expected by Bean Validation.
+It also should be considered to expand the Bean Validation metadata API accordingly.</p>
+</div>
+<div class="paragraph">
+<p>I would also be very happy to learn about your thoughts around this topic.
+While Bean Validation 3.0
+(as part of <a href="https://eclipse-ee4j.github.io/jakartaee-platform/jakartaee9/JakartaEE9ReleasePlan">Jakarta EE 9</a>)
+in all likelyhood won&#8217;t bring any changes besides the transition to the <code>jakarta.*</code> package namespace,
+this may be an area where we could evolve the specification for Jakarta EE 10.</p>
+</div>
+<div class="paragraph">
+<p>If you&#8217;d like to experiment with the validation of record types yourself,
+you can find the complete source code on <a href="https://github.com/gunnarmorling/records-bean-validation">GitHub</a>.</p>
+</div>
+</div>
+</div>
+
+		</div>
+
+		<div class="post-tags">
+			
+				
+			
+		</div><div id="disqus_thread"></div>
+<script type="text/javascript">
+	(function () {
+		
+		
+		if (window.location.hostname == "localhost")
+			return;
+
+		var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+		var disqus_shortname = 'morlingdev';
+		dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+		(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+	})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by
+		Disqus.</a></noscript>
+<a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2020 Gunnar Morling |  Built with <a href="https://gohugo.io">Hugo</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</body>
+</html>
