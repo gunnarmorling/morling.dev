@@ -1,0 +1,515 @@
+---
+title: "REST API Monitoring with Custom Java Flight Recorder Events"
+date: 2020-01-27T17:30:00+01:00
+draft: false
+tags: [java, monitoring]
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+
+Java Flight Recorder (JFR) is an invaluable tool for gaining deep insights into the performance characteristics of your application.
+Open-sourced in JDK 11, JFR provides a low-overhead framework for collecting events from Java applications, the JVM and the operating system.
+
+In this blog post we're going to explore how custom, application-specific JFR events can be used to monitor a REST API, allowing to track request counts, identify long-running requests and more.
+We'll also discuss how the https://openjdk.java.net/jeps/328[JFR Event Streaming] API new in Java 14 can be used to export live events,
+making them available for monitoring and alerting in Prometheus/Grafana.
+
+<!--more-->
+
+JFR and its companion tool JDK Mission Control (JMC) for analyzing JFR recordings have come a long way;
+originally developed at BEA and part of the JRockit VM,
+they were later on commercial features of the Oracle JDK.
+As of Java 11, JFR got open-sourced and is part of OpenJDK distributions.
+JMC is also open-source, but it's an independent tool under the OpenJDK umbrella,
+which must be downloaded separately.
+
+Using the combination of JFR and JMC, you can get all kinds of information about your Java application,
+such as events on garbage collection, compilation, classloading, memory allocation, file and socket IO,method profiling data, and much more.
+To learn more about Flight Recorder and Mission Control in general, have a look at these resources:
+
+* https://qconsf.com/system/files/presentation-slides/mikael_vidstedt_-_qconsf-continuous_monitoring_with_jdk_flight_recorder.pdf[Continuous Monitoring with JDK Flight Recorder] (a talk from QCon SF 2019 by MikaelVidstedt)
+* http://hirt.se/blog/?p=1158[Flight Recorder & Mission Control at Code One 2019] (a compilation of several great sessions on these two tools at last year's Code One, put together by Marcus Hirt)
+
+== Custom Flight Recorder Events
+
+What's really great about LFR and JMC is that you're not limited to the events and data baked into the JVM and platform libraries:
+JFR also provides an API for implementing custom events.
+This you can use the low-overhead event recording infrastructure (its goal is to add at most 1% performance overhead) for your own event types.
+This allows you to record and analyze higher-level events, using the language of your application-specific domain.
+
+Taking my day job project https://debezium.io/[Debezium] as an example
+(an open-source platform for change data capture for a variety of databases),
+we could for instance produce events such as "Snapshot started", "Snapshotting of table 'Customers' completed", "captured change event for transaction log offset 123" etc.
+Users could send us recordings with these events and we could dive into them, to identify bugs or performance issues.
+
+In the following let's consider a less complex and hence better approachable example, though.
+We'll implement an event for measuring the duration of REST API calls based on JAX-RS.
+The "Todo" service from my recent blog post on link:/blog/quarkus-qute-test-ride/[Quarkus Qute] will serve as our guinea pig.
+As always, you can find the complete https://github.com/gunnarmorling/jfr-custom-events[source code] for this blog post on GitHub.
+
+Event types are implemented by extending the `jdk.jfr.Event` class;
+It already provides us with some common attributes such as a timestamp and a duration.
+In sub-classes you can add application-specific payload attributes,
+as well as some metadata such as a name and category which will be used for organizing and displaying events when looking at them in JMC.
+
+Which attributes to add depends on your specific requirements;
+you should aim at finding the right balance between capturing all the relevant information that will be useful for analysis purposes later on, while not going overboard and adding too much,
+as it'd cause record files to become too large, in particular for events that are emitted with a high frequency.
+Also retrieval of the attributes should be an efficient operation,
+so to avoid any unneccessary overhead.
+
+Here's how the event class for monitoring our REST API calls:
+
+TODO: add all callouts, explain
+
+[source,java,indent=0,linenums=true]
+----
+@Name(JaxRsInvocationEvent.NAME)                                   // <1>
+@Label("JAX-RS Invocation")
+@Category("JAX-RS")
+@Description("Invocation of a JAX-RS resource method")
+class JaxRsInvocationEvent extends Event {
+
+  static final String NAME = "dev.morling.jfr.JaxRsInvocation";
+
+  public static final ThreadLocal<JaxRsInvocationEvent> INSTANCE =
+      ThreadLocal.withInitial(JaxRsInvocationEvent::new);
+
+  private JaxRsInvocationEvent() {
+  }
+
+  @Label("Resource method name")
+  public String method;
+
+  @Label("Media type")
+  public String mediaType;
+
+  @Label("Path")
+  public String path;
+
+  @Label("Query parameters")
+  public String queryParameters;
+
+  @Label("Headers")
+  public String headers;
+
+  @Label("Length")
+  public int length;
+
+  @Label("Response headers")
+  public String responseHeaders;
+
+  @Label("Response length")
+  public int responseLength;
+
+  @Label("Response status")
+  public int status;
+
+  public void reset() {
+    method = null;
+    mediaType = null;
+    path = null;
+    length = -1;
+    queryParameters = null;
+    headers = null;
+    responseHeaders = null;
+    responseLength = -1;
+    status = -1;
+  }
+}
+----
+<1> The `@Name`, `@Category` and `@Label` annotations are used for controlling the appearance of these events in the JMC UI
+
+Having defined the event class itself,
+we must find a way for emitting event instances at the right point in time.
+In the simplest case, e.g. suitable for events related to your application logic, this might happen right in the application code itself.
+For more "technical" events it's a good idea though to keep the creation of Flight Recorder events separate from your business logic,
+e.g. by using mechanisms such as Servlet filters, interceptors and similar, which allow to inject cross-cutting logic into the call flow of your application.
+You also might employ byte code instrumentation at build or runtime for this purpose.
+
+For monitoring a JAX-RS based REST API, 
+the `ContainerRequestFilter` and `ContainerResponseFilter` contracts come in handy,
+as they allow to hook into the request handling logic _before_ and _after_ a REST request gets processed:
+
+[source,java,indent=0,linenums=true]
+----
+@Provider // <1>
+public class FlightRecorderFilter implements ContainerRequestFilter, ContainerResponseFilter {
+
+  @Override // <2>
+  public void filter(ContainerRequestContext requestContext) throws IOException {
+    JaxRsInvocationEvent event = JaxRsInvocationEvent.INSTANCE.get();
+
+    if (!event.isEnabled()) { // <3>
+      return;
+    }
+
+    event.begin(); // <4>
+  }
+
+  @Override // <5>
+  public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
+      throws IOException {
+    JaxRsInvocationEvent event = JaxRsInvocationEvent.INSTANCE.get();
+
+    if (!event.isEnabled()) {
+      return;
+    }
+
+    event.end(); // <6>
+
+    if (event.shouldCommit()) { // <7>
+      event.method = requestContext.getMethod();
+      event.mediaType = String.valueOf(requestContext.getMediaType());
+      event.path = String.valueOf(requestContext.getUriInfo().getPath());
+      event.length = requestContext.getLength();
+      event.queryParameters = requestContext.getUriInfo().getQueryParameters().toString();
+      event.headers = requestContext.getHeaders().toString();
+      event.javaMethod = getJavaMethod(requestContext);
+      event.responseLength = responseContext.getLength();
+      event.responseHeaders = responseContext.getHeaders().toString();
+      event.status = responseContext.getStatus();
+
+      event.commit(); // <8>
+    }
+
+    event.reset(); // <9>
+  }
+
+  private String getJavaMethod(ContainerRequestContext requestContext) {
+    String propName = "org.jboss.resteasy.core.ResourceMethodInvoker";
+    ResourceMethodInvoker invoker = (ResourceMethodInvoker)requestContext.getProperty(propName);
+    return invoker.getMethod().toString();
+  }
+}
+----
+<1> Allows the filter to be picked up automatically by the JAX-RS implementation
+<2> Will be invoked _before_ the request is processed
+<3> Nothing to do if the event type is not enabled for recordings currently
+<4> Begin the timing of the event
+<5> Will be invoked _after_ the request has been processed
+<6> End the timing of the event
+<7> The event should be committed if it is enabled and its duration is within the threshold configured for it;
+in that case, populate all the payload attributes of the event based on the values from the request and response contexts
+<8> Commit the event with Flight Recorder
+<9> Reset the thread-local event instance to its initial state, so it's ready for the next usage
+
+With that, our event class is pretty much ready to be used.
+There's only one more thing to do, and that is registering the new type with the Flight Recorder system.
+A Quarkus application start-up lifecycle method comes in handy for that:
+
+[source,java,indent=0,linenums=true]
+----
+@ApplicationScoped
+public class Metrics {
+
+  public void registerEvent(@Observes StartupEvent se) {
+    FlightRecorder.register(JaxRsInvocationEvent.class);
+  }
+}
+----
+
+Note this step isn't strictly needed, the event type can also be used without explicit registration.
+But doing so will later on allow to apply specific settings for the event in Mission Control (see below),
+also if no event of this type has been emitted yet.
+
+== Creating JFR Recordings
+
+Now let's capture some JAX-RS API events using Flight Recorder and inspect them in Mission Control.
+
+To do so, make sure to have Mission Control installed.
+Just as with OpenJDK, there are different builds for Mission Control to choose from.
+If you're on Fedora, there's https://fedoraproject.org/wiki/JMC_on_Fedora[a package] which you can install easily via dnf:
+
+[source,bash,indent=0,linenums=true]
+----
+sudo dnf module install jmc:7/default
+----
+
+Alternatively, you can download https://jdk.java.net/jmc/[builds for different] platforms from Oracle
+(some more info about these builds can be found in http://hirt.se/blog/?p=1208[this blog post] from Marcus Hirt).
+If you'd like to follow along and run these steps yourself,
+check out the https://github.com/gunnarmorling/jfr-custom-events[source code] from GitHub and then perform the following commands:
+
+[source,bash,indent=0,linenums=true]
+----
+cd example-service && mvn clean package && cd ..
+docker-compose up --build
+----
+
+This builds the project using Maven and spins up the following services using Docker Compose:
+
+* _example-service_: The Todo example application
+* _todo-db_: The Postgres database used by the Todo service
+* _pgadmin_: Admin client for Postgres (in case you'd like to browse the database contents; see https://github.com/gunnarmorling/jfr-custom-events/blob/master/docker-compose.yaml#L18-L29[docker-compose.yaml] for the credentials)
+* _prometheus_ and _grafana_: For monitoring live events later on
+
+Then go to http://localhost:8080/todo[http://localhost:8080/todo], where you should see the Todo web application:
+
+image::jfr_todo_app.png[]
+
+Now fire up Mission Control.
+The example service run via Docker is configured so you can connect to it on localhost.
+In the JVM Browser, create a new connection with host "localhost" and port "1898".
+Hit "Test connection", which should yield "OK" and click "Finish".
+
+image::jfr_new_connection.png[]
+
+Create a new recording by expanding the localhost:1898 node in the JVM Explorer,
+right-clicking on "Flight Recorder" and choosing "Start Flight Recording...".
+Confirm the default settings, which will create a recording with a duration of one minute.
+Go back to the Todo web application and perform a few tasks like creating some new todos, editing and deleting them and filtering the todo list.
+
+Either wait for the recording to complete or stop it by right-clicking on the recording name and clicking "Stop".
+Once the recording is done, it will be opened automatically.
+Now you could dive into all the logged events for the OS, the JVM etc, but as we're interested in our custom JAX-RS events,
+Choose "Event Browser" in the outline view and expand the "JAX-RS" category.
+You will see the events for all your REST API invocations,
+including information such as duration of the request, the HTTP method, the resource path and much more:
+
+image::jfr_jax_rs_events.png[]
+
+In a real-world use case, you could now use this information for instance to identify long-running requests and correlate these events with other data points in the Flight Recording, such as method profiling and memory allocation data, or sub-optimal SQL statements in your database.
+
+[NOTE]
+====
+If your application is running in production, it might not be feasible to connect to it via Mission Control from your local workstation.
+The _jcmd_ utility comes in handy in that case;
+https://docs.oracle.com/en/java/javase/13/docs/specs/man/jcmd.html[part of the JDK],
+you can use it to issue diagnostic commands against a running JVM.
+
+Amongst many other things, it allows you to start and stop Flight Recordings.
+Assuming you can execute that command on the environment with your running application,
+first run _jcmd_ without any options.
+This will show you the PIDs of all running Java processes.
+Having identified the PID of the process you'd like to examine, you can initiate a recording like so:
+
+[source,bash,indent=0,linenums=true]
+----
+jcmd <PID> JFR.start delay=5s duration=30s \
+    name=MyRecording filename=my-recording.jfr
+----
+
+This will start a recording of 30 seconds, beginning in 5 seconds from now.
+Once the recording is done, you could copy the file to your local machine and load it into Mission Control for further analysis.
+To learn more about creating Flight Recordings via _jcmd_, refer to this great https://medium.com/@chrishantha/java-flight-recorder-cheat-sheet-98f5143f5f88[cheat sheet].
+====
+
+Another useful tool in the belt is the https://docs.oracle.com/en/java/javase/13/docs/specs/man/jfr.html[_jfr_] command, which https://bugs.openjdk.java.net/browse/JDK-8205517[was introduced] in JDK 12.
+It allows you to filter and examine the binary Flight Recording files.
+You also can use it to extract parts of a recording and convert them to JSON,
+allowing them to be processed with other tools.
+E.g. you could convert all the JAX-RS events to JSON like so:
+
+[source,bash,indent=0,linenums=true]
+----
+jfr print --json --categories JAX-RS my-recording.jfr
+----
+
+== Event Settings
+
+Sometimes it's desirable to configure detailed behaviors of a given event type.
+For the JAX-RS Invocation event it might for instance make sense to only log invocations of particular paths in a specific recording,
+allowing for a smaller recording size and to better focus on a particular subset of all invocations.
+JFR supports this by the notion of https://docs.oracle.com/en/java/javase/11/docs/api/jdk.jfr/jdk/jfr/SettingDefinition.html[event settings].
+Such settings can be specified when creating a recording,
+and based on the active settings, particular events will be included or excluded in the recording.
+
+Inspired by the JavaDoc of `@SettingDefinition` let's see what's needed to enhance `JaxRsInvocationEvent` with that capability.
+The first step is to define a subclass of `jdk.jfr.SettingControl`, which serves as the value holder for our setting:
+
+[source,java,indent=0,linenums=true]
+----
+public class PathFilterControl extends SettingControl {
+
+  private Pattern pattern = Pattern.compile(".*"); // <1>
+
+  @Override // <2>
+  public void setValue(String value) {
+    this.pattern = Pattern.compile(value);
+  }
+
+  @Override // <3>
+  public String combine(Set<String> values) {
+    return String.join("|", values);
+  }
+
+  @Override // <4>
+  public String getValue() {
+    return pattern.toString();
+  }
+
+  // <5>
+  public boolean matches(String s) {
+    return pattern.matcher(s).matches();
+  }
+}
+----
+<1> A regular expression pattern that'll be matched against the path of incoming events; by default all paths are included (`.*`)
+<2> Invoked by the JFR runtime to set the value for this setting
+<3> Invoked when "multiple recordings are running at the same time", combining the settings values
+<4> Invoked by the runtime for instance when getting the default value of the setting
+<5> Matches the configured setting value against a particular path
+
+On the event class itself, a method with the following characteristics must be declared:
+
+* annotated with `@SettingDefinition`
+* taking the `SettingControl` as its single parameter
+* returning `boolean`
+
+[source,java,indent=0,linenums=true]
+----
+class JaxRsInvocationEvent extends Event {
+
+  @Label("Path")
+  public String path;
+
+  // other members...
+
+  @Label("Path Filter")
+  @SettingDefinition
+  protected boolean pathFilter(PathFilterControl pathFilter) {
+    return pathFilter.matches(path);
+  }
+}
+----
+
+This method will be invoked by the JFR runtime during the `shouldCommit()` call.
+It passes in current setting value so it can applied to the `path` value of the given event.
+In case the filter returns `true`, the event will be added to the recording, otherwise it will be ignored.
+We also could use such setting to control the inclusion or exclusion of specific event attributes.
+For that, the setting definition method would always have to return `true`, but depending on the actual setting it might set particular attributes of the event class to `null`.
+This might come in handy if we wanted to log the entire request/response body of our REST API.
+Doing this all the time might be prohibitive in terms of recording size, but it might be enabled for a particlar short-term recording for analyzing some bug for instance.
+
+Now let's see how the path filter can be applied when creating a new recording in Mission Control.
+The option is a bit hidden, but here's how you can enable it;
+First, create a new Flight Recording, then choose "Template Manager" in the dialogue:
+
+image::jfr_filtering_1.png[]
+
+The duplicate the "Continuous" template and edit the new template:
+
+image::jfr_filtering_2.png[]
+
+Click "Advanced":
+
+image::jfr_filtering_3.png[]
+
+Expand "JAX-RS" -> "JAX-RS Invocation" and put `.\*(new|edit).*` into the Path Filter control:
+
+image::jfr_filtering_4.png[]
+
+Now close the last two dialogues
+In the "Start Flight Recording" dialogue make sure to select your new template under "Event Settings"; although you've edited it before, it won't be selected automatically. I lost an hour or so wondering why my settings were not applied... .
+Lastly, click "Finish" to begin the recording:
+
+image::jfr_filtering_5.png[]
+
+Perform some tasks in the Todo web app and stop the recording.
+You should now see only the REST API calls for the new and edit operations, whereas no events should be shown for the list and delete operations of the API.
+
+== JFR Event Streaming
+
+Flight Recorder files are great for analyzing performance characteristics in an "offline" approach:
+you can take recordings in your production environment and ship them to your work station or a remote support team,
+without requiring live access to the running application.
+This is also an interesting mode for open-source projects, where maintainers typically don't have access to running applications of their users.
+Exchanging Flight Recordings (limited to a sensible subset of information, so to avoid exposure of confidential internals) might allow open source developers to gain insight into characteristics of their libraries when deployed to production.
+
+But there's another category of use cases for this event data from applications, the JVM and the operating system, where the recording file approach doesn't quite fit: live monitoring and alerting of running applications.
+E.g. operations teams might want to set up dashboards showing the most relevant application metrics in "real-time",
+without having to create any recording files first.
+A related requirement is alerting, when metrics reach a certain threshold.
+For instance it might be desirable to be alterted if the request duration of our JAX-RS API goes beyond 500 ms.
+
+This is where https://openjdk.java.net/jeps/349[JEP 349] ("JFR Event Streaming") comes in.
+It'll be part of Java 14 and it's stated goal is to "provide an API for the continuous consumption of JFR data on disk, both for in-process and out-of-process applications".
+That's exactly what we need for our monitoring/dashboarding use case.
+Using the Streaming API, Flight Recorder events of the running application can be exposed to external consumers,
+without having to go through recording files on disk.
+The following shows a basic implementation of exposing the JAX-RS API events to Prometheus/Grafana,
+where they can be visualized using a dashboard.
+
+As the Todo web application is implemented with the Quarkus stack,
+the natural choice for exposing metrics for the purposes of monitoring is the MicroProfile Metrics API.
+While this is used in an annotation-driven fashion most of the time, it also provides a programmatic API for registering metrics.
+This can be leveraged to expose metrics based on the JAX-RS Flight Recorder events:
+
+[source,java,indent=0,linenums=true]
+----
+@ApplicationScoped
+public class Metrics {
+
+  @Inject // <1>
+  MetricRegistry metricsRegistry;
+
+  private RecordingStream recordingStream; // <2>
+
+  public void onStartup(@Observes StartupEvent se) {
+    recordingStream = new RecordingStream();  // <3>
+    recordingStream.enable(JaxRsInvocationEvent.NAME);
+
+    recordingStream.onEvent(JaxRsInvocationEvent.NAME, event -> {  // <4>
+
+      String path = event.getString("path").replaceAll("(\\/)([0-9]+)(\\/?)", "$1{param}$3"); // <5>
+      String method = event.getString("method");
+      String name = path + "-" + method;
+
+      Metadata metadata = metricsRegistry.getMetadata().get(name);
+      if (metadata == null) {
+        metricsRegistry.timer(Metadata.builder() // <5>
+            .withName(name)
+            .withType(MetricType.TIMER)
+            .withDescription("Metrics for " + path + " (" + method + ")")
+            .build()).update(event.getDuration().toNanos(), TimeUnit.NANOSECONDS);
+      }
+      else { // <6>
+        metricsRegistry.timer(name).update(event.getDuration().toNanos(), TimeUnit.NANOSECONDS);
+      }
+    });
+    recordingStream.startAsync();
+  }
+
+  public void stop(@Observes ShutdownEvent se) {
+    recordingStream.close(); // <7>
+    try {
+      recordingStream.awaitTermination();
+    }
+    catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+}
+----
+<1> TODO
+<2> TODO
+<3> TODO
+<4> TODO
+<5> TODO
+<6> TODO
+<7> TODO
+
+By default, the MicroProfile Metrics API exposes any application-provided metrics in the Prometheus format under the _/metrics/application_ endpoint:
+
+image::jfr_metrics_endpoint.png[]
+
+TODO explain link to Prometheus/Grafan
+
+image::jfr_grafana.png[]
+
+TODO Mention somewhere:
+
+* will see continouus recording in JMC
+* JFR Datasource for Grafana: https://github.com/rh-jmc-team/jfr-datasource
+* backport to jdk 8/11 would be desirable?
+* export setting sfile for jcmd
+
+== Wrap-Up
+
+TODO
+
+If you'd like to experiment with the validation of record types yourself,
+you can find the complete source code on https://github.com/gunnarmorling/jfr-custom-events[GitHub].
