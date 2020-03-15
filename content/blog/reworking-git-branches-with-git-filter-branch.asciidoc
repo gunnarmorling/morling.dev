@@ -1,0 +1,158 @@
+---
+title: "Reworking Git Branches with git filter-branch"
+date: 2020-03-16T00:00:10+01:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+
+Within https://debezium.io/[Debezium], the project I'm working on at Red Hat, we recently encountered an "interesting" situation where we had to resolve a rather difficult merge conflict.
+As others where interested in how we addressed the issue, and also for our own future reference,
+I'm going to give a quick run down of the problem we encountered and how we solved it.
+
+<!--more-->
+
+== The Problem
+
+Ideally, we'd only ever work on a single branch and would never have to deal with porting changes between the _master_ and other branches.
+Oftentimes we cannot get around this, though: specific versions of a software may have to be maintained for some time,
+requiring to backport bugfixes from the current development branch to the branch corresponding to the maintained version.
+
+In our specific case we had to deal with backporting changes to our https://debezium.io/documentation/[project documentation].
+To complicate things, this documentation (written in AsciiDoc) has been largely re-organized between _master_ and the targeted older branch, _1.0_.
+What used to be one large AsciiDoc file for each of the Debezium connectors,
+got split up into multiple smaller files on _master_ now.
+This split was meant to be applied to _1.0_ too, but due to some miscommunication in the team (these things happen, right) this wasn't done, whereas an asorted set of documentation changes had been backported already to the larger, monolithic AsciiDoc files.
+
+So the situation we faced was this:
+
+* large, monolithic AsciiDoc files on the _1.0_ branch
+* smaller, modularized AsciiDoc files on _master_
+* Documentation updates applied on _master_, of which only a subset is relevant for _1.0_ (new features shouldn't be added to the Debezium 1.0 documentation)
+* Some of the documentation updates relevant for the _1.0_ branch already had been backported from _master_, while others had not
+
+All in all, a rather convoluted situation;
+the full diff of the _documentation_ sub-directory between the two branches was about 13K lines.
+
+So what should we do?
+Cherry-picking individual commits from master was not really an option,
+as there were a few hundred commits on _master_ since _1.0_ had been forked off.
+Also many commits would contain documentation and code changes.
+The latter had already been backported successfully before.
+
+Realizing that resolving that merge conflict was next to impossible,
+the next idea was to essentially start from scratch and re-apply all relevant documentation changes to the _1.0_ branch.
+Our initial idea was to create a patch with the difference of the _documentation_ directory between the two branches.
+But editing that patch file with 13K lines turned out to be not manageable, either.
+
+== The Solution
+
+This is when we were reminded of the possibilities of https://git-scm.com/docs/git-filter-branch[git filter-branch]:
+using this command it should be possible to isolate all the documentation changes done on _master_ since Debezium 1.0 and apply the required sub-set of these changes to the _1.0_ branch.
+
+To start with a clean slate, we created a new temporary branch based on _1.0_:
+
+[source,shell,indent=0]
+----
+git checkout -b docs_backport 1.0
+----
+
+We then reset the contents of the _documentation_ directory to its state as of the 1.0.0.Final release,
+as that's where the _1.0_ and _master_ branches diverged.
+
+[source,shell,indent=0]
+----
+rm -rf documentation
+git add documentation
+git checkout v1.0.0.Final documentation
+git commit -m "Resetting documentation dir to v1.0.0.Final"
+
+# This should yield no differences
+git diff v1.0.0.Final..docs_backport documentation
+----
+
+The next step was to filter all commits on _master_ so to only keep any changes to the _documentation_ directory.
+This was done on a new branch, _docs_filtered_.
+The `--subdirectory-filter` option comes in handy for that:
+
+[source,shell,indent=0]
+----
+git checkout -b docs_filtered master
+
+git filter-branch -f --prune-empty \
+    --subdirectory-filter documentation \
+    v1.0.0.Final..docs_filtered
+----
+
+This leaves us with a branch _docs_filtered_ which only contains the commits since the `v1.0.0.Final` tag that modified the _documentation_ directory.
+
+The `--subdirectory-filter` option also moves the contents of the given directory to the root of the repo, though.
+That's not exactly what we need.
+But another option, `--tree-filter`, lets us restore the original directory layout.
+It allows to run a set of commands against each of the filtered commits.
+We can use this to move the contents of _documentation_ back to that directory:
+
+[source,shell,indent=0]
+----
+git filter-branch -f \
+    --tree-filter 'mkdir -p documentation; \
+      mv antora.yml documentation 1>/dev/null 2>/dev/null; \
+      mv modules documentation 1>/dev/null 2>/dev/null;' \
+    v1.0.0.Final..docs_filtered
+----
+
+Examining the history now, we can see that the commits on the _docs_filtered_ apply the changes to the _documentation_ directory, as expected.
+
+One problem still remains, though:
+by means of the `--subdirectory-filter` option,
+the very first commit removes all contents besides the _documentation_ directory.
+This can be fixed by doing an interactive rebase of the current branch,
+beginning at the _v1.0.0.Final_ tag:
+
+[source,shell,indent=0]
+----
+git rebase -i v1.0.0.Final
+----
+
+We need to edit the very first commit;
+all changes besides those to the _documentation_ directory need to be reverted from that commit.
+There might be a better way of doing so,
+I simply ran `git checkout` for all the other resources:
+
+[source,shell,indent=0]
+----
+git checkout v1.0.0.Final debezium-connector-mongodb
+git checkout v1.0.0.Final debezium-connector-mysql
+...
+----
+
+At this point the filtered branch still is based off of the _v1.0.0.Final_ tag,
+whereas it should be based off of the _docs_backport_ branch.
+`git rebase --onto` to the rescue:
+
+[source,shell,indent=0]
+----
+git rebase --onto docs_backport v1.0.0.Final docs_filtered
+----
+
+This rebases all the commits from the _docs_filtered_ branch onto the _docs_backport_ branch.
+Now we have a state where where *all* the documention changes have been cleanly applied to the 1.0 code base,
+i.e. the following should yield no differences:
+
+[source,shell,indent=0]
+----
+git diff docs_filtered..master documentation
+----
+
+The last and missing step is to do another rebase of all the documentation commits, discarding those that apply to any features that didn't get backported to 1.0.
+
+Thankfully, my partner-in-crime Jiri Pechanec stepped in here:
+as he had done the original feature backport,
+it didn't take him too long to go through the list of documentation commits and identify those which were relevant for the 1.0 code base.
+After one more interactive rebase for applying those we finally were in a state, where all the required documentation changes had been backported.
+
+Looking at the 1.0 history, you'd still see some partial documentation changes up to the point, where we decided to start all over and revert these.
+Theoretically we could do another git filter run to exclude those,
+but we decided against that,
+as we already had done releases off of the 1.0 branch and didn't want to alter the commit history of a released branch after the fact.
