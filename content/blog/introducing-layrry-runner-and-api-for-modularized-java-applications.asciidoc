@@ -1,0 +1,286 @@
+---
+title: "Introducing Layrry: A Launcher and API for Modularized Java Applications"
+date: 2020-03-29T21:31:00+02:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+One of the biggest changes in recent Java versions has been the introduction of the http://openjdk.java.net/projects/jigsaw/spec/[module system] in Java 9.
+It allows to organize Java applications and their dependencies in strongly encapsulated modules, utilizing explicit and well-defined module APIs and relationships.
+
+In this post I'm going to introduce the https://github.com/moditect/layrry[Layrry] open-source project, a launcher and Java API for executing modularized Java applications.
+Layrry helps Java developers to assemble modularized applications from dependencies using their Maven coordinates and execute them using module layers.
+Layers go beyond the capabilities of the "flat" module path specified via the _--module-path_ parameter of the _java_ command,
+e.g. allowing to use multiple versions of one module within one and the same application.
+
+<!--more-->
+
+== Why Layrry?
+
+The Java Module System doesn't define any means of mapping between modules (e.g. _com.acme.crm_) and JARs providing such module
+(e.g. _acme-crm-1.0.0.Final.jar_), or retrieving modules from remote repositories using unique identifiers (e.g. _com.acme:acme-crm:1.0.0.Final_).
+Instead, it's the responsibility of the user to obtain all required JARs of a modularized application and provide them via the _--module-path_ parameter.
+
+Furthermore, the module system doesn't define any means of module versioning;
+i.e. it's the responsibility of the user to obtain all modules in the right version.
+Using the _--module-path_ option, it's not possible, though, to assemble an application that uses multiple versions of one and the same module.
+This may be desirable for transitive dependencies of an application,
+which might be required in different versions by two separate direct dependencies.
+
+This is where Layrry comes in (pronounced https://en.wikipedia.org/wiki/Larry_Laffer["Larry"]):
+it provides a declarative approach as well as an API for assembling modularized applications.
+The (modular) JARs to be included are described using Maven GAV (group id, artifact id, version) coordinates,
+solving the issue of retrieving all required JARs from a remote repository,
+in the right version.
+
+With Layrry, applications are organized in https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/ModuleLayer.html[module layers],
+which allows to use different versions of one and the same module in different layers of an application
+(as long as they are not exposed in a conflicting way on module API boundaries).
+
+== An Example
+
+As an example, let's consider an application made up of the following modules:
+
+image::layrry-example.png[]
+
+The application's main module, _com.example:app_, depends on two others, _com.example:foo_ and _com.example:bar_.
+They in turn depend on the Log4j API and another module, _com.example:greeter_.
+The latter is used in two different versions, though.
+
+Let's take a closer look at the `Greeter` class in these modules.
+Here is the version in _com.example:greeter@1.0.0_,
+as used by _com.example:foo_:
+
+[source,java,indent=0,linenums=true]
+----
+public class Greeter {
+
+    public String greet(String name, String from) {
+        return "Hello, " + name + " from " + from + " (Greeter 1.0.0)";
+    }
+}
+----
+
+And this is how it looks in _com.example:greeter@2.0.0_,
+as used by _com.example:bar_:
+
+[source,java,indent=0,linenums=true]
+----
+public class Greeter {
+
+    public String hello(String name, String from) {
+        return "Hello, " + name + " from " + from + " (Greeter 2.0.0)";
+    }
+
+    public String goodBye(String name, String from) {
+        return "Good bye, " + name + " from " + from +
+                " (Greeter 2.0.0)";
+    }
+}
+----
+
+The `Greeter` API has evolved in a backwards-incompatible way,
+i.e. it's not possible for the _foo_ and _bar_ modules to use the same version.
+
+With a "flat" module path (or classpath),
+there's no way for dealing with this situation.
+You'd inevitably end up with a `NoSuchMethodError`,
+as either _foo_ or _bar_ would be linked at runtime against a version of the class different from the version it has been compiled against.
+
+The lack of support for using multiple module versions when working with the _--module-path_ option might be surprising at first,
+but it's an http://openjdk.java.net/projects/jigsaw/spec/reqs/02#non-requirements[explicit] non-requirement of the module system to support multiple module versions or even deal with selecting matching module versions at all.
+
+This means that the module descriptors of both _foo_ and _bar_ require the _greeter_ module without any version information:
+
+[source,java,indent=0,linenums=true]
+----
+module com.example.foo {
+    exports com.example.foo;
+    requires org.apache.logging.log4j;
+    requires com.example.greeter;
+}
+----
+
+[source,java,indent=0,linenums=true]
+----
+module com.example.bar {
+    exports com.example.bar;
+    requires org.apache.logging.log4j;
+    requires com.example.greeter;
+}
+----
+
+== Module Layers to the Rescue
+
+While only one version of a given module is supported when running applications via _java --module-path=..._,
+there's a lesser known feature of the module system which provides a way out: module layers.
+
+A https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/ModuleLayer.html[module layer] "is created from a graph of modules in a `Configuration` and a function that maps each module to a `ClassLoader`."
+Using the module layer API,
+multiple versions of a module can be loaded in different layers,
+thus using different classloaders.
+
+Note the layers API doesn't concern itself with obtaining JARs or modules from remote locations such as the Maven Central repository;
+instead, any modules must be provided as `Path` objects.
+Here is how a layer with the _foo_ and _greeter:1.0.0_ modules could be assembled:
+
+[source,java,indent=0,linenums=true]
+----
+ModuleLayer boot = ModuleLayer.boot();
+ClassLoader scl = ClassLoader.getSystemClassLoader();
+
+Path foo = Paths.get("path/to/foo-1.0.0.jar"); // <1>
+Path greeter10 = Paths.get("path/to/greeter-1.0.0.jar"); // <2>
+
+ModuleFinder fooFinder = ModuleFinder.of(foo, greeter10);
+Configuration fooConfig = boot.configuration() // <3>
+    .resolve(
+          fooFinder,
+          ModuleFinder.of(),
+          Set.of("com.example.foo", "com.example.greeter")
+    );
+ModuleLayer fooLayer = boot.defineModulesWithOneLoader(
+        fooConfig, scl); // <4>
+----
+<1> obtain foo-1.0.0.jar
+<2> obtain greeter-1.0.0.jar
+<3> Create a configuration derived from the "boot" module of the JVM,
+providing a `ModuleFinder` for the two JARs obtained before, and resolving the two modules 
+<4> Create a module layer using the configuration, loading all contained modules with a single classloader
+
+Similarly, you could create a layer for _bar_ and _greeter:2.0.0_,
+as well as layers for log4j and the main application module.
+The layers API is very flexible, e.g. you could load each module in its own classloader and more.
+But all this flexibility can make using the API direcly a daunting task.
+
+Also using an API might not be what you want in the first place:
+wouldn't it be nice if there was a CLI tool,
+akin to using _java --module-path=..._,
+but with the additional powers of module layers?
+
+== The Layrry Launcher
+
+This is where Layrry comes in:
+it is a CLI tool which takes a configuration of a layered application
+(defined in a YAML file) and executes it.
+The layer descriptor for the example above looks like so:
+
+[source,yaml,indent=0,linenums=true]
+----
+layers:
+  log: -- <1>
+    modules: -- <2>
+      - "org.apache.logging.log4j:log4j-api:jar:2.13.1"
+      - "org.apache.logging.log4j:log4j-core:jar:2.13.1"
+      - "com.example:logconfig:1.0.0"
+  foo:
+    parents: -- <3>
+      - "log"
+    modules:
+      - "com.example:greeter:1.0.0"
+      - "com.example:foo:1.0.0"
+  bar:
+    parents:
+      - "log"
+    modules:
+      - "com.example:greeter:2.0.0"
+      - "com.example:bar:1.0.0"
+  app:
+    parents:
+      - "foo"
+      - "bar"
+    modules:
+      - "com.example:app:1.0.0"
+main: -- <4>
+  module: com.example.app
+  class: com.example.app.App
+----
+<1> Each layer has a unique name
+<2> The `modules` element lists all the modules contained in the layer, using Maven coordinates (group id, artifact id, version), unambigously referencing a (modular) JAR in a specific version
+<3> A layer can have one or more parent layers, whose modules it can access;
+if no parent is given, the JVM's "boot" layer is the implicit parent of a layer
+<4> The given main module and class is the one that will be executed by Layrry
+
+The configuration above describes four layers, _log_, _foo_, _bar_ and _app_,
+with the modules they contain and the parent/child relationships between these layers.
+Note how the versions 1.0.0 and 2.0.0 of the _greeter_ module are used in _foo_ and _bar_.
+The file also specifies the main class to execute when running this application.
+
+Using Layrry, a modular application is executed like this:
+
+[source,bash,indent=0,linenums=true]
+----
+java -jar layrry-1.0-SNAPSHOT-jar-with-dependencies.jar \
+    --layers-config layers.yml \
+    Alice
+
+20:58:01.451 [main] INFO  com.example.foo.Foo - Hello, Alice from Foo (Greeter 1.0.0)
+20:58:01.472 [main] INFO  com.example.bar.Bar - Hello, Alice from Bar (Greeter 2.0.0)
+20:58:01.473 [main] INFO  com.example.bar.Bar - Good bye, Alice from Bar (Greeter 2.0.0)
+----
+
+The log messages show how the two versions of _greeter_ are used by _foo_ and _bar_, respectively.
+Layrry will download all referenced JARs using the Maven resolver API,
+i.e. you don't have to deal with manually obtaining all the JARs and providing them to the _java_ runtime.
+
+== Using the Layrry API
+
+In addition to the YAML-based launcher, Layrry provides also a Java API for assembling and running layered applications.
+This can be used in cases where the structure of layers is only known at runtime,
+or for implementing plug-in architectures.
+
+In order to use Layrry programmatically, add the following dependency to your _pom.xml_:
+
+[source,xml,indent=0,linenums=true]
+----
+<dependency>
+    <groupId>org.moditect.layrry</groupId>
+    <artifactId>layrry</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</dependency>
+----
+
+Then, the Layrry Java API can be used like this (showing the same example as above):
+
+[source,java,indent=0,linenums=true]
+----
+Layers layers = Layers.layer("log")
+        .withModule("org.apache.logging.log4j:log4j-api:jar:2.13.1")
+        .withModule("org.apache.logging.log4j:log4j-core:jar:2.13.1")
+        .withModule("com.example:logconfig:1.0.0")
+    .layer("foo")
+        .withParent("log")
+        .withModule("com.example:greeter:1.0.0")
+        .withModule("com.example:foo:1.0.0")
+    .layer("bar")
+        .withParent("log")
+        .withModule("com.example:greeter:2.0.0")
+        .withModule("com.example:bar:1.0.0")
+    .layer("app")
+        .withParent("foo")
+        .withParent("bar")
+        .withModule("com.example:app:1.0.0")
+    .build();
+
+layers.run("com.example.app/com.example.app.App", "Alice");
+----
+
+== Next Steps
+
+The Layrry project is still in its infancy.
+Nevertheless it can be a useful tool for application developers wishing to leverage the Java Module System.
+Obtaining modular JARs via Maven coordinates and providing an easy-to-use mechanism for organizing modules in layers enables usages which cannot be addressed using the plain _java --module-path ..._ approach.
+
+Layrry is open-source (under the Apache License version 2.0).
+The https://github.com/moditect/layrry[source code] is hosted on GitHub,
+and your contributions are very welcomed.
+
+Please let me know about your ideas and requirements in the comments below or by opening up issues on GitHub.
+Planned enhancements include support for creating modular runtime images (_jlink_) based on the modules referenced in a _layers.yml_ file,
+and visualization of module layers and their modules via GraphViz.
