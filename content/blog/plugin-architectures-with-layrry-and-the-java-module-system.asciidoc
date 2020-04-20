@@ -1,0 +1,265 @@
+---
+title: "Plug-in Architectures With Layrry and the Java Module System"
+date: 2020-04-21T18:54:00+02:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+Making applications extensible with some form of plug-ins is a very common pattern in software design:
+based on well-defined APIs provided by the application core, plug-ins can customize an application's behavior and provide new functionality.
+Examples include desktop applications like IDEs or web browsers, build tools such as Apache Maven or Gradle, as well as server-side applications such as Apache Kafka Connect,
+a runtime for Kafka connectors plug-ins.
+
+In this post I'm going to explore how the https://www.jcp.org/en/jsr/detail?id=376[Java Platform Module System]'s notion of module layers can be leveraged for implementing plug-in architectures on the JVM.
+We'll also discuss how https://github.com/moditect/layrry[Layrry], a launcher and runtime for layered Java applications, can help with this task.
+
+<!--more-->
+
+A key requirement for any plug-in architecture is strong isolation between different plug-ins:
+their state, classes and dependencies should be encapsulated and independent of each other.
+E.g. package declarations in two plug-ins should not collide,
+also they should be able to use different versions of another 3rd party dependency.
+This is why the default module path of Java
+(specified using the _--module-path_ option)
+is not enough for this purpose: it doesn't support more than one version of a given module.
+
+The module system's answer are https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/lang/ModuleLayer.html[module layers]:
+by organizing an application and its plug-ins into multiple layers,
+the required isolation between plug-ins can be achieved.
+
+[NOTE]
+====
+With the module system, each Java application always contains at least one layer, the _boot layer_.
+It contains the platform modules and the modules provided on the module path.
+====
+
+== An Example: The Greeter CLI App
+
+To make things more tangible, let's consider a specific example;
+The "Greeter" app is a little CLI utility, that can produce greetings in different languages.
+
+In order to not limit the number of supported languages,
+it provides a plug-in API, which allows to add additional greeting implementations,
+without the need to rebuild the core application.
+Here is the `Greeter` contract, which is to be implemented by each language plug-in:
+
+[source,java,indent=0,linenums=true]
+----
+package com.example.greeter.api;
+
+public interface Greeter {
+  String greet(String name);
+}
+----
+
+Greeters are instantiated via accompanying implementations of `GreeterFactory`:
+
+[source,java,indent=0,linenums=true]
+----
+public interface GreeterFactory {
+  String getLanguage(); // <1>
+  String getFlag();
+  Greeter getGreeter(); // <2>
+}
+----
+<1> The `getLanguage()` and `getFlag()` methods are used to show a description of all available greeters in the CLI application
+<2> The `getGreeter()` method returns a new instance of the corresponding `Greeter` type
+
+Here's the overall architecture of the Greeter application,
+with three different language implementations:
+
+image::layrry_plugin_architecture_overview.svg[]
+
+The application is made up of five different layers:
+
+* _greeter-platform_: contains the `Greeter` and `GreeterFactory` contracts
+* _greeter-en_, _greeter-de_ and _greeter-fr_: greeter implementations for different languages; note how each one is depending on a different version of some _greeter-date_ module. As they are isolated in different layers, they can co-exist within the application
+* _greeter-app_: the "shell" of the application which loads all the greeter implementations and makes them accessible as a simple CLI application
+
+Now let's see how this application structure can be assembled using Layrry.
+
+== Application Plug-ins With Layrry
+
+In a link:/blog/introducing-layrry-runner-and-api-for-modularized-java-applications/[previous blog post] we've explored how applications can be cut into layers,
+described in Layrry's _layers.yml_ configuration file.
+A simple static layer definition would defeat the purpose of a plug-in architecture, though:
+not all possible plug-ins are known when assembling the application.
+
+Layrry addresses this requirement by allowing to source different layers from directories on the file system:
+
+[source,yaml,indent=0,linenums=true]
+----
+layers:
+  platform: # <1>
+    modules:
+      - "com.example.greeter:greeter-api:1.0.0"
+  plugins: # <2>
+    parents:
+      - "api"
+    directory: path/to/plugins
+  app: # <3>
+    parents:
+      - "plugins"
+    modules:
+      - "com.example.greeter:greeter-app:1.0.0"
+main:
+  module: com.example.greeter.app
+  class: com.example.greeter.app.App
+----
+<1> The platform layer with the API module
+<2> The plug-in layer(s)
+<3> The application layer with the "application shell"
+
+Whereas the `platform` and `app` layers are statically defined, using the Maven GAV coordinates of the modules to include,
+the `plugins` part of the configuration describes an open-ended set of layers.
+Each sub-directory of the given directory represents its own layer.
+All modules within this sub-directory will be added to the layer, and the API layer will be the parent of each of the plug-in layers.
+The `app` layer has all the plug-in layers as its ancestors, allowing it to retrieve plug-in implementations from these layers.
+
+More greeter plug-ins can be added to the application by simply creating a sub-directory with the required module(s).
+
+== Finding Plug-in Implementations With the Java Service Loader
+
+Structuring the application into different layers isn't all we need for building a plug-in architecture;
+we also need a way for detecting and loading the actual plug-in implementations.
+The https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/util/ServiceLoader.html[service loader] mechanism of the Java platform comes in handy for that.
+If you have never worked with the service loader API,
+it's definitely recommended to study its extensive JavaDoc description:
+
+[quote]
+A _service_ is a well-known interface or class for which zero, one,
+or many service providers exist. A _service provider_ (or just
+_provider_) is a class that implements or subclasses the well-known
+interface or class. A `ServiceLoader` is an object that locates and
+loads service providers deployed in the run time environment at a time of an
+application's choosing.
+
+Having been a supported feature of Java since version 6, the service loader API has been been reworked and refined to work within modular environments when the Java Module System was introduced in JDK 9.
+
+In order to retrieve service implementations via the service loader,
+a consuming module must declare the use of the service in its module descriptor.
+For our purposes, the `GreeterFactory` contract is a perfect examplification of the service idea.
+Here's the descriptor of the Greeter application's `app` module,
+declaring its usage of this service:
+
+[source,java,indent=0,linenums=true]
+----
+module com.example.greeter.app {
+  exports com.example.greeter.app;
+  requires com.example.greeter.api;
+  uses com.example.greeter.api.GreeterFactory;
+}
+----
+
+The module descriptor of each greeter plug-in must declare the service implementation(s) which it provides.
+E.g. here is the module descriptor of the English greeter implementation:
+
+[source,java,indent=0,linenums=true]
+----
+module com.example.greeter.en {
+  requires com.example.greeter.api;
+  requires com.example.greeter.dateutil;
+  provides com.example.greeter.api.GreeterFactory
+      with com.example.greeter.en.EnglishGreeterFactory;
+}
+----
+
+From within the `app` module,
+the service implementations can be retrieved via the `java.util.ServiceLoader` class.
+
+When using the service loader in layered applications, there's one potential pitfall though, which mostly will affect existing applications which are migrated:
+in order to access service implementations located in a different layer
+(specifically, in an ancestor layer of the loading layer),
+the method `load(ModuleLayer, Class<?>)` must be used.
+When using other overloaded variants of `load()`,
+e.g. the commonly used `load(Class<?>)`,
+those implementations won't be found.
+
+Hence the code for loading the greeter implementations from within the `app` layer could look like this:
+
+[source,java,indent=0,linenums=true]
+----
+private static List<GreeterFactory> getGreeterFactories() {
+  ModuleLayer appLayer = App.class.getModule().getLayer();
+
+  return ServiceLoader.load(appLayer, GreeterFactory.class)
+      .stream()
+      .map(p -> p.get())
+      .sorted((gf1, gf2) -> gf1.getLanguage().compareTo(
+          gf2.getLanguage()))
+      .collect(Collectors.toList());
+}
+----
+
+Having loaded the list of greeter factories, it doesn't take too much code to display a list with all available implementations, expect a choice by the user and invoke the greeter for the chosen language.
+This code which isn't too interesting is omitted here for the sake of brevity and https://github.com/moditect/layrry/blob/master/plugin-example/greeter-main/src/main/java/com/example/greeter/app/App.java[can be found] in the accompanying example source code repo.
+
+[NOTE]
+====
+JDK 9 brought some more nice improvements for the service loader API.
+E.g. the type of service implementations can be examined without actually instantiating them.
+This allows for interesting alternatives for providing service meta-data and choosing an implementation based on some criteria.
+For instance, greeter metadata like the language name and flag could be given using an annotation:
+
+[source,java,indent=0,linenums=true]
+----
+@GreeterDefinition(lang="English", flag="🇬🇧")
+public class EnglishGreeterFactory implements GreeterFactory {
+    Greeter getGreeter();
+}
+----
+
+Then the method `ServiceLoader.Provider#type()` can be used to obtain the annotation and return a greeter factory for a given language:
+
+[source,java,indent=0,linenums=true]
+----
+private Optional<GreeterFactory> getGreeterFactoryForLanguage(
+    String language) {
+
+  ModuleLayer layer = App.class.getModule().getLayer();
+  return ServiceLoader.load(layer, GreeterFactory.class)
+      .stream()
+      .filter(gf -> gf.type().getAnnotation(
+          GreeterDefinition.class).lang().equals(language))
+      .map(gf -> gf.get())
+      .findFirst();
+}
+----
+====
+
+== Seeing it in Action
+
+Lastly, let's take a look at the complete Greeter application in action.
+Here it is, initially with two, and then with three greeter implementations:
+
+image::layrry_plugins_demo.gif[Plug-in-based Application With Layrry]
+
+The layers configuration file is adjusted to load greeter plug-ins from the _plugins_ directory;
+initially, two greeters for English and French exist.
+Then the German greeter implementation gets picked up by the application after adding it to the plug-in directory,
+without requiring any changes to the application tiself.
+
+The https://github.com/moditect/layrry/tree/master/plugin-example[complete source code],
+including the logic for displaying all the available greeters and prompting for input,
+is available in the https://github.com/moditect/layrry[Layrry repository] on GitHub.
+
+And there you have it, a basic plug-in architecture using Layrry and the Java Module System.
+Going forward, this might evolve in a few ways.
+E.g. it might be desirable to detect additional plug-ins without having to restart the application,
+e.g. when thinking of desktop application use cases.
+While loading additional plug-ins in new layers should be comparatively easy,
+unloading already loaded layers, e.g. when updating a plug-in to a newer version,
+could potentially be quite tricky.
+In particular, there's no way to actively unload layers, so we'd have to rely on the garbage collector to clean up unused layers, making sure no references to any of their classes are kept in other, active layers.
+
+One also could think of an event bus, allowing different plug-ins to communicate in a safe, yet loosely coupled way.
+What requirements would you have for plug-in centered applications running on the Java Module System?
+Let's exchange in the comments below!
+
+
