@@ -1,0 +1,147 @@
+---
+title: "The Emitter Parameter Pattern for Flexible SPI Contracts"
+date: 2020-05-04T17:30:00+02:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+For libraries and frameworks it's a common requirement to make specific aspects customizeable via https://en.wikipedia.org/wiki/Service_provider_interface[service provider interfaces] (SPIs):
+contracts to be implemented by the application developer, which are then invoked by framework code,
+adding new or replacing existing functionality.
+
+Often times, the method implementations of such an SPI need to return value(s) to the framework.
+An alternative to return values are "emitter parameters":
+passed by the framework to the SPI method, they offer an _API_ for receiving value(s) via method calls.
+Certainly not revolutionary or even a new idea,
+I find myself using emitter parameters more and more in libraries and frameworks I work on.
+Hence I'd like to discuss some advantages I perceive about the emitter parameter pattern.
+
+<!--more-->
+
+== An Example
+
+As an example, let's consider a blogging platform which provides an SPI for extracting categories and tags from given blog posts.
+Application developers can plug in custom implementations of that SPI,
+e.g. based on the latest and greatest algorithms in information retrieval and machine learning.
+Here's how a basic SPI contract for this use case could look like,
+using regular method return values:
+
+[source,java,indent=0,linenums=true]
+----
+public interface BlogPostDataExtractor {
+
+  Set<String> extractCategories(String contents);
+  Set<String> extractTags(String contents);
+}
+----
+
+This probably would get the job done, but there are a few problems:
+any implementation will have to do two passes on the given blog post contents,
+once in each method -- not ideal.
+Also let's assume that most blog posts only belong to exactly one category.
+Implementations still would have allocate a set for the single returned category.
+
+While there's not much we can do about the second issue with a return value based design,
+the former problem could be addressed by combining the two methods:
+
+[source,java,indent=0,linenums=true]
+----
+public interface BlogPostDataExtractor {
+
+  CategoriesAndText extractCategoriesAndTags(String contents);
+}
+----
+
+Now an implementation can retrieve both categories and tags at once.
+But it's worth thinking about how an SPI implementation would instantiate the return type.
+
+Exposing a concrete class to be instantiated by implementors poses a challenge for future evolution of the SPI:
+following the best practice and making the return object type immutable,
+all its properties must be passed to its constructor.
+Now if an additional attribute should be extracted from blog posts,
+such as a teaser,
+the existing constructor cannot be modified
+(so to not break existing user code) and we'd have to introduce new constructors whenever adding further attributes.
+Dealing with all these constructors could become quite inconvinient,
+in particular if a specific SPI implementation is only interested in producing some of the attributes.
+
+All in all, for SPIs it's often a good idea to only expose interfaces, but no concrete classes.
+So we could make the return type an interface and leave it to SPI implementors to create an implementation class, but that'd be rather tedious.
+
+== The Emitter Parameter Pattern
+
+Or, we could provide some sort of builder object which can be used to construct `CategoriesAndText` objects.
+But then why even return an object at all, instead of simply mutating the state of a builder that is provided through a method parameter?
+And that's essentially what the emitter parameter pattern is about:
+passing in an object which can be used to _emit_ the values which should be "returned" by the method.
+
+[NOTE]
+====
+I'm not aware of any specific name for this pattern,
+so I came up with "emitter parameter pattern" (the notion of callback parameters is related, yet different).
+And hey, perhaps I'll become famous for coining a design pattern name ;)
+====
+
+Here's how the extractor SPI could look like when designed with an emitter parameter:
+
+[source,java,indent=0,linenums=true]
+----
+public interface BlogPostDataExtractor {
+
+  void extractData(String contents, BlogPostDataReceiver data);
+
+  interface BlogPostDataReceiver {
+
+    void addCategory(String category);
+    void addTag(String tag);
+  }
+}
+----
+
+An implementation would emit the retrieved information by invoking the methods on the `data` parameter:
+
+[source,java,indent=0,linenums=true]
+----
+public class MyBlogPostDataExtractor implements BlogPostDataExtractor {
+
+  public void extractData(String contents, BlogPostDataReceiver data) {
+    String category = ...;
+    Stream<String> tags = ...;
+
+    data.addCatgory(category);
+    tags.forEach(data::addTag);
+  }
+}
+----
+
+This approach nicely avoids all the issues with the return value based design:
+
+* *Single and multiple value case handled uniformly*: an implementation can call `addCategory()` just once, or multiple times; either way, it doesn't have to deal with the creation of a set, list, or other container for the produced value
+* *Flexible evolution of the SPI contract*: new methods such as `addTeaser()` can be added to the emitter parameter type, avoiding the creation of more and more return type constructors;
+as the passed `BlogPostDataReceiver` instance is controlled by the framework itself, we also could add methods which provide more context required for the task at hand
+* *No need for exposing concrete types on the SPI surface*: as no return value needs to be instantiated by SPI implementations, the solution works solely with interfaces on the SPI surface;
+this provides more control to the framework, e.g. the emitter object could be re-used etc.
+* *Flexible implementation choices*: by not requiring SPI implementations to allocate any return objects,
+the platform gains a lot of flexibility for how it's processing the emitted values:
+while it _could_ collect the values in a set or list, it also has the option to not allocate any intermediary collections, but process and pass on values one-by-one in a streaming-based way, without any of this impacting SPI implementors
+
+Now, are there some downsides to this approach, too?
+I can see two: if a method only ever should yield a single value, the emitter API might be misleading.
+We could raise an exception though if an emitter method is called more than once.
+Also an implementation might hold on to the emitter object and call its methods after the call flow has returned from the SPI method,
+which typically isn't desirable.
+Again that's something that can be prevented by invalidating the emitter object after the SPI method returned,
+raising an exception in case of further method invocations.
+
+Overall, I think the emitter parameter pattern is a valuable tool in the box of library and framework authors;
+it provides flexibility for implementation choices and future evolution when designing SPIs.
+Real-world examples include the https://docs.jboss.org/hibernate/beanvalidation/spec/2.0/api/index.html?javax/validation/valueextraction/ValueExtractor.html[ValueExtractor] SPI in Bean Validation 2.0
+(where it was chosen to provide a uniform value of extracting single and multiple values from container objects) and the https://github.com/debezium/debezium/blob/master/debezium-core/src/main/java/io/debezium/pipeline/spi/ChangeRecordEmitter.java[ChangeRecordEmitter] contract in Debezium's SPI.
+
+_Many thanks to https://twitter.com/nilshartmann[Nils Hartmann] for reviewing an early version of this blog post._
