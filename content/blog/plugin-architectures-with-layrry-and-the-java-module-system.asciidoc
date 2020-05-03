@@ -76,6 +76,44 @@ with three different language implementations:
 
 image::layrry_plugin_architecture_overview.svg[]
 
+////
+Edit on https://www.planttext.com/
+
+@startuml
+
+package "greeter-platform" {
+  [greeter-api@1.0.0]
+}
+
+package "greeter-de" {
+  [greeter-de@1.0.0]
+  [greeter-de@1.0.0] -down-> [greeter-api@1.0.0]
+  [greeter-de@1.0.0] -left-> [date-util@2.0.0]
+}
+
+package "greeter-en" {
+  [greeter-en@1.0.0]
+  [greeter-en@1.0.0] -down-> [greeter-api@1.0.0]
+  [greeter-en@1.0.0] -left-> [date-util@1.0.0]
+}
+
+package "greeter-fr" {
+  [greeter-fr@1.0.0]
+  [greeter-fr@1.0.0] -down-> [greeter-api@1.0.0]
+  [greeter-fr@1.0.0] -left-> [date-util@3.0.0]
+}
+
+package "greeter-app" {
+  [greeter-app@1.0.0]
+  [greeter-app@1.0.0] -down-> [greeter-de@1.0.0]
+  [greeter-app@1.0.0] -down-> [greeter-en@1.0.0]
+  [greeter-app@1.0.0] -down-> [greeter-fr@1.0.0]
+}
+@enduml
+////
+
+
+
 The application is made up of five different layers:
 
 * _greeter-platform_: contains the `Greeter` and `GreeterFactory` contracts
