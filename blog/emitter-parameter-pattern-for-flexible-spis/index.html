@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>The Emitter Parameter Pattern for Flexible SPI Contracts - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="The Emitter Parameter Pattern for Flexible SPI Contracts" />
+<meta property="og:description" content="
+For libraries and frameworks it&#8217;s a common requirement to make specific aspects customizeable via service provider interfaces (SPIs):
+contracts to be implemented by the application developer, which then are invoked by framework code,
+adding new or replacing existing functionality.
+
+
+Often times, the method implementations of such an SPI need to return value(s) to the framework.
+An alternative to return values are &#34;emitter parameters&#34;:
+passed by the framework to the SPI method, they offer an API for receiving value(s) via method calls.
+Certainly not revolutionary or even a new idea,
+I find myself using emitter parameters more and more in libraries and frameworks I work on.
+Hence I&#8217;d like to discuss some advantages I perceive about the emitter parameter pattern.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/emitter-parameter-pattern-for-flexible-spis/" />
+<meta property="article:published_time" content="2020-05-04T17:30:00+02:00" />
+<meta property="article:modified_time" content="2020-05-04T17:30:00+02:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="The Emitter Parameter Pattern for Flexible SPI Contracts"/>
+<meta name="twitter:description" content="
+For libraries and frameworks it&#8217;s a common requirement to make specific aspects customizeable via service provider interfaces (SPIs):
+contracts to be implemented by the application developer, which then are invoked by framework code,
+adding new or replacing existing functionality.
+
+
+Often times, the method implementations of such an SPI need to return value(s) to the framework.
+An alternative to return values are &#34;emitter parameters&#34;:
+passed by the framework to the SPI method, they offer an API for receiving value(s) via method calls.
+Certainly not revolutionary or even a new idea,
+I find myself using emitter parameters more and more in libraries and frameworks I work on.
+Hence I&#8217;d like to discuss some advantages I perceive about the emitter parameter pattern.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet">
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+		<div class="post-header">
+			<h1 class="title">The Emitter Parameter Pattern for Flexible SPI Contracts</h1>
+			<div class="meta">Posted at May 4, 2020</div>
+		</div>
+
+		<div class="markdown">
+			<div class="paragraph">
+<p>For libraries and frameworks it&#8217;s a common requirement to make specific aspects customizeable via <a href="https://en.wikipedia.org/wiki/Service_provider_interface">service provider interfaces</a> (SPIs):
+contracts to be implemented by the application developer, which then are invoked by framework code,
+adding new or replacing existing functionality.</p>
+</div>
+<div class="paragraph">
+<p>Often times, the method implementations of such an SPI need to return value(s) to the framework.
+An alternative to return values are "emitter parameters":
+passed by the framework to the SPI method, they offer an <em>API</em> for receiving value(s) via method calls.
+Certainly not revolutionary or even a new idea,
+I find myself using emitter parameters more and more in libraries and frameworks I work on.
+Hence I&#8217;d like to discuss some advantages I perceive about the emitter parameter pattern.</p>
+</div>
+<div class="sect1">
+<h2 id="_an_example">An Example</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As an example, let&#8217;s consider a blogging platform which provides an SPI for extracting categories and tags from given blog posts.
+Application developers can plug in custom implementations of that SPI,
+e.g. based on the latest and greatest algorithms in information retrieval and machine learning.
+Here&#8217;s how a basic SPI contract for this use case could look like,
+using regular method return values:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">BlogPostDataExtractor</span> <span class="o">{</span>
+
+  <span class="nc">Set</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="nf">extractCategories</span><span class="o">(</span><span class="nc">String</span> <span class="n">contents</span><span class="o">);</span>
+  <span class="nc">Set</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="nf">extractTags</span><span class="o">(</span><span class="nc">String</span> <span class="n">contents</span><span class="o">);</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This probably would get the job done, but there are a few problems:
+any implementation will have to do two passes on the given blog post contents,
+once in each method&#8201;&#8212;&#8201;not ideal.
+Also let&#8217;s assume that most blog posts only belong to exactly one category.
+Implementations still would have to allocate a set for the single returned category.</p>
+</div>
+<div class="paragraph">
+<p>While there&#8217;s not much we can do about the second issue with a return value based design,
+the former problem could be addressed by combining the two methods:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">BlogPostDataExtractor</span> <span class="o">{</span>
+
+  <span class="nc">CategoriesAndTags</span> <span class="nf">extractCategoriesAndTags</span><span class="o">(</span><span class="nc">String</span> <span class="n">contents</span><span class="o">);</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now an implementation can retrieve both categories and tags at once.
+But it&#8217;s worth thinking about how an SPI implementation would instantiate the return type.</p>
+</div>
+<div class="paragraph">
+<p>Exposing a concrete class to be instantiated by implementors poses a challenge for future evolution of the SPI:
+following the best practice and making the return object type immutable,
+all its properties must be passed to its constructor.
+Now if an additional attribute should be extracted from blog posts,
+such as a teaser,
+the existing constructor cannot be modified,
+so to not break existing user code.
+Instead, we&#8217;d have to introduce new constructors whenever adding further attributes.
+Dealing with all these constructors could become quite inconvenient,
+in particular if a specific SPI implementation is only interested in producing some of the attributes.</p>
+</div>
+<div class="paragraph">
+<p>All in all, for SPIs it&#8217;s often a good idea to only expose interfaces, but no concrete classes.
+So we could make the return type an interface and leave it to SPI implementors to create an implementation class, but that&#8217;d be rather tedious.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_emitter_parameter_pattern">The Emitter Parameter Pattern</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Or, we could provide some sort of builder object which can be used to construct <code>CategoriesAndTags</code> objects.
+But then why even return an object at all, instead of simply mutating the state of a builder that is provided through a method parameter?
+And that&#8217;s essentially what the emitter parameter pattern is about:
+passing in an object which can be used to <em>emit</em> the values which should be "returned" by the method.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>I&#8217;m not aware of any specific name for this pattern,
+so I came up with "emitter parameter pattern" (the notion of callback parameters is related, yet different).
+And hey, perhaps I&#8217;ll become famous for coining a design pattern name ;)
+Please let me know in the comments below if you know this pattern under a different name.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Here&#8217;s how the extractor SPI could look like when designed with an emitter parameter:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">BlogPostDataExtractor</span> <span class="o">{</span>
+
+  <span class="kt">void</span> <span class="nf">extractData</span><span class="o">(</span><span class="nc">String</span> <span class="n">contents</span><span class="o">,</span> <span class="nc">BlogPostDataReceiver</span> <span class="n">data</span><span class="o">);</span>
+
+  <span class="kd">interface</span> <span class="nc">BlogPostDataReceiver</span> <span class="o">{</span>
+
+    <span class="kt">void</span> <span class="nf">addCategory</span><span class="o">(</span><span class="nc">String</span> <span class="n">category</span><span class="o">);</span>
+    <span class="kt">void</span> <span class="nf">addTag</span><span class="o">(</span><span class="nc">String</span> <span class="n">tag</span><span class="o">);</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>An implementation would emit the retrieved information by invoking the methods on the <code>data</code> parameter:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyBlogPostDataExtractor</span> <span class="kd">implements</span> <span class="nc">BlogPostDataExtractor</span> <span class="o">{</span>
+
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">extractData</span><span class="o">(</span><span class="nc">String</span> <span class="n">contents</span><span class="o">,</span> <span class="nc">BlogPostDataReceiver</span> <span class="n">data</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">String</span> <span class="n">category</span> <span class="o">=</span> <span class="o">...;</span>
+    <span class="nc">Stream</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">tags</span> <span class="o">=</span> <span class="o">...;</span>
+
+    <span class="n">data</span><span class="o">.</span><span class="na">addCatgory</span><span class="o">(</span><span class="n">category</span><span class="o">);</span>
+    <span class="n">tags</span><span class="o">.</span><span class="na">forEach</span><span class="o">(</span><span class="nl">data:</span><span class="o">:</span><span class="n">addTag</span><span class="o">);</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This approach nicely avoids all the issues with the return value based design:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Single and multiple value case handled uniformly</strong>: an implementation can call <code>addCategory()</code> just once, or multiple times; either way, it doesn&#8217;t have to deal with the creation of a set, list, or other container for the produced value(s)</p>
+</li>
+<li>
+<p><strong>Flexible evolution of the SPI contract</strong>: new methods such as <code>addTeaser()</code>, or <code>addTags(String&#8230;&#8203; tags)</code> can be added to the emitter parameter type, avoiding the creation of more and more return type constructors;
+as the passed <code>BlogPostDataReceiver</code> instance is controlled by the framework itself, we also could add methods which provide more context required for the task at hand</p>
+</li>
+<li>
+<p><strong>No need for exposing concrete types on the SPI surface</strong>: as no return value needs to be instantiated by SPI implementations, the solution works solely with interfaces on the SPI surface;
+this provides more control to the framework, e.g. the emitter object could be re-used etc.</p>
+</li>
+<li>
+<p><strong>Flexible implementation choices</strong>: by not requiring SPI implementations to allocate any return objects,
+the platform gains a lot of flexibility for how it&#8217;s processing the emitted values:
+while it <em>could</em> collect the values in a set or list, it also has the option to not allocate any intermediary collections, but process and pass on values one-by-one in a streaming-based way, without any of this impacting SPI implementors</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Now, are there some downsides to this approach, too?
+I can see two: if a method only ever should yield a single value, the emitter API might be misleading.
+We could raise an exception though if an emitter method is called more than once.
+Also an implementation might hold on to the emitter object and invoke its methods after the call flow has returned from the SPI method,
+which typically isn&#8217;t desirable.
+Again that&#8217;s something that can be prevented by invalidating the emitter object after the SPI method returned,
+raising an exception in case of further method invocations.</p>
+</div>
+<div class="paragraph">
+<p>Overall, I think the emitter parameter pattern is a valuable tool in the box of library and framework authors;
+it provides flexibility for implementation choices and future evolution when designing SPIs.
+Real-world examples include the <a href="https://docs.jboss.org/hibernate/beanvalidation/spec/2.0/api/index.html?javax/validation/valueextraction/ValueExtractor.html">ValueExtractor</a> SPI in Bean Validation 2.0
+(where it was chosen to provide a uniform value of extracting single and multiple values from container objects) and the <a href="https://github.com/debezium/debezium/blob/master/debezium-core/src/main/java/io/debezium/pipeline/spi/ChangeRecordEmitter.java">ChangeRecordEmitter</a> contract in Debezium&#8217;s SPI.</p>
+</div>
+<div class="paragraph">
+<p><em>Many thanks to <a href="https://twitter.com/hpgrahsl">Hans-Peter Grahsl</a> and <a href="https://twitter.com/nilshartmann">Nils Hartmann</a> for reviewing an early version of this blog post.</em></p>
+</div>
+</div>
+</div>
+		</div>
+
+		<div class="post-tags">
+			
+				
+			
+		</div><div id="disqus_thread"></div>
+<script type="text/javascript">
+	(function () {
+		
+		
+		if (window.location.hostname == "localhost")
+			return;
+
+		var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+		var disqus_shortname = 'morlingdev';
+		dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+		(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+	})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by
+		Disqus.</a></noscript>
+<a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2020 Gunnar Morling |  Built with <a href="https://gohugo.io">Hugo</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</body>
+</html>
