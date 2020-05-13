@@ -1,0 +1,227 @@
+---
+title: "Single Message Transformations - The Swiss Army Knife of Kafka Connect"
+date: 2020-05-14T15:30:00+02:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+Do you remember Angus "Mac" MacGyver?
+The always creative protagonist of the popular 80ies/90ies tv show, who could solve about any problem with nothing more than Swiss Army knife, duct tape, shoe strings and a paper clip?
+
+The single message transformations (SMTs) of Kafka Connect are almost as versatile as MacGyver's swiss army knife:
+
+* How to change the timezone or format of date/time message fields?
+* How to change the topic a specific message gets sent to?
+* How to filter out specific records?
+
+SMTs can be the answer to these and many other questions that come up in the context of Kafka Connect.
+Applied to source or sink connectors,
+SMTs allow to modify Kafka records before they are sent to Kafka, or after they are consumed from a topic, respectively.
+
+<!--more-->
+
+In this post I'd like to focus on some interesting (hopefully anyways) usages of SMTs.
+Those use cases are mostly based on my experiences from using Kafka Connect with https://debezium.io/[Debezium], an open-source platform for change data capture (CDC).
+I also got some great pointers on interesting SMT usages when https://twitter.com/gunnarmorling/status/1253005581071405056[asking the community] about this on Twitter some time ago:
+
+[quote]
+____
+Hey users of https://twitter.com/hashtag/ApacheKafka[#ApacheKafka] Connect: what are your use cases for single message transformations (SMTs)?
+
+I'm working on a blog post about some interesting SMT applications and would be curious to learn about your usages of SMTs 🙏.
+
+-- Gunnar "Not Home Alone" Morling 🌍 (@gunnarmorling) link:https://twitter.com/gunnarmorling/status/1253005581071405056[April 22, 2020]
+____
+
+I definitely recommend to check out the thread; thanks a lot to all who replied!
+In order to learn more about SMTs in general, how to configure them etc. refer to the resources given towards the end of this post.
+
+== Format Conversions
+
+Probably the most common application of SMTs is format conversion,
+i.e. adjustments to type, format and representation of data.
+This may apply to entire messages, or to specific message attributes.
+Let's first look at a few examples for converting individual message attribute formats:
+
+* *Timestamps:* Different systems tend to have different assumptions of how timestamps should be typed and formatted.
+Debezium for instance represents most temporal column types as milli-seconds since epoch.
+Change event consumers on the other hand might expect such date and time values using Kafka Connect's `Date` type, or as an ISO-8601 formatted string, potentially using a specific timezone
+* *Value masking:* Sensitive data might have be masked or truncated, or specific fields should even be removed altogether; the `org.apache.kafka.connect.transforms.MaskField` and `ReplaceField` SMTs https://kafka.apache.org/documentation/#connect_transforms[shipping with Kafka Connect] out of the box come in handy for that
+* *Numeric types:* Similar to timestamps, requirements around the representation of (decimal) numbers may differ between systems; e.g. Kafka Connect's `Decimal` type allows to convey arbitrary-precision decimals, but its binary representation of numbers might not be supported by all sink connectors and consumers
+
+In all these cases, either existing, ready-made SMTs or bespoke implementations can be used to apply the required attribute type and/or format conversions.
+
+When using Kafka Connect for integrating legacy services and databases with newly built microservices, such format conversions can play an important role for creating an _anti-corruption layer_: by using better field names, choosing more suitable data types or by removing unneeded fields, SMTs can help to shield a new service's model from the oddities and quirks of the legacy world.
+
+But SMTs cannot only modify the representation of single fields, also the format and structure of entire messages can be adjusted.
+E.g. Kafka Connect's `ExtractField` transformation allows to extract a single field from a message and propagate that one.
+A related SMT is Debezium's SMT for https://debezium.io/documentation/reference/configuration/event-flattening.html[change event "flattening"].
+It can be used to convert the complex Debezium change event structure with old and new row state, metadata and more, into a flat row representation, which can be consumed by many existing sink connectors.
+
+SMTs also allow to fine-tune schema namespaces; that can be of interest when working with a schema registry for managing schemas and their versions, and specific schema namespaces should be enforced for the messages on given topics.
+Another very useful example of an SMT in this category is https://github.com/jcustenborder/kafka-connect-transform-xml[kafka-connect-transform-xml] by Jeremy Custenborder, which will take XML text and produce a typed Kafka Connect `Struct`,
+based on a given XML schema.
+
+Lastly, as special kind of format conversion, SMTs can be used to modify or set the key of Kafka records.
+This may be desirable if a source connector doesn't produce any meaningful key, but one can be extracted from the record value.
+Also _changing_ the message key can be useful, when considering subsequent stream processing.
+Choosing matching keys right at the source side e.g. allows for joining multiple topics via Kafka Streams, without the need for re-keying records.
+
+== Ensuring Backwards Compatibility
+
+Changes to the schema of Kafka records can potentially be disruptive for consumers.
+If for instance a record field gets renamed, a consumer must be adapted accordingly,
+reading the value using the new field name.
+In case a field gets dropped altogether, consumers must not expect this field any longer.
+
+Message transformations can help with such transition from one schema version to the next,
+thus reducing the coupling of the lifecycles of message producers and consumers.
+In case of a renamed field, an SMT could add the field another time, using the original name.
+That'll allow consumers to continue reading the field using the old name and to be upgraded to use the new name at their own pace.
+After some time, once all consumers have been adjusted, the SMT can be removed again,
+only exposing the new field name going forward.
+Similarly, a field that got removed from a message schema could be re-added,
+using some sort of constant placeholder value.
+Again consumers could then be updated at their own pace to not expect and access that field any longer.
+
+It should be said though that there are limits for this usage: e.g. when changing the type of a field,
+there's not much that could be done using an SMT for smoothening such transition.
+
+== Filtering and Routing
+
+When applied on the source side,
+SMTs allow to filter out specific records produced by the connector.
+They also can be used for controlling the Kafka topic a record gets sent to.
+That's in particular interesting when basing filtering and routing on the actual record contents.
+In an IoT scenario for instance where Kafka Connect is used to ingest data from some kind of sensors,
+an SMT might be used to filter out all sensor measurements _below_ a certain threshhold, or route measurement events _above_ a threshold to a special topic.
+
+Debezium  provides a range of SMTs for record filtering and routing:
+
+* The https://debezium.io/documentation/reference/configuration/topic-routing.html[logical topic routing SMT] allows to send change events originating from multiple tables to the same Kafka topic,
+which can be useful when working with partition tables in Postgres, or with data that is sharded into multiple tables
+* The https://debezium.io/documentation/reference/1.2/configuration/filtering.html[`Filter`] and `ContentBasedRouter` SMTs let you use script expressions in languages such as Groovy or JavaScript for filtering and routing change events based on their contents;
+such script-based approach can be an interesting middleground between ease-of-use (no Java code must be compiled and deployed to Kafka Connect) and expressiveness; e.g. here is how the routing SMT could be used with https://github.com/graalvm/graaljs[GraalVM's JavaScript engine] for routing change events from a table with purchase orders to different topics in Kafka, based on the order type:
++
+[source]
+----
+...
+transforms=route
+transforms.route.type=io.debezium.transforms.ContentBasedRouter
+transforms.route.topic.regex=.*purchaseorders
+transforms.route.language=jsr223.graal.js
+transforms.route.topic.expression=
+    value.after.ordertype == 'B2B' ? 'b2b_orders' : 'b2c_orders'
+...
+----
+* The https://debezium.io/documentation/reference/configuration/outbox-event-router.html[outbox event router] comes in handy when implementing the https://microservices.io/patterns/data/transactional-outbox.html[transactional outbox pattern] for data propagation between microservices: it can be used to send events originating from a single outbox table to a specific Kafka topic per aggregate or event type
+
+There are also two SMTs for routing purposes in Kafka Connect itself: `RegexRouter` which allows to re-route records two different topics based on regular expressions, and `TimestampRouter` for determining topic names based on the record's timestamp.
+
+While routing SMTs usually are applied to source connectors
+(defining the Kafka topic a record gets sent to),
+it can also make sense to use them with sink connectors.
+That's the case when a sink connector derives the name of downstream table names, index names or similar from the topic name.
+
+== Tombstone Handling
+
+Tombstone records are Kafka records with a `null` value.
+They carry special semantics when working with https://kafka.apache.org/documentation/#compaction[compacted topics]:
+during log compaction, all records with the same key as a tombstone record will be removed from the topic.
+
+Tombstones will be retained on a topic for a configurable time before compaction happens (controlled via https://kafka.apache.org/documentation/#delete.retention.ms[`delete.retention.ms`] topic setting),
+which means that also Kafka Connect sink connectors need to handle them.
+Unfortunately though, not all connectors are prepared for records with a `null` value,
+typically resulting in ``NullPointerException``s and similar.
+A filtering SMT such as the one above can be used to drop tombstone records in such case.
+
+But also the exact opposite -- producing tombstone records -- can be useful:
+some sink connectors use tombstone records as the indicator to delete corresponding rows from a downstream datastore.
+Now when using a a CDC connector like Debezium to capture changes from a database where "soft deletes" are used (i.e. records are not physically deleted but a logically deleted flag is set to `true` when deleting a record), those change events will be exported as update events (which they technically are).
+A bespoke SMT can be used to translate these update events into tombstone records, triggering the deletion of corresponding records in downstream datastores.
+
+== Externalizing Large Payloads
+
+Even some advanced https://www.enterpriseintegrationpatterns.com/[enterprise application patterns] can be implemented with the help of SMTs, one example being the https://www.enterpriseintegrationpatterns.com/patterns/messaging/StoreInLibrary.html[claim check pattern].
+This pattern comes in handy in situations like this:
+
+[quote]
+____
+A message may contain a set of data items that may be needed later in the message flow, but that are not necessary for all intermediate processing steps. We may not want to carry all this information through each processing step because it may cause performance degradation and makes debugging harder because we carry so much extra data.
+
+-- Gregor Hohpe, Bobby Woolf; Enterprise Application Patterns
+____
+
+A specific example could again be a CDC connector that captures changes from a database table `Users`, with a BLOB column that contains the user's profile picture
+(surely not a best practice, still not that uncommon in reality...).
+
+When propagating change data events from that table to Apache Kafka,
+adding the picture data to each event poses a significant overhead.
+In particular, if the picture BLOB hasn't changed between two events at all.
+Using an SMT, the BLOB data could be externalized to some other storage.
+On the source side, the SMT could extract the image data from the original record and e.g. write it to a network file system or an Amazon S3 bucket.
+The corresponding field in the record would be updated so it just contains the unique address of the externalised payload, such as the S3 bucket name and file path:
+
+image::kafka_connect_smt_claimcheck_pattern.png[]
+
+As an optimization, it could be avoided to re-upload unchanged file contents another time by comparing earlier and current hash of the externalized file.
+
+A corresponding SMT instance applied to sink connectors would retrieve the identifier of the externalized files from the incoming record, obtain the contents from the external storage and put it back into the record before passing it on to the connector.
+
+== Limitations
+
+As we've seen, single message transformations can help to address quite a few requirements that commonly come up for users of Kafka Connect.
+
+But there are limitations, too;
+the biggest one being right there in the name:
+SMTs only can be used to process _single_ records, one at a time.
+E.g. you cannot split up a record into multiple ones using an SMT, as they only can return (at most) one record.
+Also any kind of stateful processing, like aggregating data from multiple records, or correlating records from several topics is off limits for SMTs.
+For such use cases, you should be looking at stream processing technologies like https://kafka.apache.org/25/documentation/streams/developer-guide/[Kafka Streams] and https://flink.apache.org/[Apache Flink]; also integration technologies like https://camel.apache.org/[Apache Camel] can be of great use here.
+
+One thing to be aware of when working with SMTs is configuration complexity;
+when using generic, highly configurable SMTs, you might end up with lengthy configuration that's hard to grasp and debug.
+You might be better off implementing a bespoke SMT which is focussing on one particular task, leveraging the full capabilities of the Java programming language.
+
+[NOTE]
+.SMT Testing
+====
+Whether you use ready-made SMTs by means of configuration, or you implement custom SMTs in Java,
+testing your work is essential.
+
+While unit tests are a viable option for basic testing of bespoke SMT implementations,
+integration tests running against Kafka Connect connectors are recommended for testing SMT configurations.
+That way you'll be sure that the SMT can process actual messages and it has been configured the way you intended to.
+
+Testcontainers and the Debezium https://debezium.io/documentation/reference/integrations/testcontainers.html[support for Testcontainers] are a great foundation for setting up all the required components such as Apache Kafka, Kafka Connect, connectors and the SMTs to test.
+====
+
+A specific feature I wished for every now and then is the ability to apply SMTs only to a specific sub-set of the topics created or consumed by a connector.
+In particular if connectors create different kinds of topics (like an actual data topic and another one with with metadata),
+it can be desirable to apply SMTs only to the topics of one group but not the other.
+This requirement is captured in https://cwiki.apache.org/confluence/display/KAFKA/KIP-585%3A+Filter+and+Conditional+SMTs[KIP-585] ("Filter and Conditional SMTs"),
+please join the discussion on that one if you got requirements or feedback related to that.
+
+== Learning More
+
+There are several great presentations and blog posts out which describe in depth what SMTs,
+how you can implement your own one,
+how they are configured etc.
+
+Here are a few resources I found particularly helpful:
+
+* https://cwiki.apache.org/confluence/display/KAFKA/KIP-66%3A+Single+Message+Transforms+for+Kafka+Connect[KIP-66]: The original KIP (Kafka Improvement Proposal) that introduced SMTs
+* https://www.slideshare.net/ConfluentInc/kafka-summit-nyc-2017-singe-message-transforms-are-not-the-transformations-youre-looking-for[Singe Message Transforms are not the Transformations You're Looking For]: A great overview on SMTs, their capabilities as well as limitations, by Ewen Cheslack-Postava
+* https://medium.com/credimi-tech-blog/an-on-the-field-experience-with-kafka-connect-smts-45b170cbb5fa[A hands-on experience with Kafka Connect SMTs]: In-depth blog post on SMT use cases, things to be aware of and more, by Gian D'Uia
+
+Now, considering this wide range of use cases for SMTs, would MacGyver like and use them for implementing various tasks around Kafka Connect?
+I would think that yes.
+But as always, the right tool for the job must be chosen: sometimes an SMT may be a great fit, another time a more flexible (and complex) stream processing solution might be preferable.
+
+Just as MacGyver, you got to make a call when to use your Swiss Army knife, duct tape or a shoe string.
