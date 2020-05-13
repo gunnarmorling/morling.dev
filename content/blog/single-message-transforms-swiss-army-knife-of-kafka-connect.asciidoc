@@ -42,6 +42,10 @@ ____
 I definitely recommend to check out the thread; thanks a lot to all who replied!
 In order to learn more about SMTs in general, how to configure them etc. refer to the resources given towards the end of this post.
 
+For each category of use cases, I've also asked our sympathetic tv hero for his opinion on the usefulness of SMTs for the task at hand.
+You can find his rating at the end of each section,
+given on a scale from 📎 (poor fit) to 📎📎📎📎📎 (perfect fit).
+
 == Format Conversions
 
 Probably the most common application of SMTs is format conversion,
@@ -65,13 +69,15 @@ A related SMT is Debezium's SMT for https://debezium.io/documentation/reference/
 It can be used to convert the complex Debezium change event structure with old and new row state, metadata and more, into a flat row representation, which can be consumed by many existing sink connectors.
 
 SMTs also allow to fine-tune schema namespaces; that can be of interest when working with a schema registry for managing schemas and their versions, and specific schema namespaces should be enforced for the messages on given topics.
-Another very useful example of an SMT in this category is https://github.com/jcustenborder/kafka-connect-transform-xml[kafka-connect-transform-xml] by Jeremy Custenborder, which will take XML text and produce a typed Kafka Connect `Struct`,
-based on a given XML schema.
+Two more, very useful examples of SMTs in this category are https://github.com/jcustenborder/kafka-connect-transform-xml[kafka-connect-transform-xml] https://github.com/jcustenborder/kafka-connect-json-schema[kafka-connect-json-schema] by Jeremy Custenborder, which will take XML or text and produce a typed Kafka Connect `Struct`,
+based on a given XML schema or JSON schema, respectively.
 
 Lastly, as special kind of format conversion, SMTs can be used to modify or set the key of Kafka records.
 This may be desirable if a source connector doesn't produce any meaningful key, but one can be extracted from the record value.
 Also _changing_ the message key can be useful, when considering subsequent stream processing.
 Choosing matching keys right at the source side e.g. allows for joining multiple topics via Kafka Streams, without the need for re-keying records.
+
+_Mac's rating:_ &nbsp;&nbsp; 📎📎📎📎📎&nbsp;&nbsp; _SMTs are the perfect tool for format conversions of Kafka Connect records_
 
 == Ensuring Backwards Compatibility
 
@@ -92,6 +98,8 @@ Again consumers could then be updated at their own pace to not expect and access
 
 It should be said though that there are limits for this usage: e.g. when changing the type of a field,
 there's not much that could be done using an SMT for smoothening such transition.
+
+_Mac's rating:_ &nbsp;&nbsp; 📎📎📎&nbsp;&nbsp; _SMTs can help to address basic compatibility concerns around schema evolution_
 
 == Filtering and Routing
 
@@ -129,6 +137,8 @@ While routing SMTs usually are applied to source connectors
 it can also make sense to use them with sink connectors.
 That's the case when a sink connector derives the name of downstream table names, index names or similar from the topic name.
 
+_Mac's rating:_ &nbsp;&nbsp; 📎📎📎📎📎&nbsp;&nbsp; _Topic routing -- no problem for SMTs_
+
 == Tombstone Handling
 
 Tombstone records are Kafka records with a `null` value.
@@ -145,6 +155,8 @@ But also the exact opposite -- producing tombstone records -- can be useful:
 some sink connectors use tombstone records as the indicator to delete corresponding rows from a downstream datastore.
 Now when using a a CDC connector like Debezium to capture changes from a database where "soft deletes" are used (i.e. records are not physically deleted but a logically deleted flag is set to `true` when deleting a record), those change events will be exported as update events (which they technically are).
 A bespoke SMT can be used to translate these update events into tombstone records, triggering the deletion of corresponding records in downstream datastores.
+
+_Mac's rating:_ &nbsp;&nbsp; 📎📎📎📎&nbsp;&nbsp; _SMTs work well to discard tombstones or convert soft delete events into tombstones. What's not possible though is to keep the original event and produce an additional tombstone record at the same time_
 
 == Externalizing Large Payloads
 
@@ -174,12 +186,15 @@ As an optimization, it could be avoided to re-upload unchanged file contents ano
 
 A corresponding SMT instance applied to sink connectors would retrieve the identifier of the externalized files from the incoming record, obtain the contents from the external storage and put it back into the record before passing it on to the connector.
 
+_Mac's rating:_ &nbsp;&nbsp; 📎📎📎📎&nbsp;&nbsp; _SMTs can help to externalize payloads, avoiding large Kafka records. Relying on another service increases overall complexity, though_
+
 == Limitations
 
 As we've seen, single message transformations can help to address quite a few requirements that commonly come up for users of Kafka Connect.
-
 But there are limitations, too;
-the biggest one being right there in the name:
+Like MacGyver, who sometimes has to reach for some other tool than his beloved Swiss Army knife, you shouldn't think of SMTs as the perfect solution all the time.
+
+The biggest shortcoming is already hinted at in their name:
 SMTs only can be used to process _single_ records, one at a time.
 E.g. you cannot split up a record into multiple ones using an SMT, as they only can return (at most) one record.
 Also any kind of stateful processing, like aggregating data from multiple records, or correlating records from several topics is off limits for SMTs.
@@ -221,7 +236,7 @@ Here are a few resources I found particularly helpful:
 * https://medium.com/credimi-tech-blog/an-on-the-field-experience-with-kafka-connect-smts-45b170cbb5fa[A hands-on experience with Kafka Connect SMTs]: In-depth blog post on SMT use cases, things to be aware of and more, by Gian D'Uia
 
 Now, considering this wide range of use cases for SMTs, would MacGyver like and use them for implementing various tasks around Kafka Connect?
-I would think that yes.
+I would certainly think so.
 But as always, the right tool for the job must be chosen: sometimes an SMT may be a great fit, another time a more flexible (and complex) stream processing solution might be preferable.
 
 Just as MacGyver, you got to make a call when to use your Swiss Army knife, duct tape or a shoe string.
