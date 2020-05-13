@@ -30,14 +30,7 @@ In this post I'd like to focus on some interesting (hopefully anyways) usages of
 Those use cases are mostly based on my experiences from using Kafka Connect with https://debezium.io/[Debezium], an open-source platform for change data capture (CDC).
 I also got some great pointers on interesting SMT usages when https://twitter.com/gunnarmorling/status/1253005581071405056[asking the community] about this on Twitter some time ago:
 
-[quote]
-____
-Hey users of https://twitter.com/hashtag/ApacheKafka[#ApacheKafka] Connect: what are your use cases for single message transformations (SMTs)?
-
-I'm working on a blog post about some interesting SMT applications and would be curious to learn about your usages of SMTs 🙏.
-
--- Gunnar "Not Home Alone" Morling 🌍 (@gunnarmorling) link:https://twitter.com/gunnarmorling/status/1253005581071405056[April 22, 2020]
-____
+image::kafka_connect_smt_tweet.png[link=https://twitter.com/gunnarmorling/status/1253005581071405056,width=500]
 
 I definitely recommend to check out the thread; thanks a lot to all who replied!
 In order to learn more about SMTs in general, how to configure them etc. refer to the resources given towards the end of this post.
@@ -65,11 +58,11 @@ When using Kafka Connect for integrating legacy services and databases with newl
 
 But SMTs cannot only modify the representation of single fields, also the format and structure of entire messages can be adjusted.
 E.g. Kafka Connect's `ExtractField` transformation allows to extract a single field from a message and propagate that one.
-A related SMT is Debezium's SMT for https://debezium.io/documentation/reference/configuration/event-flattening.html[change event "flattening"].
+A related SMT is Debezium's SMT for https://debezium.io/documentation/reference/configuration/event-flattening.html[change event flattening].
 It can be used to convert the complex Debezium change event structure with old and new row state, metadata and more, into a flat row representation, which can be consumed by many existing sink connectors.
 
 SMTs also allow to fine-tune schema namespaces; that can be of interest when working with a schema registry for managing schemas and their versions, and specific schema namespaces should be enforced for the messages on given topics.
-Two more, very useful examples of SMTs in this category are https://github.com/jcustenborder/kafka-connect-transform-xml[kafka-connect-transform-xml] https://github.com/jcustenborder/kafka-connect-json-schema[kafka-connect-json-schema] by Jeremy Custenborder, which will take XML or text and produce a typed Kafka Connect `Struct`,
+Two more, very useful examples of SMTs in this category are https://github.com/jcustenborder/kafka-connect-transform-xml[kafka-connect-transform-xml] and https://github.com/jcustenborder/kafka-connect-json-schema[kafka-connect-json-schema] by Jeremy Custenborder, which will take XML or text and produce a typed Kafka Connect `Struct`,
 based on a given XML schema or JSON schema, respectively.
 
 Lastly, as special kind of format conversion, SMTs can be used to modify or set the key of Kafka records.
