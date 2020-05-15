@@ -51,6 +51,7 @@ Debezium for instance represents most temporal column types as milli-seconds sin
 Change event consumers on the other hand might expect such date and time values using Kafka Connect's `Date` type, or as an ISO-8601 formatted string, potentially using a specific timezone
 * *Value masking:* Sensitive data might have be to masked or truncated, or specific fields should even be removed altogether; the `org.apache.kafka.connect.transforms.MaskField` and `ReplaceField` SMTs https://kafka.apache.org/documentation/#connect_transforms[shipping with Kafka Connect] out of the box come in handy for that
 * *Numeric types:* Similar to timestamps, requirements around the representation of (decimal) numbers may differ between systems; e.g. Kafka Connect's `Decimal` type allows to convey arbitrary-precision decimals, but its binary representation of numbers might not be supported by all sink connectors and consumers
+* *Name adjustments:* Depending on the chosen serialization formats, specific field names might be unsupported; when working with https://avro.apache.org/[Apache Avro] for instance, field names must not start with a number
 
 In all these cases, either existing, ready-made SMTs or bespoke implementations can be used to apply the required attribute type and/or format conversions.
 
