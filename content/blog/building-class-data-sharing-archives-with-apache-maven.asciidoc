@@ -80,7 +80,7 @@ docker run -d -p 5432:5432 --name pgdemodb \
 ----
 
 The next step is to _run_ the application and create the CDS archive file.
-Do so by passing the `-XX:ArchiveClassesAtExit` option:
+Do so by passing the _-XX:ArchiveClassesAtExit_ option:
 
 [source,shell]
 ----
@@ -167,8 +167,8 @@ If you are aware of a way for doing so, please let me know in the comments below
 ====
 Beginning with Java 11, not only classes from the classpath can be added to CDS archives,
 but also classes from the module path of a modularized Java application.
-One important detail to consider there is that the `--upgrade-module-path` and `--patch-module` options will cause CDS to be disabled or disallowed
-(when `-Xshare:on`) is specified.
+One important detail to consider there is that the _--upgrade-module-path_ and _--patch-module_ options will cause CDS to be disabled or disallowed
+(with _-Xshare:on_) is specified.
 This is to avoid a mismatch of class metadata in the CDS archive and classes brought in by a newer module version.
 ====
 
@@ -181,7 +181,7 @@ but of course the same approach could be implemented with Gradle or any other bu
 
 The basic idea is the follow the same steps as before, but executed as part of the Maven build:
 
-1. start up the application with the `-XX:ArchiveClassesAtExit` option
+1. start up the application with the _-XX:ArchiveClassesAtExit_ option
 2. invoke some application functionality to initiate the loading of all relevant classes
 3. stop the application
 
@@ -372,6 +372,7 @@ Besides class data sharing in OpenJDK, there are some other related techniques f
 To learn more about AppCDS,
 a long yet insightful post is https://medium.com/@toparvion/appcds-for-spring-boot-applications-first-contact-6216db6a4194[this one] by Vladimir Plizga.
 Volker Simonis did another https://simonis.github.io/cl4cds/[interesting write-up].
+Also take a look at the CDS documentation in the reference docs of the https://docs.oracle.com/en/java/javase/14/docs/specs/man/java.html#application-class-data-sharing[_java_] command.
 
 Lastly, the Quarkus team is working on https://github.com/quarkusio/quarkus/pull/9710[out-of-the-box support] for CDS archives.
 This could automate the creation of an archive for all required classes,
