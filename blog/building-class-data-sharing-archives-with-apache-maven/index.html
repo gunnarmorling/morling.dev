@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Building Class Data Sharing Archives with Apache Maven - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Building Class Data Sharing Archives with Apache Maven" />
+<meta property="og:description" content="
+Ahead-of-time compilation (AOT) is the big topic in the Java ecosystem lately:
+by compiling Java code to native binaries, developers and users benefit from vastly improved start-up times and reduced memory usage.
+Spearheaded by the GraalVM project,
+Project Leyden promises to standardize AOT in a future version of the Java platform.
+
+
+This makes it easy to miss out on significant performance improvements which have been made on the JVM in recent Java versions,
+in particular when it comes to faster start-up times.
+Besides a range of improvements related to class loading, linking and bytecode verification,
+substantial work has been done around class data sharing (CDS).
+Faster start-ups are beneficial in many ways:
+shorter turnaround times during development,
+quicker time-to-first-response for users in coldstart scenarios,
+cost savings when billed by CPU time in the cloud.
+
+
+With CDS, class metadata is persisted in an archive file,
+which during subsequent application starts is mapped into memory.
+This is faster than loading the actual class files, resulting in reduced start-up times.
+When starting multiple JVM processes on the same host, read-only archives of class metadata can also be shared between the VMs, so that less memory is consumed overall.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/building-class-data-sharing-archives-with-apache-maven/" />
+<meta property="article:published_time" content="2020-06-11T17:30:00+02:00" />
+<meta property="article:modified_time" content="2020-06-11T17:30:00+02:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Building Class Data Sharing Archives with Apache Maven"/>
+<meta name="twitter:description" content="
+Ahead-of-time compilation (AOT) is the big topic in the Java ecosystem lately:
+by compiling Java code to native binaries, developers and users benefit from vastly improved start-up times and reduced memory usage.
+Spearheaded by the GraalVM project,
+Project Leyden promises to standardize AOT in a future version of the Java platform.
+
+
+This makes it easy to miss out on significant performance improvements which have been made on the JVM in recent Java versions,
+in particular when it comes to faster start-up times.
+Besides a range of improvements related to class loading, linking and bytecode verification,
+substantial work has been done around class data sharing (CDS).
+Faster start-ups are beneficial in many ways:
+shorter turnaround times during development,
+quicker time-to-first-response for users in coldstart scenarios,
+cost savings when billed by CPU time in the cloud.
+
+
+With CDS, class metadata is persisted in an archive file,
+which during subsequent application starts is mapped into memory.
+This is faster than loading the actual class files, resulting in reduced start-up times.
+When starting multiple JVM processes on the same host, read-only archives of class metadata can also be shared between the VMs, so that less memory is consumed overall.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet">
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+		<div class="post-header">
+			<h1 class="title">Building Class Data Sharing Archives with Apache Maven</h1>
+			<div class="meta">Posted at Jun 11, 2020</div>
+		</div>
+
+		<div class="markdown">
+			<div class="paragraph">
+<p>Ahead-of-time compilation (AOT) is <em>the</em> big topic in the Java ecosystem lately:
+by compiling Java code to native binaries, developers and users benefit from vastly improved start-up times and reduced memory usage.
+Spearheaded by the <a href="https://www.graalvm.org/">GraalVM</a> project,
+<a href="https://mail.openjdk.java.net/pipermail/discuss/2020-April/005429.html">Project Leyden</a> promises to standardize AOT in a future version of the Java platform.</p>
+</div>
+<div class="paragraph">
+<p>This makes it easy to miss out on significant performance improvements which have been made on the JVM in recent Java versions,
+in particular when it comes to <a href="https://cl4es.github.io/2019/11/20/OpenJDK-Startup-Update.html">faster start-up times</a>.
+Besides a range of improvements related to class loading, linking and bytecode verification,
+substantial work has been done around <a href="https://docs.oracle.com/en/java/javase/14/vm/class-data-sharing.html">class data sharing</a> (CDS).
+Faster start-ups are beneficial in many ways:
+shorter turnaround times during development,
+quicker time-to-first-response for users in coldstart scenarios,
+cost savings when billed by CPU time in the cloud.</p>
+</div>
+<div class="paragraph">
+<p>With CDS, class metadata is persisted in an archive file,
+which during subsequent application starts is mapped into memory.
+This is faster than loading the actual class files, resulting in reduced start-up times.
+When starting multiple JVM processes on the same host, read-only archives of class metadata can also be shared between the VMs, so that less memory is consumed overall.</p>
+</div>
+<div class="paragraph">
+<p>Originally a partially commercial feature of the Oracle JDK,
+CDS was completely open-sourced in JDK 10 and got incrementally improved since then in a series of Java improvement proposals:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="http://openjdk.java.net/jeps/310">JEP 310</a>, Application Class-Data Sharing (AppCDS), in JDK 10:
+"To improve startup and footprint, extend the existing [CDS] feature to allow application classes to be placed in the shared archive"</p>
+</li>
+<li>
+<p><a href="http://openjdk.java.net/jeps/341">JEP 341</a>, Default CDS Archives, in JDK 12:
+"Enhance the JDK build process to generate a class data-sharing (CDS) archive, using the default class list, on 64-bit platforms"</p>
+</li>
+<li>
+<p><a href="http://openjdk.java.net/jeps/350">JEP 350</a>, Dynamic CDS Archives, in JDK 13:
+"Extend application class-data sharing to allow the dynamic archiving of classes at the end of Java application execution. The archived classes will include all loaded application classes and library classes that are not present in the default, base-layer CDS archive"</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In the remainder of this blog post we&#8217;ll discuss how to automatically create AppCDS archives as part of your (Maven) project build,
+based on the improvements made with JEP 350.
+I.e. Java 13 or later is a prerequisite for this.
+To learn more about using CDS with the current LTS release JDK 11 and about CDS in general,
+refer to the excellent blog post <a href="https://blog.codefx.org/java/application-class-data-sharing/">on everything CDS</a> by Nicolai Parlog.</p>
+</div>
+<div class="sect1">
+<h2 id="_manually_creating_cds_archives">Manually Creating CDS Archives</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>At first let&#8217;s see what&#8217;s needed to manually create and use an AppCDS archive
+(note I&#8217;m going to use "AppCDS" and "CDS" somewhat interchangeably for the sake of brevity).
+Subsequently, we&#8217;ll discuss how the task can be automated in a Maven project build.</p>
+</div>
+<div class="paragraph">
+<p>To have an example to work with which goes beyond a plain "Hello World",
+I&#8217;ve created a <a href="https://github.com/gunnarmorling/quarkus-cds/">small web application</a> for managing personal to-dos,
+using the <a href="https://quarkus.io/">Quarkus</a> stack.
+If you&#8217;d like to follow along, clone the repo and build the project:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell">git clone git@github.com:gunnarmorling/quarkus-cds.git
+<span class="nb">cd </span>quarkus-cds
+mvn clean verify <span class="nt">-DskipTests</span><span class="o">=</span><span class="nb">true</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The application uses a Postgres database for persisting the to-dos;
+fire it up via Docker:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><span class="nb">cd </span>compose
+docker run <span class="nt">-d</span> <span class="nt">-p</span> 5432:5432 <span class="nt">--name</span> pgdemodb <span class="se">\</span>
+    <span class="nt">-v</span> <span class="si">$(</span><span class="nb">pwd</span><span class="si">)</span>/init.sql:/docker-entrypoint-initdb.d/init.sql <span class="se">\</span>
+    <span class="nt">-e</span> <span class="nv">POSTGRES_USER</span><span class="o">=</span>todouser <span class="se">\</span>
+    <span class="nt">-e</span> <span class="nv">POSTGRES_PASSWORD</span><span class="o">=</span>todopw <span class="se">\</span>
+    <span class="nt">-e</span> <span class="nv">POSTGRES_DB</span><span class="o">=</span>tododb postgres:11</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The next step is to <em>run</em> the application and create the CDS archive file.
+Do so by passing the <code>-XX:ArchiveClassesAtExit</code> option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell">java <span class="nt">-XX</span>:ArchiveClassesAtExit<span class="o">=</span>target/app-cds.jsa <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="nt">-jar</span> target/todo-manager-1.0.0-SNAPSHOT-runner.jar</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Triggers creation of a CDS archive at the given location upon application shutdown</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Only loaded classes will be added to the archive.
+As classloading on the JVM happens lazily, you must invoke some functionality in your application in order to cause all the relevant classes to be loaded.
+For that to happen, open the application&#8217;s API endpoint in a browser or invoke it via <em>curl</em>, <em>httpie</em> or similar:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell">http localhost:8080/api</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Stop the application by hitting <code>Ctrl+C</code>.
+This will create the CDS archive under <em>target/app-cds.jsa</em>.
+In our case it should have a size of about 41 MB.
+Also observe the log messages about classes which were skipped from archiving:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell">...
+<span class="o">[</span>190.220s][warning][cds] Skipping java/lang/invoke/LambdaForm<span class="nv">$MH</span>+0x0000000800bd0c40: Hidden or Unsafe anonymous class
+<span class="o">[</span>190.220s][warning][cds] Skipping java/lang/invoke/LambdaForm<span class="nv">$DMH</span>+0x0000000800fdc840: Hidden or Unsafe anonymous class
+<span class="o">[</span>190.220s][warning][cds] Pre JDK 6 class not supported by CDS: 46.0 antlr/TokenStreamIOException
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Mostly this is about hidden or anonymous classes which cannot be archived;
+there&#8217;s not so much you can do about that
+(apart from using less Lambda expressions perhaps&#8230;&#8203;).</p>
+</div>
+<div class="paragraph">
+<p>The hint on old classfile versions is more actionable:
+only classes using classfile format 50 (= JDK 1.6) or newer are supported by CDS.
+In the case at hand, the classes from <a href="https://mvnrepository.com/artifact/antlr/antlr/2.7.7">Antlr 2.7.7</a> are using classfile format 46
+(which was introduced in Java 1.2) and thus cannot be added to the CDS archive.
+Note this also applies to any subclasses, even if they themselves use a newer classfile format version.</p>
+</div>
+<div class="paragraph">
+<p>It&#8217;s thus a good idea to check whether you can upgrade to newer versions of your dependencies, as this may result in more classes becoming available for CDS,
+resulting in better start-up times in turn.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_the_cds_archive">Using the CDS Archive</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now let&#8217;s run the application again, this time <em>using</em> the previously created CDS archive:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell">java <span class="nt">-XX</span>:SharedArchiveFile<span class="o">=</span>target/app-cds.jsa <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="nt">-Xlog</span>:class+load:file<span class="o">=</span>target/classload.log <span class="se">\ </span><i class="conum" data-value="2"></i><b>(2)</b>
+    <span class="nt">-Xshare</span>:on <span class="se">\ </span><i class="conum" data-value="3"></i><b>(3)</b>
+    <span class="nt">-jar</span> target/todo-manager-1.0.0-SNAPSHOT-runner.jar</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The path to the CDS archive</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>classloading logging allows to verify whether the CDS archive gets applied as expected</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>While class data sharing is enabled by default on JDK 12 and newer, explicitely enforcing it will ensure an error is raised if something is wrong, e.g. a mismatch of Java versions between building and using the archive</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>When examining the <em>classload.log</em> file,
+you should see how most class metadata is obtained from the CDS archive ("source: shared object file"),
+while some classes such as the ancient Antlr classes are loaded just as usual from the corresponding JAR:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><span class="o">[</span>0.016s][info][class,load] java.lang.Object <span class="nb">source</span>: shared objects file
+<span class="o">[</span>0.016s][info][class,load] java.io.Serializable <span class="nb">source</span>: shared objects file
+<span class="o">[</span>0.016s][info][class,load] java.lang.Comparable <span class="nb">source</span>: shared objects file
+<span class="o">[</span>0.016s][info][class,load] java.lang.CharSequence <span class="nb">source</span>: shared objects file
+...
+<span class="o">[</span>2.555s][info][class,load] antlr.Parser <span class="nb">source</span>: file:/.../antlr.antlr-2.7.7.jar
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note it is vital that the exact same Java version is used as when creating the archive,
+otherwise an error will be raised.
+Unfortunately, this also means that AppCDS archives cannot be built cross-platform.
+This would be very useful, e.g. when building a Java application on macOS or Windows,
+which should be packaged in a Linux container.
+If you are aware of a way for doing so, please let me know in the comments below.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">CDS and the Java Module System</div>
+<div class="paragraph">
+<p>Beginning with Java 11, not only classes from the classpath can be added to CDS archives,
+but also classes from the module path of a modularized Java application.
+One important detail to consider there is that the <code>--upgrade-module-path</code> and <code>--patch-module</code> options will cause CDS to be disabled or disallowed
+(when <code>-Xshare:on</code>) is specified.
+This is to avoid a mismatch of class metadata in the CDS archive and classes brought in by a newer module version.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_creating_cds_archives_in_your_maven_build">Creating CDS Archives in Your Maven Build</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Manually creating a CDS archive is not very efficient nor reliable,
+so let&#8217;s see how the task can be automated as part of your project build.
+The following shows the required configuration when using Apache Maven,
+but of course the same approach could be implemented with Gradle or any other build system.</p>
+</div>
+<div class="paragraph">
+<p>The basic idea is the follow the same steps as before, but executed as part of the Maven build:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>start up the application with the <code>-XX:ArchiveClassesAtExit</code> option</p>
+</li>
+<li>
+<p>invoke some application functionality to initiate the loading of all relevant classes</p>
+</li>
+<li>
+<p>stop the application</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It might appear as a compelling idea to produce the CDS archive as part of regular test execution, e.g. via JUnit.
+This will not work though, as the classpath at the time of <em>using</em> the CDS archive must be not miss any entries from the classpath at the time of <em>creating</em> it.
+As during test execution all the test-scoped dependencies will be part of the classpath,
+any CDS archive created that way couldn&#8217;t be used when running the application later on without those test dependencies.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Steps 1. and 3. can be automated with help of the <a href="https://github.com/bazaarvoice/maven-process-plugin">Process-Exec</a> Maven plug-in,
+binding it to the <code>pre-integration-test</code> and <code>post-integration-test</code> build phases, respectively.
+While I was thinking of using the more widely known <a href="https://www.mojohaus.org/exec-maven-plugin/usage.html">Exec</a> plug-in initially,
+this turned out to not be viable as <a href="https://github.com/mojohaus/exec-maven-plugin/issues/18">there&#8217;s no way</a> for stopping any forked process in a later build phase.</p>
+</div>
+<div class="paragraph">
+<p>Here&#8217;s the relevant configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml">...
+<span class="nt">&lt;plugin&gt;</span>
+  <span class="nt">&lt;groupId&gt;</span>com.bazaarvoice.maven.plugins<span class="nt">&lt;/groupId&gt;</span>
+  <span class="nt">&lt;artifactId&gt;</span>process-exec-maven-plugin<span class="nt">&lt;/artifactId&gt;</span>
+  <span class="nt">&lt;version&gt;</span>0.9<span class="nt">&lt;/version&gt;</span>
+  <span class="nt">&lt;executions&gt;</span>
+      <span class="nt">&lt;execution&gt;</span> <i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="nt">&lt;id&gt;</span>app-cds-creation<span class="nt">&lt;/id&gt;</span>
+        <span class="nt">&lt;phase&gt;</span>pre-integration-test<span class="nt">&lt;/phase&gt;</span>
+        <span class="nt">&lt;goals&gt;</span>
+          <span class="nt">&lt;goal&gt;</span>start<span class="nt">&lt;/goal&gt;</span>
+        <span class="nt">&lt;/goals&gt;</span>
+        <span class="nt">&lt;configuration&gt;</span>
+          <span class="nt">&lt;name&gt;</span>todo-manager<span class="nt">&lt;/name&gt;</span>
+          <span class="nt">&lt;healthcheckUrl&gt;</span>http://localhost:8080/<span class="nt">&lt;/healthcheckUrl&gt;</span> <i class="conum" data-value="2"></i><b>(2)</b>
+          <span class="nt">&lt;arguments&gt;</span>
+            <span class="nt">&lt;argument&gt;</span>java<span class="nt">&lt;/argument&gt;</span> <i class="conum" data-value="3"></i><b>(3)</b>
+            <span class="nt">&lt;argument&gt;</span>-XX:ArchiveClassesAtExit=app-cds.jsa<span class="nt">&lt;/argument&gt;</span>
+            <span class="nt">&lt;argument&gt;</span>-jar<span class="nt">&lt;/argument&gt;</span>
+            <span class="nt">&lt;argument&gt;</span>
+              ${project.build.directory}/${project.artifactId}-${project.version}-runner.jar
+            <span class="nt">&lt;/argument&gt;</span>
+          <span class="nt">&lt;/arguments&gt;</span>
+        <span class="nt">&lt;/configuration&gt;</span>
+      <span class="nt">&lt;/execution&gt;</span>
+      <span class="nt">&lt;execution&gt;</span> <i class="conum" data-value="4"></i><b>(4)</b>
+          <span class="nt">&lt;id&gt;</span>stop-all<span class="nt">&lt;/id&gt;</span>
+          <span class="nt">&lt;phase&gt;</span>post-integration-test<span class="nt">&lt;/phase&gt;</span>
+          <span class="nt">&lt;goals&gt;</span>
+              <span class="nt">&lt;goal&gt;</span>stop-all<span class="nt">&lt;/goal&gt;</span>
+          <span class="nt">&lt;/goals&gt;</span>
+      <span class="nt">&lt;/execution&gt;</span>
+  <span class="nt">&lt;/executions&gt;</span>
+<span class="nt">&lt;/plugin&gt;</span>
+...</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Start up the application in the <code>pre-integration-test</code> build phase</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The health-check URL is used to await application start-up before proceeding with the next build phase</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Assemble the <em>java</em> invocation</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Stop the application in the <code>post-integration-test</code> build phase</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>What remains to be done is the automation of step 2,
+the invocation of the required application logic so to trigger the loading of all relevant classes.
+This can be done with help of the <a href="http://maven.apache.org/surefire/maven-surefire-plugin/">Maven Surefire</a> plug-in.
+A simple "integration test" via <a href="http://rest-assured.io/">REST Assured</a> does the trick:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ExampleResourceAppCds</span> <span class="o">{</span>
+
+  <span class="nd">@Test</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getAll</span><span class="o">()</span> <span class="o">{</span>
+    <span class="n">given</span><span class="o">()</span>
+      <span class="o">.</span><span class="na">when</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"/api"</span><span class="o">)</span>
+      <span class="o">.</span><span class="na">then</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">statusCode</span><span class="o">(</span><span class="mi">200</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>We just need to configure a specific execution of the plug-in,
+which <em>only</em> picks up any test classes whose names end with <em>*AppCds.java</em>,
+so to keep them apart from actual integration tests:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml">...
+<span class="nt">&lt;plugin&gt;</span>
+  <span class="nt">&lt;groupId&gt;</span>org.apache.maven.plugins<span class="nt">&lt;/groupId&gt;</span>
+  <span class="nt">&lt;artifactId&gt;</span>maven-failsafe-plugin<span class="nt">&lt;/artifactId&gt;</span>
+  <span class="nt">&lt;version&gt;</span>3.0.0-M4<span class="nt">&lt;/version&gt;</span>
+  <span class="nt">&lt;executions&gt;</span>
+    <span class="nt">&lt;execution&gt;</span>
+      <span class="nt">&lt;goals&gt;</span>
+        <span class="nt">&lt;goal&gt;</span>integration-test<span class="nt">&lt;/goal&gt;</span>
+        <span class="nt">&lt;goal&gt;</span>verify<span class="nt">&lt;/goal&gt;</span>
+      <span class="nt">&lt;/goals&gt;</span>
+      <span class="nt">&lt;configuration&gt;</span>
+        <span class="nt">&lt;includes&gt;</span>
+          <span class="nt">&lt;include&gt;</span>**/*AppCds.java<span class="nt">&lt;/include&gt;</span>
+        <span class="nt">&lt;/includes&gt;</span>
+      <span class="nt">&lt;/configuration&gt;</span>
+    <span class="nt">&lt;/execution&gt;</span>
+  <span class="nt">&lt;/executions&gt;</span>
+<span class="nt">&lt;/plugin&gt;</span>
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>And that&#8217;s all we need; when now building the project via <em>mvn clean verify</em>,
+a CDS archive will be created at <em>target/app-cds.jsa</em>.
+You can find the <a href="https://github.com/gunnarmorling/quarkus-cds/">complete example project</a> and steps for building/running it on GitHub.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_do_you_gain">What Do You Gain?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Creating a CDS archive is nice, but is it also worth the effort?
+In order to answer this question,
+I&#8217;ve done some measurements of the "time-to-first-response" metric,
+following the Quarkus guide on <a href="https://quarkus.io/guides/performance-measure#how-do-we-measure-startup-time">measuring performance</a>.
+I.e. instead of awaiting some rather meaningless "start-up complete" status,
+which could arbitrarily be tweaked by means of lazy initialization,
+this measures the time until the application is actually ready to handle the first incoming request after start-up.</p>
+</div>
+<div class="paragraph">
+<p>I&#8217;ve done measurements on OpenJDK 1.8.0_252
+(<a href="https://adoptopenjdk.net/">AdoptOpenJDK</a> build),
+and OpenJDK 14.0.1 (<a href="http://jdk.java.net/14/">upstream build</a>), without and with App CDS.
+Please see the <a href="https://github.com/gunnarmorling/quarkus-cds/#run-measurements">README file</a> of the example repo for the exact steps.
+Here are the numbers, averaged over ten runs each:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/app_cds_time_to_first_response.png" alt="app cds time to first response" width="75%">
+</div>
+</div>
+<div class="paragraph">
+<p>Time-to-first-response values are 2s 267ms, 2s 162ms, and 1s 669ms.
+I.e. on my machine (2014 MacBook Pro), with this specific workload, there&#8217;s an improvement by ~100ms just by upgrading to the current JDK,
+and another ~500ms by using App CDS.
+That&#8217;s definitely a nice improvement, in particular as we get it essentially for free, without any changes to the actual application itself.</p>
+</div>
+<div class="paragraph">
+<p>You should contrast this with the additional size of the application distribution, though.
+E.g. when obtaining the application as a container image from a remote container registry,
+downloading the additional ~40 MB might take longer than the time saved during application start-up.
+Typically, this will only affect the first start-up of on a particular node, though, after which the image will be cached locally.</p>
+</div>
+<div class="paragraph">
+<p>As always when it comes to any kinds of performance numbers,
+please take these numbers with a grain of salt,
+do your own measurements,
+using your own applications and in your own environment.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Addressing Different Workload Profiles</div>
+<div class="paragraph">
+<p>If your application supports different "work modes", e.g. "online" and "batch",
+which work with a largely differing set of classes,
+you also might consider to create different CDS archives for the specific workloads.
+This might give you a good balance between additional size and realized improvements of start-up times, when for instance dealing with at large monolithic application instead of more fine-grained microservices.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_wrap_up">Wrap-Up</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>AppCDS provides Java developers with a useful tool for reducing start-up times of their applications,
+without requiring any code changes.
+For the example discussed, we could observe an improvement of the time-to-first-response metric by about 20%.</p>
+</div>
+<div class="paragraph">
+<p>We didn&#8217;t discuss any potential memory improvements due to CDS when sharing class metadata between multiple JVMs on one host.
+In containerized server applications, with each JVM being packaged in its own container image,
+this won&#8217;t play a role.
+It could make a difference on desktop systems, though.
+For instance multiple instances of the <a href="https://github.com/redhat-developer/vscode-java">Java language server</a>, as leveraged by VSCode and other editors,
+could benefit from that.</p>
+</div>
+<div class="paragraph">
+<p>That all being said, when raw start-up time is your primary concern,
+e.g. in a serverless or Function-based setting,
+you should look at AOT compilation with GraalVM (or Project Leyden in the future).
+This will bring down start-up times to a completely different level;
+for example the todo manager application would return a first response within a few 10s of milliseconds when executed as a native image via GraalVM.</p>
+</div>
+<div class="paragraph">
+<p>But AOT is not always an option, nor does it always make sense:
+the JVM may offer a better latency than native binaries,
+external dependencies migh not be ready for usage in AOT-compiled native images yet,
+or you simply might want to be able to benefit from all the JVM goodness, like familiar debugging tools, the <a href="/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/">JDK Flight Recorder</a>, or JMX.
+In that case, CDS can give you a nice start-up time improvement,
+solely by means of adding a few steps to your build process.</p>
+</div>
+<div class="paragraph">
+<p>Besides class data sharing in OpenJDK, there are some other related techniques for improving start-up times which are worth exploring:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Eclipse OpenJ9 has its <a href="https://www.eclipse.org/openj9/docs/shrc/">own implementation</a> of class data sharing</p>
+</li>
+<li>
+<p>Alibaba&#8217;s Dragonwell distribution of the OpenJDK comes with <a href="https://www.alibabacloud.com/blog/what-there-is-to-know-about-alibaba-dragonwell-8_595210">JWarmUp</a>, a tool for speeding up initial JIT compilations</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To learn more about AppCDS,
+a long yet insightful post is <a href="https://medium.com/@toparvion/appcds-for-spring-boot-applications-first-contact-6216db6a4194">this one</a> by Vladimir Plizga.
+Volker Simonis did another <a href="https://simonis.github.io/cl4cds/">interesting write-up</a>.</p>
+</div>
+<div class="paragraph">
+<p>Lastly, the Quarkus team is working on <a href="https://github.com/quarkusio/quarkus/pull/9710">out-of-the-box support</a> for CDS archives,
+which might make it even easier to benefit from the start-up time improvements promised by CDS.</p>
+</div>
+</div>
+</div>
+		</div>
+
+		<div class="post-tags">
+			
+				
+			
+		</div><div id="disqus_thread"></div>
+<script type="text/javascript">
+	(function () {
+		
+		
+		if (window.location.hostname == "localhost")
+			return;
+
+		var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+		var disqus_shortname = 'morlingdev';
+		dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+		(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+	})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by
+		Disqus.</a></noscript>
+<a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2020 Gunnar Morling |  Built with <a href="https://gohugo.io">Hugo</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</body>
+</html>
