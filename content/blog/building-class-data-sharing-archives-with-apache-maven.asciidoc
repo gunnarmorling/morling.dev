@@ -1,0 +1,376 @@
+---
+title: "Building Class Data Sharing Archives with Apache Maven"
+date: 2020-06-11T17:30:00+02:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+Ahead-of-time compilation (AOT) is _the_ big topic in the Java ecosystem lately:
+by compiling Java code to native binaries, developers and users benefit from vastly improved start-up times and reduced memory usage.
+Spearheaded by the https://www.graalvm.org/[GraalVM] project,
+https://mail.openjdk.java.net/pipermail/discuss/2020-April/005429.html[Project Leyden] promises to standardize AOT in a future version of the Java platform.
+
+This makes it easy to miss out on significant performance improvements which have been made on the JVM in recent Java versions,
+in particular when it comes to https://cl4es.github.io/2019/11/20/OpenJDK-Startup-Update.html[faster start-up times].
+Besides a range of improvements related to class loading, linking and bytecode verification,
+substantial work has been done around https://docs.oracle.com/en/java/javase/14/vm/class-data-sharing.html[class data sharing] (CDS). 
+Faster start-ups are beneficial in many ways:
+shorter turnaround times during development,
+quicker time-to-first-response for users in coldstart scenarios,
+cost savings when billed by CPU time in the cloud.
+
+With CDS, class metadata is persisted in an archive file,
+which during subsequent application starts is mapped into memory.
+This is faster than loading the actual class files, resulting in reduced start-up times.
+When starting multiple JVM processes on the same host, read-only archives of class metadata can also be shared between the VMs, so that less memory is consumed overall.
+
+<!--more-->
+
+Originally a partially commercial feature of the Oracle JDK,
+CDS was completely open-sourced in JDK 10 and got incrementally improved since then in a series of Java improvement proposals:
+
+* http://openjdk.java.net/jeps/310[JEP 310], Application Class-Data Sharing (AppCDS), in JDK 10:
+"To improve startup and footprint, extend the existing [CDS] feature to allow application classes to be placed in the shared archive"
+* http://openjdk.java.net/jeps/341[JEP 341], Default CDS Archives, in JDK 12:
+"Enhance the JDK build process to generate a class data-sharing (CDS) archive, using the default class list, on 64-bit platforms"
+* http://openjdk.java.net/jeps/350[JEP 350], Dynamic CDS Archives, in JDK 13:
+"Extend application class-data sharing to allow the dynamic archiving of classes at the end of Java application execution. The archived classes will include all loaded application classes and library classes that are not present in the default, base-layer CDS archive"
+
+In the remainder of this blog post we'll discuss how to automatically create AppCDS archives as part of your (Maven) project build,
+based on the improvements made with JEP 350.
+I.e. Java 13 or later is a prerequisite for this.
+To learn more about using CDS with the current LTS release JDK 11 and about CDS in general,
+refer to the excellent blog post https://blog.codefx.org/java/application-class-data-sharing/[on everything CDS] by Nicolai Parlog.
+
+== Manually Creating CDS Archives
+
+At first let's see what's needed to manually create and use an AppCDS archive
+(note I'm going to use "AppCDS" and "CDS" somewhat interchangeably for the sake of brevity).
+Subsequently, we'll discuss how the task can be automated in a Maven project build.
+
+To have an example to work with which goes beyond a plain "Hello World",
+I've created a https://github.com/gunnarmorling/quarkus-cds/[small web application] for managing personal to-dos,
+using the https://quarkus.io/[Quarkus] stack.
+If you'd like to follow along, clone the repo and build the project:
+
+[source,shell]
+----
+git clone git@github.com:gunnarmorling/quarkus-cds.git
+cd quarkus-cds
+mvn clean verify -DskipTests=true
+----
+
+The application uses a Postgres database for persisting the to-dos;
+fire it up via Docker:
+
+[source,shell]
+----
+cd compose
+docker run -d -p 5432:5432 --name pgdemodb \
+    -v $(pwd)/init.sql:/docker-entrypoint-initdb.d/init.sql \
+    -e POSTGRES_USER=todouser \
+    -e POSTGRES_PASSWORD=todopw \
+    -e POSTGRES_DB=tododb postgres:11
+----
+
+The next step is to _run_ the application and create the CDS archive file.
+Do so by passing the `-XX:ArchiveClassesAtExit` option:
+
+[source,shell]
+----
+java -XX:ArchiveClassesAtExit=target/app-cds.jsa \ #<1>
+    -jar target/todo-manager-1.0.0-SNAPSHOT-runner.jar
+----
+<1> Triggers creation of a CDS archive at the given location upon application shutdown
+
+Only loaded classes will be added to the archive.
+As classloading on the JVM happens lazily, you must invoke some functionality in your application in order to cause all the relevant classes to be loaded.
+For that to happen, open the application's API endpoint in a browser or invoke it via _curl_, _httpie_ or similar:
+
+[source,shell]
+----
+http localhost:8080/api
+----
+
+Stop the application by hitting `Ctrl+C`.
+This will create the CDS archive under _target/app-cds.jsa_.
+In our case it should have a size of about 41 MB.
+Also observe the log messages about classes which were skipped from archiving:
+
+[source,shell]
+----
+...
+[190.220s][warning][cds] Skipping java/lang/invoke/LambdaForm$MH+0x0000000800bd0c40: Hidden or Unsafe anonymous class
+[190.220s][warning][cds] Skipping java/lang/invoke/LambdaForm$DMH+0x0000000800fdc840: Hidden or Unsafe anonymous class
+[190.220s][warning][cds] Pre JDK 6 class not supported by CDS: 46.0 antlr/TokenStreamIOException
+...
+----
+
+Mostly this is about hidden or anonymous classes which cannot be archived;
+there's not so much you can do about that
+(apart from using less Lambda expressions perhaps...).
+
+The hint on old classfile versions is more actionable:
+only classes using classfile format 50 (= JDK 1.6) or newer are supported by CDS.
+In the case at hand, the classes from https://mvnrepository.com/artifact/antlr/antlr/2.7.7[Antlr 2.7.7] are using classfile format 46
+(which was introduced in Java 1.2) and thus cannot be added to the CDS archive.
+Note this also applies to any subclasses, even if they themselves use a newer classfile format version.
+
+It's thus a good idea to check whether you can upgrade to newer versions of your dependencies, as this may result in more classes becoming available for CDS,
+resulting in better start-up times in turn.
+
+== Using the CDS Archive
+
+Now let's run the application again, this time _using_ the previously created CDS archive:
+
+[source,shell]
+----
+java -XX:SharedArchiveFile=target/app-cds.jsa \ # <1>
+    -Xlog:class+load:file=target/classload.log \ # <2>
+    -Xshare:on \ # <3>
+    -jar target/todo-manager-1.0.0-SNAPSHOT-runner.jar
+----
+<1> The path to the CDS archive
+<2> classloading logging allows to verify whether the CDS archive gets applied as expected
+<3> While class data sharing is enabled by default on JDK 12 and newer, explicitely enforcing it will ensure an error is raised if something is wrong, e.g. a mismatch of Java versions between building and using the archive
+
+When examining the _classload.log_ file,
+you should see how most class metadata is obtained from the CDS archive ("source: shared object file"),
+while some classes such as the ancient Antlr classes are loaded just as usual from the corresponding JAR:
+
+[source,shell]
+----
+[0.016s][info][class,load] java.lang.Object source: shared objects file
+[0.016s][info][class,load] java.io.Serializable source: shared objects file
+[0.016s][info][class,load] java.lang.Comparable source: shared objects file
+[0.016s][info][class,load] java.lang.CharSequence source: shared objects file
+...
+[2.555s][info][class,load] antlr.Parser source: file:/.../antlr.antlr-2.7.7.jar
+...
+----
+
+Note it is vital that the exact same Java version is used as when creating the archive,
+otherwise an error will be raised.
+Unfortunately, this also means that AppCDS archives cannot be built cross-platform.
+This would be very useful, e.g. when building a Java application on macOS or Windows,
+which should be packaged in a Linux container.
+If you are aware of a way for doing so, please let me know in the comments below.
+
+[NOTE]
+.CDS and the Java Module System
+====
+Beginning with Java 11, not only classes from the classpath can be added to CDS archives,
+but also classes from the module path of a modularized Java application.
+One important detail to consider there is that the `--upgrade-module-path` and `--patch-module` options will cause CDS to be disabled or disallowed
+(when `-Xshare:on`) is specified.
+This is to avoid a mismatch of class metadata in the CDS archive and classes brought in by a newer module version.
+====
+
+== Creating CDS Archives in Your Maven Build
+
+Manually creating a CDS archive is not very efficient nor reliable,
+so let's see how the task can be automated as part of your project build.
+The following shows the required configuration when using Apache Maven,
+but of course the same approach could be implemented with Gradle or any other build system.
+
+The basic idea is the follow the same steps as before, but executed as part of the Maven build:
+
+1. start up the application with the `-XX:ArchiveClassesAtExit` option
+2. invoke some application functionality to initiate the loading of all relevant classes
+3. stop the application
+
+[NOTE]
+====
+It might appear as a compelling idea to produce the CDS archive as part of regular test execution, e.g. via JUnit.
+This will not work though, as the classpath at the time of _using_ the CDS archive must be not miss any entries from the classpath at the time of _creating_ it.
+As during test execution all the test-scoped dependencies will be part of the classpath,
+any CDS archive created that way couldn't be used when running the application later on without those test dependencies.
+====
+
+Steps 1. and 3. can be automated with help of the https://github.com/bazaarvoice/maven-process-plugin[Process-Exec] Maven plug-in,
+binding it to the `pre-integration-test` and `post-integration-test` build phases, respectively.
+While I was thinking of using the more widely known https://www.mojohaus.org/exec-maven-plugin/usage.html[Exec] plug-in initially,
+this turned out to not be viable as https://github.com/mojohaus/exec-maven-plugin/issues/18[there's no way] for stopping any forked process in a later build phase.
+
+Here's the relevant configuration:
+
+[source,xml]
+----
+...
+<plugin>
+  <groupId>com.bazaarvoice.maven.plugins</groupId>
+  <artifactId>process-exec-maven-plugin</artifactId>
+  <version>0.9</version>
+  <executions>
+      <execution> <1>
+        <id>app-cds-creation</id>
+        <phase>pre-integration-test</phase>
+        <goals>
+          <goal>start</goal>
+        </goals>
+        <configuration>
+          <name>todo-manager</name>
+          <healthcheckUrl>http://localhost:8080/</healthcheckUrl> <2>
+          <arguments>
+            <argument>java</argument> <3>
+            <argument>-XX:ArchiveClassesAtExit=app-cds.jsa</argument>
+            <argument>-jar</argument>
+            <argument>
+              ${project.build.directory}/${project.artifactId}-${project.version}-runner.jar
+            </argument>
+          </arguments>
+        </configuration>
+      </execution>
+      <execution> <4>
+          <id>stop-all</id>
+          <phase>post-integration-test</phase>
+          <goals>
+              <goal>stop-all</goal>
+          </goals>
+      </execution>
+  </executions>
+</plugin>
+...
+----
+<1> Start up the application in the `pre-integration-test` build phase
+<2> The health-check URL is used to await application start-up before proceeding with the next build phase
+<3> Assemble the _java_ invocation
+<4> Stop the application in the `post-integration-test` build phase
+
+What remains to be done is the automation of step 2,
+the invocation of the required application logic so to trigger the loading of all relevant classes.
+This can be done with help of the http://maven.apache.org/surefire/maven-surefire-plugin/[Maven Surefire] plug-in.
+A simple "integration test" via http://rest-assured.io/[REST Assured] does the trick:
+
+[source,java]
+----
+public class ExampleResourceAppCds {
+
+  @Test
+  public void getAll() {
+    given()
+      .when()
+        .get("/api")
+      .then()
+        .statusCode(200);
+    }
+}
+----
+
+We just need to configure a specific execution of the plug-in,
+which _only_ picks up any test classes whose names end with _*AppCds.java_,
+so to keep them apart from actual integration tests:
+
+[source,xml]
+----
+...
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-failsafe-plugin</artifactId>
+  <version>3.0.0-M4</version>
+  <executions>
+    <execution>
+      <goals>
+        <goal>integration-test</goal>
+        <goal>verify</goal>
+      </goals>
+      <configuration>
+        <includes>
+          <include>**/*AppCds.java</include>
+        </includes>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
+...
+----
+
+And that's all we need; when now building the project via _mvn clean verify_,
+a CDS archive will be created at _target/app-cds.jsa_.
+You can find the https://github.com/gunnarmorling/quarkus-cds/[complete example project] and steps for building/running it on GitHub.
+
+== What Do You Gain?
+
+Creating a CDS archive is nice, but is it also worth the effort?
+In order to answer this question,
+I've done some measurements of the "time-to-first-response" metric,
+following the Quarkus guide on https://quarkus.io/guides/performance-measure#how-do-we-measure-startup-time[measuring performance].
+I.e. instead of awaiting some rather meaningless "start-up complete" status,
+which could arbitrarily be tweaked by means of lazy initialization,
+this measures the time until the application is actually ready to handle the first incoming request after start-up.
+
+I've done measurements on OpenJDK 1.8.0_252
+(https://adoptopenjdk.net/[AdoptOpenJDK] build),
+and OpenJDK 14.0.1 (http://jdk.java.net/14/[upstream build]), without and with App CDS.
+Please see the https://github.com/gunnarmorling/quarkus-cds/#run-measurements[README file] of the example repo for the exact steps.
+Here are the numbers, averaged over ten runs each:
+
+image::app_cds_time_to_first_response.png[width=75%]
+
+Time-to-first-response values are 2s 267ms, 2s 162ms, and 1s 669ms.
+I.e. on my machine (2014 MacBook Pro), with this specific workload, there's an improvement by ~100ms just by upgrading to the current JDK,
+and another ~500ms by using App CDS.
+That's definitely a nice improvement, in particular as we get it essentially for free, without any changes to the actual application itself.
+
+You should contrast this with the additional size of the application distribution, though.
+E.g. when obtaining the application as a container image from a remote container registry,
+downloading the additional ~40 MB might take longer than the time saved during application start-up.
+Typically, this will only affect the first start-up of on a particular node, though, after which the image will be cached locally.
+
+As always when it comes to any kinds of performance numbers,
+please take these numbers with a grain of salt,
+do your own measurements,
+using your own applications and in your own environment.
+
+[NOTE]
+.Addressing Different Workload Profiles
+====
+If your application supports different "work modes", e.g. "online" and "batch",
+which work with a largely differing set of classes,
+you also might consider to create different CDS archives for the specific workloads.
+This might give you a good balance between additional size and realized improvements of start-up times, when for instance dealing with at large monolithic application instead of more fine-grained microservices.
+====
+
+== Wrap-Up
+
+AppCDS provides Java developers with a useful tool for reducing start-up times of their applications,
+without requiring any code changes.
+For the example discussed, we could observe an improvement of the time-to-first-response metric by about 20%.
+
+We didn't discuss any potential memory improvements due to CDS when sharing class metadata between multiple JVMs on one host.
+In containerized server applications, with each JVM being packaged in its own container image,
+this won't play a role.
+It could make a difference on desktop systems, though.
+For instance multiple instances of the https://github.com/redhat-developer/vscode-java[Java language server], as leveraged by VSCode and other editors,
+could benefit from that.
+
+That all being said, when raw start-up time is your primary concern,
+e.g. in a serverless or Function-based setting,
+you should look at AOT compilation with GraalVM (or Project Leyden in the future).
+This will bring down start-up times to a completely different level;
+for example the todo manager application would return a first response within a few 10s of milliseconds when executed as a native image via GraalVM.
+
+But AOT is not always an option, nor does it always make sense:
+the JVM may offer a better latency than native binaries,
+external dependencies migh not be ready for usage in AOT-compiled native images yet,
+or you simply might want to be able to benefit from all the JVM goodness, like familiar debugging tools, the link:/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/[JDK Flight Recorder], or JMX.
+In that case, CDS can give you a nice start-up time improvement,
+solely by means of adding a few steps to your build process.
+
+Besides class data sharing in OpenJDK, there are some other related techniques for improving start-up times which are worth exploring:
+
+* Eclipse OpenJ9 has its https://www.eclipse.org/openj9/docs/shrc/[own implementation] of class data sharing
+* Alibaba's Dragonwell distribution of the OpenJDK comes with https://www.alibabacloud.com/blog/what-there-is-to-know-about-alibaba-dragonwell-8_595210[JWarmUp], a tool for speeding up initial JIT compilations
+
+To learn more about AppCDS,
+a long yet insightful post is https://medium.com/@toparvion/appcds-for-spring-boot-applications-first-contact-6216db6a4194[this one] by Vladimir Plizga.
+Volker Simonis did another https://simonis.github.io/cl4cds/[interesting write-up].
+
+Lastly, the Quarkus team is working on https://github.com/quarkusio/quarkus/pull/9710[out-of-the-box support] for CDS archives,
+which might make it even easier to benefit from the start-up time improvements promised by CDS.
