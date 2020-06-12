@@ -307,17 +307,30 @@ this measures the time until the application is actually ready to handle the fir
 
 I've done measurements on OpenJDK 1.8.0_252
 (https://adoptopenjdk.net/[AdoptOpenJDK] build),
-and OpenJDK 14.0.1 (http://jdk.java.net/14/[upstream build]), without and with App CDS.
+OpenJDK 14.0.1 (http://jdk.java.net/14/[upstream build], without and with AppCDS),
+and OpenJDK 15-ea-b26 (http://jdk.java.net/15/[upstream build], withoutwith AppCDS).
 Please see the https://github.com/gunnarmorling/quarkus-cds/#run-measurements[README file] of the example repo for the exact steps.
+
 Here are the numbers, averaged over ten runs each:
 
 image::app_cds_time_to_first_response.png[width=75%]
 
-Time-to-first-response values are 2s 267ms, 2s 162ms, and 1s 669ms.
-I.e. on my machine (2014 MacBook Pro), with this specific workload, there's an improvement by ~100ms just by upgrading to the current JDK,
-and another ~500ms by using App CDS.
-That's definitely a nice improvement, in particular as we get it essentially for free, without any changes to the actual application itself.
+_Update, June 12th: I had originally classload logging enabled for the OpenJDK 14 AppCDS runs,
+which added an unneccessary overhead
+(thanks a lot to https://twitter.com/cl4es[Claes Redestad] for pointing this out!).
+The numbers and chart have been updated accordingly.
+I've also added numbers for OpenJDK 15-ea._
 
+Time-to-first-response values are 2s 267ms, 2s 162ms, +++<del>+++1s 669ms+++</del>+++ 1s 483ms, and 1s 279ms.
+I.e. on my machine (2014 MacBook Pro), with this specific workload, there's an improvement of ~100ms just by upgrading to the current JDK,
+and of another +++<del>+++~500ms+++</del>+++ ~700ms by using App CDS.
+
+With OpenJDK 15 things will further improve.
+The latest EA build at the time of writing (b26) shortens time-to-first-response by another ~200ms.
+The upcoming EA build 27 should bring another improvement,
+as Lambda proxy classes https://bugs.openjdk.java.net/browse/JDK-8198698[will be added] to AppCDS archives then.
+
+That all is definitely a nice improvement, in particular as we get it essentially for free, without any changes to the actual application itself.
 You should contrast this with the additional size of the application distribution, though.
 E.g. when obtaining the application as a container image from a remote container registry,
 downloading the additional ~40 MB might take longer than the time saved during application start-up.
@@ -341,7 +354,7 @@ This might give you a good balance between additional size and realized improvem
 
 AppCDS provides Java developers with a useful tool for reducing start-up times of their applications,
 without requiring any code changes.
-For the example discussed, we could observe an improvement of the time-to-first-response metric by about 20%.
+For the example discussed, we could observe an improvement of the time-to-first-response metric by about 30% when running with OpenJDK 14.
 Other users https://groups.google.com/d/msg/quarkus-dev/c10cGsXriI8/TJvn6QRTAwAJ[reported even bigger improvements].
 
 We didn't discuss any potential memory improvements due to CDS when sharing class metadata between multiple JVMs on one host.
