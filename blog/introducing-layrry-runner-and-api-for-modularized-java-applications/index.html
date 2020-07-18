@@ -107,7 +107,7 @@ e.g. allowing to use multiple versions of one module within one and the same app
 				<div class="pull-right">
 					<div class="club">
 						<form id="myForm">
-							<input hidden="true" type="text" id="inputSearch" name="q" placeholder="Search...">
+							<input hidden="true" type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
 							<button hidden="true" type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
 						</form>
 					</div>
@@ -130,6 +130,29 @@ e.g. allowing to use multiple versions of one module within one and the same app
 	</div>
 	<div>
 		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
 			<nav class="row nav">
 				<div>
 					<ul class="flat">
@@ -157,39 +180,16 @@ e.g. allowing to use multiple versions of one module within one and the same app
 					</ul>
 				</div>
 				<div class="pull-right">
-					<ul class="flat"><li>
-							<a href="/blog/index.xml" title="RSS FEED">
-								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<use xlink:href="/svg/feather-sprite.svg#rss"/>
-								</svg>
-							</a>
-						</li><li>
-							<a href="https://github.com/gunnarmorling" title="GitHub">
-								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<use xlink:href="/svg/feather-sprite.svg#github"/>
-								</svg>
-							</a>
-						</li><li>
-							<a href="https://twitter.com/gunnarmorling" title="Twitter">
-								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
-								</svg>
-							</a>
-						</li></ul>
+					<div class="club">
+						<form id="myFormMobile">
+							<input hidden="true" type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button hidden="true" type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
 				</div>
 			</nav>
 		</div>
 	</div>
-	<nav class="row pre-nav">
-	<div class="pull-right">
-	<div class="club">
-		<form id="myFormMobile">
-			<input hidden="true" type="text" id="inputSearchMobile" name="q" placeholder="Search...">
-			<button hidden="true" type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
-		</form>
-	</div>
-	</div>
-</nav>
 </div>
 
 <script type="text/javascript">
@@ -285,6 +285,18 @@ e.g. allowing to use multiple versions of one module within one and the same app
 			sendData(new FormData(formMobile));
 		});
 	});
+
+	var warmedUp = false;
+
+	function warmUp(x) {
+		if (!warmedUp) {
+			const XHR = new XMLHttpRequest();
+			XHR.open( "GET", "https:\/\/jxs24shqs7.execute-api.eu-central-1.amazonaws.com\/Prod\/ping");
+			XHR.setRequestHeader( 'X-API-Key', 'abcdefg123456abcdefg123456' );
+			XHR.send();
+			warmedUp = true;
+		}
+	}
 </script>
 
 
