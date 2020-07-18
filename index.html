@@ -38,6 +38,29 @@
 			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
 			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
 
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
 			<nav class="row nav">
 				<div>
 					<ul class="flat">
@@ -65,25 +88,12 @@
 					</ul>
 				</div>
 				<div class="pull-right">
-					<ul class="flat"><li>
-							<a href="/blog/index.xml" title="RSS FEED">
-								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<use xlink:href="/svg/feather-sprite.svg#rss"/>
-								</svg>
-							</a>
-						</li><li>
-							<a href="https://github.com/gunnarmorling" title="GitHub">
-								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<use xlink:href="/svg/feather-sprite.svg#github"/>
-								</svg>
-							</a>
-						</li><li>
-							<a href="https://twitter.com/gunnarmorling" title="Twitter">
-								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
-								</svg>
-							</a>
-						</li></ul>
+					<div class="club">
+						<form id="myForm">
+							<input hidden="true" type="text" id="inputSearch" name="q" placeholder="Search...">
+							<button hidden="true" type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
 				</div>
 			</nav>
 		</div>
@@ -153,147 +163,254 @@
 			</nav>
 		</div>
 	</div>
+	<nav class="row pre-nav">
+	<div class="pull-right">
+	<div class="club">
+		<form id="myFormMobile">
+			<input hidden="true" type="text" id="inputSearchMobile" name="q" placeholder="Search...">
+			<button hidden="true" type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+		</form>
+	</div>
+	</div>
+</nav>
 </div>
 
-		<div class="recent-posts section">
-			<h2 class="section-header">
-				Recent posts
-			</h2>
-			<div class="posts">
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		function sendData(FD) {
+			const XHR = new XMLHttpRequest();
+
+			var parameters = []
+			for (var pair of FD.entries()) {
+				parameters.push(encodeURIComponent(pair[0]) + '=' + encodeURIComponent(pair[1]));
+			}
+
+			XHR.addEventListener( "load", function(event) {
+				document.getElementById( "inputSearch" ).disabled = false;
+				document.getElementById( "buttonSubmitSearch" ).disabled = false;
+				document.getElementById( "iconSearch" ).classList="fa fa-search";
+				document.getElementById( "inputSearchMobile" ).disabled = false;
+				document.getElementById( "buttonSubmitSearchMobile" ).disabled = false;
+				document.getElementById( "iconSearchMobile" ).classList="fa fa-search";
+
+				var jsonResponse = JSON.parse(event.target.responseText);
+				var results = '<div class="search-results"><h1 class="title">Search Results</h1>';
+
+				if (jsonResponse["results"].length > 0) {
+					for (var result of jsonResponse["results"]) {
+						results +=
+							'<div class="post">' +
+								'<div class="meta">' +
+									result["publicationdate"] +
+								"</div>" +
+								'<h4 class="summary"><a href="' + result["uri"] + '">' + result["title"] + "</a></h4>" +
+								'<div><span class="description">' +
+									result["fragment"] +
+								"</span></div>" +
+							"</div>";
+					}
+				}
+				else {
+					results += '<div class="post">No results found</div>';
+				}
+
 				
-				
-				
-				<div class="post">
-					<div class="meta">Jun 11, 2020</div>
-					<h4 class="summary">Building Class Data Sharing Archives with Apache Maven</h4>
-					<div>
-						<span class="description">Ahead-of-time compilation (AOT) is the big topic in the Java ecosystem lately: by compiling Java code to native binaries, developers and users benefit from vastly improved start-up times and reduced memory usage. The GraalVM project made huge progress towards AOT-compiled Java applications, and Project Leyden promises to standardize AOT in a future version of the Java platform.
+
+				results += "</div>";
+
+				document.getElementById( "main-content" ).innerHTML = results;
+			});
+
+			XHR.addEventListener( "error", function( event ) {
+				document.getElementById( "inputSearch" ).disabled = false;
+				document.getElementById( "buttonSubmitSearch" ).disabled = false;
+				document.getElementById( "iconSearch" ).classList="fa fa-search";
+				document.getElementById( "inputSearchMobile" ).disabled = false;
+				document.getElementById( "buttonSubmitSearchMobile" ).disabled = false;
+				document.getElementById( "iconSearchMobile" ).classList="fa fa-search";
+
+				console.log('Request failed:' + event);
+			});
+
+			XHR.open( "GET", "https:\/\/jxs24shqs7.execute-api.eu-central-1.amazonaws.com\/Prod\/search?" + parameters.join('&'));
+			XHR.setRequestHeader( 'X-API-Key', 'abcdefg123456abcdefg123456' );
+			XHR.send();
+
+			document.getElementById( "inputSearch" ).disabled = true;
+			document.getElementById( "buttonSubmitSearch" ).disabled = true;
+			document.getElementById( "iconSearch" ).classList="fa fa-spinner";
+			document.getElementById( "inputSearchMobile" ).disabled = true;
+			document.getElementById( "buttonSubmitSearchMobile" ).disabled = true;
+			document.getElementById( "iconSearchMobile" ).classList="fa fa-spinner";
+		}
+
+		const urlParams = new URLSearchParams(window.location.search);
+		const searchEnabled = urlParams.get('search-enabled');
+
+		if (searchEnabled == "true") {
+			document.getElementById( "inputSearch" ).hidden = false;
+			document.getElementById( "buttonSubmitSearch" ).hidden = false;
+			document.getElementById( "inputSearchMobile" ).hidden = false;
+			document.getElementById( "buttonSubmitSearchMobile" ).hidden = false;
+		}
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="recent-posts section">
+				<h2 class="section-header">
+					Recent posts
+				</h2>
+				<div class="posts">
+					
+					
+					
+					<div class="post">
+						<div class="meta">Jun 11, 2020</div>
+						<h4 class="summary">Building Class Data Sharing Archives with Apache Maven</h4>
+						<div>
+							<span class="description">Ahead-of-time compilation (AOT) is the big topic in the Java ecosystem lately: by compiling Java code to native binaries, developers and users benefit from vastly improved start-up times and reduced memory usage. The GraalVM project made huge progress towards AOT-compiled Java applications, and Project Leyden promises to standardize AOT in a future version of the Java platform.
  This makes it easy to miss out on significant performance improvements which have been made on the JVM in recent Java versions, in particular when it comes to faster start-up times. Besides a range of improvements related to class loading, linking and bytecode verification, substantial work has been done around class data sharing (CDS). Faster start-ups are beneficial in many ways: shorter turnaround times during development, quicker time-to-first-response for users in coldstart scenarios, cost savings when billed by CPU time in the cloud.
  With CDS, class metadata is persisted in an archive file, which during subsequent application starts is mapped into memory. This is faster than loading the actual class files, resulting in reduced start-up times. When starting multiple JVM processes on the same host, read-only archives of class metadata can also be shared between the VMs, so that less memory is consumed overall.
 </span>
+						</div>
+						<p>
+							<a href="/blog/building-class-data-sharing-archives-with-apache-maven/">Read More...</a>
+						</p>
 					</div>
-					<p>
-						<a href="/blog/building-class-data-sharing-archives-with-apache-maven/">Read More...</a>
-					</p>
-				</div>
-				
-				<div class="post">
-					<div class="meta">May 14, 2020</div>
-					<h4 class="summary">Single Message Transformations - The Swiss Army Knife of Kafka Connect</h4>
-					<div>
-						<span class="description">Do you remember Angus &#34;Mac&#34; MacGyver? The always creative protagonist of the popular 80ies/90ies TV show, who could solve about any problem with nothing more than a Swiss Army knife, duct tape, shoe strings and a paper clip?
+					
+					<div class="post">
+						<div class="meta">May 14, 2020</div>
+						<h4 class="summary">Single Message Transformations - The Swiss Army Knife of Kafka Connect</h4>
+						<div>
+							<span class="description">Do you remember Angus &#34;Mac&#34; MacGyver? The always creative protagonist of the popular 80ies/90ies TV show, who could solve about any problem with nothing more than a Swiss Army knife, duct tape, shoe strings and a paper clip?
  The single message transformations (SMTs) of Kafka Connect are almost as versatile as MacGyver’s Swiss Army knife:
    How to change the timezone or format of date/time message fields?
   How to change the topic a specific message gets sent to?
   How to filter out specific records?
    SMTs can be the answer to these and many other questions that come up in the context of Kafka Connect. Applied to source or sink connectors, SMTs allow to modify Kafka records before they are sent to Kafka, or after they are consumed from a topic, respectively.
 </span>
+						</div>
+						<p>
+							<a href="/blog/single-message-transforms-swiss-army-knife-of-kafka-connect/">Read More...</a>
+						</p>
 					</div>
-					<p>
-						<a href="/blog/single-message-transforms-swiss-army-knife-of-kafka-connect/">Read More...</a>
-					</p>
-				</div>
-				
-				<div class="post">
-					<div class="meta">May 4, 2020</div>
-					<h4 class="summary">The Emitter Parameter Pattern for Flexible SPI Contracts</h4>
-					<div>
-						<span class="description">For libraries and frameworks it’s a common requirement to make specific aspects customizeable via service provider interfaces (SPIs): contracts to be implemented by the application developer, which then are invoked by framework code, adding new or replacing existing functionality.
+					
+					<div class="post">
+						<div class="meta">May 4, 2020</div>
+						<h4 class="summary">The Emitter Parameter Pattern for Flexible SPI Contracts</h4>
+						<div>
+							<span class="description">For libraries and frameworks it’s a common requirement to make specific aspects customizeable via service provider interfaces (SPIs): contracts to be implemented by the application developer, which then are invoked by framework code, adding new or replacing existing functionality.
  Often times, the method implementations of such an SPI need to return value(s) to the framework. An alternative to return values are &#34;emitter parameters&#34;: passed by the framework to the SPI method, they offer an API for receiving value(s) via method calls. Certainly not revolutionary or even a new idea, I find myself using emitter parameters more and more in libraries and frameworks I work on. Hence I’d like to discuss some advantages I perceive about the emitter parameter pattern.
 </span>
+						</div>
+						<p>
+							<a href="/blog/emitter-parameter-pattern-for-flexible-spis/">Read More...</a>
+						</p>
 					</div>
-					<p>
-						<a href="/blog/emitter-parameter-pattern-for-flexible-spis/">Read More...</a>
-					</p>
-				</div>
-				
-				<div class="post">
-					<div class="meta">Apr 21, 2020</div>
-					<h4 class="summary">Plug-in Architectures With Layrry and the Java Module System</h4>
-					<div>
-						<span class="description">Making applications extensible with some form of plug-ins is a very common pattern in software design: based on well-defined APIs provided by the application core, plug-ins can customize an application’s behavior and provide new functionality. Examples include desktop applications like IDEs or web browsers, build tools such as Apache Maven or Gradle, as well as server-side applications such as Apache Kafka Connect, a runtime for Kafka connectors plug-ins.
+					
+					<div class="post">
+						<div class="meta">Apr 21, 2020</div>
+						<h4 class="summary">Plug-in Architectures With Layrry and the Java Module System</h4>
+						<div>
+							<span class="description">Making applications extensible with some form of plug-ins is a very common pattern in software design: based on well-defined APIs provided by the application core, plug-ins can customize an application’s behavior and provide new functionality. Examples include desktop applications like IDEs or web browsers, build tools such as Apache Maven or Gradle, as well as server-side applications such as Apache Kafka Connect, a runtime for Kafka connectors plug-ins.
  In this post I’m going to explore how the Java Platform Module System&#39;s notion of module layers can be leveraged for implementing plug-in architectures on the JVM. We’ll also discuss how Layrry, a launcher and runtime for layered Java applications, can help with this task.
 </span>
+						</div>
+						<p>
+							<a href="/blog/plugin-architectures-with-layrry-and-the-java-module-system/">Read More...</a>
+						</p>
 					</div>
-					<p>
-						<a href="/blog/plugin-architectures-with-layrry-and-the-java-module-system/">Read More...</a>
-					</p>
-				</div>
-				
-				<div class="post">
-					<div class="meta">Mar 29, 2020</div>
-					<h4 class="summary">Introducing Layrry: A Launcher and API for Modularized Java Applications</h4>
-					<div>
-						<span class="description">One of the biggest changes in recent Java versions has been the introduction of the module system in Java 9. It allows to organize Java applications and their dependencies in strongly encapsulated modules, utilizing explicit and well-defined module APIs and relationships.
+					
+					<div class="post">
+						<div class="meta">Mar 29, 2020</div>
+						<h4 class="summary">Introducing Layrry: A Launcher and API for Modularized Java Applications</h4>
+						<div>
+							<span class="description">One of the biggest changes in recent Java versions has been the introduction of the module system in Java 9. It allows to organize Java applications and their dependencies in strongly encapsulated modules, utilizing explicit and well-defined module APIs and relationships.
  In this post I’m going to introduce the Layrry open-source project, a launcher and Java API for executing modularized Java applications. Layrry helps Java developers to assemble modularized applications from dependencies using their Maven coordinates and execute them using module layers. Layers go beyond the capabilities of the &#34;flat&#34; module path specified via the --module-path parameter of the java command, e.g. allowing to use multiple versions of one module within one and the same application.
 </span>
+						</div>
+						<p>
+							<a href="/blog/introducing-layrry-runner-and-api-for-modularized-java-applications/">Read More...</a>
+						</p>
 					</div>
-					<p>
-						<a href="/blog/introducing-layrry-runner-and-api-for-modularized-java-applications/">Read More...</a>
-					</p>
-				</div>
-				
-				<div class="post">
-					<div class="meta">Mar 16, 2020</div>
-					<h4 class="summary">Reworking Git Branches with git filter-branch</h4>
-					<div>
-						<span class="description">Within Debezium, the project I’m working on at Red Hat, we recently encountered an &#34;interesting&#34; situation where we had to resolve a rather difficult merge conflict. As others where interested in how we addressed the issue, and also for our own future reference, I’m going to give a quick run down of the problem we encountered and how we solved it.
+					
+					<div class="post">
+						<div class="meta">Mar 16, 2020</div>
+						<h4 class="summary">Reworking Git Branches with git filter-branch</h4>
+						<div>
+							<span class="description">Within Debezium, the project I’m working on at Red Hat, we recently encountered an &#34;interesting&#34; situation where we had to resolve a rather difficult merge conflict. As others where interested in how we addressed the issue, and also for our own future reference, I’m going to give a quick run down of the problem we encountered and how we solved it.
 </span>
+						</div>
+						<p>
+							<a href="/blog/reworking-git-branches-with-git-filter-branch/">Read More...</a>
+						</p>
 					</div>
-					<p>
-						<a href="/blog/reworking-git-branches-with-git-filter-branch/">Read More...</a>
-					</p>
-				</div>
-				
-				<div class="post">
-					<div class="meta">Jan 29, 2020</div>
-					<h4 class="summary">Monitoring REST APIs with Custom JDK Flight Recorder Events</h4>
-					<div>
-						<span class="description">The JDK Flight Recorder (JFR) is an invaluable tool for gaining deep insights into the performance characteristics of Java applications. Open-sourced in JDK 11, JFR provides a low-overhead framework for collecting events from Java applications, the JVM and the operating system.
+					
+					<div class="post">
+						<div class="meta">Jan 29, 2020</div>
+						<h4 class="summary">Monitoring REST APIs with Custom JDK Flight Recorder Events</h4>
+						<div>
+							<span class="description">The JDK Flight Recorder (JFR) is an invaluable tool for gaining deep insights into the performance characteristics of Java applications. Open-sourced in JDK 11, JFR provides a low-overhead framework for collecting events from Java applications, the JVM and the operating system.
  In this blog post we’re going to explore how custom, application-specific JFR events can be used to monitor a REST API, allowing to track request counts, identify long-running requests and more. We’ll also discuss how the JFR Event Streaming API new in Java 14 can be used to export live events, making them available for monitoring and alerting via tools such as Prometheus and Grafana.
 </span>
+						</div>
+						<p>
+							<a href="/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/">Read More...</a>
+						</p>
 					</div>
-					<p>
-						<a href="/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/">Read More...</a>
-					</p>
-				</div>
-				
-				<div class="post">
-					<div class="meta">Jan 20, 2020</div>
-					<h4 class="summary">Enforcing Java Record Invariants With Bean Validation</h4>
-					<div>
-						<span class="description">Record types are one of the most awaited features in Java 14; they promise to &#34;provide a compact syntax for declaring classes which are transparent holders for shallowly immutable data&#34;. One example where records should be beneficial are data transfer objects (DTOs), as e.g. found in the remoting layer of enterprise applications. Typically, certain rules should be applied to the attributes of such DTO, e.g. in terms of allowed values. The goal of this blog post is to explore how such invariants can be enforced on record types, using annotation-based constraints as provided by the Bean Validation API.</span>
+					
+					<div class="post">
+						<div class="meta">Jan 20, 2020</div>
+						<h4 class="summary">Enforcing Java Record Invariants With Bean Validation</h4>
+						<div>
+							<span class="description">Record types are one of the most awaited features in Java 14; they promise to &#34;provide a compact syntax for declaring classes which are transparent holders for shallowly immutable data&#34;. One example where records should be beneficial are data transfer objects (DTOs), as e.g. found in the remoting layer of enterprise applications. Typically, certain rules should be applied to the attributes of such DTO, e.g. in terms of allowed values. The goal of this blog post is to explore how such invariants can be enforced on record types, using annotation-based constraints as provided by the Bean Validation API.</span>
+						</div>
+						<p>
+							<a href="/blog/enforcing-java-record-invariants-with-bean-validation/">Read More...</a>
+						</p>
 					</div>
-					<p>
-						<a href="/blog/enforcing-java-record-invariants-with-bean-validation/">Read More...</a>
-					</p>
-				</div>
-				
-				<div class="post">
-					<div class="meta">Jan 13, 2020</div>
-					<h4 class="summary">Using Java 13 Text Blocks (Only) for Your Tests</h4>
-					<div>
-						<span class="description">When Java 9 was introduced in 2017, it was the last major version published under the old release scheme. Since then, a six month release cadence has been adopted. This means developers don’t have to wait years for new APIs and language features, but they can get their hands onto the latest additions twice a year. In this post I’d like to describe how you can try out new language features such as Java 13 text blocks in the test code of your project, while keeping your main code still compatible with older Java versions.
+					
+					<div class="post">
+						<div class="meta">Jan 13, 2020</div>
+						<h4 class="summary">Using Java 13 Text Blocks (Only) for Your Tests</h4>
+						<div>
+							<span class="description">When Java 9 was introduced in 2017, it was the last major version published under the old release scheme. Since then, a six month release cadence has been adopted. This means developers don’t have to wait years for new APIs and language features, but they can get their hands onto the latest additions twice a year. In this post I’d like to describe how you can try out new language features such as Java 13 text blocks in the test code of your project, while keeping your main code still compatible with older Java versions.
 </span>
+						</div>
+						<p>
+							<a href="/blog/using-java-13-text-blocks-for-tests/">Read More...</a>
+						</p>
 					</div>
-					<p>
-						<a href="/blog/using-java-13-text-blocks-for-tests/">Read More...</a>
-					</p>
-				</div>
-				
-				<div class="post">
-					<div class="meta">Jan 3, 2020</div>
-					<h4 class="summary">Quarkus Qute – A Test Ride</h4>
-					<div>
-						<span class="description">One of the long-awaited features in Quarkus was support for server-side templating: until recently, Quarkus supported only client-side web frameworks which obtain there data by calling a REST API on the backend. This has changed with Quarkus 1.1: it comes with a brand-new template engine named Qute, which allows to build web applications using server-side templates.
+					
+					<div class="post">
+						<div class="meta">Jan 3, 2020</div>
+						<h4 class="summary">Quarkus Qute – A Test Ride</h4>
+						<div>
+							<span class="description">One of the long-awaited features in Quarkus was support for server-side templating: until recently, Quarkus supported only client-side web frameworks which obtain there data by calling a REST API on the backend. This has changed with Quarkus 1.1: it comes with a brand-new template engine named Qute, which allows to build web applications using server-side templates.
 </span>
+						</div>
+						<p>
+							<a href="/blog/quarkus-qute-test-ride/">Read More...</a>
+						</p>
 					</div>
-					<p>
-						<a href="/blog/quarkus-qute-test-ride/">Read More...</a>
-					</p>
-				</div>
-				
-				
+					
+					
 
 <ul class="pagination">
 	<li class="page-item page-prev">
@@ -307,6 +424,7 @@
 </ul>
 
 
+				</div>
 			</div>
 		</div>
 	</div>
