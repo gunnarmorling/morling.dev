@@ -19,9 +19,13 @@ function warmUp(x) {
 
 // executes the query
 function sendData(FD) {
+    if (FD.get('q').replace(/\s/g, "").length == 0) {
+        return;
+    }
+
     const XHR = new XMLHttpRequest();
 
-    var parameters = []
+    var parameters = [];
     for (var pair of FD.entries()) {
         parameters.push(encodeURIComponent(pair[0]) + '=' + encodeURIComponent(pair[1]));
     }
@@ -34,30 +38,39 @@ function sendData(FD) {
         document.getElementById( "buttonSubmitSearchMobile" ).disabled = false;
         document.getElementById( "iconSearchMobile" ).classList="fa fa-search";
 
-        var jsonResponse = JSON.parse(event.target.responseText);
-        var results = '<div class="search-results"><h1 class="title">Search Results</h1>';
+        if (event.target.status != 200) {
+            var results = '<div class="search-results"><h1 class="title">Uh oh</h1>';
+            results += "<p>A technical error occurred; Please try again later.";
+            results += "</div>";
 
-        if (jsonResponse["results"].length > 0) {
-            for (var result of jsonResponse["results"]) {
-                results +=
-                    '<div class="post">' +
-                        '<div class="meta">' +
-                            result["publicationdate"] +
-                        "</div>" +
-                        '<h4 class="summary"><a href="' + result["uri"] + '">' + result["title"] + "</a></h4>" +
-                        '<div><span class="description">' +
-                            result["fragment"] +
-                        "</span></div>" +
-                    "</div>";
-            }
+            document.getElementById( "main-content" ).innerHTML = results;
         }
         else {
-            results += '<div class="post">No results found</div>';
+            var jsonResponse = JSON.parse(event.target.responseText);
+            var results = '<div class="search-results"><h1 class="title">Search Results</h1>';
+
+            if (jsonResponse["results"].length > 0) {
+                for (var result of jsonResponse["results"]) {
+                    results +=
+                        '<div class="post">' +
+                            '<div class="meta">' +
+                                result["publicationdate"] +
+                            "</div>" +
+                            '<h4 class="summary"><a href="' + result["uri"] + '">' + result["title"] + "</a></h4>" +
+                            '<div><span class="description">' +
+                                result["fragment"] +
+                            "</span></div>" +
+                        "</div>";
+                }
+            }
+            else {
+                results += '<div class="post">No results found</div>';
+            }
+
+            // window.history.pushState("", "", "/search/");
+
+            results += "</div>";
         }
-
-        // window.history.pushState("", "", "/search/");
-
-        results += "</div>";
 
         document.getElementById( "main-content" ).innerHTML = results;
     });
