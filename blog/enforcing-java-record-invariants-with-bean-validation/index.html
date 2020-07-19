@@ -23,6 +23,19 @@
 	
 	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
 	
+
+	<script>
+		const searchUrl = "https:\/\/jxs24shqs7.execute-api.eu-central-1.amazonaws.com\/Prod\/";
+		const apiKey = "abcdefg123456abcdefg123456";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
 </head>
 
 <body>
@@ -175,84 +188,7 @@
 </div>
 
 <script type="text/javascript">
-	var lastCallTs = 0;
-
 	window.addEventListener( "load", function () {
-		function sendData(FD) {
-			const XHR = new XMLHttpRequest();
-
-			var parameters = []
-			for (var pair of FD.entries()) {
-				parameters.push(encodeURIComponent(pair[0]) + '=' + encodeURIComponent(pair[1]));
-			}
-
-			XHR.addEventListener( "load", function(event) {
-				document.getElementById( "inputSearch" ).disabled = false;
-				document.getElementById( "buttonSubmitSearch" ).disabled = false;
-				document.getElementById( "iconSearch" ).classList="fa fa-search";
-				document.getElementById( "inputSearchMobile" ).disabled = false;
-				document.getElementById( "buttonSubmitSearchMobile" ).disabled = false;
-				document.getElementById( "iconSearchMobile" ).classList="fa fa-search";
-
-				var jsonResponse = JSON.parse(event.target.responseText);
-				var results = '<div class="search-results"><h1 class="title">Search Results</h1>';
-
-				if (jsonResponse["results"].length > 0) {
-					for (var result of jsonResponse["results"]) {
-						results +=
-							'<div class="post">' +
-								'<div class="meta">' +
-									result["publicationdate"] +
-								"</div>" +
-								'<h4 class="summary"><a href="' + result["uri"] + '">' + result["title"] + "</a></h4>" +
-								'<div><span class="description">' +
-									result["fragment"] +
-								"</span></div>" +
-							"</div>";
-					}
-				}
-				else {
-					results += '<div class="post">No results found</div>';
-				}
-
-				
-
-				results += "</div>";
-
-				document.getElementById( "main-content" ).innerHTML = results;
-			});
-
-			XHR.addEventListener( "error", function( event ) {
-				document.getElementById( "inputSearch" ).disabled = false;
-				document.getElementById( "buttonSubmitSearch" ).disabled = false;
-				document.getElementById( "iconSearch" ).classList="fa fa-search";
-				document.getElementById( "inputSearchMobile" ).disabled = false;
-				document.getElementById( "buttonSubmitSearchMobile" ).disabled = false;
-				document.getElementById( "iconSearchMobile" ).classList="fa fa-search";
-
-				var results = '<div class="search-results"><h1 class="title">Uh oh</h1>';
-				results += "<p>A technical error occurred; Please try again later.";
-				results += "</div>";
-
-				document.getElementById( "main-content" ).innerHTML = results;
-
-				console.log('Request failed:' + event);
-			});
-
-			XHR.open( "GET", "https:\/\/jxs24shqs7.execute-api.eu-central-1.amazonaws.com\/Prod\/search?" + parameters.join('&'));
-			XHR.setRequestHeader( 'X-API-Key', 'abcdefg123456abcdefg123456' );
-			XHR.send();
-
-			document.getElementById( "inputSearch" ).disabled = true;
-			document.getElementById( "buttonSubmitSearch" ).disabled = true;
-			document.getElementById( "iconSearch" ).classList="fa fa-spinner";
-			document.getElementById( "inputSearchMobile" ).disabled = true;
-			document.getElementById( "buttonSubmitSearchMobile" ).disabled = true;
-			document.getElementById( "iconSearchMobile" ).classList="fa fa-spinner";
-
-			lastCallTs = new Date().getTime();
-		}
-
 		const urlParams = new URLSearchParams(window.location.search);
 		const searchEnabled = urlParams.get('search-enabled');
 
@@ -277,18 +213,6 @@
 			sendData(new FormData(formMobile));
 		});
 	});
-
-	function warmUp(x) {
-		var now = new Date().getTime();
-
-		if (now - lastCallTs > 14 * 60 * 1000) {
-			const XHR = new XMLHttpRequest();
-			XHR.open( "GET", "https:\/\/jxs24shqs7.execute-api.eu-central-1.amazonaws.com\/Prod\/ping");
-			XHR.setRequestHeader( 'X-API-Key', 'abcdefg123456abcdefg123456' );
-			XHR.send();
-			lastCallTs = now;
-		}
-	}
 </script>
 
 
