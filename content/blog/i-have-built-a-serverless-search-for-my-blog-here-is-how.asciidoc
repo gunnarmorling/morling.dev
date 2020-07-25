@@ -305,9 +305,22 @@ I wouldn't want to have the user navigate to the URL of the AWS API Gateway in t
 this means that the form with the search text input field cannot actually be submitted.
 Instead, the default form handling must be disabled, and the search string be sent via AJAX to the API Gateway URL.
 
-The implementation of that is fairly standard JavaScript business using the https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest[XMLHttpRequest] API,
+Using AJAX implies that the search feature won't work for users who have JavaScript disabled in their browser.
+I deemed this an acceptable limitation; in order to avoid unnecessary confusion and frustration,
+the search text input field is hidden in that case via CSS:
+
+[source,xml]
+----
+<noscript>
+    <style type="text/css">
+        .search-input { display:none; }
+    </style>
+</noscript>
+----
+
+The implementation of the backend call is fairly standard JavaScript business using the https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest[XMLHttpRequest] API,
 so I'll spare you the details here.
-You can find the complete implementation in my GitHub repo.
+You can find the https://github.com/gunnarmorling/ezhil/blob/master/static/js/main.js#L21[complete implementation] in my GitHub repo.
 
 There's one interesting detail to share though in terms of improving the user experience after a cold start.
 As mentioned above, the Quarkus application itself starts up on Lambda in about ~180 ms.
