@@ -45,7 +45,7 @@ based on the highly popular Apache Lucene library,
 deployed as a Serverless application,
 which is started on-demand, if a user runs a query on my website.
 In the remainder of this post I'm going to describe the solution I came up with and how it works.
-If you like, you can try it out right now, this post is about this little search input control to the top of this page!
+If you like, you can try it out right now, this post is about this little search input control at the top right of this page!
 
 == Why Serverless?
 
@@ -61,7 +61,7 @@ this service ideally should cost me just a few cents per month
 == Solution Overview
 
 The overall idea is quite simple: there's a simple HTTP service which takes a query string,
-runs the query against a Lucene index with my blog's contents and returns the result to the caller.
+runs the query against a Lucene index with my blog's contents and returns the search results to the caller.
 This service gets invoked via AJAX from my static blog,
 where results are shown to the user.
 
@@ -86,7 +86,7 @@ While link:/blog/building-class-data-sharing-archives-with-apache-maven/[substan
 it's still not ideal for this kind of use case.
 Therefore, the application is compiled into a native binary via https://quarkus.io/[Quarkus] and https://www.graalvm.org/[GraalVM],
 which results in a start-up time of ~30 ms on my laptop, and ~180 ms when deployed to AWS Lambda.
-With that we're in an area where a cold start won't impact the user experience in any significant way.
+With that we're in a range where a cold start won't impact the user experience in any significant way.
 
 The Lambda function is exposed to callers via the https://aws.amazon.com/api-gateway/[AWS API Gateway],
 which takes incoming HTTP requests, maps them to calls of the function and converts its response into an HTTP response which is sent back to the caller.
@@ -165,7 +165,7 @@ This file gets automatically updated whenever I republish the blog.
 
 My stack of choice for this kind of application is Quarkus.
 As a https://quarkus.io/guides/kafka-streams-guide[contributor], I am of course biased, but Quarkus is ideal for the task at hand:
-built and optimized from the ground up for implementing fast-starting and highly memory-efficient cloud-native and Serverless applications,
+built and optimized from the ground up for implementing fast-starting and memory-efficient cloud-native and Serverless applications,
 it makes building HTTP services, e.g. based on JAX-RS, running on GraalVM a trivial effort.
 
 Now typically a Java library such as Lucene will not run in a GraalVM native binary out-of-the-box.
@@ -220,7 +220,7 @@ public final class DefaultAttributeFactorySubstitution {
 }
 ----
 
-During native image creation, the GraalVM compiler will discover all substitute classes and apply their code over the original ones.
+During native image creation, the GraalVM compiler will discover all substitute classes and apply their code instead of the original ones.
 
 The other problem I ran into was the usage of method handles in the `MMapDirectory` class,
 which will be used by Lucene by default on Linux when obtaining an file-system backed index directory.
@@ -643,7 +643,11 @@ ready for you to use,
 there's a few things I'd like to improve and expand going forward:
 
 * _CI pipeline:_ Automatically re-building and deploying the search service after changes to the contents of my blog; this should hopefully be quite easy using GitHub Actions
-* _Performance improvements:_ While the performance of the query service definitely is good enough, I'd like to see whether it cannot be tuned here and there. Tooling might be challenging there; where I'd use JDK Flight Recorder and Mission Control with a JVM based application, I'm much less familiar with equivalent tooling for native binaries. One option I'd like to explore in particular is taking advantage of Quarkus bytecode recording capability: bytecode instructions for creating the in-memory data structure of the Lucene index could be recorded at build time and then just be executed at application start-up; this might be the fastest option for loading the index in my special use case of a read-only index
+* _Performance improvements:_ While the performance of the query service definitely is good enough, I'd like to see whether and how it could be tuned here and there. Tooling might be challenging there; where I'd use JDK Flight Recorder and Mission Control with a JVM based application, I'm much less familiar with equivalent tooling for native binaries. One option I'd like to explore in particular is taking advantage of Quarkus bytecode recording capability: bytecode instructions for creating the in-memory data structure of the Lucene index could be recorded at build time and then just be executed at application start-up; this might be the fastest option for loading the index in my special use case of a read-only index
 * _Serverless comments:_ Currently I'm using Disqus for the commenting feature of the blog. It's not ideal in terms of privacy and page loading speed, which is why I'm looking for alternatives. One idea could be a custom Serverless commenting functionality, which would be very interesting to explore, in particular as it shifts the focus from a purely immutable application to a stateful service that'll require some means of modifiable, persistent storage
 
 In the meantime, you can find the https://github.com/gunnarmorling/search.morling.dev[source code] of the Serverless search feature on GitHub. Feel free to take the code and deploy it to your own website!
+
+_Many thanks to https://twitter.com/hpgrahsl[Hans-Peter Grahsl] for his feedback while writing this post!_
+
+TODO: Note on RAM / Siege with 512 MB
