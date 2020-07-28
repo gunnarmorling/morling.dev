@@ -1,6 +1,6 @@
 ---
-title: "How I have built a Serverless Search for My Blog"
-date: 2020-07-22T17:30:00+02:00
+title: "How I Built a Serverless Search for My Blog"
+date: 2020-07-29T17:30:00+02:00
 draft: false
 ---
 :source-highlighter: rouge
@@ -26,13 +26,10 @@ I'd like to give users the opportunity to find specific contents on this blog ri
 That's not only nice in terms of user experience, but also having insight into the kind of information readers look for on this blog should help me to identify interesting things to write about in the future.
 
 Now this blog is a static site -- generated using https://gohugo.io/[Hugo], hosted on https://pages.github.com/[GitHub Pages] -- which makes this an interesting challenge.
-The easiest would be to use a search service like https://developers.google.com/custom-search[Google Custom Search], https://www.algolia.com/[Algolia] or an Elasticsearch provider such as https://bonsai.io/[Bonsai].
-I felt though that none of those options would provide me the degree of control and customizability I was after.
-I also ruled out any "free" options, as they'd either mean having ads or paying for the service with the data of myself or that of my readers.
-And to be honest, I also just fancied the prospect of solving the problem by myself, instead of relying on an off-the-shelf solution.
-
-Then, some time ago, I came across an https://endler.dev/2019/tinysearch/[excellent blog post] about a custom site search which was a 100% client-side solution.
-A great solution for static sites like mine, and technically fascinating, I didn't like the fact that it requires shipping the entire search index to the client for executing search queries.
+I didn't want to rely on an external search service
+(see "Why No External Search Service" below for the reasoning),
+and also a purely client-side solution as described in this https://endler.dev/2019/tinysearch/[excellent blog post] didn't seem ideal.
+While technically fascinating, I didn't like the fact that it requires shipping the entire search index to the client for executing search queries.
 Also things like result highlighting, customized result scoring, word stemming, fuzzy search and more seemed a bit more than I'd be willing to implement on the client.
 
 All these issues have largely been solved on the server-side by libraries such as https://lucene.apache.org/[Apache Lucene] for quite some time.
@@ -43,9 +40,22 @@ Operating a VM 24/7 with my search backend for what's likely going to be not mor
 So after some consideration I decided to implement my own search functionality,
 based on the highly popular Apache Lucene library,
 deployed as a Serverless application,
-which is started on-demand, if a user runs a query on my website.
+which is started on-demand if a user runs a query on my website.
 In the remainder of this post I'm going to describe the solution I came up with and how it works.
+
 If you like, you can try it out right now, this post is about this little search input control at the top right of this page!
+
+[NOTE]
+.Why No External Search Service?
+====
+When https://twitter.com/gunnarmorling/status/1284925378868518913[tweeting] about my serverless search experiment, one of the questions was "What's wrong with https://www.algolia.com/[Algolia]?".
+To be very clear, there's nothing wrong with it at all.
+External search services like Algolia, https://developers.google.com/custom-search[Google Custom Search], or an Elasticsearch provider such as https://bonsai.io/[Bonsai] promise an easy-to-use, turn-key search functionality which can be a great choice for your specific use case.
+
+However, I felt that none of these options would provide me the degree of control and customizability I was after.
+I also ruled out any "free" options, as they'd either mean having ads or paying for the service with the data of myself or that of my readers.
+And to be honest, I also just fancied the prospect of solving the problem by myself, instead of relying on an off-the-shelf solution.
+====
 
 == Why Serverless?
 
@@ -62,7 +72,7 @@ this service ideally should cost me just a few cents per month
 
 The overall idea is quite simple: there's a simple HTTP service which takes a query string,
 runs the query against a Lucene index with my blog's contents and returns the search results to the caller.
-This service gets invoked via AJAX from my static blog,
+This service gets invoked via JavaScript from my static blog pages,
 where results are shown to the user.
 
 The Lucene search index is read-only and gets rebuilt whenever I update the blog.
@@ -74,7 +84,7 @@ but for a blog that's updated every few weeks, it's perfect.
 
 Here's a visual of the overall flow:
 
-...
+image::serverless_search_overview.png[Serverless Search Solution Overview]
 
 The search service is deployed as a Serverless function on https://aws.amazon.com/lambda/[AWS Lambda].
 One important design goal for me is to avoid lock-in to any specific cloud provider:
@@ -94,10 +104,10 @@ which takes incoming HTTP requests, maps them to calls of the function and conve
 Now let's dive down a bit more into the specific parts of the solution.
 Overall, there are four steps involved:
 
-* _Data extraction:_ The blog contents to be indexed must be extracted and converted into an easy-to-process data format
-* _Search backend implementation:_ A small HTTP service is needed which exposes the search functionality of Apache Lucene, which in particular requires some steps to enable Lucene being used in a native GraalVM binary
-* _Integration with the website:_ The search service must be integrated via AJAX into the static site on GitHub Pages
-* _Deployment:_ Finally, the search service needs to be deployed to AWS API Gateway and Lambda
+* _link:#_data_extraction[Data extraction:]_ The blog contents to be indexed must be extracted and converted into an easy-to-process data format
+* _link:#_search_backend_implementation[Search backend implementation:]_ A small HTTP service is needed which exposes the search functionality of Apache Lucene, which in particular requires some steps to enable Lucene being used in a native GraalVM binary
+* _link:#_wiring_things_up[Integration with the website:]_ The search service must be integrated into the static site on GitHub Pages
+* _link:#_deployment_to_aws_lambda[Deployment:]_ Finally, the search service needs to be deployed to AWS API Gateway and Lambda
 
 == Data Extraction
 
@@ -177,7 +187,7 @@ while other Java features like method handles are only supported partly or not a
 Quarkus enables a wide range of popular Java libraries to be used with GraalVM,
 but at this point there's no extension yet which would take care of that for Lucene.
 So I set out to implement a small Quarkus extension for Lucene.
-Depending on the implementation details of the library in question, this can be a more or less complex and time-consuming endavor.
+Depending on the implementation details of the library in question, this can be a more or less complex and time-consuming endeavor.
 The workflow is like so:
 
 * compile down an application using the library into a native image
@@ -223,7 +233,7 @@ public final class DefaultAttributeFactorySubstitution {
 During native image creation, the GraalVM compiler will discover all substitute classes and apply their code instead of the original ones.
 
 The other problem I ran into was the usage of method handles in the `MMapDirectory` class,
-which will be used by Lucene by default on Linux when obtaining an file-system backed index directory.
+which will be used by Lucene by default on Linux when obtaining a file-system backed index directory.
 I didn't explore how to circumvent that, instead I opted for using the `SimpleFSDirectory` implementation which proved to work fine in my native GraalVM binary.
 
 While this was enough in order to get Lucene going in a native image,
@@ -248,8 +258,8 @@ In any case it's a price worth paying: only with start-up times in the range of 
 
 === The Search HTTP Service
 
-Nothing too much is to be said about the actual HTTP service implementation for running queries.
-It's based on JAX-RS and exposes as simple endpoint which can be invoked with a given query like so:
+The actual HTTP service implementation for running queries is rather unspectacular;
+It's based on https://projects.eclipse.org/projects/ee4j.jaxrs[JAX-RS] and exposes as simple endpoint which can be invoked with a given query like so:
 
 [source,bash]
 ----
@@ -281,11 +291,11 @@ Date: Tue, 21 Jul 2020 17:05:00 GMT
 }
 ----
 
-Internally it's using Lucene's `MultiFieldQueryParser` for parsing the query and running it against the "title" and "content" fields of the index.
-It is set to combine multiple terms using the logical `AND` operator by default (who ever would want the default of `OR`?), it supports phrase queries given in quotes, and number of other query operators.
+Internally it's using Lucene's https://lucene.apache.org/core/8_6_0/queryparser/org/apache/lucene/queryparser/classic/MultiFieldQueryParser.html[`MultiFieldQueryParser`] for parsing the query and running it against the "title" and "content" fields of the index.
+It is set to combine multiple terms using the logical `AND` operator by default (who ever would want the default of `OR`?), it supports phrase queries given in quotes, and a number of other query operators.
 
-Query hits are highlighted using `FastVectorHighlighter` highlighter and `SimpleHTMLFormatter` as a fallback
-(for some reason `FastVectorHighlighter` fails to return a result in some cases).
+Query hits are highlighted using the https://lucene.apache.org/core/8_6_0/highlighter/org/apache/lucene/search/vectorhighlight/FastVectorHighlighter.html[`FastVectorHighlighter`] highlighter and https://lucene.apache.org/core/8_6_0/highlighter/org/apache/lucene/search/highlight/SimpleHTMLFormatter.html[`SimpleHTMLFormatter`] as a fallback
+(not all kinds of queries can be processed by `FastVectorHighlighter`).
 The highlighter wraps the matched search terms in the returned fragment in `<b>` tags,
 which are styled appropriately in my website's CSS.
 I was prepared to do some adjustments to result scoring, but this wasn't necessary so far.
@@ -303,9 +313,9 @@ As I'll discuss in a bit, Quarkus takes care of making this HTTP service runnabl
 Now it was time to hook up the search service into my blog.
 I wouldn't want to have the user navigate to the URL of the AWS API Gateway in their browser;
 this means that the form with the search text input field cannot actually be submitted.
-Instead, the default form handling must be disabled, and the search string be sent via AJAX to the API Gateway URL.
+Instead, the default form handling must be disabled, and the search string be sent via JavaScript to the API Gateway URL.
 
-Using AJAX implies that the search feature won't work for users who have JavaScript disabled in their browser.
+This means the search feature won't work for users who have JavaScript disabled in their browser.
 I deemed this an acceptable limitation; in order to avoid unnecessary confusion and frustration,
 the search text input field is hidden in that case via CSS:
 
@@ -336,7 +346,7 @@ We can take advantage of that and have the website send a small "ping" request r
 This gives us enough headstart to have the Lambda function being started before the actual query comes in.
 Here's the request flow of a typical interaction (the "Other" requests are CORS preflight requests):
 
-image::serverless_search_warmup.png[]
+image::serverless_search_warmup.png[Serverless Search Request Flow]
 
 Note how the search call is issued a few hundred ms after the ping.
 Now you could beat this if you were typing _really_ fast and e.g. when navigating to the text field using your keyboard.
@@ -367,7 +377,7 @@ and slightly more than 1.5 seconds until the first response after a cold start w
 While still kinda acceptable, it's already in the time range where a user wouldn't perceive this as an instant response.
 
 So I turned to Lambda, and indeed cold start times looked much better there:
-about 0.4 sec for my Lambda, plus the actual request round trip.
+less than 0.4 sec for my Lambda, plus the actual request round trip.
 Together with the warm-up trick described above, this means that a user practically never will get a cold start when executing the search.
 
 You shouldn't under-estimate the time needed though to get familiar with Lambda itself,
@@ -394,7 +404,7 @@ This is also great in terms of portability:
 I only need to add the `io.quarkus:quarkus-amazon-lambda-http` dependency to my project,
 and the Quarkus build will emit a _function.zip_ file which can be deployed to AWS Lambda.
 I've put this into a separate Maven build profile,
-so I can easily switch between creating the Lambda function deployment package and a regular container image with my REST endpoint,
+so I can easily switch between creating the Lambda function deployment package and a regular container image with my REST endpoint which I can deploy to Knative and environments like https://www.openshift.com/learn/topics/serverless[OpenShift Serverless],
 without requiring any code changes whatsoever.
 
 The Quarkus Lambda extension also produces templates for the AWS SAM tool for deploying my stack.
@@ -444,7 +454,7 @@ which would describe the minimum set of required permissions in order to deploy 
 Things work nicely if you use a highly-privileged account, but I'm a strong believer into running things with only the least privileges needed for the job.
 For instance I don't want my Lambda deployer to set up the execution role,
 but rather have it using one I pre-defined.
-The same goes for other resources like the S3 bucket used for uploading the depoyment package.
+The same goes for other resources like the S3 bucket used for uploading the deployment package.
 
 Identifying the set of privileges actually needed is a rather soul-crushing experience of trial and error (please let me know in the comments below if there's a better way to do this),
 which gets complicated by the fact that different resources in the AWS stack expose insufficient privileges in inconsistent ways, or sometimes in no really meaningful way at all when configured via SAM.
@@ -553,12 +563,20 @@ Similarly, there's a substantial difference in terms of request execution durati
 Still, when running a quick test of the deployed service via https://github.com/JoeDog/siege[Siege], the vast majority of Lambda executions clocked in well below 100 ms
 (depending on the number of query hits which need result highlighting),
 putting them into the lowest bracket of billed Lambda execution time.
+As I learned, Lambda allocates CPU resources https://engineering.opsgenie.com/how-does-proportional-cpu-allocation-work-with-aws-lambda-41cd44da3cac[proportionally to assigned RAM],
+meaning assigning twice as much RAM should speed up execution,
+also if my application actually does not need that much memory.
+Indeed, with 512 MB RAM assigned, Lambda execution is down to ~30 - 40 ms after some warm-up,
+which is more than good enough for my purposes.
 
-Faster would be better, of course, but overall I deem it good enough;
+Raw Lambda execution of course is only one part of the overall request duration,
+on top of that some time is spent in the API Gateway and on the wire to the user;
 The service is deployed in the AWS eu-central-1 region (Frankfurt, Germany),
 yielding roundtrip times for me, living a few hundred km away,
-between 70 and 150 ms.
-My good friend Eric Murphy from Seattle in the US reported a roundtrip time of ~250 ms when searching for "Java", which I think is quite ok.
+between 50 - 70 ms (again with 512 MB RAM).
+With longer distances, network latencies outweigh the Lambda execution time:
+My good friend Eric Murphy from Seattle in the US reported a roundtrip time of ~240 ms when searching for "Java", which I think is still quite good,
+given the long distance.
 
 === Cost Control
 
@@ -566,7 +584,7 @@ The biggest issue for me as a hobbyist when using pay-per-use services like AWS 
 Unlike typical enterprise scenarios where you might be willing to accept higher cost for your service in case of growing demand, in my case I'd rather set up a fixed spending limit and shut down my search service for the rest of the month, once that has been reached.
 I absolutely cannot have an attacker doing millions and millions of calls against my API which could cost me a substantial amount of money.
 
-Unfortunately, there's no easy way on AWS (or any other of the big cloud providers) for setting up a maximum spending after which all service consumption would be stopped.
+Unfortunately, there's no easy way on AWS for setting up a maximum spending after which all service consumption would be stopped.
 Merely setting up a budget alert won't cut it either,
 as this won't help me while sitting on a plane for 12h (whenever that will be possible again...) or being on vacation for three weeks.
 And needless to say, I don't have an ops team monitoring my blog infrastructure 24/7 either.
@@ -599,11 +617,13 @@ Thanks a lot to https://harishkm.in/2020/07/08/how-to-enforce-a-quota-on-the-cor
 I implemented this solution and sleep much better now.
 
 Note that you should set the alert to a lower value than what you're actually willing to spend,
-as billing happens asynchronously and requests might come in some more time until the alert triggers.
-It's also a good idea to reduce the allowed request rate.
+as billing happens asynchronously and requests might come in some more time until the alert triggers:
+https://twitter.com/QuinnyPig/status/1288183239123689473[as per Corey Quinn],
+there's an "8-48 hour lag between 'you incur the charge' and 'it shows up in the billing system where an alert can see it and thus fire'".
+It's therefore also a good idea to reduce the allowed request rate.
 E.g. in my case I'm not expecting really that there'd be more than let's say 25 concurrent requests
 (unless this post hits the Hackernews front page of course),
-so setting the allowed rate to that value again helps to at least slow down the spending should everything else fail.
+so setting the allowed rate to that value helps to at least slow down the spending until the alert triggers.
 
 With these measures in place, there should (hopefully!) be no bad surprises at the end of the month.
 Assuming a (very generously estimated) number of 10K search queries per month,
@@ -626,14 +646,22 @@ With AOT compilation down to native binaries and enabling frameworks like Quarku
 Java definitely is in the game for building Serverless apps.
 It's huge eco-system of libraries such as Apache Lucene,
 sophisticated tooling and solid performance make it a very attractive implementation choice.
+Basing the application on Quarkus makes it a matter of configuration to switch between creating a deployment package for Lambda and a regular container image,
+avoiding any kind of lock-in into a specific platform.
+
 Enabling libraries for being used in native binaries can be a daunting task,
 but over time I'd expect either library authors themselves to do the required adjustment to smoothen that experience,
-and of course the growing number of Quarkus extension also helps to use more and more Java libraries in native apps.
+and of course the growing number of Quarkus extensions also helps to use more and more Java libraries in native apps.
 I'm also looking forward to https://www.infoq.com/news/2020/05/java-leyden/[Project Leyden], which aims at making AOT compilation a part of the Java core platform.
 
 The deployment to AWS Lambda and API Gateway was definitely more involved than I had anticipated;
 things like IAM and budget control are more complex than I think they could and should be.
-But then it was a very interesting learning experience for me;
+That there is no way to set up a hard spend capping is a severe shortcoming;
+hobbyists like myself should be able to explore this platform without having to fear any https://chrisshort.net/the-aws-bill-heard-around-the-world/[surprise AWS bills].
+It's particular bothersome that API usage plans are no 100% safe way to enforce API quotas,
+as they cannot be applied to unauthorized CORS pref-flight requests and custom scripting is needed in order to close this loophole.
+
+But then this experiment also was an interesting learning experience for me;
 working on libraries and integration solutions most of the time during my day job,
 I sincerely enjoyed the experience of designing a service from the ground-up and rolling it out into "production",
 if I may dare to use that term here.
@@ -648,7 +676,4 @@ there's a few things I'd like to improve and expand going forward:
 
 In the meantime, you can find the https://github.com/gunnarmorling/search.morling.dev[source code] of the Serverless search feature on GitHub. Feel free to take the code and deploy it to your own website!
 
-_Many thanks to https://twitter.com/hpgrahsl[Hans-Peter Grahsl] for his feedback while writing this post!_
-
-TODO: Note on RAM / Siege with 512 MB
-No spend capping, no quota for cors preflight
+_Many thanks to https://twitter.com/hpgrahsl[Hans-Peter Grahsl] and https://twitter.com/murphye[Eric Murphy] for their feedback while writing this post!_
