@@ -138,7 +138,7 @@ The template in _layouts/_default/list.searchindex.json_ isn't too complex eithe
 ----
 {{- $.Scratch.Add "searchindex" slice -}}
 {{- range $index, $element := .Site.Pages -}}
-    {{- $.Scratch.Add "searchindex" (dict "id" $index "title" $element.Title "uri" $element.Permalink "tags" $element.Params.tags "section" $element.Section "content" $element.Plain "summary" $element.Summary "publicationdate" ($element.Date.Format "Jan 2, 2006")) -}}
+  {{- $.Scratch.Add "searchindex" (dict "id" $index "title" $element.Title "uri" $element.Permalink "tags" $element.Params.tags "section" $element.Section "content" $element.Plain "summary" $element.Summary "publicationdate" ($element.Date.Format "Jan 2, 2006")) -}}
 {{- end -}}
 {{- $.Scratch.Get "searchindex" | jsonify -}}
 ----
@@ -148,24 +148,24 @@ The result is link:/searchindex.json[this JSON file]:
 [source,json]
 ----
 [
-    ...
-    {
-        "content": "The JDK Flight Recorder (JFR) is an invaluable tool...",
-        "id": 12,
-        "publicationdate": "Jan 29, 2020",
-        "section": "blog",
-        "summary": "\u003cdiv class=\"paragraph\"\u003e\n\u003cp\u003eThe \u003ca href=\"https://openjdk.java.net/jeps/328\"\u003eJDK Flight Recorder\u003c/a\u003e (JFR) is an invaluable tool...",
-        "tags": [
-            "java",
-            "monitoring",
-            "microprofile",
-            "jakartaee",
-            "quarkus"
-        ],
-        "title": "Monitoring REST APIs with Custom JDK Flight Recorder Events",
-        "uri": "https://www.morling.dev/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/"
-    },
-    ...
+  ...
+  {
+    "content": "The JDK Flight Recorder (JFR) is an invaluable tool...",
+    "id": 12,
+    "publicationdate": "Jan 29, 2020",
+    "section": "blog",
+    "summary": "\u003cdiv class=\"paragraph\"\u003e\n\u003cp\u003eThe \u003ca href=\"https://openjdk.java.net/jeps/328\"\u003eJDK Flight Recorder\u003c/a\u003e (JFR) is an invaluable tool...",
+    "tags": [
+      "java",
+      "monitoring",
+      "microprofile",
+      "jakartaee",
+      "quarkus"
+    ],
+    "title": "Monitoring REST APIs with Custom JDK Flight Recorder Events",
+    "uri": "https://www.morling.dev/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/"
+  },
+  ...
 ]
 ----
 
@@ -211,22 +211,22 @@ As an example, here's one of the substitution classes I had to create:
 @TargetClass(className = "org.apache.lucene.util.AttributeFactory$DefaultAttributeFactory")
 public final class DefaultAttributeFactorySubstitution {
 
-    public DefaultAttributeFactorySubstitution() {}
+  public DefaultAttributeFactorySubstitution() {}
 
-    @Substitute
-    public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
-        if (attClass == BoostAttribute.class) {
-            return new BoostAttributeImpl();
-        }
-        else if (attClass == CharTermAttribute.class) {
-            return new CharTermAttributeImpl();
-        }
-        else if (...) {
-            ...
-        }
-
-        throw new UnsupportedOperationException("Unknown attribute class: " + attClass);
+  @Substitute
+  public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
+    if (attClass == BoostAttribute.class) {
+      return new BoostAttributeImpl();
     }
+    else if (attClass == CharTermAttribute.class) {
+      return new CharTermAttributeImpl();
+    }
+    else if (...) {
+      ...
+    }
+
+    throw new UnsupportedOperationException("Unknown attribute class: " + attClass);
+  }
 }
 ----
 
@@ -272,22 +272,22 @@ Content-Type: application/json
 Date: Tue, 21 Jul 2020 17:05:00 GMT
 
 {
-    "message": "ok",
-    "results": [
-        {
-            "fragment": "...plug-ins. In this post I&#8217;m going to explore how the <b>Java</b> Platform Module System's notion of module layers can be leveraged for implementing plug-in architectures on the JVM. We&#8217;ll also discuss how Layrry, a launcher and runtime for layered <b>Java</b> applications, can help with this task. A key requirement...",
-            "publicationdate": "Apr 21, 2020",
-            "title": "Plug-in Architectures With Layrry and the <b>Java</b> Module System",
-            "uri": "https://www.morling.dev/blog/plugin-architectures-with-layrry-and-the-java-module-system/"
-        },
-        {
-            "fragment": "...the current behavior indeed is not intended (see JDK-8236597) and in a future <b>Java</b> version the shorter version of the code shown above should work. Wrap-Up In this blog post we&#8217;ve explored how invariants on <b>Java</b> 14 record types can be enforced using the Bean Validation API. With just a bit...",
-            "publicationdate": "Jan 20, 2020",
-            "title": "Enforcing <b>Java</b> Record Invariants With Bean Validation",
-            "uri": "https://www.morling.dev/blog/enforcing-java-record-invariants-with-bean-validation/"
-        },
-        ...
-    ]
+  "message": "ok",
+  "results": [
+    {
+      "fragment": "...plug-ins. In this post I&#8217;m going to explore how the <b>Java</b> Platform Module System's notion of module layers can be leveraged for implementing plug-in architectures on the JVM. We&#8217;ll also discuss how Layrry, a launcher and runtime for layered <b>Java</b> applications, can help with this task. A key requirement...",
+      "publicationdate": "Apr 21, 2020",
+      "title": "Plug-in Architectures With Layrry and the <b>Java</b> Module System",
+      "uri": "https://www.morling.dev/blog/plugin-architectures-with-layrry-and-the-java-module-system/"
+    },
+    {
+      "fragment": "...the current behavior indeed is not intended (see JDK-8236597) and in a future <b>Java</b> version the shorter version of the code shown above should work. Wrap-Up In this blog post we&#8217;ve explored how invariants on <b>Java</b> 14 record types can be enforced using the Bean Validation API. With just a bit...",
+      "publicationdate": "Jan 20, 2020",
+      "title": "Enforcing <b>Java</b> Record Invariants With Bean Validation",
+      "uri": "https://www.morling.dev/blog/enforcing-java-record-invariants-with-bean-validation/"
+    },
+    ...
+  ]
 }
 ----
 
@@ -322,9 +322,9 @@ the search text input field is hidden in that case via CSS:
 [source,xml]
 ----
 <noscript>
-    <style type="text/css">
-        .search-input { display:none; }
-    </style>
+  <style type="text/css">
+    .search-input { display:none; }
+  </style>
 </noscript>
 ----
 
@@ -419,15 +419,15 @@ With the SAM descriptor in place, re-building and publishing the search service 
 [source,bash]
 ----
 mvn clean package -Pnative,lambda -DskipTests=true \
-    -Dquarkus.native.container-build=true
+  -Dquarkus.native.container-build=true
 
 sam package --template-file sam.native.yaml \
-    --output-template-file packaged.yaml \
-    --s3-bucket <my S3 bucket>
+  --output-template-file packaged.yaml \
+  --s3-bucket <my S3 bucket>
 
 sam deploy --template-file packaged.yaml \
-    --capabilities CAPABILITY_IAM \
-    --stack-name <my stack name>
+  --capabilities CAPABILITY_IAM \
+  --stack-name <my stack name>
 ----
 
 The `lambda` profile takes care of adding the Quarkus Lambda HTTP extension,
@@ -465,85 +465,85 @@ here's the policy for my deployment role I came up with:
 
 ```json
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:PutObject",
-                "s3:GetObject"
-            ],
-            "Resource": [
-                "arn:aws:s3:::<deployment-bucket>",
-                "arn:aws:s3:::<deployment-bucket>/*"
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "lambda:CreateFunction",
-                "lambda:GetFunction",
-                "lambda:GetFunctionConfiguration",
-                "lambda:AddPermission",
-                "lambda:UpdateFunctionCode",
-                "lambda:ListTags",
-                "lambda:TagResource",
-                "lambda:UntagResource"
-            ],
-            "Resource": [
-                "arn:aws:lambda:eu-central-1:<account-id>:function:search-morling-dev-SearchMorlingDev-*"
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "iam:PassRole"
-            ],
-            "Resource": [
-                "arn:aws:iam::<account-id>:role/<execution-role>"
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "cloudformation:DescribeStacks",
-                "cloudformation:DescribeStackEvents",
-                "cloudformation:CreateChangeSet",
-                "cloudformation:ExecuteChangeSet",
-                "cloudformation:DescribeChangeSet",
-                "cloudformation:GetTemplateSummary"
-            ],
-            "Resource": [
-                "arn:aws:cloudformation:eu-central-1:<account-id>:stack/search-morling-dev/*",
-                "arn:aws:cloudformation:eu-central-1:aws:transform/Serverless-2016-10-31"
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "apigateway:POST",
-                "apigateway:PATCH",
-                "apigateway:GET"
-            ],
-            "Resource": [
-                "arn:aws:apigateway:eu-central-1::/restapis",
-                "arn:aws:apigateway:eu-central-1::/restapis/*"
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "apigateway:POST",
-                "apigateway:GET"
-            ],
-            "Resource": [
-                "arn:aws:apigateway:eu-central-1::/usageplans",
-                "arn:aws:apigateway:eu-central-1::/usageplans/*",
-                "arn:aws:apigateway:eu-central-1::/apikeys",
-                "arn:aws:apigateway:eu-central-1::/apikeys/search-morling-dev-apikey"
-            ]
-        }
-    ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::<deployment-bucket>",
+        "arn:aws:s3:::<deployment-bucket>/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "lambda:CreateFunction",
+        "lambda:GetFunction",
+        "lambda:GetFunctionConfiguration",
+        "lambda:AddPermission",
+        "lambda:UpdateFunctionCode",
+        "lambda:ListTags",
+        "lambda:TagResource",
+        "lambda:UntagResource"
+      ],
+      "Resource": [
+        "arn:aws:lambda:eu-central-1:<account-id>:function:search-morling-dev-SearchMorlingDev-*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:PassRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::<account-id>:role/<execution-role>"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:CreateChangeSet",
+        "cloudformation:ExecuteChangeSet",
+        "cloudformation:DescribeChangeSet",
+        "cloudformation:GetTemplateSummary"
+      ],
+      "Resource": [
+        "arn:aws:cloudformation:eu-central-1:<account-id>:stack/search-morling-dev/*",
+        "arn:aws:cloudformation:eu-central-1:aws:transform/Serverless-2016-10-31"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "apigateway:POST",
+        "apigateway:PATCH",
+        "apigateway:GET"
+      ],
+      "Resource": [
+        "arn:aws:apigateway:eu-central-1::/restapis",
+        "arn:aws:apigateway:eu-central-1::/restapis/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "apigateway:POST",
+        "apigateway:GET"
+      ],
+      "Resource": [
+        "arn:aws:apigateway:eu-central-1::/usageplans",
+        "arn:aws:apigateway:eu-central-1::/usageplans/*",
+        "arn:aws:apigateway:eu-central-1::/apikeys",
+        "arn:aws:apigateway:eu-central-1::/apikeys/search-morling-dev-apikey"
+      ]
+    }
+  ]
 }
 ```
 
