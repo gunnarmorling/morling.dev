@@ -62,7 +62,7 @@ And to be honest, I also just fancied the prospect of solving the problem by mys
 First of all, let's discuss why I opted for a Serverless solution.
 It boils down to three reasons:
 
-* _Security:_ While it'd only cost a few EUR per month to set up a VM with a cloud provider like Digital Ocean or Hetzner, having to manage a full operating system installation would require too much of my attention; I don't want someone to mine bitcoins or doing other nasty things on a box I run just because I failed to apply some security patches
+* _Security:_ While it'd only cost a few EUR per month to set up a VM with a cloud provider like Digital Ocean or Hetzner, having to manage a full operating system installation would require too much of my attention; I don't want someone to mine bitcoins or doing other nasty things on a box I run, just because I failed to apply some security patch
 * _Cost:_ Serverless does not only promise to scale-out (and let's be honest, there likely won't be millions of search queries on my blog every month), but also scale-to-zero.
 As Serverless is pay-per-use and there are free tiers in place e.g. for AWS Lambda,
 this service ideally should cost me just a few cents per month
@@ -81,8 +81,7 @@ which that way becomes fully immutable.
 This reduces complexities and the attack surface at runtime.
 Surely that's not an approach that's viable for more dynamic use cases,
 but for a blog that's updated every few weeks, it's perfect.
-
-Here's a visual of the overall flow:
+Here's a visualization of the overall flow:
 
 image::serverless_search_overview.png[Serverless Search Solution Overview]
 
@@ -185,7 +184,7 @@ while other Java features like method handles are only supported partly or not a
 === Apache Lucene in a GraalVM Native Binary
 
 Quarkus enables a wide range of popular Java libraries to be used with GraalVM,
-but at this point there's no extension yet which would take care of that for Lucene.
+but at this point there's no extension yet which would take care of Lucene.
 So I set out to implement a small Quarkus extension for Lucene.
 Depending on the implementation details of the library in question, this can be a more or less complex and time-consuming endeavor.
 The workflow is like so:
@@ -195,7 +194,7 @@ The workflow is like so:
 * fix the issue e.g. by registering the types in question for reflection
 * rinse and repeat
 
-The good thing there is that the list of Quarkus extensions is constantly growing,
+The good thing there is that the https://code.quarkus.io/[list of Quarkus extensions] is constantly growing,
 so that you hopefully don't have to go through this by yourself.
 Or if you do, consider publishing your extension via the Quarkus platform, saving others from the same work.
 
@@ -346,10 +345,10 @@ We can take advantage of that and have the website send a small "ping" request r
 This gives us enough headstart to have the Lambda function being started before the actual query comes in.
 Here's the request flow of a typical interaction (the "Other" requests are CORS preflight requests):
 
-image::serverless_search_warmup.png[Serverless Search Request Flow]
+image::serverless_search_warmup.gif[Serverless Search Request Flow]
 
-Note how the search call is issued a few hundred ms after the ping.
-Now you could beat this if you were typing _really_ fast and e.g. when navigating to the text field using your keyboard.
+Note how the search call is issued only a few hundred ms after the ping.
+Now you could beat this e.g. when navigating to the text field using your keyboard and if you were typing _really_ fast.
 But most users will use their mouse or touchpad to put the cursor into the input,
 and then change to the keyboard to enter the query,
 which is time enough for this little trick to work.
@@ -365,19 +364,18 @@ but for the volume I expect, this makes no relevant difference whatsoever.
 == Deployment to AWS Lambda
 
 The last part of my journey towards a Serverless search function was deployment to AWS Lambda.
-I was exploring Heroku and Google Cloud Run as alternatives, too.
+I was exploring https://devcenter.heroku.com/categories/deploying-with-docker[Heroku] and https://cloud.google.com/run[Google Cloud Run] as alternatives, too.
 Both allow you to deploy regular container images,
 which then are automatically scaled on demand.
 This results in great portability,
 as things hardly can get any more standard than plain Linux containers.
 
-Unfortunately though, cold start times proved problematic with both services:
-I observed 5 - 6 seconds with Heroku, completely ruling this out,
-and slightly more than 1.5 seconds until the first response after a cold start with Cloud Run.
-While still kinda acceptable, it's already in the time range where a user wouldn't perceive this as an instant response.
+With Heroku, cold start times proved problematic, though:
+I observed 5 - 6 seconds, which completely ruling it out.
+This wasn't a problem with Cloud Run, and it'd surely work very well overall.
+In the end I went for AWS Lambda, as its entire package of service runtime, API Gateway and web application firewall seemed more complete and mature to me.
 
-So I turned to Lambda, and indeed cold start times looked much better there:
-less than 0.4 sec for my Lambda, plus the actual request round trip.
+With AWS Lambda, I observed cold start times of less than 0.4 sec for my actual Lambda function, plus the actual request round trip.
 Together with the warm-up trick described above, this means that a user practically never will get a cold start when executing the search.
 
 You shouldn't under-estimate the time needed though to get familiar with Lambda itself,
@@ -395,7 +393,7 @@ Quarkus supports multiple approaches for building Lambda-based applications:
 
 * You can https://quarkus.io/guides/amazon-lambda[directly implement] Lambda's APIs like `RequestHandler`, which I wanted to avoid though for the sake of portability between different environments and cloud providers
 * You can use the https://quarkus.io/guides/funqy-amazon-lambda[Quarkus Funqy API] for building portable functions which e.g. can be deployed to AWS, Azure Functions and Google Cloud Functions;
-the API is really straight-forward and it's a very attractive option, but right now there's no way to use Funqy for implementing an HTTP GET API with request parameters, which ruled out this option for my purposes
+the API is really straight-forward and it's a very attractive option, but right now there's https://github.com/quarkusio/quarkus/pull/10968[no way] to use Funqy for implementing an HTTP GET API with request parameters, which ruled out this option for my purposes
 * You can implement your Lambda function https://quarkus.io/guides/amazon-lambda-http[using the existing and well-known HTTP APIs] of Vert.x, RESTEasy (JAX-RS) and Undertow; in this case Quarkus will take care of mapping the incoming function call to the matching HTTP endpoint of the application
 
 Used together with the proxy feature of the AWS API Gateway, the third option is exactly what I was looking for.
@@ -644,7 +642,7 @@ and providing a largely hands-off operations experience for myself.
 
 With AOT compilation down to native binaries and enabling frameworks like Quarkus,
 Java definitely is in the game for building Serverless apps.
-It's huge eco-system of libraries such as Apache Lucene,
+Its huge eco-system of libraries such as Apache Lucene,
 sophisticated tooling and solid performance make it a very attractive implementation choice.
 Basing the application on Quarkus makes it a matter of configuration to switch between creating a deployment package for Lambda and a regular container image,
 avoiding any kind of lock-in into a specific platform.
