@@ -1,0 +1,199 @@
+---
+title: "Building hsdis for OpenJDK 15"
+date: 2020-10-05T20:30:00+02:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+Lately I've been fascinated by the possibility to analyse the assembly code emitted by the Java JIT (just-in-time) compiler.
+So far I had only looked only into Java class files using _javap_;
+diving into the world of assembly code feels a bit like Alice must have felt when falling down the rabbit whole into wonderland.
+
+<!--more-->
+
+My motivation for this exploration was trying to understand what is faster in Java:
+a switch statement over strings, or a lookup in a hash map.
+Solely looking at Java bytecode isn't going far enough to answer this question,
+as the difference lies in the actual assembly statements executed on the CPU.
+I'll keep the details around that for another time; in this post I'm just going quickly to share what I learned in regards to building a tool needed for this exercise, https://github.com/openjdk/jdk/tree/master/src/utils/hsdis[_hsdis_].
+
+_hsdis_ is a disassembler library which can be used with the _java_ runtime as well as tools such as JitWatch to analyse the code produced by the Java JIT compiler.
+For licensing reasons though it doesn't come as a binary with the JDK.
+Instead, you need it to build yourself from source.
+Instructions for doing so are spread across a few different places,
+but I couldn't find any 100% current information, in particular as OpenJDK has moved to git and https://github.com/openjdk/[GitHub] just recently.
+
+So here is what you need to do in order to build _hsdis_ for OpenJDK 15;
+in my case I'm running on macOS, slightly different steps may apply for other platforms.
+First, get the OpenJDK source code and check out the version for which you want to build _hsdis_:
+
+[source,shell]
+----
+git clone git@github.com:openjdk/jdk.git
+git checkout jdk-15+36 # Current stable JDK 15 build
+----
+
+The source location of _hsdis_ has changed with the move from Mercurial to git:
+
+[source,shell]
+----
+cd src/utils/hsdis
+----
+
+In order to build _hsdis_, you'll need the https://www.gnu.org/software/binutils/[GNU Binutils], a collection of several binary tools:
+
+[source,shell]
+----
+wget https://ftp.gnu.org/gnu/binutils/binutils-2.35.tar.gz
+tar xvf binutils-2.35.tar.gz
+----
+
+Then run the actual _hsdis_ build (macOS comes with all the required tools like _make_):
+
+[source,shell]
+----
+make BINUTILS=binutils-2.35 ARCH=amd64
+----
+
+This will take a few minutes; if all goes well, there'll be _hsdis_ binary in the _build_ directory,
+in my case this is _build/macosx-amd64/hsdis-amd64.dylib_.
+Copy the library to _lib/server_ of our JDK:
+
+[source,shell]
+----
+sudo cp build/macosx-amd64/hsdis-amd64.dylib $JAVA_HOME/lib/server
+----
+
+Congrats! You now can use the https://wiki.openjdk.java.net/display/HotSpot/PrintAssembly[`XX:+PrintAssembly`] flag of the _java_ command to examine the assembly code of your Java program.
+Let's give it a try.
+Create a Java source file with the following contents:
+
+[source,java]
+----
+public class PrintAssemblyTest {
+
+  public static void main(String... args) {
+    PrintAssemblyTest hello = new PrintAssemblyTest();
+    for(int i = 0; i <= 10_000_000; i++) {
+      hello.hello(i);
+    }
+  }
+
+  private void hello(int i) {
+    if (i % 1_000_000 == 0) {
+      System.out.println("Hello, " + i);
+    }
+  }
+}
+----
+
+Compile and run it like so:
+
+[source,shell]
+----
+javac PrintAssemblyTest.java
+java -XX:+UnlockDiagnosticVMOptions -XX:+PrintAssembly \
+ -XX:+TraceClassLoading -XX:+LogCompilation \
+ PrintAssemblyTest
+----
+
+You should then find the assembly code of the `hello()` method somewhere in the output:
+
+[source,shell]
+----
+============================= C2-compiled nmethod ==============================
+----------------------------------- Assembly -----------------------------------
+
+Compiled method (c2)    1409  106       4       PrintAssemblyTest::hello (20 bytes)
+ total in heap  [0x000000011e3fce90,0x000000011e3fd148] = 696
+ relocation     [0x000000011e3fcfe8,0x000000011e3fcff8] = 16
+ main code      [0x000000011e3fd000,0x000000011e3fd080] = 128
+ stub code      [0x000000011e3fd080,0x000000011e3fd098] = 24
+ oops           [0x000000011e3fd098,0x000000011e3fd0a0] = 8
+ metadata       [0x000000011e3fd0a0,0x000000011e3fd0a8] = 8
+ scopes data    [0x000000011e3fd0a8,0x000000011e3fd0d0] = 40
+ scopes pcs     [0x000000011e3fd0d0,0x000000011e3fd140] = 112
+ dependencies   [0x000000011e3fd140,0x000000011e3fd148] = 8
+
+--------------------------------------------------------------------------------
+[Constant Pool (empty)]
+
+--------------------------------------------------------------------------------
+
+[Entry Point]
+  # {method} {0x000000010d74c4b0} 'hello' '(I)V' in 'PrintAssemblyTest'
+  # this:     rsi:rsi   = 'PrintAssemblyTest'
+  # parm0:    rdx       = int
+  #           [sp+0x30]  (sp of caller)
+  0x000000011e3fd000:   mov    0x8(%rsi),%r10d
+  0x000000011e3fd004:   shl    $0x3,%r10
+  0x000000011e3fd008:   movabs $0x800000000,%r11
+  0x000000011e3fd012:   add    %r11,%r10
+  0x000000011e3fd015:   cmp    %r10,%rax
+  0x000000011e3fd018:   jne    0x0000000116977100           ;   {runtime_call ic_miss_stub}
+  0x000000011e3fd01e:   xchg   %ax,%ax
+[Verified Entry Point]
+  0x000000011e3fd020:   mov    %eax,-0x14000(%rsp)
+  0x000000011e3fd027:   push   %rbp
+  0x000000011e3fd028:   sub    $0x20,%rsp                   ;*synchronization entry
+                                                            ; - PrintAssemblyTest::hello@-1 (line 10)
+  0x000000011e3fd02c:   movslq %edx,%r10
+  0x000000011e3fd02f:   mov    %edx,%r11d
+  0x000000011e3fd032:   sar    $0x1f,%r11d
+  0x000000011e3fd036:   imul   $0x431bde83,%r10,%r10
+  0x000000011e3fd03d:   sar    $0x32,%r10
+  0x000000011e3fd041:   mov    %r10d,%r10d
+  0x000000011e3fd044:   sub    %r11d,%r10d
+  0x000000011e3fd047:   imul   $0xf4240,%r10d,%r10d         ;*irem {reexecute=0 rethrow=0 return_oop=0}
+                                                            ; - PrintAssemblyTest::hello@3 (line 10)
+  0x000000011e3fd04e:   cmp    %r10d,%edx
+  0x000000011e3fd051:   je     0x000000011e3fd063           ;*ifne {reexecute=0 rethrow=0 return_oop=0}
+                                                            ; - PrintAssemblyTest::hello@4 (line 10)
+  0x000000011e3fd053:   add    $0x20,%rsp
+  0x000000011e3fd057:   pop    %rbp
+  0x000000011e3fd058:   mov    0x110(%r15),%r10
+  0x000000011e3fd05f:   test   %eax,(%r10)                  ;   {poll_return}
+  0x000000011e3fd062:   retq   
+  0x000000011e3fd063:   mov    %edx,%ebp
+  0x000000011e3fd065:   sub    %r10d,%ebp                   ;*irem {reexecute=0 rethrow=0 return_oop=0}
+                                                            ; - PrintAssemblyTest::hello@3 (line 10)
+  0x000000011e3fd068:   mov    $0xffffff45,%esi
+  0x000000011e3fd06d:   mov    %edx,(%rsp)
+  0x000000011e3fd070:   data16 xchg %ax,%ax
+  0x000000011e3fd073:   callq  0x0000000116979080           ; ImmutableOopMap {}
+                                                            ;*ifne {reexecute=1 rethrow=0 return_oop=0}
+                                                            ; - (reexecute) PrintAssemblyTest::hello@4 (line 10)
+                                                            ;   {runtime_call UncommonTrapBlob}
+  0x000000011e3fd078:   hlt    
+  0x000000011e3fd079:   hlt    
+  0x000000011e3fd07a:   hlt    
+  0x000000011e3fd07b:   hlt    
+  0x000000011e3fd07c:   hlt    
+  0x000000011e3fd07d:   hlt    
+  0x000000011e3fd07e:   hlt    
+  0x000000011e3fd07f:   hlt    
+[Exception Handler]
+  0x000000011e3fd080:   jmpq   0x0000000116a22d80           ;   {no_reloc}
+[Deopt Handler Code]
+  0x000000011e3fd085:   callq  0x000000011e3fd08a
+  0x000000011e3fd08a:   subq   $0x5,(%rsp)
+  0x000000011e3fd08f:   jmpq   0x0000000116978ca0           ;   {runtime_call DeoptimizationBlob}
+  0x000000011e3fd094:   hlt    
+  0x000000011e3fd095:   hlt    
+  0x000000011e3fd096:   hlt    
+  0x000000011e3fd097:   hlt    
+--------------------------------------------------------------------------------
+----
+
+Interpreting the output is left as an exercise for the astute reader ;-)
+A great resource for getting started doing so is the post https://jpbempel.github.io/2015/12/30/printassembly-output-explained.html[PrintAssembly output explained!] by https://twitter.com/jpbempel[Jean-Philippe Bempel].
+
+With _hsdis_ in place, you also can use the excellent https://github.com/AdoptOpenJDK/jitwatch[JitWatch] tool for analysing the assembly code,
+which e.g. not only provides an easy way to navigate from source code to byte code to assembly code,
+but also comes with helpful tooltips explaining the meaning of the different assembly mnemonics.
