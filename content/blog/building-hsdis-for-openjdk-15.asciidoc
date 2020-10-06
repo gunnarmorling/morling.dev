@@ -70,6 +70,18 @@ Copy the library to _lib/server_ of our JDK:
 sudo cp build/macosx-amd64/hsdis-amd64.dylib $JAVA_HOME/lib/server
 ----
 
+[NOTE]
+====
+If you're on Linux, you also can provide the _hsdis_ tool via the `LD_LIBRARY_PATH` environment variable:
+
+[source,shell]
+----
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:path/to/hsdis/build/linux-amd64
+----
+
+Note this won't work on current macOS versions unfortunately due to its https://help.mulesoft.com/s/article/Variables-LD-LIBRARY-PATH-DYLD-LIBRARY-PATH-are-ignored-on-MAC-OS-if-System-Integrity-Protect-SIP-is-enable[System Integrity Protection] feature (SIP). Thanks to Brice Dutheil for this tip!
+====
+
 Congrats! You now can use the https://wiki.openjdk.java.net/display/HotSpot/PrintAssembly[`XX:+PrintAssembly`] flag of the _java_ command to examine the assembly code of your Java program.
 Let's give it a try.
 Create a Java source file with the following contents:
