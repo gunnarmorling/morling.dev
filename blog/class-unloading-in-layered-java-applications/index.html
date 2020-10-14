@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Unloading Classes in Layered Java Applications - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Unloading Classes in Layered Java Applications" />
+<meta property="og:description" content="
+Layers are sort of the secret sauce of the Java platform module system (JPMS):
+by providing fine-grained control over how individual JPMS modules and their classes are loaded by the JVM,
+they enable advanced usages like loading multiple versions of a given module, or dynamically adding and removing modules at application runtime.
+
+
+The Layrry API and launcher provides a small plug-in API based on top of layers,
+which for instance can be used to dynamically add plug-ins contributing new views and widgets to a running JavaFX application.
+If such plug-in gets removed from the application again,
+all its classes need to be unloaded by the JVM, avoiding an ever-increasing memory consumption if for instance a plug-in gets updated multiple times.
+
+
+In this blog post I&#8217;m going to explore how to ensure classes from removed plug-in layers are unloaded in a timely manner,
+and how to find the culprit in case some class fails to be unloaded.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/class-unloading-in-layered-java-applications/" />
+<meta property="article:published_time" content="2020-10-13T20:30:00+02:00" />
+<meta property="article:modified_time" content="2020-10-13T20:30:00+02:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Unloading Classes in Layered Java Applications"/>
+<meta name="twitter:description" content="
+Layers are sort of the secret sauce of the Java platform module system (JPMS):
+by providing fine-grained control over how individual JPMS modules and their classes are loaded by the JVM,
+they enable advanced usages like loading multiple versions of a given module, or dynamically adding and removing modules at application runtime.
+
+
+The Layrry API and launcher provides a small plug-in API based on top of layers,
+which for instance can be used to dynamically add plug-ins contributing new views and widgets to a running JavaFX application.
+If such plug-in gets removed from the application again,
+all its classes need to be unloaded by the JVM, avoiding an ever-increasing memory consumption if for instance a plug-in gets updated multiple times.
+
+
+In this blog post I&#8217;m going to explore how to ensure classes from removed plug-in layers are unloaded in a timely manner,
+and how to find the culprit in case some class fails to be unloaded.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet">
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search.gunnar-morling.workers.dev\/Prod\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Unloading Classes in Layered Java Applications</h1>
+				<div class="meta">Posted at Oct 13, 2020</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>Layers are sort of the secret sauce of the Java platform module system (JPMS):
+by providing fine-grained control over how individual JPMS modules and their classes are loaded by the JVM,
+they enable advanced usages like loading multiple versions of a given module, or dynamically adding and removing modules at application runtime.</p>
+</div>
+<div class="paragraph">
+<p>The <a href="/blog/introducing-layrry-runner-and-api-for-modularized-java-applications/">Layrry</a> API and launcher provides a small plug-in API based on top of layers,
+which for instance can be used to dynamically add plug-ins contributing new views and widgets to a running JavaFX application.
+If such plug-in gets removed from the application again,
+all its classes need to be unloaded by the JVM, avoiding an ever-increasing memory consumption if for instance a plug-in gets updated multiple times.</p>
+</div>
+<div class="paragraph">
+<p>In this blog post I&#8217;m going to explore how to ensure classes from removed plug-in layers are unloaded in a timely manner,
+and how to find the culprit in case some class fails to be unloaded.</p>
+</div>
+<div class="sect1">
+<h2 id="_do_we_really_need_plug_ins">Do We Really Need Plug-ins?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before diving into the details of class unloading, let&#8217;s spend some time to think about the use cases for dynamic plug-ins in Java applications to begin with.
+I would argue that for typical backend applications this need mostly has diminished.
+At large, the industry is moving away from application servers and their model around "deploying" applications (which you could consider as some kind of "plug-in") into a running server process.
+Instead, there&#8217;s a strong trend towards immutable application packages, based on stacks like Quarkus or Spring Boot,
+embedding the web server, the application as well as its dependencies, often-times deployed as container images.</p>
+</div>
+<div class="paragraph">
+<p>The advantages of this approach centered around immutable images manifold, e.g. in terms of security (no interface for deploying applications is needed) and governance (it&#8217;s always exactly clear which version of the application is running).
+Updates&#8201;&#8212;&#8201;i.e. the deployment of a new revision of the container image&#8201;&#8212;&#8201;can be put in place e.g. with help of a proxy in front of a cluster of application nodes, which are updated in a rolling manner.
+That way, there&#8217;s no downtime of the service that&#8217;ll impact the user.
+Also techniques like canary releases and A/B testing, as well as rolling back to specific earlier versions of an application become a breeze that way.</p>
+</div>
+<div class="paragraph">
+<p>The situation is different though when it comes to client applications.
+When thinking of your favourite editor, IDE or web browser for instance, requiring a restart when installing or updating a plug-in is not desirable.
+Instead, it should be possible to add plug-ins (or new plug-in versions) to a running application instance and be usable immediately, without interrupting the flow of the user.
+The same applies for many IoT scenarios, where e.g. an application consuming sensor measurements should be updateable without any downtime.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_plug_ins_in_layered_java_applications">Plug-ins in Layered Java Applications</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://openjdk.java.net/projects/jigsaw/spec/">JPMS</a> addresses this requirement via the notion of <a href="https://docs.oracle.com/en/java/javase/15/docs/api/java.base/java/lang/ModuleLayer.html">module layers</a>:</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>A layer is created from a graph of modules in a <code>Configuration</code> and a function that maps each module to a <code>ClassLoader</code>. Creating a layer informs the Java virtual machine about the classes that may be loaded from the modules so that the Java virtual machine knows which module that each class is a member of.</p>
+</div>
+</blockquote>
+</div>
+<div class="paragraph">
+<p>Layers are the perfect means of adding new code into a running Java application:
+they can be added and removed dynamically, and code in an already running layer can invoke functionality from a dynamically added layer in different ways, e.g. via reflection or by using the <a href="https://docs.oracle.com/en/java/javase/15/docs/api/java.base/java/util/ServiceLoader.html">service loader API</a>.
+Layrry exposes this functionality via a very basic <a href="https://github.com/moditect/layrry/blob/master/layrry-platform/src/main/java/org/moditect/layrry/platform/PluginLifecycleListener.java">plug-in API</a>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">PluginLifecycleListener</span> <span class="o">{</span>
+
+    <span class="kt">void</span> <span class="nf">pluginAdded</span><span class="o">(</span><span class="nc">PluginDescriptor</span> <span class="n">plugin</span><span class="o">);</span>
+
+    <span class="kt">void</span> <span class="nf">pluginRemoved</span><span class="o">(</span><span class="nc">PluginDescriptor</span> <span class="n">plugin</span><span class="o">);</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">PluginDescriptor</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="nc">String</span> <span class="nf">getName</span><span class="o">()</span> <span class="o">{</span> <span class="o">...</span> <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="nc">ModuleLayer</span> <span class="nf">getModuleLayer</span><span class="o">()</span> <span class="o">{</span> <span class="o">...</span> <span class="o">}</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A plug-in in this context is a JPMS layer containing one or more modules (either explicit or automatic) which all are loaded via a single class loader.
+A Layrry-based application can implement the <code>PluginLifecycleListener</code> service contract in order to be notified whenever a plug-in is added or removed.
+Plug-ins are loaded from configured directories in the file system which are monitored by Layrry (other means of (un-)installing plug-ins may be added in future versions of Layrry).</p>
+</div>
+<div class="paragraph">
+<p>Installing a plug-in is as easy as copying its JAR(s) into a sub-folder of such monitored directory.
+Layrry will copy the plug-in contents to a temporary directory,
+create a layer with all the plug-ins JARs, and notify any registered plug-in listeners about the new layer.
+These will typically use the service loader API then to interact with application-specific services which model its extension points, e.g. to contribute visual UI components in case of a desktop application.</p>
+</div>
+<div class="paragraph">
+<p>The reverse process happens when a plug-in gets un-installed: the user removes a plug-in&#8217;s directory,
+and all listeners will be notified by the Layrry about the removal.
+They should release all references to any classes from the removed plug-in, rendering it avaible for garbage collection.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_class_unloading_in_practice">Class Unloading in Practice</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>There is no API in the Java platform for explicitly unloading a given class.
+Instead, "a class or interface may be unloaded if and only if its defining class loader may be reclaimed by the garbage collector"
+(JLS, <a href="https://docs.oracle.com/javase/specs/jls/se15/html/jls-12.html#jls-12.7">chapter 12.7</a>).
+This means in a layered Java application any classes in a layer that got removed can be unloaded as soon as the layer&#8217;s class loader is subject to GC.
+Most importantly, no class in a still running layer must keep a (strong) reference to any class of the removed layer;
+otherwise this class would hinder collecting the removed layer&#8217;s loader and its classes.</p>
+</div>
+<div class="paragraph">
+<p>As an example, let&#8217;s look at the <a href="https://github.com/moditect/layrry-examples/tree/master/modular-tiles">modular-tiles</a> demo,
+a JavaFX application which uses the Layrry plug-in API for dynamically adding and removing tiles with different widgets like clocks and gauges to its graphical UI.
+The tiles themselves are implemented using the fabulous <a href="https://github.com/HanSolo/tilesfx">TilesFX</a> project by Gerrit Grundwald.</p>
+</div>
+<div class="paragraph">
+<p>If you want to follow along, check out the source code of the demo and build it as per <a href="https://github.com/moditect/layrry-examples/tree/master/modular-tiles#build">the instructions</a> in the README file.
+Then run the Layrry launcher with the <code>-Xlog:class+unload=info</code> option, so to be notified about any unloaded classes in the system output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell">java <span class="nt">-Xlog</span>:class+unload<span class="o">=</span>info <span class="se">\</span>
+  <span class="nt">-jar</span> path/to/layrry-launcher-1.0-SNAPSHOT-all.jar <span class="se">\</span>
+  <span class="nt">--layers-config</span> staging/layers.toml <span class="se">\</span>
+  <span class="nt">--properties</span> staging/versions.properties</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now add and remove some tiles plug-ins a few times:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><span class="nb">cp</span> <span class="nt">-r</span> staging/plugins-prepared/<span class="k">*</span> staging/plugins
+<span class="nb">rm</span> <span class="nt">-rf</span> staging/plugins/<span class="k">*</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The widgets will show up and disappear in the JavaFX UI, but what about class unloading in the logs?
+In all likelyhood, <em>nothing!</em>
+This is because without any further configuration, the G1 garbage collector (which is used by the JDK by default since Java 9) will unload classes only during a full garbage collection, which may only run after a long time (if at all), if there&#8217;s no substantial object allocation happening.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">JEP 158: Unified JVM Logging</div>
+<div class="paragraph">
+<p>The <em>-Xlog</em> option has been defined by <a href="http://openjdk.java.net/jeps/158">JEP 158</a>, added to the JDK with Java 9,
+which provides a "common logging system for all components of the JVM".
+The new unified options should be preferred over the legacy options like <em>-XX:+TraceClassLoading</em> and <em>-XX:+TraceClassUnloading</em>.
+Usage of <em>-Xlog</em> is described in detail in the <em>java</em> <a href="https://docs.oracle.com/en/java/javase/15/docs/specs/man/java.html#enable-logging-with-the-jvm-unified-logging-framework">man page</a>;
+also Nicolai Parlog discusses JEP 158 in great depth in this <a href="https://nipafx.dev/java-unified-logging-xlog">blog post</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>So at this point you could trigger a GC explicitly, e.g. via <em>jcmd</em>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell">jcmd &lt;pid&gt; GC.run</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>But of course that&#8217;s not too desirable when running things in production.
+Instead, if you&#8217;re on JDK 12 or later, you can use the new <code>G1PeriodicGCInterval</code> option for triggering a <em>periodic GC</em>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell">java <span class="nt">-Xlog</span>:class+unload<span class="o">=</span>info <span class="se">\</span>
+  <span class="nt">-XX</span>:G1PeriodicGCInterval<span class="o">=</span>5000 <span class="se">\</span>
+  <span class="nt">-jar</span> path/to/layrry-launcher-1.0-SNAPSHOT-all.jar <span class="se">\</span>
+  <span class="nt">--layers-config</span> staging/layers.toml <span class="se">\</span>
+  <span class="nt">--properties</span> staging/versions.properties</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Introduced via <a href="https://openjdk.java.net/jeps/346">JEP 346</a> ("Promptly Return Unused Committed Memory from G1"), this will periodically initiate a concurrent GC cycle (or optionally even a full GC).
+Add and remove some plug-ins again, and after some time you should see messages about the unloaded classes in the log:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell">...
+<span class="o">[</span>138.912s][info][class,unload] unloading class org.kordamp.tiles.sparkline.SparklineTilePlugin 0x0000000800de1840
+<span class="o">[</span>138.912s][info][class,unload] unloading class org.kordamp.tiles.gauge.GaugeTilePlugin 0x0000000800de2040
+<span class="o">[</span>138.913s][info][class,unload] unloading class org.kordamp.tiles.clock.ClockTilePlugin 0x0000000800de2840
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>From what I observed, class unloading doesn&#8217;t happen on <em>every</em> concurrent GC cycle;
+it might take a few cycles after a plug-in has been removed until its classes are unloaded.
+If you&#8217;re not using G1, but the new low-pause concurrent collectors <a href="https://wiki.openjdk.java.net/display/shenandoah/Main">Shenandoah</a> or <a href="https://wiki.openjdk.java.net/display/zgc/Main">ZGC</a>, they&#8217;ll be able to concurrently unload classes without any special configuration needed.
+Note that class unloading is not a mandatory operation which would have to be provided by every GC implementation.
+E.g. initial ZGC releases did not support class unloading, which would have rendered them unsuitable for this use case.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">JEP 371: Hidden Classes</div>
+<div class="paragraph">
+<p>As mentioned above, regular classes can only be unloaded if their defining class loader become subject to garbage collection.
+This can be an issue for frameworks and libraries which generate lots of classes dynamically at runtime,
+e.g. script language implementations or solutions like Presto, which generates a <a href="https://github.com/prestosql/presto/issues/2885">class for each query</a>.</p>
+</div>
+<div class="paragraph">
+<p>The traditional workaround is to generate each class using its own dedicated class loader,
+which then can be discarded specifically.
+This solves the GC issue, but it isn&#8217;t ideal in terms of overall memory consumption and speed of class generation.
+Hence, JDK 15 defines a notion of <em>Hidden Classes</em> (<a href="https://openjdk.java.net/jeps/371">JEP 371</a>),
+which are not created by class loaders and thus can be unloaded eagerly:
+"when all instances of the hidden class are reclaimed and the hidden class is no longer reachable, it may be unloaded even though its notional defining loader is still reachable".</p>
+</div>
+<div class="paragraph">
+<p>You can find some more information on hidden classes in this <a href="https://twitter.com/gunnarmorling/status/1263911653546037261">tweet thread</a> and this <a href="https://github.com/gunnarmorling/hidden-classes">code example</a> on GitHub.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>But who wants to stare at logs in the system output, that&#8217;s so 2010!
+So let&#8217;s fire up <a href="https://openjdk.java.net/projects/jmc/">JDK Mission Control</a> and trigger a recording via the <a href="https://openjdk.java.net/jeps/328">JDK Flight Recorder</a> (JFR) to observe what&#8217;s going on in more depth.</p>
+</div>
+<div class="paragraph">
+<p>JFR can capture class unloading events, you need to make sure though to enable this event type,
+which is not the case by default.
+In order to do so, start a recording, then go to the <em>Template Manager</em>, edit or create a flight recording template and check the <em>Enabled</em> box for the events under <em>Java Virtual Machine</em> &#8594; <em>Class Loading</em>.
+With the recorder running, add and remove some tiles plug-ins to the running application.</p>
+</div>
+<div class="paragraph">
+<p>Once the recording is finished, you should see class unloading events under <em>JVM Internals</em> &#8594; <em>Class Loading</em>:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/class_unloading_jfr_events.png" alt="JFR class unloading events in JDK Mission Control">
+</div>
+</div>
+<div class="paragraph">
+<p>In this case, the classes from a set of plug-ins were unloaded at 16:48:11,
+which correlates to the periodic GC cycle running at that time and spending a slightly increased time for cleaning up class loader data:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/class_unloading_gc_events.png" alt="JFR GC events in JDK Mission Control">
+</div>
+</div>
+<div class="paragraph">
+<p>As a good Java citizen, Layrry itself also emits JFR events whenever a plug-in layer is added or removed,
+which helps to track the need for classes to be unloaded:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/class_unloading_layrry_events.png" alt="JFR Layrry layer removal events in JDK Mission Control">
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_if_things_go_wrong">If Things Go Wrong</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now let&#8217;s look at the situation where some class failed to unload after its plug-in layer was removed.
+Common reasons for that include remaining references from classes in a still running layer to classes in the removed layer,
+threads started by a class in the removed layer which were not stopped,
+and JVM shutdown hooks registered by code in the removed layer.</p>
+</div>
+<div class="paragraph">
+<p>This is known as a <em>class loader leak</em> and is problematic as it means more and more memory will be consumed and cannot be freed as plug-ins are added and removed,
+which eventually may lead to an <code>OutOfMemoryError</code>.
+So how could you detect and analyse this situation?
+An <code>OutOfMemoryError</code> in production would surely be an indicator that there must be a memory or class loader leak somewhere.
+It&#8217;s also a good idea to regularly examine JFR recording files (e.g. in your testing or staging environment):
+the absence of any class unloading event despite the removal of plug-ins should trigger an investigation.</p>
+</div>
+<div class="paragraph">
+<p>As far as analysing the situation is concerned, examining a heap dump of the application will typically yield insight into the cause rather quickly.
+Take a heap dump using <em>jcmd</em> as shown above, then load the dump into a tool such as <a href="https://www.eclipse.org/mat/">Eclipse MAT</a>.
+In Eclipse MAT, the "Duplicate Classes" action is a great starting point.
+If one class has been loaded by multiple class loaders, but failed to unload, it&#8217;s a pretty strong indicator that something is wrong:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/class_unloading_mat_duplicate_classes.png" alt="Duplicate classes in Eclipse MAT">
+</div>
+</div>
+<div class="paragraph">
+<p>The next step is to analyse the shortest path from the involved class loaders to a <em>GC root</em>:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/class_unloading_mat_path_to_gc_root.png" alt="Analyzing shortest paths to GC roots in Eclipse MAT">
+</div>
+</div>
+<div class="paragraph">
+<p>Some object on that path must hold on to a reference to a class or the class loader of the removed plug-in,
+preventing the loader to be GC-ed.
+In the case at hand, it&#8217;s the <code>leakingPlugins</code> field in the <code>PluginRegistry</code> class,
+to which each plug-in is added upon addition of the layer, but then apparently its coffee-deprived author forgot to remove the plug-in from that collection within the <code>pluginRemoved()</code> event handler ;)</p>
+</div>
+<div class="paragraph">
+<p>As a quick side note, there&#8217;s a really <a href="https://github.com/vlsi/mat-calcite-plugin">cool plug-in</a> for Eclipse MAT written by <a href="https://twitter.com/VladimirSitnikv">Vladimir Sitnikov</a>,
+which allows you to query heap dumps using SQL.
+It maps each class to its own "table", so that e.g. classes loaded more than once could be selected using the following SQL query on the <code>java.lang.Class</code> class:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><span class="k">select</span>
+  <span class="k">c</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+  <span class="n">listagg</span><span class="p">(</span><span class="n">toString</span><span class="p">(</span><span class="k">c</span><span class="p">.</span><span class="nv">"@classLoader"</span><span class="p">))</span> <span class="k">as</span> <span class="s1">'loaders'</span><span class="p">,</span>
+  <span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="k">as</span> <span class="s1">'count'</span>
+<span class="k">from</span>
+  <span class="nv">"java.lang.Class"</span> <span class="k">c</span>
+<span class="k">where</span>
+  <span class="k">c</span><span class="p">.</span><span class="n">name</span> <span class="o">&lt;&gt;</span> <span class="s1">''</span>
+<span class="k">group</span> <span class="k">by</span>
+  <span class="k">c</span><span class="p">.</span><span class="n">name</span>
+<span class="k">having</span>
+  <span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Resulting in the same list of classes as above:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/class_unloading_mat_sql.png" alt="Analyzing heap dumps in Eclipse MAT using SQL">
+</div>
+</div>
+<div class="paragraph">
+<p>This could come in very handy for more advanced heap dump analyses,
+which cannot be done using Eclipse MAT&#8217;s built-in query capabilities.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_learning_more">Learning More</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Via module layers, JPMS provides the foundation for dynamic plug-in architectures,
+as demonstrated by Layrry.
+Removing layers at runtime requires some care and consideration,
+so to avoid class loader leaks which eventually may lead to <code>OutOfMemoryError</code>s.
+As so often, JDK Mission Control, JFR, and Eclipse MAT prove to be invaluable tools in the box of every Java developer,
+helping to ensure class unloading in your layered applications is done correctly, and if it is not, helping to understand and fix the underlying issue.</p>
+</div>
+<div class="paragraph">
+<p>Here are some more resources about class unloading and analysing class loader leaks:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="http://cr.openjdk.java.net/~pliden/slides/ZGC-Jfokus-2019.pdf">ZGC Concurrent Class Unloading</a>: A conference talk by Erik Österlund</p>
+</li>
+<li>
+<p><a href="https://java.jiderhamn.se/category/classloader-leaks/">class loader leaks</a>: A series of blog posts by Mattias Jiderhamn</p>
+</li>
+<li>
+<p><a href="https://blog.creekorful.com/2020/03/classloader-and-memory-leaks/">ClassLoader &amp; memory leaks: a Java love story</a>: A post about heap dump analysis by Aloïs Micard</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Lastly, if you&#8217;d like to explore the dynamic addition and removal of JPMS layers to a running application yourself,
+the modular-tiles demo app is a great starting point.
+Its <a href="https://github.com/moditect/layrry-examples/tree/master/modular-tiles">source code</a> can be found on GitHub.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread"></div>
+<script type="text/javascript">
+	(function () {
+		
+		
+		if (window.location.hostname == "localhost")
+			return;
+
+		var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+		var disqus_shortname = 'morlingdev';
+		dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+		(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+	})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by
+		Disqus.</a></noscript>
+<a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2020 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+</body>
+</html>
