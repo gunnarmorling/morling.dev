@@ -11,39 +11,49 @@ ifdef::env-github[]
 :imagesdir: ../../static/images
 endif::[]
 
-Layers are sort of the secret sauce of the Java module system:
+Layers are sort of the secret sauce of the Java platform module system (JPMS):
 by providing fine-grained control over how individual JPMS modules and their classes are loaded by the JVM,
 they enable advanced usages like loading multiple versions of a given module, or dynamically adding and removing modules at application runtime.
 
-The Layrry API and launcher provides a small plug-in API based on top of layers,
-which e.g. allows to dynamically add plug-ins contributing new views and widgets to a running JavaFX application such as the modular-tiles demo app.
+The link:/blog/introducing-layrry-runner-and-api-for-modularized-java-applications/[Layrry] API and launcher provides a small plug-in API based on top of layers,
+which for instance could be used to dynamically add plug-ins contributing new views and widgets to a running JavaFX application.
 If such plug-in gets removed from the application again,
 all its classes should be unloaded, avoiding an ever-increasing memory consumption if for instance a plug-in gets updated multiple times.
+
 In this blog post I'm going to explore how to ensure classes from removed plug-in layers are unloaded in a timely manner,
 and how to find the culprit in case some class fails to be unloaded.
 
 <!--more-->
 
-== Plug-ins in Layered Java Applications
+== Do We Really Need Plug-ins?
 
 Before diving into the details of class unloading, let's spend some time to think about the use cases for dynamic plug-ins in Java applications to begin with.
 I'd argue that for typical backend applications this need largely has diminished.
 At large, the industry is moving away from application servers and their model around "deploying" applications (which you could consider as some kind of "plug-in") into a running server process.
-Instead, there's a strong trend towards immutable application packages, embedding the web server and often-times deployed as container images.
+Instead, there's a strong trend towards immutable application packages, based on stacks like Quarkus or Spring Boot,
+embedding the web server, the application as well as its dependencies, often-times deployed as container images.
 
 Advantages of this approach centered around immutable images manifold, e.g. in terms of security (no interface for deploying applications is needed) and governance (it's always exactly clear which version of the application is running).
 Updates -- i.e. the deployment of a new revision of the container image -- can be put in place e.g. with help of a proxy in front of a cluster of application nodes, which are updated in a rolling manner.
-Also techniques like canary releases become a breeze that way.
+That way, there's no downtime of the service that'll impact the user.
+Also techniques like canary releases and A/B testing as well rolling back to specific earlier versions of an application become a breeze that way.
 
 The situation is different though when it comes to client applications.
 When thinking of your favourite editor, IDE or browser for instance, requiring a restart when installing or updating a plug-in is not very desirable.
 Instead, plug-ins (or new plug-in versions) should be able to be added to a running application instance and be usable immediately, without interrupting the flow of the user.
 The same applies for many IoT scenarios, where e.g. an application consuming sensor measurements should be updateable without any downtime.
 
-JPMS addresses this requirement via the notion of module layers, which make it rather easy to add new code into a running Java application as well as remove it later on again.
-Layers can be added and removed at runtime, and e.g. via the service loader API code from an already running layer can invoke functionality from a layer dynamically added later on.
+== Plug-ins in Layered Java Applications
 
-Layrry exposes this functionality via a very basic plug-in API:
+https://openjdk.java.net/projects/jigsaw/spec/[JPMS] addresses this requirement via the notion of https://docs.oracle.com/en/java/javase/15/docs/api/java.base/java/lang/ModuleLayer.html[module layers]:
+
+____
+A layer is created from a graph of modules in a `Configuration` and a function that maps each module to a `ClassLoader`. Creating a layer informs the Java virtual machine about the classes that may be loaded from the modules so that the Java virtual machine knows which module that each class is a member of.
+____
+ 
+Layers are the perfect means of adding new code into a running Java application:
+they can be added and removed dynamically, and code in an already running layer can invoke functionality from a layer added dynamically, for instance by using the https://docs.oracle.com/en/java/javase/15/docs/api/java.base/java/util/ServiceLoader.html[service loader API].
+Layrry exposes this functionality via a very basic https://github.com/moditect/layrry/blob/master/layrry-platform/src/main/java/org/moditect/layrry/platform/PluginLifecycleListener.java[plug-in API]:
 
 [source,java]
 ----
@@ -65,10 +75,18 @@ public class PluginDescriptor {
 }
 ----
 
-Layrry-based applications can register plug-in lifecycle listener implementations via the service loader API.
-Plug-ins themselves are a group of one or more modules which are copied to (or deleted from) a specific directory in the file system monitored by Layrry (other means of (un-)installing plug-ins may be added in future versions of Layrry)
-Plug-in listeners are notified by the Layrry platform whenever a plug-in got added or removed.
-They'll typically use the service loader API themselves then to interact with application-specific service interfaces, e.g. contributing visual components in case of a JavaFX application.
+A plug-in in this context is a JPMS layer containing one or more (auto-)modules which all are loaded via a single class loader.
+A Layrry-based application can implement the `PluginLifecycleListener` service contract in order to be notified whenever a plug-in is added or removed.
+Plug-ins are loaded from configured directories in the file system monitored by Layrry (other means of (un-)installing plug-ins may be added in future versions of Layrry).
+
+Installing a plug-in is as easy as copying its JAR(s) into a sub-folder of such monitored directory.
+Layrry will copy the plug-in to a temporary directory,
+create a layer with all the plug-ins JARs and notify any registered plug-in listeners about the new layer.
+These will typically use the service loader API themselves then to interact with application-specific service interfaces which describe its extension points, e.g. to contribute visual UI components in case of a JavaFX application.
+
+The reverse process happens when a plug-in gets un-installed: the user removes a plug-in's directory,
+and all listeners will be notified by the Layrry about the removal.
+They should release all references to any classes from the removed plug-in, rendering it avaible for garbage collecition.
 
 == Class Unloading in Practice
 
@@ -79,23 +97,8 @@ This means in a layered Java application any classes in a layer that got removed
 Most importantly, no class in a still running layer must keep a (strong) reference to any class of the removed layer;
 otherwise this class would hinder collecting the removed layers loader.
 
-[NOTE]
-.Hidden Classes
-====
-As mentioned above, regular classes can only be unloaded if their defining class loader become subject to garbage collection.
-This can be an issue for frameworks and libraries which generate lots of classes dynamically at runtime,
-e.g. script language implementations or solutions like Presto, which generate a https://github.com/prestosql/presto/issues/2885[class for each query].
-
-The traditional workaround is to generate each class with its own dedicated classloader,
-which solves the GC issue but isn't ideal in terms of overall memory consumption and performance.
-Hence, JDK 15 defines a notion of _Hidden Classes_ (https://openjdk.java.net/jeps/371[JEP 371]),
-which are not created by class loaders and thus can be unloaded eagerly; quoting the JEP,
-"when all instances of the hidden class are reclaimed and the hidden class is no longer reachable, it may be unloaded even though its notional defining loader is still reachable".
-
-You can find some more information on hidden classes in this https://twitter.com/gunnarmorling/status/1263911653546037261[tweet thread] and this https://github.com/gunnarmorling/hidden-classes[code example] on GitHub.
-====
-
-As an example, let's look at the _modular-tiles_ demo, a JavaFX application which uses the Layrry plug-in API for dynamically adding and removing tiles with different UI widgets like clocks and gauges.
+As an example, let's look at the https://github.com/moditect/layrry-examples/tree/master/modular-tiles[modular-tiles] demo,
+a JavaFX application which uses the Layrry plug-in API for dynamically adding and removing tiles with different UI widgets like clocks and gauges.
 The tiles themselves are implemented using the fabulous https://github.com/HanSolo/tilesfx[TilesFX] project by Gerrit Grundwald.
 
 If you want to follow along, check out the source code of the demo and build it as per the instructions in the README file.
@@ -104,11 +107,12 @@ Then run with the `-Xlog:class+unload=info` option, so to be notified about any 
 [source,shell]
 ----
 java -Xlog:class+unload=info \
-  -jar ../../layrry/layrry-launcher/target/layrry-launcher-1.0-SNAPSHOT-all.jar \
-  --layers-config staging/layers.toml --properties staging/versions.properties
+  -jar path/to/layrry-launcher-1.0-SNAPSHOT-all.jar \
+  --layers-config staging/layers.toml \
+  --properties staging/versions.properties
 ----
 
-Add and remove some tiles plug-ins a few times:
+Now add and remove some tiles plug-ins a few times:
 
 [source,shell]
 ----
@@ -116,26 +120,38 @@ cp -r staging/plugins-prepared/* staging/plugins
 rm -rf staging/plugins/*
 ----
 
-The widgets will show up and disappear in the UI, but what about class unloading in the logs?
+The widgets will show up and disappear in the JavaFX UI, but what about class unloading in the logs?
 In all likelyhood, _nothing!_
 This is because without any further configuration, the G1 garbage collector (which is used by the JDK by default since Java 9) will unload classes only during a full garbage collection, which may only run after a long time (if at all), if there's no substantial object allocation happening.
 
-So at this point you could either trigger a GC explicitly, e.g. via _jcmd_:
+[NOTE]
+.JEP 158: Unified JVM Logging
+====
+The _-Xlog_ option has been defined by http://openjdk.java.net/jeps/158[JEP 158], added to the JDK with Java 9,
+which provides a "common logging system for all components of the JVM".
+The new unified options should be preferred over the legacy options like _-XX:+TraceClassLoading_ and _-XX:+TraceClassUnloading_.
+Usage of _-Xlog_ is described in detail in the _java_ https://docs.oracle.com/en/java/javase/15/docs/specs/man/java.html#enable-logging-with-the-jvm-unified-logging-framework[man page],
+also Nicolai Parlog discusses JEP 158 in great depth in this https://nipafx.dev/java-unified-logging-xlog[blog post].
+====
+
+So at this point you could trigger a GC explicitly, e.g. via _jcmd_:
 
 [source,shell]
 ----
 jcmd <pid> GC.run
 ----
 
-Or, if you're on JDK 12 or later, you can use the new `G1PeriodicGCInterval` option for triggering a periodic GC.
-Introduced via https://openjdk.java.net/jeps/346[JEP 346]("Promptly Return Unused Committed Memory from G1"), this will periodically initiate a concurrent GC cycle (or optionally even a full GC):
+Of course that's not too desirable when running things in production.
+Instead, if you're on JDK 12 or later, you can use the new `G1PeriodicGCInterval` option for triggering a periodic GC.
+Introduced via https://openjdk.java.net/jeps/346[JEP 346] ("Promptly Return Unused Committed Memory from G1"), this will periodically initiate a concurrent GC cycle (or optionally even a full GC):
 
 [source,shell]
 ----
 java -Xlog:class+unload=info \
   -XX:G1PeriodicGCInterval=5000 \
-  -jar ../../layrry/layrry-launcher/target/layrry-launcher-1.0-SNAPSHOT-all.jar \
-  --layers-config staging/layers.toml --properties staging/versions.properties
+  -jar path/to/layrry-launcher-1.0-SNAPSHOT-all.jar \
+  --layers-config staging/layers.toml \
+  --properties staging/versions.properties
 ----
 
 Add and remove some plug-ins again, and after some time you should see messages about the unloaded classes in the log:
@@ -149,15 +165,34 @@ Add and remove some plug-ins again, and after some time you should see messages 
 ...
 ----
 
-Note that from what I observed, class unloading doesn't happen on _every_ GC cycle;
+Note that from what I observed, class unloading doesn't happen on _every_ concurrent GC cycle;
 it might take a few cycles after a plug-in has been removed until its classes are unloaded.
+If you're not using G1, but the new low-pause concurrent collectors https://wiki.openjdk.java.net/display/shenandoah/Main[Shenandoah] or https://wiki.openjdk.java.net/display/zgc/Main[ZGC], they'll be able to concurrently unload classes without any special configuration needed.
+
+[NOTE]
+.JEP 371: Hidden Classes
+====
+As mentioned above, regular classes can only be unloaded if their defining class loader become subject to garbage collection.
+This can be an issue for frameworks and libraries which generate lots of classes dynamically at runtime,
+e.g. script language implementations or solutions like Presto, which generate a https://github.com/prestosql/presto/issues/2885[class for each query].
+
+The traditional workaround is to generate each class with its own dedicated classloader,
+which solves the GC issue, but isn't ideal in terms of overall memory consumption and performance.
+Hence, JDK 15 defines a notion of _Hidden Classes_ (https://openjdk.java.net/jeps/371[JEP 371]),
+which are not created by class loaders and thus can be unloaded eagerly:
+"when all instances of the hidden class are reclaimed and the hidden class is no longer reachable, it may be unloaded even though its notional defining loader is still reachable".
+
+You can find some more information on hidden classes in this https://twitter.com/gunnarmorling/status/1263911653546037261[tweet thread] and this https://github.com/gunnarmorling/hidden-classes[code example] on GitHub.
+====
 
 But who wants to stare at logs in the system output, that's so 2010!
-So let's fire up JDK Mission Control and trigger a flight recording to observe what's going on in more depth.
+So let's fire up https://openjdk.java.net/projects/jmc/[JDK Mission Control] and trigger a recording via the https://openjdk.java.net/jeps/328[JDK Flight Recorder] (JFR) to observe what's going on in more depth.
+
 JFR can capture class unloading events, you need to make sure though to enable this event type,
 which is not the case by default.
 In order to do so, start a recording, then go to the _Template Manager_, edit or create a flight recording template and check the _Enabled_ box for the events under _Java Virtual Machine_ -> _Class Loading_.
 With the recorder running, add and remove some Tiles plug-ins to the running application.
+
 Once the recording is finished, you should see unloading events under _JVM Internals_ -> _Class Loading_:
 
 image::class_unloading_jfr_events.png[JFR class unloading events in JDK Mission Control]
@@ -174,11 +209,12 @@ image::class_unloading_layrry_events.png[JFR Layrry layer removal events in JDK 
 
 == If Things Go Wrong
 
-Now let's the situation where some class failed to unload after its plug-in layer was removed.
-Reasons for that including remaining references from classes in a still running layer to classes in the removed layer,
-or threads started by a class in the removed layer which were not stopped.
+Now let's look at the situation where some class failed to unload after its plug-in layer was removed.
+Common reasons for that include remaining references from classes in a still running layer to classes in the removed layer,
+threads started by a class in the removed layer which were not stopped,
+and JVM shutdown hooks registered by code in the removed layer.
 
-This is known as a _class loader leak_ and is problematic as it means more and more memory will be consumed as plug-ins are added and removed,
+This is known as a _class loader leak_ and is problematic as it means more and more memory will be consumed and cannot be freed, as plug-ins are added and removed,
 which eventually may lead to an `OutOfMemoryError`.
 So how could you detect and analyse this situation?
 An `OutOfMemoryError` in production would surely be an indicator that there must be a memory or class loader leak somewhere.
@@ -186,10 +222,9 @@ If you're regularly examining JFR recording files (e.g. from a testing or stagin
 the absence of any class unloading event despite the removal of plug-ins should trigger an investigation, too.
 
 As far as analysing the situation is concerned, examining a heap dump of the application will typically yield insight into the cause rather quickly.
-Take a heap dump using _jcmd_ as shown above, then load this dump into a tool such as Eclipse MAT.
-
+Take a heap dump using _jcmd_ as shown above, then load this dump into a tool such as https://www.eclipse.org/mat/[Eclipse MAT].
 In Eclipse MAT, the "Duplicate Classes" action is a great starting point.
-If one class has been loaded by multiple class loaders but failed to unload, it's a pretty strong indicator that something is wrong:
+If one class has been loaded by multiple class loaders, but failed to unload, it's a pretty strong indicator that something is wrong:
 
 image::class_unloading_mat_duplicate_classes.png[Duplicate classes in Eclipse MAT]
 
@@ -231,11 +266,18 @@ which cannot be done using Eclipse MAT's built-in query capabilities.
 
 == Learning More
 
+Via module layers, JPMS provides the foundation for dynamic plug-in architectures as the one found in Layrry.
+Removing 
+When being aware of some de
+
 https://java.jiderhamn.se/category/classloader-leaks/
 http://cr.openjdk.java.net/~pliden/slides/ZGC-Jfokus-2019.pdf
 
 
+https://blog.creekorful.com/2020/03/classloader-and-memory-leaks/
 
 
 
 
+
+shutdown hook (class graph)
