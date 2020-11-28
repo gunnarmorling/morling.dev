@@ -7,10 +7,32 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>© 2020 Gunnar Morling</copyright>
-    <lastBuildDate>Wed, 14 Oct 2020 17:45:00 +0200</lastBuildDate>
+    <lastBuildDate>Sat, 28 Nov 2020 17:45:00 +0100</lastBuildDate>
     
 	<atom:link href="https://www.morling.dev/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Quarkus and Testcontainers</title>
+      <link>https://www.morling.dev/blog/quarkus-and-testcontainers/</link>
+      <pubDate>Sat, 28 Nov 2020 17:45:00 +0100</pubDate>
+      
+      <guid>https://www.morling.dev/blog/quarkus-and-testcontainers/</guid>
+      <description>&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;The &lt;a href=&#34;https://www.testcontainers.org/&#34;&gt;Testcontainers&lt;/a&gt; project is invaluable for spinning up containerized resources during your (JUnit) tests,
+e.g. databases or Kafka clusters.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;For users of JUnit 5, the project provides the &lt;a href=&#34;https://www.testcontainers.org/quickstart/junit_5_quickstart/&#34;&gt;&lt;code&gt;@Testcontainers&lt;/code&gt;&lt;/a&gt; extension, which controls the lifecycle of containers used by a test.
+When testing a &lt;a href=&#34;https://quarkus.io/&#34;&gt;Quarkus&lt;/a&gt; application though, this is at odds with Quarkus&#39; own &lt;a href=&#34;https://quarkus.io/guides/getting-started-testing#recap-of-http-based-testing-in-jvm-mode&#34;&gt;&lt;code&gt;@QuarkusTest&lt;/code&gt;&lt;/a&gt; extension;
+it&amp;#8217;s a recommended &lt;a href=&#34;https://bsideup.github.io/posts/testcontainers_fixed_ports/&#34;&gt;best practice&lt;/a&gt; to avoid fixed ports for any containers started by Testcontainers.
+Instead, you should rely on Docker to automatically allocate random free ports.
+This avoids conflicts between concurrently running tests,
+e.g. amongst multiple Postgres containers,
+started up by several parallel job runs in a CI environment, all trying to allocate Postgres&#39; default port 5432.
+Obtaining the randomly assigned port and passing it into the Quarkus bootstrap process isn&amp;#8217;t possible though when combining the two JUnit extensions.&lt;/p&gt;
+&lt;/div&gt;</description>
+    </item>
     
     <item>
       <title>Class Unloading in Layered Java Applications</title>
