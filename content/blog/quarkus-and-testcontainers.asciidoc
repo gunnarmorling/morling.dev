@@ -1,0 +1,142 @@
+---
+title: "Quarkus and Testcontainers"
+date: 2020-11-28T17:45:00+01:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+The https://www.testcontainers.org/[Testcontainers] project is invaluable for spinning up containerized resources during your (JUnit) tests,
+e.g. databases or Kafka clusters.
+
+The project provides the https://www.testcontainers.org/quickstart/junit_5_quickstart/[`@Testcontainers`] JUnit extension for controlling the lifecycle of containers used by a test.
+When testing a https://quarkus.io/[Quarkus] application though, this is at odds somewhat with Quarkus' own https://quarkus.io/guides/getting-started-testing#recap-of-http-based-testing-in-jvm-mode[`@QuarkusTest`] extension;
+it's a best practice to avoid fixed ports for any containers started by Testcontainers.
+Instead, you should rely on Testcontainers to automatically allocate random free ports.
+This avoids conflicts between concurrently running tests,
+e.g. amongst multiple Postgres containers,
+started up by several parallel job runs in a CI environment, all trying to allocate Postgres' default port 5432.
+Obtaining the randomly assigned port and passing it into the Quarkus bootstrap process isn't possible though when combining the two JUnit extensions.
+
+<!--more-->
+
+One work-around you can find described https://stackoverflow.com/questions/61447252/integration-testing-with-testcontainers-quarkus-mongodb[e.g. on StackOverflow] is setting up the database container via a static class initializer block and then propagating the port to Quarkus as a system property.
+While this works, it's not ideal in terms of lifecycle control (e.g. how to make sure the container is started up once at the beginning of an entire test suite), and in general, it just feels a bit hack-ish .
+
+Luckily, there's a better alternative, which interestingly isn't discussed as much:
+using Quarkus' notion of _test resources_.
+There's just two steps involved.
+First, create an implementation of the `QuarkusTestResourceLifecycleManager` interface,
+which controls your resource's lifecycle:
+
+[source,java]
+----
+public class PostgresResource implements
+        QuarkusTestResourceLifecycleManager {
+
+  static PostgreSQLContainer<?> db =
+      new PostgreSQLContainer<>("postgres:13") // <1>
+        .withDatabaseName("tododb")
+        .withUsername("todouser")
+        .withPassword("todopw");
+
+  @Override
+  public Map<String, String> start() { // <2>
+    db.start();
+    return Collections.singletonMap(
+        "quarkus.datasource.url", db.getJdbcUrl()
+    );
+  }
+
+  @Override
+  public void stop() { // <3>
+    db.close();
+  }
+}
+----
+<1> Configure the database container, using Postgres 13, the given database name, and credentials
+<2> Start up the database; the returned map of configuration properties amends/overrides the configuration properties of the test, in this case the datasource URL, which contains the randomly allocated public port of the Postgres container
+<3> Shut down the database after all tests have been executed
+
+All you then need to do is to reference that test resource from your test class:
+
+[source,java]
+----
+@QuarkusTest
+@QuarkusTestResource(PostgresResource.class)
+public class TodoResourceTest {
+
+  @Test
+  public void createTodoShouldYieldId() {
+    given()
+      .when()
+        .contentType(ContentType.JSON)
+        .body("""
+              {
+                "title" : "Learn Quarkus",
+                "priority" : 1,
+              }
+              """)
+      .then()
+        .statusCode(201)
+        .body(
+            matchesJson(
+              """
+              {
+                "id" : 1,
+                "title" : "Learn Quarkus",
+                "priority" : 1,
+                "completed" : false,
+              }
+              """));
+  }
+}
+----
+
+And that's it! Note that _all_ the test resources of the test module are detected and started up,
+before starting the first test.
+
+== Bonus: Schema Creation
+
+One other subtle issue is the creation of the database schema for the test.
+E.g. for my https://github.com/gunnarmorling/jfr-custom-events/tree/master/example-service[Todo example application], I'd like to use a schema named "todo" in the Postgres database:
+
+[source,sql]
+----
+create schema todo;
+----
+
+Quarkus supports https://quarkus.io/guides/hibernate-orm#quarkus-hibernate-orm_quarkus.hibernate-orm.sql-load-script[SQL load scripts] for executing SQL scripts when Hibernate ORM starts.
+But this will be executed only _after_ Hibernate ORM has set up all the database objects,
+such as tables, sequences, indexes etc.
+(I'm using the `drop-and-create` https://quarkus.io/guides/hibernate-orm#quarkus-hibernate-orm_quarkus.hibernate-orm.database.generation)[database generation] mode during testing).
+This means that while a load script is great for inserting test data,
+it's executed too late for defining the actual database schema itself.
+
+Luckily, also most database container images themselves support the execution of load scripts right upon database start-up;
+The Postgres image is no exception,
+so it's just a matter of exposing that script via Testcontainers.
+All it needs for that is a bit of tweaking of the Quarkus test resource for Postgres:
+
+[source,java]
+----
+static PostgreSQLContainer<?> db =
+        new PostgreSQLContainer<>("postgres:13")
+    .withDatabaseName("tododb")
+    .withUsername("todouser")
+    .withPassword("todopw")
+    .withClasspathResourceMapping("init.sql", // <1>
+        "/docker-entrypoint-initdb.d/init.sql",
+        BindMode.READ_ONLY);
+----
+<1> Expose the file _src/main/resources/init.sql_ as _/docker-entrypoint-initdb.d/init.sql_ within the container
+
+With that in place, Postgres will start up and the "todo" schema will be created in the database,
+before Quarkus boots Hibernate ORM, which will populate the schema, and finally, all tests can run.
+
+You can find the complete source code in this repository on GitHub. TODO
