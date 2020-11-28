@@ -17,7 +17,7 @@ e.g. databases or Kafka clusters.
 The project provides the https://www.testcontainers.org/quickstart/junit_5_quickstart/[`@Testcontainers`] JUnit extension for controlling the lifecycle of containers used by a test.
 When testing a https://quarkus.io/[Quarkus] application though, this is at odds somewhat with Quarkus' own https://quarkus.io/guides/getting-started-testing#recap-of-http-based-testing-in-jvm-mode[`@QuarkusTest`] extension;
 it's a best practice to avoid fixed ports for any containers started by Testcontainers.
-Instead, you should rely on Testcontainers to automatically allocate random free ports.
+Instead, you should rely on Docker to automatically allocate random free ports.
 This avoids conflicts between concurrently running tests,
 e.g. amongst multiple Postgres containers,
 started up by several parallel job runs in a CI environment, all trying to allocate Postgres' default port 5432.
@@ -25,7 +25,7 @@ Obtaining the randomly assigned port and passing it into the Quarkus bootstrap p
 
 <!--more-->
 
-One work-around you can find described https://stackoverflow.com/questions/61447252/integration-testing-with-testcontainers-quarkus-mongodb[e.g. on StackOverflow] is setting up the database container via a static class initializer block and then propagating the port to Quarkus as a system property.
+One work-around you can find described https://stackoverflow.com/questions/61447252/integration-testing-with-testcontainers-quarkus-mongodb[e.g. on StackOverflow] is setting up the database container via a static class initializer block and then propagating the host and port to Quarkus as system properties.
 While this works, it's not ideal in terms of lifecycle control (e.g. how to make sure the container is started up once at the beginning of an entire test suite), and in general, it just feels a bit hack-ish .
 
 Luckily, there's a better alternative, which interestingly isn't discussed as much:
