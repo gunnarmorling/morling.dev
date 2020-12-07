@@ -1,5 +1,6 @@
 ---
-title: "How I Stopped Worrying and Love Continuous Performance Regression Tests"
+## title: "How I Stopped Worrying and Love Continuous Performance Regression Tests"
+title: "Towards Continuous Performance Regression Tests"
 date: 2020-11-28T17:45:00+01:00
 draft: false
 ---
@@ -389,17 +390,65 @@ can be a huge time-saver and productivity boost.
 
 == Identifying Increased I/O With the Database
 
-Once you've begun to look at performance tests through the lense of JfrUnit,
+Once you've started to look at performance tests through the lense of JfrUnit,
 more and more possibilities pop up.
 Asserting a maximum number of garbage collections? Not a problem.
-Avoiding an unexpected amount of file system IO? The xyz event is our friend.
+Avoiding an unexpected amount of file system IO? The `jdk.FileRead` and `jdk.FileWrite` event is our friend.
 Examining and asserting the I/O done with the database? Easily doable.
 
 You can find a complete list of all JFR event types by JDK version in this https://bestsolution-at.github.io/jfr-doc/[nice matrix] created by https://twitter.com/tomsontom[Tom Schindl].
 The number of JFR event types is growing constantly, as of JDK 15, there 157 different ones of them.
 
 Now let's take a look at assertions on database I/O, as the amount of data fetched from the database often is a very impactful factor for an application's behavior.
-A regression here, i.e. loading more data from the database than anticipated, may indicate that data is unnecessarily loaded, processing...
+A regression here, i.e. loading more data from the database than anticipated, may indicate that data is unnecessarily loaded, e.g. by selecting a set of data only to filter it in the application, instead of doing so via SQL in the database,
+resulting in increased request durations.
+
+So how could such test look like for our `retrieveTodo()` call?
+The general approach is the same as with memory allocations:
+first define a baseline of the bytes read and written by invoking the API under test a defined number of executions.
+Once that's done, you can implement the actual test, including an assertion on the expected number of bytes:
+
+[source, java]
+----
+@Test
+@EnableEvent(value="jdk.SocketRead", stackTrace=INCLUDED) // <1>
+@EnableEvent(value="jdk.SocketWrite", stackTrace=INCLUDED)
+public void retrieveTodo() throws Exception {
+  Random r = new Random();
+  HttpClient client = HttpClient.newBuilder()
+      .build();
+
+  for (int i = 1; i<= ITERATIONS; i++) {
+    executeRequest(r.nextInt(20) + 1, client);
+  }
+
+  jfrEvents.awaitEvents();
+
+  long count = jfrEvents.filter(this::isDatabaseIoEvent).count(); // <2>
+  assertThat(count / ITERATIONS).isEqualTo(4).describedAs("write + read per statement, write + read per commit");
+
+  long bytesReadOrWritten = jfrEvents.filter(this::isDatabaseIoEvent)
+    .mapToLong(this::getBytesReadOrWritten)
+    .sum();
+
+  assertThat(bytesReadOrWritten / ITERATIONS).isLessThan(250); // <3>
+}
+
+private boolean isDatabaseIoEvent(RecordedEvent re) { // <4>
+  return ((re.getEventType().getName().equals("jdk.SocketRead") ||
+      re.getEventType().getName().equals("jdk.SocketWrite")) &&
+      re.getInt("port") == databasePort);
+}
+
+private long getBytesReadOrWritten(RecordedEvent re) { // <5>
+  return re.getEventType().getName().equals("jdk.SocketRead") ? re.getLong("bytesRead") : re.getLong("bytesWritten");
+}
+----
+<1> Enable the `jdk.SocketRead` and `jdk.SocketWrite` events; by default, those contain the stacktrace of the read or write event, so that needs to be enabled explicitly
+<2> There should be four events per invocation
+<3> Less than 250 bytes I/O are expected per invocation
+<4> Only read and write events on the database port are relevant for this test, but e.g. not I/O on the web port of the application
+<5> Retrieve the value of the `bytesRead` or `bytesWritten` field, depending on the event type
 
 == Summary and Outlook
 
