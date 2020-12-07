@@ -23,20 +23,21 @@ as they are dependent on the underlying hardware.
 E.g. assertions on the duration of specific requests of a web application cannot be run in a meaningful way on a developer laptop which differs from the actual production hardware.
 When run in a virtualized or containerized CI environments, such tests are are prone to failures due to concurrent load of other applications and jobs.
 
-This post introduces https://github.com/gunnarmorling/jfrunit[JfrUnit], which offers a fresh angle to this topic by supporting assertions not on metrics like latency/throughput themselves, but on indirect metrics which may impact those. Based on https://openjdk.java.net/jeps/328[JDK Flight Recorder events], JfrUnit allows you define and execute assertions e.g. against expected memory allocation, database I/O, or number of executed SQL statements, for a defined workload. Starting off from a defined base line, future failures of such assertions are indicators for potential performance regressions in an application, as a code change may have introduced higher GC pressure, the retrieval of unneccessary data from the database, or common SQL problems like N+1 SELECT statements.
+This post introduces https://github.com/gunnarmorling/jfrunit[JfrUnit], which offers a fresh angle to this topic by supporting assertions not on metrics like latency/throughput themselves, but on indirect metrics which may impact those. Based on https://openjdk.java.net/jeps/328[JDK Flight Recorder] events, JfrUnit allows you define and execute assertions e.g. against expected memory allocation, database I/O, or number of executed SQL statements, for a defined workload. Starting off from a defined base line, future failures of such assertions are indicators for potential performance regressions in an application, as a code change may have introduced higher GC pressure, the retrieval of unneccessary data from the database, or common SQL problems like N+1 SELECT statements.
 
 <!--more-->
 
 JfrUnit provide means of identifying and analysizing such issues in a reliable, environment independent way in standard JUnit tests, before they manifest as performance regressions in production.
 Test results are independent from wall clock time and thus provide actionable information also when not testing with production-like hardware and data volumes.
 
-This post is the first one in a series of three.
-Part one provides an overview over continuous performance unit testing with JfrUnit,
-based on the examples of asserting expected memory allocation and database I/O.
-The second part will discuss the assertion of the SQL statements executed by an application,
-based on the instrumentation of JDBC APIs using JMC Agent.
-In the third and last part we'll explore how to keep historic performance test metrics,
-allowing to identify trends in these metrics over a longer period of time.
+This post is the first one in a series of three:
+
+* Part one provides an overview over continuous performance unit testing with JfrUnit,
+based on the examples of asserting expected memory allocation and database I/O
+* The second part will discuss the assertion of the SQL statements executed by an application,
+based on the instrumentation of JDBC APIs using JMC Agent
+* In the third and last part we'll explore how to keep historic performance test metrics,
+allowing to identify trends in these metrics over a longer period of time
 
 == Getting Started With JfrUnit
 
@@ -298,7 +299,7 @@ dev.morling.demos.quarkus.TodoResourcePerformanceTest-createTodo.jfr
 dev.morling.demos.quarkus.TodoResourcePerformanceTest-retrieveTodo.jfr
 ----
 
-Open the *.jfr file for the failing in JDK Mission Control (JMC) in order to analyse all the recorded events
+Let's open the *.jfr file for the failing test in JDK Mission Control (JMC) in order to analyse all the recorded events
 (note that the recording will always contain some JfrUnit-internal events which are needed for synchronizing the recording stream and the events exposed to the test).
 
 When taking a look at the TLAB events of the application's executor thread,
@@ -411,8 +412,12 @@ How to identify bad-performing SQL statements introduced by a new feature implem
 
 spot regression after improvment (10 -> 60 -> 80)
 won't help against worsened explain plan
+cycle counter
 
+metrics not meaningful by themselves, is it much? detect regressions
 no silver bullet or magic, requires understanding and insight into the application
+
+https://bugs.openjdk.java.net/browse/JDK-8257602
 
 You can find the https://github.com/gunnarmorling/jfr-custom-events/blob/master/example-service/src/test/java/dev/morling/demos/quarkus/TodoResourceTest.java[complete source code] of this test and the Postgres test resource on GitHub.
 
