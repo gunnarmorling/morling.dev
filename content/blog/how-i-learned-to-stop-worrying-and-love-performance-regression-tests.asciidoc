@@ -341,6 +341,21 @@ public Response get(@PathParam("id") long id) throws Exception {
 
 It seems a developer on the team has been taking the microservices mantra a bit too far and invokes another service in order to obtain some additional data associated to the user who created the retrieved todo.
 
+[NOTE]
+.Tracking Object Allocations in Java 16
+====
+The two TLAB allocation events provide all the information required for analysing object allocations in Java applications,
+but often it's not practical to enable them on a continuous basis when running in production.
+Due to the high amount of events produced, enabling them adds some overhead in terms of latency,
+also the size of JFR recording files can be hard to predict.
+
+Both issues are addressed by a https://bugs.openjdk.java.net/browse/JDK-8257602[JFR improvement] that's proposed for inclusion into Java 16,
+"JFR Event Throttling".
+This will provide control over the emission rate of events, e.g. allowing to sample object allocations with a defined rate of 100 events per second,
+which addresses both the overhead as well as the recording size issue.
+A new event type, `jdk.ObjectAllocationSample` will be added, too, which will be enabled in the JFR default configuration.
+====
+
 While that's problematic on its own right due to the inherent coupling between the two services
 (how should the todo service react if the user service isn't available?),
 they made matters worse by using the https://rest-assured.io/[REST Assured API] as a REST client in a less than ideal way.
@@ -518,8 +533,26 @@ using a Java agent, without modifying the library in question.
 
 == Summary and Outlook
 
+JDK Flight Recorder and JfrUnit open up a very interesting approach for identifying potential performance regressions in Java applications.
+By measuring and asserting metrics that _impact_ an application's performance characteristics, most notably latency and throughput,
+rather than examining those primary metrics themselves,
+you can implement stable and reliable automated tests,
+whose outcome does not depend on the capabilities of the execution environment (e.g. number/size of CPUs) or other influential factors like 
+
+Regressions in such impacting metrics, e.g. the amount of allocated memory or bytes read from an application's database,
+are indicators that the application's performance has degraded.
+
+There are some advantages over performance tests on actual latency and throughput themselves:
+
+* You can identify potential regressions also when running tests on hardware different (less powerful) from the actual production hardware
+* Tests are robust and not prone to factors like concurrent load on a CI server or a virtualized/containerized execution environment
+* Certain categories of potential performance regressions can be identified also without running a production-like worklad
+
+
+
 == TODO
 
+locks
 complement to perf tests
 
 How to spot unreasonably increased memory consumption or I/O?
@@ -531,8 +564,6 @@ cycle counter
 
 metrics not meaningful by themselves, is it much? detect regressions
 no silver bullet or magic, requires understanding and insight into the application
-
-https://bugs.openjdk.java.net/browse/JDK-8257602
 
 don#t need many repetitions
 
