@@ -5,13 +5,18 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build-deploy:
+  preview:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: true
         ref: refs/pull/${{ github.event.pull_request.number }}/merge
+
+    # Install node version 12
+    - uses: actions/setup-node@v2-beta
+      with:
+        node-version: '12'
 
     - name: Build
       run: docker run --rm -v $PWD:/src quay.io/gunnarmorling/hugo-builder bash -c "cd /src && /hugo/hugo -F"
