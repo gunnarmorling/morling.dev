@@ -13,11 +13,6 @@ jobs:
         submodules: true
         ref: refs/pull/${{ github.event.pull_request.number }}/merge
 
-    # Install node version 12
-    - uses: actions/setup-node@v2-beta
-      with:
-        node-version: '12'
-
     - name: Build
       run: docker run --rm -v $PWD:/src quay.io/gunnarmorling/hugo-builder bash -c "cd /src && /hugo/hugo -F"
 
@@ -28,6 +23,9 @@ jobs:
         surge_token: ${{ secrets.SURGE_TOKEN }}
         github_token: ${{ secrets.SURGE_GH_TOKEN }}
         dist: public
+        failOnError: 'true'
+        build: |
+          echo Deploying to surge.sh
 
     - name: Get the preview_url
       run: echo "url => ${{ steps.preview_step.outputs.preview_url }}"
