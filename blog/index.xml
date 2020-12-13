@@ -7,10 +7,36 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>© 2020 Gunnar Morling</copyright>
-    <lastBuildDate>Sat, 28 Nov 2020 17:45:00 +0100</lastBuildDate>
+    <lastBuildDate>Sun, 13 Dec 2020 20:30:00 +0100</lastBuildDate>
     
 	<atom:link href="https://www.morling.dev/blog/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Smaller, Faster-starting Container Images With jlink and AppCDS</title>
+      <link>https://www.morling.dev/blog/smaller-faster-starting-container-images-with-jlink-and-appcds/</link>
+      <pubDate>Sun, 13 Dec 2020 20:30:00 +0100</pubDate>
+      
+      <guid>https://www.morling.dev/blog/smaller-faster-starting-container-images-with-jlink-and-appcds/</guid>
+      <description>&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;A few months ago I &lt;a href=&#34;https://www.morling.dev/blog/building-class-data-sharing-archives-with-apache-maven/&#34;&gt;wrote about&lt;/a&gt; how you could speed up your Java application&amp;#8217;s start-up times using application class data sharing (&lt;a href=&#34;http://openjdk.java.net/jeps/350&#34;&gt;AppCDS&lt;/a&gt;),
+based on the example of a simple &lt;a href=&#34;https://quarkus.io/&#34;&gt;Quarkus&lt;/a&gt; application.
+Since then, quite some progress has been made in this area:
+Quarkus 1.6 brought &lt;a href=&#34;https://quarkus.io/guides/maven-tooling#quarkus-package-pkg-package-config_quarkus.package.create-appcds&#34;&gt;built-in support for AppCDS&lt;/a&gt;,
+so that now you just need to provide the &lt;em&gt;-Dquarkus.package.create-appcds=true&lt;/em&gt; option when building your project,
+and you&amp;#8217;ll find an AppCDS file in the &lt;em&gt;target&lt;/em&gt; folder.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;Things get more challenging though when combining AppCDS with custom Java runtime images,
+as produced using the &lt;a href=&#34;https://docs.oracle.com/en/java/javase/15/docs/specs/man/jlink.html&#34;&gt;jlink&lt;/a&gt; tool added in Java 9.
+Combining custom runtime images with AppCDS is very attractive,
+in particular when looking at the deployment of Java applications via Linux containers.
+Instead of putting the full Java runtime into the container image, you only add those JDK modules which your application actually requires.
+(Parts of) what you save in image size by doing so,
+can be used for adding an AppCDS archive to your container image.
+The result will be a container image which still is smaller than before&amp;#8201;&amp;#8212;&amp;#8201;and thus is faster to push to a container registry, distribute to worker nodes in a Kubernetes cluster, etc.&amp;#8201;&amp;#8212;&amp;#8201;and which starts up significantly faster.&lt;/p&gt;
+&lt;/div&gt;</description>
+    </item>
     
     <item>
       <title>Quarkus and Testcontainers</title>
