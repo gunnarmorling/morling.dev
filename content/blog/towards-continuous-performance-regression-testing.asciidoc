@@ -20,11 +20,12 @@ How to identify decreased throughput?
 
 These aspects are typically hard to test in an automated and reliable way in the development workflow,
 as they are dependent on the underlying hardware and the workload of an application.
-For instance assertions on the duration of specific requests of a web application cannot be run in a meaningful way on a developer laptop which differs from the actual production hardware.
-When run in a virtualized or containerized CI environment, such tests are prone to failures due to concurrent load of other applications and jobs.
+For instance assertions on the duration of specific requests of a web application typically cannot be run in a meaningful way on a developer laptop,
+which differs from the actual production hardware.
+When run in a virtualized or containerized CI environment, such tests are prone to severe measurement distortions due to concurrent load of other applications and jobs.
 
 This post introduces https://github.com/gunnarmorling/jfrunit[JfrUnit], which offers a fresh angle to this topic by supporting assertions not on metrics like latency/throughput themselves, but on _indirect metrics_ which may impact those.
-Based on https://openjdk.java.net/jeps/328[JDK Flight Recorder] events, JfrUnit allows you define and execute assertions e.g. against expected memory allocation, database I/O, or number of executed SQL statements, for a given workload.
+JfrUnit allows you define expected values for metrics such as memory allocation, database I/O, or number of executed SQL statements, for a given workload and asserts the actual metrics values -- as obtained from https://openjdk.java.net/jeps/328[JDK Flight Recorder] events -- against these expected values.
 Starting off from a defined base line, future failures of such assertions are indicators for potential performance regressions in an application, as a code change may have introduced higher GC pressure,
 the retrieval of unneccessary data from the database, or SQL problems commonly induced by ORM tools, like N+1 SELECT statements.
 
@@ -89,9 +90,13 @@ making sure all previously produced events have been received
 <4> Using the `JfrEventsAssert#event()` method, an `ExpectedEvent` instance can be created, optionally containing a set of expected attribute values, which then is asserted via `JfrEventsAssert#assertThat()`
 <5> `JfrEvents#ofType()` allows to filter on specific event types, enabling arbitrary assertions on the returned stream of ``RecordedEvent``s
 
-As we'll see in a bit, JfrUnit integrates nicely with the Java streams API,
-simplifying the filtering and aggregation of recorded events before matching them against expected values.
-JfrUnit also persists the JFR recording of each test method,
+By means of a custom `assertThat()` method for https://joel-costigliola.github.io/assertj/[AssertJ],
+JfrUnit allows to validate that specific JFR events are raised during at test.
+Events to be matched are described via their event type name, and optionally one more event attribute vaues.
+As we'll see in a bit, JfrUnit also integrates nicely with the Java streams API,
+allowing you to filter and aggregate recorded event atribute values and match them against expected values.
+
+JfrUnit persists the JFR recording of each test method,
 so you can examine it after a test failure,
 for instance using https://openjdk.java.net/projects/jmc/[JDK Mission Control].
 To learn more about JfrUnit and its capabilities, take a look at the project's https://github.com/gunnarmorling/jfrunit[README].
@@ -220,6 +225,10 @@ public void retrieveTodoBaseline() throws Exception {
 <5> Is this a TLAB event?
 <6> Get the new TLAB size in case of a newly allocated TLAB, otherwise the allocated object size out of TLAB
 <7> We're only interested in the web application's own threads, in particular ignoring the main thread which runs the HTTP client of the test
+
+Note that other than within the initial example showing the usage of JfrUnit,
+we're here not using the simple `contains()` AssertJ matcher,
+but rather calculate some custom value -- the overall object allocation in bytes -- by means of filtering and aggregating the relevant JFR events.
 
 Here are the numbers I got from running 100,000 invocations:
 
@@ -430,6 +439,7 @@ more and more possibilities pop up.
 Asserting a maximum number of garbage collections? Not a problem.
 Avoiding an unexpected amount of file system IO? The `jdk.FileRead` and `jdk.FileWrite` events are our friend.
 Examining and asserting the I/O done with the database? Easily doable.
+Assertions on application-specific link:/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/[JFR event types] you've defined yourself? Sure thing!
 
 You can find a complete list of all JFR event types by JDK version in this https://bestsolution-at.github.io/jfr-doc/[nice matrix] created by https://twitter.com/tomsontom[Tom Schindl].
 The number of JFR event types is growing constantly, as of JDK 15, there are 157 different ones of them.
@@ -607,10 +617,10 @@ This would allow to validate workloads which require more complex set-ups, e.g. 
 or even from continuous recordings taken in production
 * The JFR event streaming API could be leveraged for streaming queries on live events streamed from a remote system
 * Another use case we haven't explored yet is the validation of resource consumption before and after a defined workload.
-E.g. after logging in and out a user 100 times, the system should roughly consume -- ignoring any initial growth after starting up -- the same amount of memory
+E.g. after logging in and out a user 100 times, the system should roughly consume -- ignoring any initial growth after starting up -- the same amount of memory.
+A failure of such assertion would indicate a potential memory leak in the application
 * JfrUnit might automatically detect that certain metrics like object allocations are still undergoing some kind of warm-up phase and thus are not stable, resulting in incorrect or flaky tests
-
-A failure of such assertion would indicate a potential memory leak in the application.
+* Keeping track of historical measurement data, e.g. allowing to identify regressions which got introduced step by step over a longer period of time, with one comparatively small change bein the straw finally breaking the camel's back
 
 Your feedback, feature requests, or even contributions to the project will be highly welcomed!
 
