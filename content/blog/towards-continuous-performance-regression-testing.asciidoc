@@ -255,6 +255,9 @@ Both issues are addressed by a https://bugs.openjdk.java.net/browse/JDK-8257602[
 This will provide control over the emission rate of events, e.g. allowing to sample object allocations with a defined rate of 100 events per second,
 which addresses both the overhead as well as the recording size issue.
 A new event type, `jdk.ObjectAllocationSample` will be added, too, which will be enabled in the JFR default configuration.
+
+For JfrUnit, explicit control over the event sampling rate is a very interesting capability,
+as a higher sampling rate may lead to stable results more quickly, in turn resulting in shorter test execution times.
 ====
 
 To emphasize the key part again, this allocation is per _request_, it is independent from wall clock time and thus is independent from the machine running the test
@@ -477,7 +480,7 @@ private long getBytesReadOrWritten(RecordedEvent re) { // <5>
   return re.getEventType().getName().equals("jdk.SocketRead") ? re.getLong("bytesRead") : re.getLong("bytesWritten");
 }
 ----
-<1> Enable the `jdk.SocketRead` and `jdk.SocketWrite` events; by default, those contain the stacktrace of the read or write event, so that needs to be enabled explicitly
+<1> Enable the `jdk.SocketRead` and `jdk.SocketWrite` events; by default, those don't contain the stacktrace of the read or write event, so that needs to be enabled explicitly
 <2> There should be four events per invocation of the API method
 <3> Less than 250 bytes I/O are expected per invocation
 <4> Only read and write events on the database port are relevant for this test, but e.g. not I/O on the web port of the application
@@ -596,11 +599,19 @@ as well as their implications on an application's performance characteristics.
 But once this hurdle is passed, continuous performance regression tests can be a valuable tool in the box of every software and performance engineer.
 
 JfrUnit is still in its infancy, and could evolve into a complete toolkit around automated test of JFR-based metrics.
-Ideas for future development include a more powerful "built-in" API which e.g. provides the functionality for calculating the total TLAB allocations of a given set of threads as a ready-to-use method.
-It could also be very interesting to run assertions against externally collected JFR recording files.
+Ideas for future development include:
+
+* A more powerful "built-in" API which e.g. provides the functionality for calculating the total TLAB allocations of a given set of threads as a ready-to-use method
+* It could also be very interesting to run assertions against externally collected JFR recording files.
 This would allow to validate workloads which require more complex set-ups, e.g. running in a dedicated performance testing lab,
-or even from continuous recordings taken in production.
-The JFR event streaming API could also be leveraged for streaming queries on live events streamed from a remote system.
+or even from continuous recordings taken in production
+* The JFR event streaming API could be leveraged for streaming queries on live events streamed from a remote system
+* Another use case we haven't explored yet is the validation of resource consumption before and after a defined workload.
+E.g. after logging in and out a user 100 times, the system should roughly consume -- ignoring any initial growth after starting up -- the same amount of memory
+* JfrUnit might automatically detect that certain metrics like object allocations are still undergoing some kind of warm-up phase and thus are not stable, resulting in incorrect or flaky tests
+
+A failure of such assertion would indicate a potential memory leak in the application.
+
 Your feedback, feature requests, or even contributions to the project will be highly welcomed!
 
 Stay tuned for part two of this blog post, where we'll explore how to trace the SQL statements executed by an application using the JMC Agent,
