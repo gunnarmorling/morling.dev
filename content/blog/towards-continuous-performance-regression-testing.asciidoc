@@ -34,12 +34,14 @@ JfrUnit provides means of identifying and analyzing such anomalies in a reliable
 before they manifest as actual performance regressions in production.
 Test results are independent from wall clock time and thus provide actionable information also when not testing with production-like hardware and data volumes.
 
-This post is the first one in a series of two:
+This post is a bit longer than usual (I didn't have the time to write shorter ;), but it's broken down into several sections,
+so you can take a break and continue later on with fresh energy:
 
-* Part one provides an overview over continuous performance unit testing with JfrUnit,
-based on the examples of asserting expected memory allocation and database I/O
-* The second part will discuss the assertion of the SQL statements executed by an application,
-based on the instrumentation of JDBC APIs using https://wiki.openjdk.java.net/display/jmc/The+JMC+Agent[JMC Agent]
+* link:#_getting_started_with_jfrunit[Getting Started With JfrUnit]
+* link:#_spotting_increased_memory_allocation[Spotting Increased Memory Allocation]
+* link:#_identifying_increased_io_with_the_database[Identifying Increased I/O With the Database]
+* link:#_discussion[Discussion]
+* link:#_summary_and_outlook[Summary and Outlook]
 
 == Getting Started With JfrUnit
 
@@ -97,14 +99,14 @@ The project is in an early proof-of-concept stage at the moment,
 so changes to its APIs and semantics are likely.
 
 Now that you've taken the JfrUnit quick tour, let's put that knowledge into practice.
-Our example project will be the https://github.com/gunnarmorling/jfr-custom-events[todo management] Quarkus application you may already be familiar with from my link:/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/[earlier post] about custom JFR events.
+Our example project will be the https://github.com/gunnarmorling/jfr-custom-events[Todo Manager] Quarkus application you may already be familiar with from my link:/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/[earlier post] about custom JFR events.
 We're going to discuss multiple examples for using JfrUnit to identify potential performance regressions.
 
 == Spotting Increased Memory Allocation
 
 At first, let's explore how to identify increased memory allocation rates.
-Typically, it's mostly library and middleware authors who are interested in this,
-since it can make a huge difference for a library such as Hibernate ORM whether a method invoked many times on a hot code path allocates a few bytes more or less memory.
+Typically, it's mostly library and middleware authors who are interested in this.
+For a library such as Hibernate ORM it can make a huge difference whether a method invoked many times on a hot code path allocates a few bytes more or less memory.
 Allocating less memory means less work for the garbage collector,
 which in turn means those precious CPU cores of your machine can spend more cycles processing your actual business logic.
 
@@ -116,7 +118,7 @@ The key for tracking object allocations with JFR are the `jdk.ObjectAllocationIn
 which are emitted when
 
 * an object allocation triggered the creation of a new thread-local allocation buffer (TLAB) 
-* an object got allocated outside of the threads TLAB
+* an object got allocated outside of the thread's TLAB
 
 [NOTE]
 .Thread-local allocation buffers (TLAB)
@@ -124,10 +126,10 @@ which are emitted when
 When creating new object instances on the heap,
 this primarily happens via _thread-local allocation buffers_.
 A TLAB is a pre-allocated memory block that's exclusively used by a single thread.
-Creating new objects within a TLAB can happen without costly synchronization with other threads.
+Since this space is exclusively owned by the thread, creating new objects within a TLAB can happen without costly synchronization with other threads.
 Once a thread's current TLAB capacity is about to be exceeded by a new object allocation,
 a new TLAB will be allocated for that thread.
-In addition, large objects can also be directly allocated, outside of the TLAB.
+In addition, large objects will typically need to be directly allocated outside of the more efficient TLAB space.
 
 To learn more about TLAB allocation, refer to  https://shipilev.net/jvm/anatomy-quarks/4-tlab-allocation/[part #4] of Aleksey Shipilёv's "JVM Anatomy Quark" blog series.
 ====
@@ -139,7 +141,7 @@ But as that event exposes the size of the new TLAB, we can keep track of the ove
 In that sense, `jdk.ObjectAllocationInNewTLAB` represents a sampling of object allocations,
 which means we need to collect a reasonable number of events to identify those locations in the program which are the sources of high memory allocation and thus frequently trigger new TLAB creations.
 
-So let's start and work on a test for spotting regressions in terms of object allocations of one of the todo app's API methods, `GET /todo/{id}`.
+So let's start and work on a test for spotting regressions in terms of object allocations of one of the Todo Manager app's API methods, `GET /todo/{id}`.
 To identify a baseline of the allocation to be expected,
 we first invoke that method in a loop and print out the actual allocation values.
 This should happen in intervals, e.g. every 10,000 invocations,
@@ -255,7 +257,7 @@ which addresses both the overhead as well as the recording size issue.
 A new event type, `jdk.ObjectAllocationSample` will be added, too, which will be enabled in the JFR default configuration.
 ====
 
-To emphasize the key part again, this allocation is per _request_, it is independent from wall clock time and thus is not dependent on the machine running the test
+To emphasize the key part again, this allocation is per _request_, it is independent from wall clock time and thus is independent from the machine running the test
 (i.e. the test should behave the same when running on a developer laptop and on a CI machine),
 nor is it subject to volatility induced by other workloads running concurrently.
 
@@ -363,13 +365,13 @@ public Response get(@PathParam("id") long id) throws Exception {
 It seems a developer on the team has been taking the microservices mantra a bit too far, and has changed the code so it invokes another service in order to obtain some additional data associated to the user who created the retrieved todo.
 
 While that's problematic in its own right due to the inherent coupling between the two services
-(how should the todo service react if the user service isn't available?),
+(how should the Todo Manager service react if the user service isn't available?),
 they made matters worse by using the https://rest-assured.io/[REST Assured API] as a REST client in a less than ideal way.
 The APIs simplicity and elegance makes it a great choice for testing (and indeed that's its primary use case),
 but this particular usage seems to be not such a good choice for production code.
 
 At this point you should ask yourself whether the increased allocation per request actually is a problem for your application or not.
-For that it helps to run some tests on actual request latency and throughput in a production like environment.
+To determine if that's the case, you could run some tests on actual request latency and throughput in a production like environment.
 If there's no impact based on the workload you have to process,
 you might very well decide that additional allocations are well spent for your application's purposes.
 
@@ -541,11 +543,12 @@ or whether it would for instance make more sense to mark this property as a lazi
 Solely working with the raw socket read and write events can be a bit cumbersome, though.
 Wouldn't it be nice if we also has the actual SQL statement which caused this I/O?
 Glad you asked!
-Neither Hibernate nor the Postgres JDBC driver emit any JFR events at the moment,
-but in part two of this blog post series, we'll discuss how to instrument an existing library to emit events like this,
+Neither Hibernate nor the Postgres JDBC driver emit any JFR events at the moment
+(although well-informed sources are telling me that the Hibernate team wants to look into this).
+Therefore, in part two of this blog post series, we'll discuss how to instrument an existing library to emit events like this,
 using a Java agent, without modifying the library in question.
 
-== Discussion and Summary
+== Discussion
 
 JDK Flight Recorder and JfrUnit open up a very interesting approach for identifying potential performance regressions in Java applications.
 Instead of directly measuring an application's performance metrics,
@@ -576,8 +579,12 @@ if the production system generally isn't under high load and the additional GC e
 * *Does not work for all performance-impacting metrics:* Some performance metrics cannot be meaningfully asserted in plain unit tests;
 e.g. degraded throughput due to lock contention can typically only be identified with a reasonable number of concurrent requests
 * *Only identifies regressions in the application itself:* A traditional integrative performance test of an enterprise application will also capture issues in related components, such as the application's database. A query run with a sub-optimal execution plan won't be noticed with this testing approach
+* *Volatile results for timer-based tasks*: While metrics like object allocations should be stable e.g. for a specific web request,
+events which are timing-based, would yield more events on a slower environment than on a faster machine
 
-That being said, unit tests based on performance-impacting factors can be a very useful part of the performance testing strategy for an application.
+== Summary and Outlook
+
+JUnit tests based on performance-impacting factors can be a very useful part of the performance testing strategy for an application.
 They can help to identify potential performance regressions very early in the development lifecycle,
 when they can be fixed comparatively easy and cheap.
 Of course they are no silver bullet;
@@ -588,7 +595,15 @@ and it may take some time to learn about the different metrics which can be meas
 as well as their implications on an application's performance characteristics.
 But once this hurdle is passed, continuous performance regression tests can be a valuable tool in the box of every software and performance engineer.
 
+JfrUnit is still in its infancy, and could evolve into a complete toolkit around automated test of JFR-based metrics.
+Ideas for future development include a more powerful "built-in" API which e.g. provides the functionality for calculating the total TLAB allocations of a given set of threads as a ready-to-use method.
+It could also be very interesting to run assertions against externally collected JFR recording files.
+This would allow to validate workloads which require more complex set-ups, e.g. running in a dedicated performance testing lab,
+or even from continuous recordings taken in production.
+The JFR event streaming API could also be leveraged for streaming queries on live events streamed from a remote system.
+Your feedback, feature requests, or even contributions to the project will be highly welcomed!
+
 Stay tuned for part two of this blog post, where we'll explore how to trace the SQL statements executed by an application using the JMC Agent,
 which will come in very handy for instance for identifying common performance problems like N+1 SELECT statements.
 
-_Many thanks to Hans-Peter Grahsl for his feedback while writing this blog post!_
+_Many thanks to https://twitter.com/hpgrahsl[Hans-Peter Grahsl], https://twitter.com/JohnnyDoItAll[John O'Hara], https://twitter.com/nitsanw[Nitsan Wakart], and https://twitter.com/SanneGrinovero/[Sanne Grinovero] for their extensive feedback while writing this blog post!_
