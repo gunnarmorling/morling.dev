@@ -13,7 +13,7 @@ endif::[]
 
 Functional unit and integration tests are a standard tool of any software development organization,
 helping not only to ensure correctness of newly implemented code,
-but also to identify regressions -- bugs to existing functionality introduced by a code change.
+but also to identify regressions -- bugs in existing functionality introduced by a code change.
 The situation looks different though when it comes to regressions related to non-functional requirements, in particular performance-related ones:
 How to detect increased response times in a web application?
 How to identify decreased throughput?
@@ -379,7 +379,7 @@ either by setting up REST Assured in a more suitable way, or by looking for an a
 Of course the external API call just by itself adds to the request latency,
 which is something we might want to avoid.
 
-It's also worth examining the applications garbage collection behavior.
+It's also worth examining the application's garbage collection behavior.
 In order to so, you can run the performance test method again,
 either enabling all the GC-related JFR event types, or by enabling a pre-existing JFR configuration
 (the JDK comes with two built-in JFR configurations, and you can also create and export them via JMC):
@@ -555,14 +555,14 @@ This allows you to implement stable and reliable automated performance unit test
 whose outcome does not depend on the capabilities of the execution environment (e.g. number/size of CPUs),
 or other influential factors like concurrently running programs.
 
-Regressions in such impacting metrics, e.g. the amount of allocated memory, or bytes read from an application's database,
+Regressions in such impacting metrics, e.g. the amount of allocated memory, or bytes read from a database,
 are indicators that the application's performance may have been degraded.
 This approach offers some interesting advantages over performance tests on actual latency and throughput themselves:
 
 * *Hardware independent:* You can identify potential regressions also when running tests on hardware which is different (i.e. less powerful) from the actual production hardware
 * *Fast feedback cycle:* Being able to run performance regression tests on developer laptops, even in the IDE, allows for fast identification of potential regressions right during development, instead of having to wait for the results of less frequently executed test runs in a traditional performance test lab environment
 * *Robustness:* Tests are robust and not prone to factors such as the load induced by parallel jobs of a CI server or a virtualized/containerized environment
-* *Pro-active idenfication of performance issues:* Asserting a metric like memory allocation can help to identify future performance problems before they actual materialize; while the additional allocation rate may make no difference with the system's load as of today, it may negatively impact latency and throughput as the system reaches its limits with increased load; being able to identify the increased allocation rate early on allows for a more efficient handling of the situation while working on the code, compared to when finding out about such regression only later on
+* *Pro-active identification of performance issues:* Asserting a metric like memory allocation can help to identify future performance problems before they actual materialize; while the additional allocation rate may make no difference with the system's load as of today, it may negatively impact latency and throughput as the system reaches its limits with increased load; being able to identify the increased allocation rate early on allows for a more efficient handling of the situation while working on the code, compared to when finding out about such regression only later on
 * *Reduced need for warm-up:* For traditional performance tests of Java-based applications, a thorough warm-up is mandatory,
 e.g. to ensure proper optimization of the JIT-compiled code. In comparison, metrics like file or database I/O are very stable for a defined workload, so that regressions can be identified also with just a single or a few executions
 
