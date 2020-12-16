@@ -25,7 +25,7 @@ which differs from the actual production hardware
 (ironically, nowadays both is an option, the developer laptop being less or more powerful than the actual production environment).
 When run in a virtualized or containerized CI environment, such tests are prone to severe measurement distortions due to concurrent load of other applications and jobs.
 
-This post introduces https://github.com/gunnarmorling/jfrunit[JfrUnit], which offers a fresh angle to this topic by supporting assertions not on metrics like latency/throughput themselves, but on _indirect metrics_ which may impact those.
+This post introduces the https://github.com/gunnarmorling/jfrunit[JfrUnit] open-source project, which offers a fresh angle to this topic by supporting assertions not on metrics like latency/throughput themselves, but on _indirect metrics_ which may impact those.
 JfrUnit allows you define expected values for metrics such as memory allocation, database I/O, or number of executed SQL statements, for a given workload and asserts the actual metrics values -- which are obtained from https://openjdk.java.net/jeps/328[JDK Flight Recorder] events -- against these expected values.
 Starting off from a defined base line, future failures of such assertions are an indicator for potential performance regressions in an application, as a code change may have introduced higher GC pressure,
 the retrieval of unneccessary data from the database, or SQL problems commonly induced by ORM tools, like N+1 SELECT statements.
