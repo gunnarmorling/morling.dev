@@ -410,6 +410,10 @@ public void retrieveTodo() throws Exception {
 }
 ----
 
+Note that the pre-defined configurations imply minimum durations for certain event types;
+e.g. the I/O events discussed in the next section will only be recorded if they have a duration of 20 ms or longer.
+Depending on your testing requirements, you may have to adjust and tweak the configuration to be used.
+
 Open the recording in JMC, and you'll see there's a substantial amount of GC activity happening:
 
 image::continuous_perf_testing_gc_regression.png[Garbage collections after the performance regression]
@@ -436,7 +440,7 @@ Being able to identify this kind of issue by running tests locally on a develope
 
 == Case Study 2: Identifying Increased I/O With the Database
 
-Once you've started to look at performance tests through the lense of JfrUnit,
+Once you've started to look at performance regression tests through the lense of JfrUnit,
 more and more possibilities pop up.
 Asserting a maximum number of garbage collections? Not a problem.
 Avoiding an unexpected amount of file system IO? The `jdk.FileRead` and `jdk.FileWrite` events are our friend.
@@ -444,11 +448,11 @@ Examining and asserting the I/O done with the database? Easily doable.
 Assertions on application-specific link:/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/[JFR event types] you've defined yourself? Sure thing!
 
 You can find a complete list of all JFR event types by JDK version in this https://bestsolution-at.github.io/jfr-doc/[nice matrix] created by https://twitter.com/tomsontom[Tom Schindl].
-The number of JFR event types is growing constantly, as of JDK 15, there are 157 different ones of them.
+The number of JFR event types is growing constantly; as of JDK 15, there are 157 different ones of them.
 
-Now let's take a look at assertions on database I/O, as the amount of data fetched from the database or written to often is a very impactful factor for an enterprise application's behavior.
-A regression here, e.g. fetching more data from the database than anticipated, may indicate that data is unnecessarily loaded,
-for instance by selecting a set of data only to filter it in the application, instead of doing so via SQL in the database,
+Now let's take a look at assertions on database I/O, as the amount of data fetched from or written to the database often is a very impactful factor of an enterprise application's behavior.
+A regression here, e.g. fetching more data from the database than anticipated, may indicate that data is unnecessarily loaded.
+For instance it might be the case that a set of data is loaded only in order to filter it in the application subsequently, instead of doing so via SQL in the database itself,
 resulting in increased request durations.
 
 So how could such test look like for our `GET /todo/{id}` API call?
@@ -473,11 +477,12 @@ public void retrieveTodo() throws Exception {
   jfrEvents.awaitEvents();
 
   long count = jfrEvents.filter(this::isDatabaseIoEvent).count(); // <2>
-  assertThat(count / ITERATIONS).isEqualTo(4).describedAs("write + read per statement, write + read per commit");
+  assertThat(count / ITERATIONS).isEqualTo(4)
+      .describedAs("write + read per statement, write + read per commit");
 
   long bytesReadOrWritten = jfrEvents.filter(this::isDatabaseIoEvent)
-    .mapToLong(this::getBytesReadOrWritten)
-    .sum();
+      .mapToLong(this::getBytesReadOrWritten)
+      .sum();
 
   assertThat(bytesReadOrWritten / ITERATIONS).isLessThan(250); // <3>
 }
@@ -489,10 +494,12 @@ private boolean isDatabaseIoEvent(RecordedEvent re) { // <4>
 }
 
 private long getBytesReadOrWritten(RecordedEvent re) { // <5>
-  return re.getEventType().getName().equals("jdk.SocketRead") ? re.getLong("bytesRead") : re.getLong("bytesWritten");
+  return re.getEventType().getName().equals("jdk.SocketRead") ?
+      re.getLong("bytesRead") :
+      re.getLong("bytesWritten");
 }
 ----
-<1> Enable the `jdk.SocketRead` and `jdk.SocketWrite` events; by default, those don't contain the stacktrace of the read or write event, so that needs to be enabled explicitly
+<1> Enable the `jdk.SocketRead` and `jdk.SocketWrite` event types; by default, those don't contain the stacktrace for the events, so that needs to be enabled explicitly
 <2> There should be four events per invocation of the API method
 <3> Less than 250 bytes I/O are expected per invocation
 <4> Only read and write events on the database port are relevant for this test, but e.g. not I/O on the web port of the application
@@ -522,19 +529,19 @@ to be less than:
  <250L>
 ----
 
-That's definitely something to look into, as increased database I/O implies increased request latency.
+That's definitely something to look into.
 So let's open the recording of the failed test in Flight Recorder and take a look at the socket read and write events.
 Thanks to enabling stacktraces for the two JFR event types we can quite quickly identify the events asssociated to an invocation of the `GET /todo/{id}` API:
 
 image::continuous_perf_testing_socket_regression.png[Socket read and write events after the performance regression]
 
 At this point, some familiarity with the application in question will come in handy to identify suspicous events.
-But even without that, we could compare previous recordings of successful test runs with the recording from the failing one to see where differences are.
+But even without that, we could compare previous recordings of successful test runs with the recording from the failing one in order to see where differences are.
 In the case at hand, the `BlobInputStream` and Hibernate's `BlobTypeDescriptor` in the call stack seem pretty unexpected,
 as our `User` entity didn't have any `BLOB` attribute before.
 
 In reality, comparing with the latest version and a look into the git history of that class could confirm that there's a new attribute storing an image
-(surely not a best practice to do so ;):
+(perhaps not a best practice to do so ;):
 
 [source,java]
 ----
@@ -551,12 +558,12 @@ public class Todo extends PanacheEntity {
 ----
 <1> This looks suspicious!
 
-We now would have to decide whether this image attribute should actually be loaded for this particular use case,
+We now would have to decide whether this image attribute actually should be loaded for this particular use case,
 (if so, we'd have to adjust the test accordingly),
 or whether it would for instance make more sense to mark this property as a lazily loaded one and only retrieve it when actually required.
 
 Solely working with the raw socket read and write events can be a bit cumbersome, though.
-Wouldn't it be nice if we also has the actual SQL statement which caused this I/O?
+Wouldn't it be nice if we also had the actual SQL statement which caused this I/O?
 Glad you asked!
 Neither Hibernate nor the Postgres JDBC driver emit any JFR events at the moment
 (although well-informed sources are telling me that the Hibernate team wants to look into this).
@@ -565,19 +572,19 @@ using a Java agent, without modifying the library in question.
 
 == Discussion
 
-JDK Flight Recorder and JfrUnit open up a very interesting approach for identifying potential performance regressions in Java applications.
+JfrUnit in conjunction with JDK Flight Recorder opens up a very interesting approach for identifying potential performance regressions in Java applications.
 Instead of directly measuring an application's performance metrics,
 most notably latency and throughput,
 the idea is to measure and assert metrics that _impact_ the performance characteristics.
-This allows you to implement stable and reliable automated performance unit tests,
+This allows you to implement stable and reliable automated performance regression tests,
 whose outcome does not depend on the capabilities of the execution environment (e.g. number/size of CPUs),
 or other influential factors like concurrently running programs.
 
 Regressions in such impacting metrics, e.g. the amount of allocated memory, or bytes read from a database,
-are indicators that the application's performance may have been degraded.
+are indicators that the application's performance may have degraded.
 This approach offers some interesting advantages over performance tests on actual latency and throughput themselves:
 
-* *Hardware independent:* You can identify potential regressions also when running tests on hardware which is different (i.e. less powerful) from the actual production hardware
+* *Hardware independent:* You can identify potential regressions also when running tests on hardware which is different (e.g. less powerful) from the actual production hardware
 * *Fast feedback cycle:* Being able to run performance regression tests on developer laptops, even in the IDE, allows for fast identification of potential regressions right during development, instead of having to wait for the results of less frequently executed test runs in a traditional performance test lab environment
 * *Robustness:* Tests are robust and not prone to factors such as the load induced by parallel jobs of a CI server or a virtualized/containerized environment
 * *Pro-active identification of performance issues:* Asserting a metric like memory allocation can help to identify future performance problems before they actual materialize; while the additional allocation rate may make no difference with the system's load as of today, it may negatively impact latency and throughput as the system reaches its limits with increased load; being able to identify the increased allocation rate early on allows for a more efficient handling of the situation while working on the code, compared to when finding out about such regression only later on
@@ -589,7 +596,7 @@ Needless to say, that you should be aware of the limitations of this approach, t
 * *No statement on user-visible performance metrics:* Measuring and asserting performance-impacting factors doesn't tell you anything in terms of the user-visible performance characteristics themselves.
 While we can reason about guarantees like "The system can handle 10K concurrent requests while the 99.9 percentile of requests has a latency of less than 250 ms", that's not the case for metrics like memory allocation or I/O. What does it mean if an application allocates 100 KB of RAM for a particular use case? Is it a lot? Too much? Just fine?
 * *Focused on identifying regressions:* Somewhat related to the first point, this approach of testing is focused not on specific absolute values, but rather on identifying performance regressions. It's hard to tell whether 100 KB database I/O is good or bad for a particular web request, but a change from 100 KB to 200 KB might indicate that something is wrong
-* *Focused on identifying _potential_ regressions:* A change in performance-impacting metrics does not necessarily imply an actual user-visible impacting performance regression. For instance it might be acceptable for a specific request to allocate more RAM than it did before,
+* *Focused on identifying _potential_ regressions:* A change in performance-impacting metrics does not necessarily imply an actual user-visible performance regression. For instance it might be acceptable for a specific request to allocate more RAM than it did before,
 if the production system generally isn't under high load and the additional GC effort doesn't matter in practice
 * *Does not work for all performance-impacting metrics:* Some performance metrics cannot be meaningfully asserted in plain unit tests;
 e.g. degraded throughput due to lock contention can typically only be identified with a reasonable number of concurrent requests
@@ -621,13 +628,13 @@ or even from continuous recordings taken in production
 * Another use case we haven't explored yet is the validation of resource consumption before and after a defined workload.
 E.g. after logging in and out a user 100 times, the system should roughly consume -- ignoring any initial growth after starting up -- the same amount of memory.
 A failure of such assertion would indicate a potential memory leak in the application
-* JfrUnit might automatically detect that certain metrics like object allocations are still undergoing some kind of warm-up phase and thus are not stable, resulting in incorrect or flaky tests
-* Keeping track of historical measurement data, e.g. allowing to identify regressions which got introduced step by step over a longer period of time, with one comparatively small change bein the straw finally breaking the camel's back
+* JfrUnit might automatically detect that certain metrics like object allocations are still undergoing some kind of warm-up phase and thus are not stable, and mark such tests as potentially incorrect or flaky
+* Keeping track of historical measurement data, e.g. allowing to identify regressions which got introduced step by step over a longer period of time, with one comparatively small change being the straw finally breaking the camel's back
 
-Your feedback, feature requests, or even contributions to the project will be highly welcomed!
+Your feedback, feature requests, or even contributions to https://github.com/gunnarmorling/jfrunit[the project] will be highly welcomed!
 
-Stay tuned for part two of this blog post, where we'll explore how to trace the SQL statements executed by an application using the JMC Agent,
-which will come in very handy for instance for identifying common performance problems like N+1 SELECT statements.
+Stay tuned for part two of this blog post, where we'll explore how to trace the SQL statements executed by an application using the https://wiki.openjdk.java.net/display/jmc/The+JMC+Agent[JMC Agent] and assert these query events using JfrUnit.
+This will come in very handy for instance for identifying common performance problems like N+1 SELECT statements.
 
 _Many thanks to https://twitter.com/hpgrahsl[Hans-Peter Grahsl], https://twitter.com/JohnnyDoItAll[John O'Hara], https://twitter.com/nitsanw[Nitsan Wakart], and https://twitter.com/SanneGrinovero/[Sanne Grinovero] for their extensive feedback while writing this blog post!_
 
