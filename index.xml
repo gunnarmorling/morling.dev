@@ -7,10 +7,40 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>© 2020 Gunnar Morling</copyright>
-    <lastBuildDate>Sun, 13 Dec 2020 20:30:00 +0100</lastBuildDate>
+    <lastBuildDate>Wed, 16 Dec 2020 17:45:00 +0100</lastBuildDate>
     
 	<atom:link href="https://www.morling.dev/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Towards Continuous Performance Regression Testing</title>
+      <link>https://www.morling.dev/blog/towards-continuous-performance-regression-testing/</link>
+      <pubDate>Wed, 16 Dec 2020 17:45:00 +0100</pubDate>
+      
+      <guid>https://www.morling.dev/blog/towards-continuous-performance-regression-testing/</guid>
+      <description>&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;Functional unit and integration tests are a standard tool of any software development organization,
+helping not only to ensure correctness of newly implemented code,
+but also to identify regressions&amp;#8201;&amp;#8212;&amp;#8201;bugs in existing functionality introduced by a code change.
+The situation looks different though when it comes to regressions related to non-functional requirements, in particular performance-related ones:
+How to detect increased response times in a web application?
+How to identify decreased throughput?&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;These aspects are typically hard to test in an automated and reliable way in the development workflow,
+as they are dependent on the underlying hardware and the workload of an application.
+For instance assertions on the duration of specific requests of a web application typically cannot be run in a meaningful way on a developer laptop,
+which differs from the actual production hardware
+(ironically, nowadays both is an option, the developer laptop being less or more powerful than the actual production environment).
+When run in a virtualized or containerized CI environment, such tests are prone to severe measurement distortions due to concurrent load of other applications and jobs.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;This post introduces &lt;a href=&#34;https://github.com/gunnarmorling/jfrunit&#34;&gt;JfrUnit&lt;/a&gt;, which offers a fresh angle to this topic by supporting assertions not on metrics like latency/throughput themselves, but on &lt;em&gt;indirect metrics&lt;/em&gt; which may impact those.
+JfrUnit allows you define expected values for metrics such as memory allocation, database I/O, or number of executed SQL statements, for a given workload and asserts the actual metrics values&amp;#8201;&amp;#8212;&amp;#8201;which are obtained from &lt;a href=&#34;https://openjdk.java.net/jeps/328&#34;&gt;JDK Flight Recorder&lt;/a&gt; events&amp;#8201;&amp;#8212;&amp;#8201;against these expected values.
+Starting off from a defined base line, future failures of such assertions are an indicator for potential performance regressions in an application, as a code change may have introduced higher GC pressure,
+the retrieval of unneccessary data from the database, or SQL problems commonly induced by ORM tools, like N+1 SELECT statements.&lt;/p&gt;
+&lt;/div&gt;</description>
+    </item>
     
     <item>
       <title>Smaller, Faster-starting Container Images With jlink and AppCDS</title>
