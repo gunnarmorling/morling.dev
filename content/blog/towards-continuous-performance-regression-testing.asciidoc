@@ -21,32 +21,33 @@ How to identify decreased throughput?
 These aspects are typically hard to test in an automated and reliable way in the development workflow,
 as they are dependent on the underlying hardware and the workload of an application.
 For instance assertions on the duration of specific requests of a web application typically cannot be run in a meaningful way on a developer laptop,
-which differs from the actual production hardware.
+which differs from the actual production hardware
+(ironically, nowadays both is an option, the developer laptop being less or more powerful than the actual production environment).
 When run in a virtualized or containerized CI environment, such tests are prone to severe measurement distortions due to concurrent load of other applications and jobs.
 
 This post introduces https://github.com/gunnarmorling/jfrunit[JfrUnit], which offers a fresh angle to this topic by supporting assertions not on metrics like latency/throughput themselves, but on _indirect metrics_ which may impact those.
-JfrUnit allows you define expected values for metrics such as memory allocation, database I/O, or number of executed SQL statements, for a given workload and asserts the actual metrics values -- as obtained from https://openjdk.java.net/jeps/328[JDK Flight Recorder] events -- against these expected values.
-Starting off from a defined base line, future failures of such assertions are indicators for potential performance regressions in an application, as a code change may have introduced higher GC pressure,
+JfrUnit allows you define expected values for metrics such as memory allocation, database I/O, or number of executed SQL statements, for a given workload and asserts the actual metrics values -- which are obtained from https://openjdk.java.net/jeps/328[JDK Flight Recorder] events -- against these expected values.
+Starting off from a defined base line, future failures of such assertions are an indicator for potential performance regressions in an application, as a code change may have introduced higher GC pressure,
 the retrieval of unneccessary data from the database, or SQL problems commonly induced by ORM tools, like N+1 SELECT statements.
 
 <!--more-->
 
 JfrUnit provides means of identifying and analyzing such anomalies in a reliable, environment independent way in standard JUnit tests,
 before they manifest as actual performance regressions in production.
-Test results are independent from wall clock time and thus provide actionable information also when not testing with production-like hardware and data volumes.
+Test results are independent from wall clock time and thus provide actionable information, also when not testing with production-like hardware and data volumes.
 
 This post is a bit longer than usual (I didn't have the time to write shorter ;), but it's broken down into several sections,
-so you can take a break and continue later on with fresh energy:
+so you can pause and continue later on with fresh energy:
 
 * link:#_getting_started_with_jfrunit[Getting Started With JfrUnit]
-* link:#_spotting_increased_memory_allocation[Spotting Increased Memory Allocation]
-* link:#_identifying_increased_io_with_the_database[Identifying Increased I/O With the Database]
+* link:#_case_study_1_spotting_increased_memory_allocation[Case Study 1: Spotting Increased Memory Allocation]
+* link:#_case_study_2_identifying_increased_io_with_the_database[Case Study 2: Identifying Increased I/O With the Database]
 * link:#_discussion[Discussion]
 * link:#_summary_and_outlook[Summary and Outlook]
 
 == Getting Started With JfrUnit
 
-JfrUnit is an extension for JUnit 5, which integrates Flight Recorder into unit tests;
+JfrUnit is an extension for https://junit.org/junit5/docs/current/user-guide/[JUnit 5] which integrates Flight Recorder into unit tests;
 it makes it straight forward to initiate a JFR recording for a given set of event types,
 execute some test routine, and then assert the JFR events which should have been produced.
 
@@ -107,7 +108,7 @@ Now that you've taken the JfrUnit quick tour, let's put that knowledge into prac
 Our example project will be the https://github.com/gunnarmorling/jfr-custom-events[Todo Manager] Quarkus application you may already be familiar with from my link:/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/[earlier post] about custom JFR events.
 We're going to discuss multiple examples for using JfrUnit to identify potential performance regressions.
 
-== Spotting Increased Memory Allocation
+== Case Study 1: Spotting Increased Memory Allocation
 
 At first, let's explore how to identify increased memory allocation rates.
 Typically, it's mostly library and middleware authors who are interested in this.
@@ -340,7 +341,8 @@ Let's open the *.jfr file for the failing test in JDK Mission Control (JMC) in o
 
 When taking a look at the TLAB events of the application's executor thread,
 the culprit is identified quickly;
-a lot of the sampled TLAB allocations contain this stack trace:
+a lot of the sampled TLAB allocations contain this stack trace
+(click on the image to enlarge):
 
 image::continuous_perf_testing_tlab_in_jmc.png[TLAB allocations in JDK Mission Control]
 
@@ -432,7 +434,7 @@ preventing such regression to sneak into production.
 Being able to identify this kind of issue by running tests locally on a developer laptop or a CI server,
 can be a huge time-saver and productivity boost.
 
-== Identifying Increased I/O With the Database
+== Case Study 2: Identifying Increased I/O With the Database
 
 Once you've started to look at performance tests through the lense of JfrUnit,
 more and more possibilities pop up.
