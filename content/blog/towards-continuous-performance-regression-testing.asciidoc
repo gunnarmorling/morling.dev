@@ -88,17 +88,17 @@ public class JfrUnitTest {
 <2> All JFR event types to be recorded must be enabled via `@EnableEvent`
 <3> After running the test logic, `awaitEvents()` must be invoked as a synchronization barrier,
 making sure all previously produced events have been received
-<4> Using the `JfrEventsAssert#event()` method, an `ExpectedEvent` instance can be created, optionally containing a set of expected attribute values, which then is asserted via `JfrEventsAssert#assertThat()`
-<5> `JfrEvents#ofType()` allows to filter on specific event types, enabling arbitrary assertions on the returned stream of ``RecordedEvent``s
+<4> Using the `JfrEventsAssert#event()` method, an `ExpectedEvent` instance can be created -- optionally specifying one or more expected attribute values -- which then is asserted via `JfrEventsAssert#assertThat()`
+<5> `JfrEvents#ofType()` allows to filter on specific event types, enabling arbitrary assertions against the returned stream of ``RecordedEvent``s
 
-By means of a custom `assertThat()` method for https://joel-costigliola.github.io/assertj/[AssertJ],
+By means of a custom `assertThat()` matcher method for https://joel-costigliola.github.io/assertj/[AssertJ],
 JfrUnit allows to validate that specific JFR events are raised during at test.
 Events to be matched are described via their event type name, and optionally one more event attribute vaues.
-As we'll see in a bit, JfrUnit also integrates nicely with the Java streams API,
+As we'll see in a bit, JfrUnit also integrates nicely with the Java Stream API,
 allowing you to filter and aggregate recorded event atribute values and match them against expected values.
 
-JfrUnit persists the JFR recording of each test method,
-so you can examine it after a test failure,
+JfrUnit persists a JFR recording file for each test method,
+which you can examine after a test failure,
 for instance using https://openjdk.java.net/projects/jmc/[JDK Mission Control].
 To learn more about JfrUnit and its capabilities, take a look at the project's https://github.com/gunnarmorling/jfrunit[README].
 The project is in an early proof-of-concept stage at the moment,
@@ -106,17 +106,17 @@ so changes to its APIs and semantics are likely.
 
 Now that you've taken the JfrUnit quick tour, let's put that knowledge into practice.
 Our example project will be the https://github.com/gunnarmorling/jfr-custom-events[Todo Manager] Quarkus application you may already be familiar with from my link:/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/[earlier post] about custom JFR events.
-We're going to discuss multiple examples for using JfrUnit to identify potential performance regressions.
+We're going to discuss two examples for using JfrUnit to identify potential performance regressions.
 
 == Case Study 1: Spotting Increased Memory Allocation
 
 At first, let's explore how to identify increased memory allocation rates.
 Typically, it's mostly library and middleware authors who are interested in this.
-For a library such as Hibernate ORM it can make a huge difference whether a method invoked many times on a hot code path allocates a few bytes more or less memory.
-Allocating less memory means less work for the garbage collector,
+For a library such as Hibernate ORM it can make a huge difference whether a method that is invoked many times on a hot code path allocates a few objects more or less.
+Less object allocations mean less work for the garbage collector,
 which in turn means those precious CPU cores of your machine can spend more cycles processing your actual business logic.
 
-But also for an actual application itself it can be beneficial to keep an eye on -- and systematically track -- object allocations,
+But also for application developers it can be beneficial to keep an eye on -- and systematically track -- object allocations,
 as regressions there lead to increased GC pressure,
 and in turn eventually to higher latencies and reduced throughput.
 
@@ -141,17 +141,17 @@ To learn more about TLAB allocation, refer to  https://shipilev.net/jvm/anatomy-
 ====
 
 Note these events don't allow for tracking of each individual object allocation,
-as multiple objects will be allocated within a TLAB before a new one is required and thus the `jdk.ObjectAllocationInNewTLAB` event will be emitted.
+as multiple objects will be allocated within a TLAB before a new one is required, and thus the `jdk.ObjectAllocationInNewTLAB` event will be emitted.
 But as that event exposes the size of the new TLAB, we can keep track of the overall amount of memory that's allocated while the application is running.
 
 In that sense, `jdk.ObjectAllocationInNewTLAB` represents a sampling of object allocations,
-which means we need to collect a reasonable number of events to identify those locations in the program which are the sources of high memory allocation and thus frequently trigger new TLAB creations.
+which means we need to collect a reasonable number of events to identify those locations in the program which are the sources of high object allocation and thus frequently trigger new TLAB creations.
 
 So let's start and work on a test for spotting regressions in terms of object allocations of one of the Todo Manager app's API methods, `GET /todo/{id}`.
 To identify a baseline of the allocation to be expected,
 we first invoke that method in a loop and print out the actual allocation values.
 This should happen in intervals, e.g. every 10,000 invocations,
-so to average out numbers from individual calls.
+so to average out numbers from individual API calls.
 
 [source, java]
 ----
@@ -220,15 +220,15 @@ public void retrieveTodoBaseline() throws Exception {
 }
 ----
 <1> Enable the `jdk.ObjectAllocationInNewTLAB` and `jdk.ObjectAllocationOutsideTLAB` JFR events
-<2> Every 10,000 events, wait for all the JFR events
-<3> Calculate the allocated memory, by summing up the TLAB allocations of all relevant threads
+<2> Every 10,000 events, wait for all the JFR events produced so far
+<3> Calculate the total allocation size, by summing up the TLAB allocations of all relevant threads
 <4> Reset the event stream for the next iteration
 <5> Is this a TLAB event?
-<6> Get the new TLAB size in case of a newly allocated TLAB, otherwise the allocated object size out of TLAB
+<6> Get the new TLAB size in case of an in TLAB allocation, otherwise the allocated object size out of TLAB
 <7> We're only interested in the web application's own threads, in particular ignoring the main thread which runs the HTTP client of the test
 
-Note that other than within the initial example showing the usage of JfrUnit,
-we're here not using the simple `contains()` AssertJ matcher,
+Note that unlike in the initial example showing the usage of JfrUnit,
+here we're not using the simple `contains()` AssertJ matcher,
 but rather calculate some custom value -- the overall object allocation in bytes -- by means of filtering and aggregating the relevant JFR events.
 
 Here are the numbers I got from running 100,000 invocations:
@@ -247,10 +247,14 @@ Requests executed: 90000, memory allocated: 31703 bytes/request
 Requests executed: 100000, memory allocated: 31682 bytes/request
 ----
 
-As we see, there's some warm-up phase during which allocation rates still get down,
+As we see, there's some warm-up phase during which allocation rates still go down,
 but after ~20 K requests, the allocation per request is fairly stable,
 with a volatility of ~1% when averaged out over 10K requests.
 This means that this initial phase should be excluded during the actual test.
+
+To emphasize the key part again, this allocation is per _request_, it is independent from wall clock time and thus is neither dependent from the machine running the test
+(i.e. the test should behave the same when running on a developer laptop and on a CI machine),
+nor is it subject to volatility induced by other workloads running concurrently.
 
 [NOTE]
 .Tracking Object Allocations in Java 16
@@ -260,19 +264,15 @@ but often it's not practical to enable them on a continuous basis when running i
 Due to the high amount of events produced, enabling them adds some overhead in terms of latency,
 also the size of JFR recording files can be hard to predict.
 
-Both issues are addressed by a https://bugs.openjdk.java.net/browse/JDK-8257602[JFR improvement] that's proposed for inclusion into Java 16,
-"JFR Event Throttling".
+Both issues are addressed by a JFR improvement that's proposed for inclusion into Java 16,
+https://bugs.openjdk.java.net/browse/JDK-8257602["JFR Event Throttling"].
 This will provide control over the emission rate of events, e.g. allowing to sample object allocations with a defined rate of 100 events per second,
 which addresses both the overhead as well as the recording size issue.
 A new event type, `jdk.ObjectAllocationSample` will be added, too, which will be enabled in the JFR default configuration.
 
-For JfrUnit, explicit control over the event sampling rate is a very interesting capability,
+For JfrUnit, explicit control over the event sampling rate will be a very interesting capability,
 as a higher sampling rate may lead to stable results more quickly, in turn resulting in shorter test execution times.
 ====
-
-To emphasize the key part again, this allocation is per _request_, it is independent from wall clock time and thus is independent from the machine running the test
-(i.e. the test should behave the same when running on a developer laptop and on a CI machine),
-nor is it subject to volatility induced by other workloads running concurrently.
 
 Based on that, the actual test could look like so:
 
@@ -376,16 +376,17 @@ public Response get(@PathParam("id") long id) throws Exception {
 }
 ----
 
-It seems a developer on the team has been taking the microservices mantra a bit too far, and has changed the code so it invokes another service in order to obtain some additional data associated to the user who created the retrieved todo.
+Gasp, it looks like a developer on the team has been taking the microservices mantra a bit too far, and has changed the code so it invokes another service in order to obtain some additional data associated to the user who created the retrieved todo.
 
 While that's problematic in its own right due to the inherent coupling between the two services
 (how should the Todo Manager service react if the user service isn't available?),
-they made matters worse by using the https://rest-assured.io/[REST Assured API] as a REST client in a less than ideal way.
-The APIs simplicity and elegance makes it a great choice for testing (and indeed that's its primary use case),
+they made matters worse by using the https://rest-assured.io/[REST Assured API] as a REST client,
+in a less than ideal way.
+The API's simplicity and elegance makes it a great solution for testing (and indeed that's its primary use case),
 but this particular usage seems to be not such a good choice for production code.
 
 At this point you should ask yourself whether the increased allocation per request actually is a problem for your application or not.
-To determine if that's the case, you could run some tests on actual request latency and throughput in a production like environment.
+To determine if that's the case, you could run some tests on actual request latency and throughput in a production-like environment.
 If there's no impact based on the workload you have to process,
 you might very well decide that additional allocations are well spent for your application's purposes.
 
@@ -398,7 +399,7 @@ which is something we might want to avoid.
 It's also worth examining the application's garbage collection behavior.
 In order to so, you can run the performance test method again,
 either enabling all the GC-related JFR event types, or by enabling a pre-existing JFR configuration
-(the JDK comes with two built-in JFR configurations, and you can also create and export them via JMC):
+(the JDK comes with two built-in JFR configurations, _default_ and _profile_, but you can also create and export them via JMC):
 
 [source, java]
 ----
@@ -417,7 +418,7 @@ The difference to the GC behavior before this code change is striking:
 
 image::continuous_perf_testing_gc_original.png[Garbage collections before the performance regression]
 
-Pause times are worse, directly impacting the application's latency, and the largely increased GC volume means the environment will be able to serve less concurrent requests when reaching its capacity limits,
+Pause times are worse, directly impacting the application's latency, and the largely increased GC volume means the production environment will be able to serve less concurrent requests when reaching its capacity limits,
 meaning you'd have to provision another machine earlier on as your load increases.
 
 [NOTE]
@@ -428,11 +429,10 @@ After some exploration https://mail.openjdk.java.net/pipermail/hotspot-jfr-dev/2
 https://twitter.com/ErikGahlin[Erik Gahlin] from the OpenJDK team logged https://bugs.openjdk.java.net/browse/JDK-8257906[JDK-8257906] for tracking and hopefully fixing this in JDK 16.
 ====
 
-Now such drastic increase of allocation and thus potential impact on performance should hopefully be an exception rather than a regular situation.
-But the example shows how continuous performance unit tests on impacting metrics like memory allocation via Flight Recorder and JfrUnit can help to identify performance issues in an automated and reliable way,
+Now such drastic increase of object allocation and thus potential impact on performance should hopefully be an exception rather than a regular situation.
+But the example shows how continuous performance unit tests on impacting metrics like memory allocation, using JfrUnit and JDK Flight Recorder and, can help to identify performance issues in an automated and reliable way,
 preventing such regression to sneak into production.
-Being able to identify this kind of issue by running tests locally on a developer laptop or a CI server,
-can be a huge time-saver and productivity boost.
+Being able to identify this kind of issue by running tests locally on a developer laptop or a CI server can be a huge time-saver and productivity boost.
 
 == Case Study 2: Identifying Increased I/O With the Database
 
@@ -630,3 +630,7 @@ Stay tuned for part two of this blog post, where we'll explore how to trace the 
 which will come in very handy for instance for identifying common performance problems like N+1 SELECT statements.
 
 _Many thanks to https://twitter.com/hpgrahsl[Hans-Peter Grahsl], https://twitter.com/JohnnyDoItAll[John O'Hara], https://twitter.com/nitsanw[Nitsan Wakart], and https://twitter.com/SanneGrinovero/[Sanne Grinovero] for their extensive feedback while writing this blog post!_
+
+
+unit test
+allocate memory
