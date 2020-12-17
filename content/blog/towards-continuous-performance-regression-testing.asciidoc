@@ -69,14 +69,14 @@ public class JfrUnitTest {
 
     jfrEvents.awaitEvents(); // <3>
 
-    ExpectedEvent = event("jdk.GarbageCollection"); // <4>
+    ExpectedEvent event = event("jdk.GarbageCollection"); // <4>
     assertThat(jfrEvents).contains(event); 
     
-    ExpectedEvent = event("jdk.GarbageCollection") // <4>
+    event = event("jdk.GarbageCollection") // <4>
         .with("cause", "System.gc()"));
     assertThat(jfrEvents).contains(event); 
 
-    ExpectedEvent = event("jdk.ThreadSleep").
+    event = event("jdk.ThreadSleep").
         with("time", Duration.ofSeconds(1)));
     assertThat(jfrEvents).contains(event); 
 
