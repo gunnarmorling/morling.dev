@@ -1,6 +1,6 @@
 # morling.dev
 
-This repo contains the source code of the [morling.dev](morling.dev) website.
+This repo contains the source code of the [morling.dev](https://morling.dev) website.
 It is built using [Hugo](https://gohugo.io/) and hosted on [GitHub Pages](https://pages.github.com/).
 
 ## Editing
