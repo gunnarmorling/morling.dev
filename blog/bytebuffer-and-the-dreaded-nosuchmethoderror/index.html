@@ -279,7 +279,7 @@ So why would the user run into this error then?</p>
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Why does this not work with Java 1.8?</td>
+<td>Why does this not work with Java 1.8 when compiled with JDK 9 or newer?</td>
 </tr>
 </table>
 </div>
@@ -305,7 +305,7 @@ Exception <span class="k">in </span>thread <span class="s2">"main"</span> java.l
 <div class="paragraph">
 <p>Whereas, when using 1.8 to compile <em>and</em> run this code, it just works fine.
 Now, if we take a closer look at the error message again, the missing method is defined as <code>ByteBuffer position(int)</code>.
-I.e. for an invoked method like <code>position()</code>, not only its name, parameter type(s) and the name of the declaring class are part of the byte code for that invocation, but also the method&#8217;s return type.
+I.e. for an invoked method like <code>position()</code>, not only its name, parameter type(s), and the name of the declaring class are part of the byte code for that invocation, but also the method&#8217;s return type.
 A look at the byte code of the class using <em>javap</em> confirms that:</p>
 </div>
 <div class="listingblock">
@@ -328,7 +328,7 @@ public static void main<span class="o">(</span>java.lang.String...<span class="o
 <div class="paragraph">
 <p>And this points us to the right direction;
 In Java 1.8, indeed there is no such method, only the <code>position()</code> method on <code>Buffer</code>,
-which returns <code>Buffer</code> and not <code>ByteBuffer</code>, of course.
+which, of course, returns <code>Buffer</code> and not <code>ByteBuffer</code>.
 Whereas since Java 9, this method (and several others) <a href="https://docs.oracle.com/javase/9/docs/api/java/nio/ByteBuffer.html#position-int-">is overridden</a> in <code>ByteBuffer</code>&#8201;&#8212;&#8201;leveraging Java&#8217;s support for co-variant return types&#8201;&#8212;&#8201;to return <code>ByteBuffer</code>.
 The Java compiler will now select that method, <code>ByteBuffer position(int)</code>, and record that as the invoked method signature in the byte code of the caller class.</p>
 </div>
@@ -336,14 +336,14 @@ The Java compiler will now select that method, <code>ByteBuffer position(int)</c
 <p>This is per-se a nice usability improvement, as it allows to invoke further <code>ByteBuffer</code> methods on the return value, instead of just those methods declared by <code>Buffer</code>.
 But as we&#8217;ve seen, it comes with this little surprise when compiling code on JDK 9 or newer,
 while trying to keep compatibility with older Java versions.
-And as it turns out, we were not the first or only ones to encounter this issue,
-quite a few open-source projects ran into this, e.g. <a href="https://github.com/eclipse/jetty.project/issues/3244">Eclipse Jetty</a>, <a href="https://github.com/streamnative/pulsar/issues/1645">Apache Pulsar</a>, <a href="https://github.com/eclipse-vertx/vertx-sql-client/issues/736">Eclipse Vert.x</a>, <a href="https://github.com/apache/thrift/pull/2231">Apache Thrift</a>, the <a href="https://github.com/yugabyte/yugabyte-db/issues/6712">Yugabyte DB client</a>, and a few others.</p>
+And as it turns out, we were not the first or only ones to encounter this issue.
+Quite a few open-source projects ran into this, e.g. <a href="https://github.com/eclipse/jetty.project/issues/3244">Eclipse Jetty</a>, <a href="https://github.com/streamnative/pulsar/issues/1645">Apache Pulsar</a>, <a href="https://github.com/eclipse-vertx/vertx-sql-client/issues/736">Eclipse Vert.x</a>, <a href="https://github.com/apache/thrift/pull/2231">Apache Thrift</a>, the <a href="https://github.com/yugabyte/yugabyte-db/issues/6712">Yugabyte DB client</a>, and a few others.</p>
 </div>
 <div class="sect1">
 <h2 id="_how_to_prevent_this_situation">How to Prevent This Situation?</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>So what can you do to prevent this issue from happening?
+<p>So what can you do in order to prevent this issue from happening?
 One first idea could be to enforce selection of the right method by casting to <code>Buffer</code>:</p>
 </div>
 <div class="listingblock">
@@ -357,11 +357,12 @@ One first idea could be to enforce selection of the right method by casting to <
 <p>But while this produces the desired byte code indeed,
 it isn&#8217;t exactly the best way for doing so.
 You&#8217;d have to remember to do so for every invocation of any of the affected <code>ByteBuffer</code> methods,
-and the seemling unneeded cast might be an easy subject for some "clean-up" by unsuspecting co-workers on our team.</p>
+and the seemling unneeded cast might be an easy target for some "clean-up" by unsuspecting co-workers on our team.</p>
 </div>
 <div class="paragraph">
 <p>Luckily, there&#8217;s a much better way, and this is to rely on the Java compiler&#8217;s <code>--release</code> parameter,
-which was introduced via <a href="http://openjdk.java.net/jeps/247">JEP 247</a> ("Compile for Older Platform Versions"), also in JDK 9.
+which was introduced via <a href="http://openjdk.java.net/jeps/247">JEP 247</a> ("Compile for Older Platform Versions"),
+added to the platform also in JDK 9.
 In contrast to the more widely known pair of <code>--source</code> and <code>--target</code>,
 the <code>--release</code> switch will ensure that only byte code is produced which actually will be useable with the specified Java version.
 For this purpose, the JDK contains the signature data for all supported Java versions
@@ -385,7 +386,7 @@ For this purpose, the JDK contains the signature data for all supported Java ver
 </div>
 <div class="paragraph">
 <p>When run on Java 1.8, this virtual method call will be resolved to <code>Buffer#position(int)</code> at runtime,
-whereas on Java 9 and later, it&#8217;d resolve to the <a href="https://www.artima.com/weblogs/viewpost.jsp?thread=354443">bridge method</a> inserted by the compiler due to the co-variant return type, which itself calls the overriding <code>ByteBuffer#position(int)</code> method.</p>
+whereas on Java 9 and later, it&#8217;d resolve to the <a href="https://www.artima.com/weblogs/viewpost.jsp?thread=354443">bridge method</a> inserted by the compiler into the class file of <code>ByteBuffer</code> due to the co-variant return type, which itself calls the overriding <code>ByteBuffer#position(int)</code> method.</p>
 </div>
 <div class="paragraph">
 <p>Now let&#8217;s see what happens if we actually try to make use of the overriding method version in <code>ByteBuffer</code> by re-assigning the result:</p>
@@ -404,7 +405,8 @@ whereas on Java 9 and later, it&#8217;d resolve to the <a href="https://www.arti
 </div>
 </div>
 <div class="paragraph">
-<p>Et voilà, this gets rejected by the compiler, as the return type of the JDK 1.8 method <code>Buffer#position(int)</code> cannot be assigned to <code>ByteBuffer</code>:</p>
+<p>Et voilà, this gets rejected by the compiler when targeting Java 1.8,
+as the return type of the JDK 1.8 method <code>Buffer#position(int)</code> cannot be assigned to <code>ByteBuffer</code>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -435,9 +437,9 @@ just specify the following property in your <em>pom.xml</em>:</p>
 </div>
 </div>
 <div class="paragraph">
-<p>Note that theoretically you could achieve the same effect also when using <code>--source</code> and <code>--target</code>:
-by means of the <code>--boot-class-path</code> option, you could advise the compiler to use a specific set of bootstrap class files instead of using those from the JDK used for compilation.
-But that&#8217;d be quite a bit more cumbersome as it requires you to actually provide the classes from the targeted JDK,
+<p>Note that theoretically you could achieve the same effect also when using <code>--source</code> and <code>--target</code>;
+by means of the <code>--boot-class-path</code> option, you could advise the compiler to use a specific set of bootstrap class files instead of those from the JDK used for compilation.
+But that&#8217;d be quite a bit more cumbersome as it requires you to actually provide the classes of the targeted Java version,
 whereas <code>--release</code> will make use of the signature data coming with the currently used JDK itself.</p>
 </div>
 </div>
