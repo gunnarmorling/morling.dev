@@ -1,0 +1,180 @@
+---
+title: "ByteBuffer and the Dreaded NoSuchMethodError"
+date: 2020-12-21T17:45:00+01:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+The other day, a user in the https://debezium.io/[Debezium] community reported an interesting issue;
+They were using Debezium with Java 1.8 and got an odd `NoSuchMethodError`:
+
+<!--more-->
+
+[source,shell]
+----
+java.lang.NoSuchMethodError: java.nio.ByteBuffer.position(I)Ljava/nio/ByteBuffer;
+  at io.debezium.connector.postgresql.connection.Lsn.valueOf(Lsn.java:86)
+  at io.debezium.connector.postgresql.connection.PostgresConnection.tryParseLsn(PostgresConnection.java:270)
+  at io.debezium.connector.postgresql.connection.PostgresConnection.parseConfirmedFlushLsn(PostgresConnection.java:235)
+  ...
+----
+
+A `NoSuchMethodError` typically is an indication for a mismatch of the Java version used to compile some code, and the Java version used for running it:
+some method existed at compile time, but it's not available at runtime.
+
+Now indeed we use JDK 11 for building the Debezium code base, while targeting Java 1.8 as the minimal required version at runtime.
+But there _is_  a method https://docs.oracle.com/javase/8/docs/api/java/nio/Buffer.html#position-int-[`position(int)`] defined on the `Buffer` class
+(which `ByteBuffer` extends) also in Java 1.8.
+And as a matter of fact, the Debezium code compiles just fine with that version, too.
+So why would the user run into this error then?
+
+To understand what's going on, let's create a very simple class for reproducing the issue:
+
+[source,java,linenums=true]
+----
+import java.nio.ByteBuffer;
+
+public class ByteBufferTest {
+  public static void main(String... args) {
+    ByteBuffer buffer = ByteBuffer.wrap(new byte[] { 1, 2, 3 });
+    buffer.position(1); // <1>
+    System.out.println(buffer.get());
+  }
+}
+----
+<1> Why does this not work with Java 1.8?
+
+Compile this with a current JDK:
+
+[source,shell]
+----
+$ javac --source 1.8 --target 1.8 ByteBufferTest.java
+----
+
+And sure enough, the `NoSuchMethodError` shows up when running this with Java 1.8:
+
+[source,shell]
+----
+$ java ByteBufferTest
+
+Exception in thread "main" java.lang.NoSuchMethodError: java.nio.ByteBuffer.position(I)Ljava/nio/ByteBuffer;
+	at ByteBufferTest.main(ByteBufferTest.java:6)
+----
+
+Whereas, when using 1.8 to compile _and_ run this code, it just works fine.
+Now, if we take a closer look at the error message again, the missing method is defined as `ByteBuffer position(int)`.
+I.e. for an invoked method like `position()`, not only its name, parameter type(s) and the name of the declaring class are part of the byte code for that invocation, but also the method's return type.
+A look at the byte code of the class using _javap_ confirms that:
+
+[source,shell]
+----
+$ javap -p -c -s -v -l -constants ByteBufferTest
+
+...
+public static void main(java.lang.String...);
+  descriptor: ([Ljava/lang/String;)V
+  flags: ACC_PUBLIC, ACC_STATIC, ACC_VARARGS
+  Code:
+    stack=4, locals=2, args_size=1
+...
+      19: aload_1
+      20: iconst_1
+      21: invokevirtual #13 // Method java/nio/ByteBuffer.position:(I)Ljava/nio/ByteBuffer;
+...
+----
+
+And this points us to the right direction;
+In Java 1.8, indeed there is no such method, only the ``position()`` method on `Buffer`,
+which returns `Buffer` and not `ByteBuffer`, of course.
+Whereas since Java 9, this method (and several others) https://docs.oracle.com/javase/9/docs/api/java/nio/ByteBuffer.html#position-int-[is overridden] in `ByteBuffer` --
+leveraging Java's support for co-variant return types -- to return `ByteBuffer`.
+The Java compiler will now select that method, `ByteBuffer position(int)`, and record that as the invoked method signature in the byte code of the caller class.
+
+This is per-se a nice usability improvement, as it allows to invoke further `ByteBuffer` methods on the return value, instead of just those methods declared by `Buffer`.
+But as we've seen, it comes with this little surprise when compiling code on JDK 9 or newer,
+while trying to keep compatibility with older Java versions.
+And as it turns out, we were not the first or only ones to encounter this issue,
+quite a few open-source projects ran into this, e.g. https://github.com/eclipse/jetty.project/issues/3244[Eclipse Jetty], https://github.com/streamnative/pulsar/issues/1645[Apache Pulsar], https://github.com/eclipse-vertx/vertx-sql-client/issues/736[Eclipse Vert.x], https://github.com/apache/thrift/pull/2231[Apache Thrift], the https://github.com/yugabyte/yugabyte-db/issues/6712[Yugabyte DB client], and a few others.
+
+== How to Prevent This Situation?
+
+So what can you do to prevent this issue from happening?
+One first idea could be to enforce selection of the right method by casting to `Buffer`:
+
+[source,java,linenums=true]
+----
+((java.nio.Buffer) buffer).position(1);
+----
+
+But while this produces the desired byte code indeed,
+it isn't exactly the best way for doing so.
+You'd have to remember to do so for every invocation of any of the affected `ByteBuffer` methods,
+and the seemling unneeded cast might be an easy subject for some "clean-up" by unsuspecting co-workers on our team.
+
+Luckily, there's a much better way, and this is to rely on the Java compiler's `--release` parameter,
+which was introduced via http://openjdk.java.net/jeps/247[JEP 247] ("Compile for Older Platform Versions"), also in JDK 9.
+In contrast to the more widely known pair of `--source` and `--target`,
+the `--release` switch will ensure that only byte code is produced which actually will be useable with the specified Java version.
+For this purpose, the JDK contains the signature data for all supported Java versions
+(stored in the _$JAVA_HOME/lib/ct.sym_ file).
+
+So all that's needed really is compiling the code with `--release=8`:
+
+[source,shell]
+----
+$ javac --release=8 ByteBufferTest.java
+----
+
+Examine the bytecode using _javap_ again, and now the expected signature is in place:
+
+[source,shell]
+----
+21: invokevirtual #13 // Method java/nio/ByteBuffer.position:(I)Ljava/nio/Buffer;
+----
+
+When run on Java 1.8, this virtual method call will be resolved to `Buffer#position(int)` at runtime,
+whereas on Java 9 and later, it'd resolve to the https://www.artima.com/weblogs/viewpost.jsp?thread=354443[bridge method] inserted by the compiler due to the co-variant return type, which itself calls the overriding `ByteBuffer#position(int)` method.
+
+Now let's see what happens if we actually try to make use of the overriding method version in `ByteBuffer` by re-assigning the result:
+
+[source,java,linenums=true]
+----
+...
+ByteBuffer buffer = ByteBuffer.wrap(new byte[] { 1, 2, 3 });
+buffer = buffer.position(1);
+...
+----
+
+Et voilà, this gets rejected by the compiler, as the JDK 1.8 method `Buffer#position(int)` cannot be assigned to `ByteBuffer`:
+
+[source,shell]
+----
+$ javac --release=8 ByteBufferTest.java
+
+ByteBufferTest.java:6: error: incompatible types: Buffer cannot be converted to ByteBuffer
+        buffer = buffer.position(1);
+----
+
+To cut a long story short, we -- and many other projects -- should have used the `--release` switch instead of `--source`/`--target`, and the user would not have had that issue.
+In order to achieve the same in your Maven-based build,
+just specify the following property in your _pom.xml_:
+
+[source,xml,linenums=true]
+----
+...
+<properties>
+  <maven.compiler.release>8</maven.compiler.release>
+</properties>
+...
+----
+
+Note that theoretically you could achieve the same effect also when using `--source` and `--target`:
+by means of the `--boot-class-path` option, you could advise the compiler to use a specific set of bootstrap class files instead of using those from the JDK used for compilation.
+But that'd be quite a bit more cumbersome as it requires you to actually provide the classes from the targeted JDK,
+whereas `--release` will make use of the signature data coming with the currently used JDK itself.
