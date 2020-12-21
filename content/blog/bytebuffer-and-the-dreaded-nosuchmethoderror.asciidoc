@@ -48,7 +48,7 @@ public class ByteBufferTest {
   }
 }
 ----
-<1> Why does this not work with Java 1.8?
+<1> Why does this not work with Java 1.8 when compiled with JDK 9 or newer?
 
 Compile this with a current JDK:
 
@@ -69,7 +69,7 @@ Exception in thread "main" java.lang.NoSuchMethodError: java.nio.ByteBuffer.posi
 
 Whereas, when using 1.8 to compile _and_ run this code, it just works fine.
 Now, if we take a closer look at the error message again, the missing method is defined as `ByteBuffer position(int)`.
-I.e. for an invoked method like `position()`, not only its name, parameter type(s) and the name of the declaring class are part of the byte code for that invocation, but also the method's return type.
+I.e. for an invoked method like `position()`, not only its name, parameter type(s), and the name of the declaring class are part of the byte code for that invocation, but also the method's return type.
 A look at the byte code of the class using _javap_ confirms that:
 
 [source,shell]
@@ -91,7 +91,7 @@ public static void main(java.lang.String...);
 
 And this points us to the right direction;
 In Java 1.8, indeed there is no such method, only the ``position()`` method on `Buffer`,
-which returns `Buffer` and not `ByteBuffer`, of course.
+which, of course, returns `Buffer` and not `ByteBuffer`.
 Whereas since Java 9, this method (and several others) https://docs.oracle.com/javase/9/docs/api/java/nio/ByteBuffer.html#position-int-[is overridden] in `ByteBuffer` --
 leveraging Java's support for co-variant return types -- to return `ByteBuffer`.
 The Java compiler will now select that method, `ByteBuffer position(int)`, and record that as the invoked method signature in the byte code of the caller class.
@@ -99,12 +99,12 @@ The Java compiler will now select that method, `ByteBuffer position(int)`, and r
 This is per-se a nice usability improvement, as it allows to invoke further `ByteBuffer` methods on the return value, instead of just those methods declared by `Buffer`.
 But as we've seen, it comes with this little surprise when compiling code on JDK 9 or newer,
 while trying to keep compatibility with older Java versions.
-And as it turns out, we were not the first or only ones to encounter this issue,
-quite a few open-source projects ran into this, e.g. https://github.com/eclipse/jetty.project/issues/3244[Eclipse Jetty], https://github.com/streamnative/pulsar/issues/1645[Apache Pulsar], https://github.com/eclipse-vertx/vertx-sql-client/issues/736[Eclipse Vert.x], https://github.com/apache/thrift/pull/2231[Apache Thrift], the https://github.com/yugabyte/yugabyte-db/issues/6712[Yugabyte DB client], and a few others.
+And as it turns out, we were not the first or only ones to encounter this issue.
+Quite a few open-source projects ran into this, e.g. https://github.com/eclipse/jetty.project/issues/3244[Eclipse Jetty], https://github.com/streamnative/pulsar/issues/1645[Apache Pulsar], https://github.com/eclipse-vertx/vertx-sql-client/issues/736[Eclipse Vert.x], https://github.com/apache/thrift/pull/2231[Apache Thrift], the https://github.com/yugabyte/yugabyte-db/issues/6712[Yugabyte DB client], and a few others.
 
 == How to Prevent This Situation?
 
-So what can you do to prevent this issue from happening?
+So what can you do in order to prevent this issue from happening?
 One first idea could be to enforce selection of the right method by casting to `Buffer`:
 
 [source,java,linenums=true]
@@ -115,10 +115,11 @@ One first idea could be to enforce selection of the right method by casting to `
 But while this produces the desired byte code indeed,
 it isn't exactly the best way for doing so.
 You'd have to remember to do so for every invocation of any of the affected `ByteBuffer` methods,
-and the seemling unneeded cast might be an easy subject for some "clean-up" by unsuspecting co-workers on our team.
+and the seemling unneeded cast might be an easy target for some "clean-up" by unsuspecting co-workers on our team.
 
 Luckily, there's a much better way, and this is to rely on the Java compiler's `--release` parameter,
-which was introduced via http://openjdk.java.net/jeps/247[JEP 247] ("Compile for Older Platform Versions"), also in JDK 9.
+which was introduced via http://openjdk.java.net/jeps/247[JEP 247] ("Compile for Older Platform Versions"),
+added to the platform also in JDK 9.
 In contrast to the more widely known pair of `--source` and `--target`,
 the `--release` switch will ensure that only byte code is produced which actually will be useable with the specified Java version.
 For this purpose, the JDK contains the signature data for all supported Java versions
@@ -139,7 +140,7 @@ Examine the bytecode using _javap_ again, and now the expected signature is in p
 ----
 
 When run on Java 1.8, this virtual method call will be resolved to `Buffer#position(int)` at runtime,
-whereas on Java 9 and later, it'd resolve to the https://www.artima.com/weblogs/viewpost.jsp?thread=354443[bridge method] inserted by the compiler due to the co-variant return type, which itself calls the overriding `ByteBuffer#position(int)` method.
+whereas on Java 9 and later, it'd resolve to the https://www.artima.com/weblogs/viewpost.jsp?thread=354443[bridge method] inserted by the compiler into the class file of `ByteBuffer` due to the co-variant return type, which itself calls the overriding `ByteBuffer#position(int)` method.
 
 Now let's see what happens if we actually try to make use of the overriding method version in `ByteBuffer` by re-assigning the result:
 
@@ -151,7 +152,8 @@ buffer = buffer.position(1);
 ...
 ----
 
-Et voilà, this gets rejected by the compiler, as the return type of the JDK 1.8 method `Buffer#position(int)` cannot be assigned to `ByteBuffer`:
+Et voilà, this gets rejected by the compiler when targeting Java 1.8,
+as the return type of the JDK 1.8 method `Buffer#position(int)` cannot be assigned to `ByteBuffer`:
 
 [source,shell]
 ----
@@ -174,7 +176,7 @@ just specify the following property in your _pom.xml_:
 ...
 ----
 
-Note that theoretically you could achieve the same effect also when using `--source` and `--target`:
-by means of the `--boot-class-path` option, you could advise the compiler to use a specific set of bootstrap class files instead of using those from the JDK used for compilation.
-But that'd be quite a bit more cumbersome as it requires you to actually provide the classes from the targeted JDK,
+Note that theoretically you could achieve the same effect also when using `--source` and `--target`;
+by means of the `--boot-class-path` option, you could advise the compiler to use a specific set of bootstrap class files instead of those from the JDK used for compilation.
+But that'd be quite a bit more cumbersome as it requires you to actually provide the classes of the targeted Java version,
 whereas `--release` will make use of the signature data coming with the currently used JDK itself.
