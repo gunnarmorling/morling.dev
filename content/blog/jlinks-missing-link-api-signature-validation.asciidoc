@@ -1,0 +1,348 @@
+---
+title: "jlink's Missing Link: API Signature Validation"
+date: 2020-12-28T12:20:00+01:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+Discussions around Java's https://openjdk.java.net/jeps/282[jlink] tool typically center around savings in terms of (disk) space.
+Instead of shipping an entire JDK,
+a custom runtime image created with jlink contains only those JDK modules which an application actually requires,
+resulting in smaller distributables and link:blog/smaller-faster-starting-container-images-with-jlink-and-appcds/[container images].
+
+But the contribution of jlink -- as a part of the Java module system at large -- to the development of Java application's is bigger than that:
+with the notion of _link time_ it defines an optional complement to the well known phases _compile time_ and application _run-time_:
+
+> Link time is an opportunity to do whole-world optimizations that are otherwise difficult at compile time or costly at run-time. An example would be to optimize a computation when all its inputs become constant (i.e., not unknown). A follow-up optimization would be to remove code that is no longer reachable.
+
+<!--more-->
+
+Other examples for link time optimizations are the https://www.amazon.de/gp/video/detail/B00NB9OXMI/ref=atv_hm_hom_1_c_85s8GL_4_1[removal of unnecessary classes and resources],
+the conversion of (XML-based) deployment descriptors into binary representations
+(which will be more efficiently processable at run-time),
+obfuscation, or the generation of annotation indexes.
+It would also be very interesting to create link:blog/smaller-faster-starting-container-images-with-jlink-and-appcds/[AppCDS archives] for all the classes of a runtime image at link time and bake that archive into the image,
+resulting in faster application start-up, without any further manual configuration needed.
+
+While these use cases mostly relate to _optimization_ of the runtime image in one way or another,
+the link time phase also is beneficial for the _validation_ of applications.
+In the remainder of this post, I'd like to discuss how link time validation can be employed to ensure the consistency of API signatures within a modularized Java application.
+This helps to avoid potential ``NoSuchMethodError``s and related errors which would otherwise be raised by the JVM at application run-time,
+stemming from the usage of incompatible module versions,
+different from the ones used at compile time.
+
+== The Example
+
+To make things more tangible, let's look at an application made up of two modules, _customer_ and _order_.
+As always, the full source code is https://github.com/gunnarmorling/signature-check-jlink-plugin[available online], for you to play with.
+The _customer_ module defines a service interface with the following signature:
+
+[source,java,linenums=true]
+----
+public interface CustomerService {
+  void incrementLoyaltyPoints(long customerId, long orderValue);
+}
+----
+
+The `CustomerService` interface is part of the _customer_ module's public API and is invoked from within the _order_ module like so:
+
+[source,java,linenums=true]
+----
+public class OrderService {
+
+  public static void main(String[] args) {
+    CustomerService customerService = ...;
+    customerService.incrementLoyaltyPoints(123, 4999);
+  }
+}
+----
+
+Now let's assume there's a new version of the _customer_ module;
+the signature of the `incrementLoyaltyPoints()` method got slightly changed for the sake of a more expressive and type-safe API:
+
+[source,java,linenums=true]
+----
+// record CustomerId(long id) {}
+
+public interface CustomerService {
+  void incrementLoyaltyPoints(CustomerId customerId, long orderValue);
+}
+----
+
+We now create a custom runtime image for the application.
+But we're at the end of a tough week, so accidentally we add version 2 of the _customer_ module and the unchanged _order_ module:
+
+[source,shell,linenums=true]
+----
+$ $JAVA_HOME/bin/jlink \
+  --module-path=path/to/customer-2.0.0.jar:path/to/order-1.0.0.jar \
+  --add-modules=com.example.order \
+  --output=target/runtime-image
+----
+
+Note that jlink won't complain about this and create the runtime image.
+When executing the application via the image we're in for a bad surprise, though
+(slightly modified for the sake of readability):
+
+[source,shell,linenums=true]
+----
+$ ./target/runtime-image/bin/java com.example.order.OrderService
+
+Exception in thread "main" java.lang.NoSuchMethodError:
+  'void c.e.customer.CustomerService.incrementLoyaltyPoints(long, long)'
+  at com.example.order@1.0.0/c.e.order.OrderService.main(OrderService.java:5)
+----
+
+This might be surprising at first; while jlink and the module system in general put a strong emphasis on reliability and e.g. flag referenced yet missing modules, mismatching API signatures like this are not raised as an issue and will only show up as an error at application run-time.
+Needless to say that it'd be much more desirable to spot this error already early on at link time,
+before shipping the affected application to production, and suffering from all the negative consequences associated to that.
+
+== The API Signature Check jlink Plug-in
+
+While jlink doesn't detect this kind of API signature mismatch by itself,
+it comes with a plug-in API, which allows to hook into and enrich the linking process.
+By creating a custom jlink plug-in, we can implement the API signature check and fail the image creation process when detecting any invalid method references like the one above.
+
+Unfortunately though, the plug-in mechanism isn't an official, supported API at this point.
+As a matter of fact, it is not even exported within jlink's own https://docs.oracle.com/en/java/javase/15/docs/api/jdk.jlink/module-summary.html[module definition].
+With the right set of javac/java flags and the help of a small Java agent, it is possible though to compile custom plug-ins and have them picked up by jlink.
+To learn more about the required sorcery, check out https://in.relation.to/2017/12/12/exploring-jlink-plugin-api-in-java-9/#trick-2-the-java-agent[this blog post] which I wrote a while ago over on the Hibernate team blog.
+
+Let's start with creating the basic structure of the plug-in implementation class:
+
+[source,java,linenums=true]
+----
+import jdk.tools.jlink.plugin.Plugin;
+
+public class SignatureCheckPlugin implements Plugin {
+
+  @Override
+  public String getName() { // <1>
+    return "check-signatures";
+  }
+
+  @Override
+  public Category getType() { // <2>
+    return Category.VERIFIER;
+  }
+
+  @Override
+  public String getDescription() { // <3>
+    return "Checks the API references amongst the modules of " +
+        "an application for consistency";
+  }
+}
+----
+<1> Returns the name for the option to enable this plug-in when running the jlink command
+<2> Returns the category of this plug-in, which impacts the ordering within the plug-in stack
+(other types include `TRANSFORMER`, `FILTER`, etc.)
+<3> A description which will be shown when listing all plug-ins
+
+There are a few more optional methods which we could implement, e.g. if the plug-in had any parameters for controlling its behaviors,
+or if we wanted it to be enabled by default.
+But as that's not the case for the plug-in at hand,
+the only method that's missing is `transform()`, which does the actual heavy-lifting of the plug-in's work.
+
+Now implementing the complete rule set of the JVM applied when loading and linking classes at run-time would be a somewhat daunting task.
+As I am lazy and this is just meant to be a basic PoC,
+I'm going to limit myself to the detection of mismatching signatures of invoked methods,
+as shown in the _customer_/_order_ example above.
+The reason being that this task can be elegantly delegated to an existing tool
+(I told you, I'm lazy): https://www.mojohaus.org/animal-sniffer/[Animal Sniffer].
+
+While typically used as build tool plug-in for verifying that classes built on a newer JDK version can also be executed with older Java versions
+(and as such mostly obsoleted by the link:blog/bytebuffer-and-the-dreaded-nosuchmethoderror/[JDK's --release option]),
+Animal Sniffer also provides an API for creating and verifying custom signatures.
+This comes in handy for our jlink plug-in implementation.
+
+The general design of the `transform()` mechanism is that of a classic input-process-output pipeline.
+The method receives a `ResourcePool` object, which allows to traverse and examine the set of resources going into the image, such as class files, resource bundles, or manifests.
+A new resource pool is to be returned, which could contain exactly the same resources as the original one (as in our case);
+but of course it could also contain less or newly generated resources, or modified ones:
+
+[source,java,linenums=true]
+----
+@Override
+public ResourcePool transform(ResourcePool in, ResourcePoolBuilder out) {
+  try {
+    byte[] signature = createSignature(in); // <1>
+    boolean broken = checkSignature(in, signature); // <2>
+
+    if (broken) { // <3>
+      throw new PluginException("There are API signature " +
+          "inconsistencies, please check the logs");
+    }
+  }
+  catch(PluginException e) {
+    throw e;
+  }
+  catch(Exception e) {
+    throw new RuntimeException(e);
+  }
+
+  in.transformAndCopy(e -> e, out); // <4>
+
+  return out.build();
+}
+
+/**
+ * Creates a signature for all classes in the resource pool.
+ */
+private byte[] createSignature(ResourcePool in) throws IOException {
+  ByteArrayOutputStream signatureStream = new ByteArrayOutputStream();
+
+  var builder = new StreamSignatureBuilder(signatureStream,
+      new PrintWriterLogger(System.out));
+
+  in.entries() // <5>
+      .filter(e -> isClassFile(e) && !isModuleInfo(e))
+      .forEach(e -> builder.process(e.path(), e.content()));
+
+  builder.close();
+
+  return signatureStream.toByteArray();
+}
+
+/**
+ * Checks all classes against the given signature.
+ */
+private boolean checkSignature(ResourcePool in, byte[] signature)
+    throws IOException {
+  
+  var checker = new StreamSignatureChecker(
+      new ByteArrayInputStream(signature),
+      Collections.<String>emptySet(),
+      new PrintWriterLogger(System.out)
+  );
+
+  checker.setSourcePath(Collections.<File>emptyList());
+
+  in.entries() // <6>
+      .filter(e -> isClassFile(e) && !isModuleInfo(e) && !isJdkClass(e))
+      .forEach(e -> checker.process(e.path(), e.content()));
+
+  return checker.isSignatureBroken();
+}
+
+private boolean isJdkClass(ResourcePoolEntry e) {
+  return e.path().startsWith("/java.") ||
+      e.path().startsWith("/javax.") ||
+      e.path().startsWith("/jdk.");
+}
+
+private boolean isModuleInfo(ResourcePoolEntry e) {
+  return e.path().endsWith("module-info.class");
+}
+
+private boolean isClassFile(ResourcePoolEntry e) {
+  return e.path().endsWith("class");
+}
+----
+<1> Create an Animal Sniffer signature for all the APIs in modules added to the runtime image
+<2> Verify all classes against that signature
+<3> If there's a signature violation, fail the jlink execution by raising a `PluginException`
+<4> All classes are passed on as-is
+<5> Feed each class to Animal Sniffer's signature builder for creating the signature;
+non-class resources and module descriptors are ignored
+<6> Verify each class against the signature; JDK classes can be skipped here, we assume there's no inconsistencies amongst the JDK's own modules
+
+The input resource pool is traversed twice:
+first to create an Animal Sniffer signature of all the APIs,
+then a second time to validate the image's classes against that signature.
+
+Let me re-iterate that this a very basic, PoC-level implementation of link time API signature validation.
+A number of incompatibilities would not be detected by this, e.g. adding an abstract method to a superclass or interface, modifying the number and specification of the type parameters of a class,
+and others.
+The implementation could also be further optimized by validating only cross-module references.
+Still, this implementation is good enough to demonstrate the general principle and advantages of link time API consistency validation.
+
+With the implementation in place
+(see the https://github.com/gunnarmorling/signature-check-jlink-plugin#build[README] in the PoC's GitHub repository for details on building the project),
+it's time to invoke jlink again, this time activating the new plug-in.
+Now, as mentioned before, the jlink plug-in API isn't publicly exposed as of Java 15
+(the current Java version at the point of writing),
+which means we need to jump some hoops in order to enable the plug-in and expose it to the jlink tool itself.
+
+In a nutshell, a Java agent can be used to bend the module configurations as needed.
+Details can be found in https://in.relation.to/2017/12/12/exploring-jlink-plugin-api-in-java-9/#trick-2-the-java-agent[aforementioned post] on the Hibernate blog
+(the agent's source code is https://github.com/gunnarmorling/signature-check-jlink-plugin/blob/main/agent/src/main/java/dev/morling/jlink/plugins/sigcheck/agent/JLinkPluginRegistrationAgent.java[here]).
+The required boiler plate can be nicely encapsulated within a shell function:
+
+[source,shell,linenums=true]
+----
+function myjlink { \
+  $JAVA_HOME/bin/jlink \
+    -J-javaagent:signature-check-jlink-plugin-registration-agent-1.0-SNAPSHOT.jar \
+    -J--module-path)signature-check-jlink-plugin-1.0-SNAPSHOT.jar:path/to/animal-sniffer-1.19.jar:path/to/asm-9.0.jar \
+    -J--add-modules=dev.morling.jlink.plugins.sigcheck "$@" \
+}
+----
+
+All the `-J` options are VM options passed through to the jlink tool,
+in order to register the required Java agent and add the plug-in module to jlink's module path.
+Instead of directly calling jlink binary itself,
+this wrapper function can now be used to invoke jlink with the custom plug-in.
+Let's first take a look at the description in the plug-in list:
+
+[source,shell,linenums=true]
+----
+$ myjlink --list-plugins
+
+...
+Plugin Name: check-signatures
+Plugin Class: dev.morling.jlink.plugins.sigcheck.SignatureCheckPlugin
+Plugin Module: dev.morling.jlink.plugins.sigcheck
+Category: VERIFIER
+Functional state: Functional.
+Option: --check-signatures
+Description: Checks the API references amongst the modules of an application for consistency
+...
+----
+
+Now let's try and create the runtime image with the mismatching _customer_ and _order_ modules again:
+
+[source,shell,linenums=true]
+----
+myjlink --module-path=path/to/customer-2.0.0.jar:path/to/order-1.0.0.jar \
+  --add-modules=com.example.order \
+  --output=target/runtime-image \
+  --check-signatures
+
+[INFO] Wrote signatures for 6156 classes.
+[ERROR] /com.example.order/com/example/order/OrderService.class:5:
+  Undefined reference: void com.example.customer.CustomerService.incrementLoyaltyPoints(long, long)
+Error: Signature violations, check the logs
+----
+
+Et voilà! The mismatching signature of the `incrementLoyaltyPoints()` method was spotted and the creation of the runtime image failed.
+Now we could take action, examine our module path and make sure to feed correctly matching versions of the _customer_ and _order_ modules to the image creation process.
+
+== Summary
+
+The _link time_ phase -- added to the Java platform as part of the module system in version 9, and positioned between the well-known _compile time_ and _run-time_ phases -- opens up very interesting opportunities to apply whole-world optimizations and validations to Java applications.
+One example is the checking the API definitions and usages across the different modules of a Java application for consistency.
+By means of a custom plug-in for the jlink tool, this validation can happen at link time, allowing to detect any mismatches when assembling an application, so that this kind of error can be fixed early on, before it hits an integration test or even production environment.
+
+This is particularly interesting when using the Java module system for building large, modular monolithic applications.
+Unless you're working with custom module layers -- e.g. via the https://github.com/moditect/layrry[Layrry launcher] -- only one version of a given module may be present on the module path.
+If multiple modules of an application depend on different versions of a transitive dependency,
+link time API signature validation can help to identify inconsistencies caused by converging to a single version of that dependency.
+
+The approach can also help saving build time; when only modifying a single module of a larger modularized application,
+instead of re-compiling everything from scratch, you could just re-build that single module.
+Then, when re-creating the runtime image using this module and the other existing ones,
+you would be sure that all module API signature definitions and usages still match.
+
+The one caveat is the fact that the jlink plug-in API isn't a public, supported API of the JDK yet.
+I hope this is going to change some time soon, though.
+E.g. the next planned LTS release, Java 17, would be a great opportunity for officially adding the ability to build and use custom jlink plug-ins.
+This would open the road towards more wide-spread use of link time optimizations and validations,
+beyond those provided by the JDK and the jlink tool itself.
+
+Until then, you can explore this area starting from the source code of the https://github.com/gunnarmorling/signature-check-jlink-plugin[signature check plug-in] and its accompanying Java agent for enabling its usage with jlink.
