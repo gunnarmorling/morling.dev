@@ -382,8 +382,19 @@ Exception <span class="k">in </span>thread <span class="s2">"main"</span> java.l
 </div>
 </div>
 <div class="paragraph">
-<p>This might be surprising at first; while jlink and the module system in general put a strong emphasis on reliability and e.g. flag referenced yet missing modules, mismatching API signatures like this are not raised as an issue and will only show up as an error at application run-time.
-Needless to say that it&#8217;d be much more desirable to spot this error already early on at link time,
+<p>This might be surprising at first; while jlink and the module system in general put a strong emphasis on reliability and e.g. flag referenced yet missing modules, mismatching API signatures like this are not raised as an issue and will only show up as an error at application run-time.</p>
+</div>
+<div class="paragraph">
+<p>Indeed, when I did a quick <a href="https://twitter.com/gunnarmorling/status/1343160176946376707">non-representative poll</a> about this on Twitter,
+it turned out that more than 40% of participants were not aware of this pitfall:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<a class="image" href="https://twitter.com/gunnarmorling/status/1343160176946376707"><img src="/images/jlink_api_signature_verification_poll.png" alt="jlink api signature verification poll" width="500"></a>
+</div>
+</div>
+<div class="paragraph">
+<p>Needless to say that it&#8217;d be much more desirable to spot this error already early on at link time,
 before shipping the affected application to production, and suffering from all the negative consequences associated to that.</p>
 </div>
 </div>
@@ -714,7 +725,7 @@ The required boiler plate can be nicely encapsulated within a shell function:</p
 </pre></td><td class="code"><pre><span class="k">function </span>myjlink <span class="o">{</span> <span class="se">\</span>
   <span class="nv">$JAVA_HOME</span>/bin/jlink <span class="se">\</span>
     <span class="nt">-J-javaagent</span>:signature-check-jlink-plugin-registration-agent-1.0-SNAPSHOT.jar <span class="se">\</span>
-    <span class="nt">-J--module-path</span><span class="o">)</span>signature-check-jlink-plugin-1.0-SNAPSHOT.jar:path/to/animal-sniffer-1.19.jar:path/to/asm-9.0.jar <span class="se">\</span>
+    <span class="nt">-J--module-path</span><span class="o">=</span>signature-check-jlink-plugin-1.0-SNAPSHOT.jar:path/to/animal-sniffer-1.19.jar:path/to/asm-9.0.jar <span class="se">\</span>
     <span class="nt">-J--add-modules</span><span class="o">=</span>dev.morling.jlink.plugins.sigcheck <span class="s2">"</span><span class="nv">$@</span><span class="s2">"</span> <span class="se">\</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
@@ -759,15 +770,16 @@ Description: Checks the API references amongst the modules of an application <sp
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
-2
-3
-4
-5
-6
-7
-8
-9
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
 </pre></td><td class="code"><pre>myjlink <span class="nt">--module-path</span><span class="o">=</span>path/to/customer-2.0.0.jar:path/to/order-1.0.0.jar <span class="se">\</span>
   <span class="nt">--add-modules</span><span class="o">=</span>com.example.order <span class="se">\</span>
   <span class="nt">--output</span><span class="o">=</span>target/runtime-image <span class="se">\</span>
@@ -775,7 +787,8 @@ Description: Checks the API references amongst the modules of an application <sp
 
 <span class="o">[</span>INFO] Wrote signatures <span class="k">for </span>6156 classes.
 <span class="o">[</span>ERROR] /com.example.order/com/example/order/OrderService.class:5:
-  Undefined reference: void com.example.customer.CustomerService.incrementLoyaltyPoints<span class="o">(</span>long, long<span class="o">)</span>
+  Undefined reference: void com.example.customer.CustomerService
+      .incrementLoyaltyPoints<span class="o">(</span>long, long<span class="o">)</span>
 Error: Signature violations, check the logs
 </pre></td></tr></tbody></table></code></pre>
 </div>
