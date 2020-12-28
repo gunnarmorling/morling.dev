@@ -100,6 +100,12 @@ Exception in thread "main" java.lang.NoSuchMethodError:
 ----
 
 This might be surprising at first; while jlink and the module system in general put a strong emphasis on reliability and e.g. flag referenced yet missing modules, mismatching API signatures like this are not raised as an issue and will only show up as an error at application run-time.
+
+Indeed, when I did a quick https://twitter.com/gunnarmorling/status/1343160176946376707[non-representative poll] about this on Twitter,
+it turned out that more than 40% of participants were not aware of this pitfall:
+
+image::jlink_api_signature_verification_poll.png[link=https://twitter.com/gunnarmorling/status/1343160176946376707,width=500]
+
 Needless to say that it'd be much more desirable to spot this error already early on at link time,
 before shipping the affected application to production, and suffering from all the negative consequences associated to that.
 
@@ -316,7 +322,8 @@ myjlink --module-path=path/to/customer-2.0.0.jar:path/to/order-1.0.0.jar \
 
 [INFO] Wrote signatures for 6156 classes.
 [ERROR] /com.example.order/com/example/order/OrderService.class:5:
-  Undefined reference: void com.example.customer.CustomerService.incrementLoyaltyPoints(long, long)
+  Undefined reference: void com.example.customer.CustomerService
+      .incrementLoyaltyPoints(long, long)
 Error: Signature violations, check the logs
 ----
 
