@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Talking to Postgres Through Java 16 Unix-Domain Socket Channels - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Talking to Postgres Through Java 16 Unix-Domain Socket Channels" />
+<meta property="og:description" content="
+Reading a blog post about what&#8217;s coming up in JDK 16 recently,
+I learned that one of the new features is support for Unix domain sockets (JEP 380).
+Before Java 16, you&#8217;d have to resort to 3rd party libraries like jnr-unixsocket in order to use them.
+If you haven&#8217;t heard about Unix domain sockets before,
+they are &#34;data communications [endpoints] for exchanging data between processes executing on the same host operating system&#34;.
+Don&#8217;t be put off by the name btw.;
+Unix domain sockets are also supported by macOS and even Windows since version 10.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/talking-to-postgres-through-java-16-unix-domain-socket-channels/" />
+<meta property="article:published_time" content="2021-01-31T20:25:00+01:00" />
+<meta property="article:modified_time" content="2021-01-31T20:25:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Talking to Postgres Through Java 16 Unix-Domain Socket Channels"/>
+<meta name="twitter:description" content="
+Reading a blog post about what&#8217;s coming up in JDK 16 recently,
+I learned that one of the new features is support for Unix domain sockets (JEP 380).
+Before Java 16, you&#8217;d have to resort to 3rd party libraries like jnr-unixsocket in order to use them.
+If you haven&#8217;t heard about Unix domain sockets before,
+they are &#34;data communications [endpoints] for exchanging data between processes executing on the same host operating system&#34;.
+Don&#8217;t be put off by the name btw.;
+Unix domain sockets are also supported by macOS and even Windows since version 10.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search.gunnar-morling.workers.dev\/Prod\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Talking to Postgres Through Java 16 Unix-Domain Socket Channels</h1>
+				<div class="meta">Posted at Jan 31, 2021</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>Reading a blog post about what&#8217;s <a href="https://www.loicmathieu.fr/wordpress/en/informatique/java-16-quoi-de-neuf/">coming up in JDK 16</a> recently,
+I learned that one of the new features is support for Unix domain sockets (<a href="https://openjdk.java.net/jeps/380">JEP 380</a>).
+Before Java 16, you&#8217;d have to resort to 3rd party libraries like <a href="https://github.com/jnr/jnr-unixsocket">jnr-unixsocket</a> in order to use them.
+If you haven&#8217;t heard about <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">Unix domain sockets</a> before,
+they are "data communications [endpoints] for exchanging data between processes executing on the same host operating system".
+Don&#8217;t be put off by the name btw.;
+Unix domain sockets are also supported by macOS and even Windows since <a href="https://devblogs.microsoft.com/commandline/af_unix-comes-to-windows/">version 10</a>.</p>
+</div>
+<div class="paragraph">
+<p>Databases such as Postgres or MySQL use them for offering an alternative to TCP/IP-based connections to client applications running on the same machine as the database.
+In such scenario,
+Unix domain sockets are both more secure
+(no remote access to the database is exposed at all; file system permissions can be used for access control),
+and also <a href="https://momjian.us/main/blogs/pgblog/2012.html#June_6_2012">more efficient</a> than TCP/IP loopback connections.</p>
+</div>
+<div class="paragraph">
+<p>A common use case are proxies for accessing Cloud-based databases,
+such as as the GCP <a href="https://cloud.google.com/sql/docs/mysql/sql-proxy#proxy_startup_options">Cloud SQL Proxy</a>.
+Running on the same machine as a client application
+(e.g. in a sidecar container in case of Kubernetes deployments),
+they provide secure access to a managed database, for instance taking care of the SSL handling.</p>
+</div>
+<div class="paragraph">
+<p>My curiousity was picked and I was wondering what it&#8217;d take to make use of the new Java 16 Unix domain socket for connecting to Postgres.
+It was your regular evening during the pandemic,
+without much to do, so I thought "Let&#8217;s give this a try".
+To have a testing bed, I started with installing Postgres 13 on Fedora 33.
+Fedora might not always have the latest Postgres version packaged just yet,
+but following the official <a href="https://www.postgresql.org/download/linux/redhat/">Postgres instructions</a> it is straight-forward to install newer versions.</p>
+</div>
+<div class="paragraph">
+<p>In order to connect with user name and password via a Unix domain socket,
+one small adjustment to <em>/var/lib/pgsql/13/data/pg_hba.conf</em> is needed:
+the access <code>method</code> for the <code>local</code> connection type must be switched from the default value <code>peer</code>
+(which would try to authenticate using the operating system user name of the client process) to <code>md5</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>...
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+# "local" is for Unix domain socket connections only
+local   all             all                                     md5
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Make sure to apply the changed configuration by restarting the database
+(<code>systemctl restart postgresql-13</code>),
+and things are ready to go.</p>
+</div>
+<div class="sect1">
+<h2 id="_the_postgres_jdbc_driver">The Postgres JDBC Driver</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The first thing I looked into was the Postgres <a href="https://jdbc.postgresql.org/">JDBC driver</a>.
+Since version <a href="https://jdbc.postgresql.org/documentation/changelog.html#version_9.4-1208">9.4-1208</a> (released in 2016) it allows you to configure custom socket factories,
+a feature which explicitly was added considering Unix domain sockets.
+The driver itself doesn&#8217;t come with a socket factory implementation that&#8217;d actually support Unix domain sockets,
+but a few external open-source implementations exist.
+Most notably junixsocket provides such <a href="https://kohlschutter.github.io/junixsocket/dependency.html#PostgreSQL">socket factory</a>.</p>
+</div>
+<div class="paragraph">
+<p>Custom socket factories must extend <code>javax.net.SocketFactory</code>,
+and their fully-qualified class name needs to be specified using the <a href="https://jdbc.postgresql.org/documentation/head/connect.html#unix%20sockets">socketFactory</a> driver parameter.
+So it should be easy to create <code>SocketFactory</code> implementation based on the new <a href="https://download.java.net/java/early_access/jdk16/docs/api/java.base/java/net/UnixDomainSocketAddress.html">UnixDomainSocketAddress</a> class, right?</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">PostgresUnixDomainSocketFactory</span> <span class="kd">extends</span> <span class="nc">SocketFactory</span> <span class="o">{</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="nc">Socket</span> <span class="nf">createSocket</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+    <span class="kt">var</span> <span class="n">socket</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Socket</span><span class="o">();</span>
+    <span class="n">socket</span><span class="o">.</span><span class="na">connect</span><span class="o">(</span><span class="nc">UnixDomainSocketAddress</span><span class="o">.</span><span class="na">of</span><span class="o">(</span>
+        <span class="s">"/var/run/postgresql/.s.PGSQL.5432"</span><span class="o">));</span> <i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="k">return</span> <span class="n">socket</span><span class="o">;</span>
+  <span class="o">}</span>
+
+  <span class="c1">// other create methods ...</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Create a Unix domain socket address for the default path of the socket on Fedora and related systems</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>It compiles just fine;
+but it turns out not all socket addresses are equal,
+and <code>java.net.Socket</code> only connects to addresses of type <code>InetSocketAddress</code>
+(and the PG driver maintainers seem to sense some air of mystery around these "unusual" events, too):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>org.postgresql.util.PSQLException: Something unusual has occurred to cause the driver to fail. Please report this exception.
+  at org.postgresql.Driver.connect(Driver.java:285)
+  ...
+
+Caused by:
+java.lang.IllegalArgumentException: Unsupported address type
+  at java.base/java.net.Socket.connect(Socket.java:629)
+  at java.base/java.net.Socket.connect(Socket.java:595)
+  at dev.morling.demos.PostgresUnixDomainSocketFactory.createSocket(PostgresUnixDomainSocketFactory.java:19)
+  ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now JEP 380 solely speaks about <code>SocketChannel</code> and stays silent about <code>Socket</code>;
+but perhaps obtaining a socket from a domain socket channel works?</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="nc">Socket</span> <span class="nf">createSocket</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+  <span class="kt">var</span> <span class="n">sc</span> <span class="o">=</span> <span class="nc">SocketChannel</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="nc">UnixDomainSocketAddress</span><span class="o">.</span><span class="na">of</span><span class="o">(</span>
+      <span class="s">"/var/run/postgresql/.s.PGSQL.5432"</span><span class="o">));</span>
+  <span class="k">return</span> <span class="n">sc</span><span class="o">.</span><span class="na">socket</span><span class="o">();</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Nope, no luck either:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>java.lang.UnsupportedOperationException: Not supported
+  at java.base/sun.nio.ch.SocketChannelImpl.socket(SocketChannelImpl.java:226)
+  at dev.morling.demos.PostgresUnixDomainSocketFactory.createSocket(PostgresUnixDomainSocketFactory.java:17)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Indeed it looks like JEP 380 is concerning itself only with the non-blocking <code>SocketChannel</code> API,
+while users of the blocking <code>Socket</code> API do not get to benefit from it.
+It should be possible to create a custom <code>Socket</code> implementation based on the socket channel support of JEP 380,
+but that&#8217;s going beyond the scope of my little exploration.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_vert_x_postgres_client">The Vert.x Postgres Client</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If the Postgres JDBC driver doesn&#8217;t easily benefit from the JEP,
+what about other Java Postgres clients then?
+There are several non-blocking options,
+including the <a href="https://vertx.io/docs/vertx-pg-client/java/">Vert.x Postgres client</a> and <a href="https://github.com/pgjdbc/r2dbc-postgresql">R2DBC</a>.
+The former is used to bring Reactive capabilities for Postgres into the Quarkus stack, too,
+so I turned my attention to it.</p>
+</div>
+<div class="paragraph">
+<p>Now the Vert.x Postgres Client already has support for Unix domain sockets,
+by means of adding the right Netty native transport dependency to your project.
+So purely from functionality perspective, there&#8217;s not that much to be gained here.
+But being able to use domain sockets also with the default NIO transport would still be nice,
+as it means one less dependency to take care of.
+So I dug a bit into the code of the Postgres client and Vert.x itself and figured out, that two things needed adjustment:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The NIO-based <a href="https://github.com/eclipse-vertx/vert.x/blob/master/src/main/java/io/vertx/core/net/impl/transport/Transport.java"><code>Transport</code></a> class of Vert.x needs to learn about the fact that <code>SocketChannel</code> now also supports Unix domain sockets (currently, an exception is raised when trying to use them without a Netty native transport)</p>
+</li>
+<li>
+<p>Netty&#8217;s <a href="https://github.com/netty/netty/blob/4.1/transport/src/main/java/io/netty/channel/socket/nio/NioSocketChannel.java"><code>NioSocketChannel</code></a> needs some small changes, as it tries to obtain a <code>Socket</code> from the underlying <code>SocketChannel</code>, which doesn&#8217;t work for domain sockets as we&#8217;ve seen above</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Step 1 was quickly done by creating a custom sub-class of the default <code>Transport</code> class.
+Two methods needed changes:
+<code>channelFactory()</code> for obtaining a factory for the actual Netty transport channel,
+and <code>convert()</code> for converting a Vert.x <code>SocketAddress</code> into a NIO one:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UnixDomainTransport</span> <span class="kd">extends</span> <span class="nc">Transport</span> <span class="o">{</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="nc">ChannelFactory</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="nc">Channel</span><span class="o">&gt;</span> <span class="nf">channelFactory</span><span class="o">(</span>
+        <span class="kt">boolean</span> <span class="n">domainSocket</span><span class="o">)</span> <span class="o">{</span>
+
+    <span class="k">if</span> <span class="o">(!</span><span class="n">domainSocket</span><span class="o">)</span> <span class="o">{</span> <i class="conum" data-value="1"></i><b>(1)</b>
+      <span class="k">return</span> <span class="kd">super</span><span class="o">.</span><span class="na">channelFactory</span><span class="o">(</span><span class="n">domainSocket</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="k">else</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+          <span class="k">try</span> <span class="o">{</span>
+            <span class="kt">var</span> <span class="n">sc</span> <span class="o">=</span> <span class="nc">SocketChannel</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="nc">StandardProtocolFamily</span><span class="o">.</span><span class="na">UNIX</span><span class="o">);</span> <i class="conum" data-value="2"></i><b>(2)</b>
+            <span class="k">return</span> <span class="k">new</span> <span class="nf">UnixDomainSocketChannel</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="n">sc</span><span class="o">);</span>
+          <span class="o">}</span>
+          <span class="k">catch</span><span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
+          <span class="o">}</span>
+        <span class="o">};</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="nc">SocketAddress</span> <span class="nf">convert</span><span class="o">(</span><span class="n">io</span><span class="o">.</span><span class="na">vertx</span><span class="o">.</span><span class="na">core</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">SocketAddress</span> <span class="n">address</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(!</span><span class="n">address</span><span class="o">.</span><span class="na">isDomainSocket</span><span class="o">())</span> <span class="o">{</span> <i class="conum" data-value="3"></i><b>(3)</b>
+      <span class="k">return</span> <span class="kd">super</span><span class="o">.</span><span class="na">convert</span><span class="o">(</span><span class="n">address</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="k">else</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="nc">UnixDomainSocketAddress</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">address</span><span class="o">.</span><span class="na">path</span><span class="o">());</span> <i class="conum" data-value="4"></i><b>(4)</b>
+    <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Delegate creation of non domain socket factories to the regular NIO transport implementation</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>This channel factory returns instances of our own <code>UnixDomainSocketChannel</code> type (see below), passing a socket channel based on the new <code>UNIX</code> protocol family</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Delegate conversion of non domain socket addresses to the regular NIO transport implementation</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Create a <code>UnixDomainSocketAddress</code> for the socket&#8217;s file system path</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Now let&#8217;s take a look at the <code>UnixDomainSocketChannel</code> class.
+I was hoping to get away again with creating a sub-class of the NIO-based implementation,
+<code>io.netty.channel.socket.nio.NioSocketChannel</code> in this case.
+Unfortunately, though, the <code>NioSocketChannel</code> constructor invokes the taboo <code>SocketChannel#socket()</code> method.
+Of course that&#8217;d not be a problem when doing this change in Netty itself,
+but for my little exploration I ended up copying the class and doing the required adjustments in that copy.
+I ended up doing two small changes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Avoiding the call to <code>SocketChannel#socket()</code> in the constructor:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="nf">UnixDomainSocketChannel</span><span class="o">(</span><span class="nc">Channel</span> <span class="n">parent</span><span class="o">,</span> <span class="nc">SocketChannel</span> <span class="n">socket</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kd">super</span><span class="o">(</span><span class="n">parent</span><span class="o">,</span> <span class="n">socket</span><span class="o">);</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">NioSocketChannelConfig</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="k">new</span> <span class="nc">Socket</span><span class="o">());</span> <i class="conum" data-value="1"></i><b>(1)</b>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Passing a dummy socket instead of <code>socket.socket()</code>, it shouldn&#8217;t be accessed in our case anyways</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>A few methods call the <code>Socket</code> methods <code>isInputShutdown()</code> and <code>isOutputShutdown()</code>;
+those should be possible to be by-passed by keeping track of the two shutdown flags ourselves</p>
+</li>
+<li>
+<p>As I was creating the <code>UnixDomainSocketChannel</code> in my own namespace instead of Netty&#8217;s packages,
+a few references to the non-public method <code>NioChannelOption#getOptions()</code> needed commenting out,
+which again shouldn&#8217;t be relevant for the domain socket case</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>You can find the complete change in <a href="https://github.com/gunnarmorling/unix-domain-socket-poc/commit/9d8502f5c47cb59162e325640db54672f1ed8b68">this commit</a>.
+All in all, not exactly an artisanal piece of software engineering,
+but the little hack seemed good enough at least for taking a quick glimpse at the new domain socket support.
+Of course a real implementation could be done much more properly within the Netty project itself.</p>
+</div>
+<div class="paragraph">
+<p>So it was time to give this thing a test ride.
+As we need to configure the custom <code>Transport</code> implementation,
+retrieval of a <code>PgPool</code> instance is a tad more verbose than usual:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="nc">PgConnectOptions</span> <span class="n">connectOptions</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">PgConnectOptions</span><span class="o">()</span>
+    <span class="o">.</span><span class="na">setPort</span><span class="o">(</span><span class="mi">5432</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="o">.</span><span class="na">setHost</span><span class="o">(</span><span class="s">"/var/run/postgresql"</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">setDatabase</span><span class="o">(</span><span class="s">"test_db"</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">setUser</span><span class="o">(</span><span class="s">"test_user"</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">setPassword</span><span class="o">(</span><span class="s">"topsecret!"</span><span class="o">);</span>
+
+<span class="nc">PoolOptions</span> <span class="n">poolOptions</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">PoolOptions</span><span class="o">()</span>
+    <span class="o">.</span><span class="na">setMaxSize</span><span class="o">(</span><span class="mi">5</span><span class="o">);</span>
+
+<span class="nc">VertxFactory</span> <span class="n">fv</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">VertxFactory</span><span class="o">();</span>
+<span class="n">fv</span><span class="o">.</span><span class="na">transport</span><span class="o">(</span><span class="k">new</span> <span class="nc">UnixDomainTransport</span><span class="o">());</span> <i class="conum" data-value="2"></i><b>(2)</b>
+<span class="nc">Vertx</span> <span class="n">v</span> <span class="o">=</span> <span class="n">fv</span><span class="o">.</span><span class="na">vertx</span><span class="o">();</span>
+
+<span class="nc">PgPool</span> <span class="n">client</span> <span class="o">=</span> <span class="nc">PgPool</span><span class="o">.</span><span class="na">pool</span><span class="o">(</span><span class="n">v</span><span class="o">,</span> <span class="n">connectOptions</span><span class="o">,</span> <span class="n">poolOptions</span><span class="o">);</span> <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The Vert.x Postgres client constructs the domain socket path from the given port and path (via <code>setHost()</code>);
+the full path will be <em>/var/run/postgresql/.s.PGSQL.5432</em>, just as above</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Construct a <code>Vertx</code> instance with the custom transport class</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Obtain a PgPool instance using the customized <code>Vertx</code> instance</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>We then can can use the client instance as usual,
+only that it now will connect to Postgres using the domain socket instead of via TCP/IP.
+All this solely using the default NIO-based transports,
+without the need for adding any Netty native dependency, such as its epoll-based transport.</p>
+</div>
+<div class="paragraph">
+<p>I haven&#8217;t done any real performance benchmark at this point;
+in a quick ad-hoc test of executing a trivial <code>SELECT</code> query on a primay key 200,000 times,
+I observed a latency of ~0.11 ms when using Unix domain sockets&#8201;&#8212;&#8201;with both, <em>netty-transport-native-epoll</em> and JDK 16 Unix domain sockets&#8201;&#8212;&#8201;and ~0.13 ms when connecting via TCP/IP.
+So definitely a significant improvement which can be a deciding factor for low-latency use cases,
+though in comparison to <a href="https://www.revsys.com/12days/unix-sockets/">other reports</a>,
+the latency reduction of ~15% appears to be at the lower end of the spectrum.</p>
+</div>
+<div class="paragraph">
+<p>Some more sincere performance evaluation should be done,
+for instance also examining the impact on garbage collection.
+And it goes without saying that you should only trust your own measurements,
+on your own hardware, based on your specific workloads,
+in order to decide whether you would benefit from domain sockets or not.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_other_use_cases">Other Use Cases</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Database connectivity is just one of the use cases for domain sockets;
+highly performant local inter-process communication comes in handy for all kinds of use cases.
+One which I find particularly intriguing is the creation of modular applications based on a multi-process architecture.</p>
+</div>
+<div class="paragraph">
+<p>When thinking of classic <del>Java</del> Jakarta EE application servers for instance,
+you could envision a model where both the application server and each deployment are separate processes,
+communicating through domain sockets.
+This would have some interesting advantages, such as stricter isolation
+(so for instance an <code>OutOfMemoryError</code> in one deployed application won&#8217;t impact others) and re-deployments without any risk of classloader leaks, as the JVM of an deployment would be restarted.
+On the downside, you&#8217;d be facing a higher overall memory consumption
+(although that can at least partly be mitigated through <a href="/blog/smaller-faster-starting-container-images-with-jlink-and-appcds/">class data sharing</a>, which also works across JVM boundaries) and more costly (remote) method invocations between deployments.</p>
+</div>
+<div class="paragraph">
+<p>Now the application server model has fallen out of favour for various reasons,
+but such multi-process design still is very interesting,
+for instance for building modular applications that should expose a single web endpoint,
+while being assembled from a set of processes which are developed and deployed by several, independent teams.
+Another use case would be desktop applications that are made up of a set of processes for isolation purposes,
+as it&#8217;s e.g. done by most web browsers noawadays with distinct processes for separate tabs.
+JEP 380 should facilitate this model when creating Java applications,
+e.g. considering rich clients built with JavaFX.</p>
+</div>
+<div class="paragraph">
+<p>Another, really interesting feature of Unix domain sockets is the ability to transfer open file descriptors from one process to another.
+This allows for <a href="https://copyconstruct.medium.com/file-descriptor-transfer-over-unix-domain-sockets-dcbbf5b3b6ec">non-disruptive upgrades</a> of server applications,
+without dropping any open TCP connections.
+This technique is used for instance by Envoy Proxy for <a href="https://blog.envoyproxy.io/envoy-hot-restart-1d16b14555b5">applying configuration changes</a>:
+upon a configuration change,
+a second Envoy instance with the new configuration is started up,
+takes over the active sockets from the previous instance and after some "draining period" triggers a shutdown of the old instance.
+This approach enables a truly immutable application design within Envoy itself,
+with all its advantages,
+without the need for in-process configuration reloads.
+I highly recommend to read the two posts linked above, they are super-interesting.</p>
+</div>
+<div class="paragraph">
+<p>Unfortunately, JEP 380 <a href="https://www.reddit.com/r/java/comments/fpi92i/jep_380_unixdomain_socket_channels/fllc1p8">doesn&#8217;t seem to support</a> file descriptor transfers.
+So for this kind of architecture, you&#8217;d still have to refrain to the aforementioned junixsocket library,
+which explicitly lists <a href="https://kohlschutter.github.io/junixsocket/filedescriptors.html">file transcriptor transfer</a> support as one of its features.
+While you <a href="https://www.gamlor.info/posts-output/2019-10-15-java-file-descriptor-rant/en/">couldn&#8217;t take advantage</a> of that using Java&#8217;s NIO API,
+it should be doable using alternative networking frameworks such as <a href="https://netty.io/">Netty</a>.
+Probably a topic for another blog post on another one of those pandemic weekends ;)</p>
+</div>
+<div class="paragraph">
+<p>And that completes my small exploration of Java 16&#8217;s support for Unix domain sockets.
+If you want to do your own experiments of using them to connect to Postgres,
+make sure to install the latest JDK 16 EA build and grab the source code of my experimentation from <a href="https://github.com/gunnarmorling/unix-domain-socket-poc/">this GitHub repo</a>.</p>
+</div>
+<div class="paragraph">
+<p>It&#8217;d be my hope that frameworks like Netty and Vert.x make use of this JDK feature fairly quickly,
+as only a small amount of code changes is required,
+and users get to benefit from the higher performance of domain sockets without having to pull in any additional dependencies.
+In order to keep compatibility with Java versions prior to 16,
+<a href="https://in.relation.to/2017/02/13/building-multi-release-jars-with-maven/">multi-release JARs</a> offer one avenue for integrating this feature.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread"></div>
+<script type="text/javascript">
+	(function () {
+		
+		
+		if (window.location.hostname == "localhost")
+			return;
+
+		var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+		var disqus_shortname = 'morlingdev';
+		dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+		(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+	})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by
+		Disqus.</a></noscript>
+<a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2021 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
