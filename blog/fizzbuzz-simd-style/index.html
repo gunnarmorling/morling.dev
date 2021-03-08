@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>FizzBuzz – SIMD Style! - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="FizzBuzz – SIMD Style!" />
+<meta property="og:description" content="
+Java 16 is around the corner, so there&#8217;s no better time than now for learning more about the features which the new version will bring.
+After exploring the support for Unix domain sockets a while ago,
+I&#8217;ve lately been really curious about the incubating Vector API,
+as defined by JEP 338.
+
+
+Vectors?!?
+Of course this is not about renewing the ancient Java collection types like java.util.Vector
+(&lt;insert some pun about this here&gt;),
+but rather about an API which lets Java delopers take advantages of the vector calculation capabilities you can find in most CPUs these days.
+Now I&#8217;m by no means an expert on low-level programming leveraging specific CPU instructions,
+but exactly that&#8217;s why I hope to make the case with this post that the new Vector API makes these capabilities approachable to a wide audience of Java programmers.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/fizzbuzz-simd-style/" />
+<meta property="article:published_time" content="2021-03-08T16:25:00+01:00" />
+<meta property="article:modified_time" content="2021-03-08T16:25:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="FizzBuzz – SIMD Style!"/>
+<meta name="twitter:description" content="
+Java 16 is around the corner, so there&#8217;s no better time than now for learning more about the features which the new version will bring.
+After exploring the support for Unix domain sockets a while ago,
+I&#8217;ve lately been really curious about the incubating Vector API,
+as defined by JEP 338.
+
+
+Vectors?!?
+Of course this is not about renewing the ancient Java collection types like java.util.Vector
+(&lt;insert some pun about this here&gt;),
+but rather about an API which lets Java delopers take advantages of the vector calculation capabilities you can find in most CPUs these days.
+Now I&#8217;m by no means an expert on low-level programming leveraging specific CPU instructions,
+but exactly that&#8217;s why I hope to make the case with this post that the new Vector API makes these capabilities approachable to a wide audience of Java programmers.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search.gunnar-morling.workers.dev\/Prod\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">FizzBuzz – SIMD Style!</h1>
+				<div class="meta">Posted at Mar 8, 2021</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>Java 16 is around the corner, so there&#8217;s no better time than now for learning more about the features which the new version will bring.
+After exploring the support for <a href="/blog/talking-to-postgres-through-java-16-unix-domain-socket-channels/">Unix domain sockets</a> a while ago,
+I&#8217;ve lately been really curious about the incubating Vector API,
+as defined by <a href="https://openjdk.java.net/jeps/338">JEP 338</a>.</p>
+</div>
+<div class="paragraph">
+<p><em>Vectors?!?</em>
+Of course this is not about renewing the ancient Java collection types like <code>java.util.Vector</code>
+(&lt;insert some pun about this here&gt;),
+but rather about an API which lets Java delopers take advantages of the vector calculation capabilities you can find in most CPUs these days.
+Now I&#8217;m by no means an expert on low-level programming leveraging specific CPU instructions,
+but exactly that&#8217;s why I hope to make the case with this post that the new Vector API makes these capabilities approachable to a wide audience of Java programmers.</p>
+</div>
+<div class="sect1">
+<h2 id="_whats_simd_anyways">What&#8217;s SIMD Anyways?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before diving into a specific example,
+it&#8217;s worth pointing out why that API is so interesting, and what it could be used for.
+In a nutshell, CPU architectures like x86 or AArch64 provide extensions to their instruction sets which allow you to apply a single operation to multiple data items at once
+(<a href="https://en.wikipedia.org/wiki/SIMD">SIMD</a>&#8201;&#8212;&#8201;single instruction, multiple data).
+If a specific computing problem can be solved using an algorithm that lends itself to such parallelization,
+substantial performance improvements can be gained.
+Examples for such SIMD instruction set extensions include <a href="https://en.wikipedia.org/wiki/Streaming_SIMD_Extensions">SSE</a> and
+<a href="https://en.wikipedia.org/wiki/Advanced_Vector_Extensions">AVX</a> for x64,
+and <a href="https://en.wikipedia.org/wiki/ARM_architecture#Advanced_SIMD_(Neon)">Neon</a> of AArch64 (Arm).</p>
+</div>
+<div class="paragraph">
+<p>As such, they complement other means of compute parallelization:
+scaling out across multiple machines which collaborate in a cluster,
+and multi-threaded programming.
+Unlike these though, vectorized computations are done within the scope of an individual method,
+e.g. operating on multiple elements of an array at once.</p>
+</div>
+<div class="paragraph">
+<p>So far, there was no way for Java developers to directly work with such SIMD instructions.
+While you can use <a href="https://stackoverflow.blog/2020/07/08/improving-performance-with-simd-intrinsics-in-three-use-cases/">SIMD intrinsics</a> in languages closer to the metal such as C/C++,
+no such option exists in Java so far.
+Note this doesn&#8217;t mean Java wouldn&#8217;t take advantage of SIMD at all:
+the JIT compiler can <a href="http://daniel-strecker.com/blog/2020-01-14_auto_vectorization_in_java/"><em>auto-vectorize</em></a> code in specific situations,
+i.e. transforming code from a loop into vectorized code.
+Whether that&#8217;s possible or not isn&#8217;t <a href="https://github.com/Teradata/presto-tech/blob/master/blogs/simd.md">easy to determine</a>, though;
+small changes to a loop which the compiler was able to vectorize before, may lead to scalar execution,
+resulting in a performance regression.</p>
+</div>
+<div class="paragraph">
+<p>JEP 338 aims to improve this situation:
+introducing a portable vector computation API,
+it allows Java developers to benefit from SIMD execution by means of explicitly vectorized algorithms.
+Unlike C/C++ style intrinsics, this API will be mapped automatically by the C2 JIT compiler to the corresponding instruction set of the underlying platform,
+falling back to scalar execution if the platform doesn&#8217;t provide the required capabilities.
+A pretty sweet deal, if you ask me!</p>
+</div>
+<div class="paragraph">
+<p>Now, why would you be interested in this?
+Doesn&#8217;t "vector calculation" sound an awful lot like  mathematics-heavy, low-level algorithms,
+which you don&#8217;t tend to find that much in your typical Java enterprise applications?
+I&#8217;d say, yes and no.
+Indeed it may not be that beneficial for say a CRUD application copying some data from left to right.
+But there are many interesting applications in areas like image processing, AI, parsing,
+(<a href="https://github.com/simdjson/simdjson">SIMD-based JSON parsing</a> a prominently discussed example),
+text processing,
+<a href="https://wiki.mozilla.org/SIMD/Uses/Conversion">data type conversions</a>, and many others.
+In that regard, I&#8217;d expect that JEP 338 will pave the path for using Java in many interesting use cases,
+where it may not be the first choice today.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_vectorizing_fizzbuzz">Vectorizing FizzBuzz</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To see how the Vector API can help with improving the performance of some calculation,
+let&#8217;s consider FizzBuzz.
+Originally, <a href="https://en.wikipedia.org/wiki/Fizz_buzz">FizzBuzz is a game</a> to help teaching childen division;
+but interestingly, it also serves as entry-level interview question for hiring software engineers in some places.
+In any case, it&#8217;s a nice example for exploring how some calculation can benefit from vectorization.
+The rules of FizzBuzz are simple:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Numbers are counted and printed out: 1, 2, 3, &#8230;&#8203;</p>
+</li>
+<li>
+<p>If a number if divisible by 3, instead of printing the number, print "Fizz"</p>
+</li>
+<li>
+<p>If a number if divisible by 5, print "Buzz"</p>
+</li>
+<li>
+<p>If a number if divisible by 3 <em>and</em> 5, print "FizzBuzz"</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>As the Vector API concerns itself with numeric values instead of strings, rather than "Fizz", "Buzz", and "FizzBuzz",
+we&#8217;re going to emit -1, -2, and -3, respectively.
+The input of the program will be an array with the numbers from 0 &#8230;&#8203; 256,
+the output an array with the FizzBuzz sequence:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>1, 2, -1, 4, -2, -1, 7, 8, -1, -2, 11, -1, 13, 14, -3, 16, ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The task is easily solved using a plain sequential <code>for</code> loop:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="no">FIZZ</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">;</span>
+<span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="no">BUZZ</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span><span class="o">;</span>
+<span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="no">FIZZ_BUZZ</span> <span class="o">=</span> <span class="o">-</span><span class="mi">3</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kt">int</span><span class="o">[]</span> <span class="nf">sequentialFizzBuzz</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">values</span><span class="o">)</span> <span class="o">{</span>
+  <span class="kt">int</span><span class="o">[]</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="n">values</span><span class="o">.</span><span class="na">length</span><span class="o">];</span>
+
+  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">values</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">value</span> <span class="o">=</span> <span class="n">values</span><span class="o">[</span><span class="n">i</span><span class="o">];</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">value</span> <span class="o">%</span> <span class="mi">3</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">value</span> <span class="o">%</span> <span class="mi">5</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span> <i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="n">result</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="no">FIZZ_BUZZ</span><span class="o">;</span>
+      <span class="o">}</span>
+      <span class="k">else</span> <span class="o">{</span>
+        <span class="n">result</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="no">FIZZ</span><span class="o">;</span> <i class="conum" data-value="2"></i><b>(2)</b>
+      <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">value</span> <span class="o">%</span> <span class="mi">5</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">result</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="no">BUZZ</span><span class="o">;</span> <i class="conum" data-value="3"></i><b>(3)</b>
+    <span class="o">}</span>
+    <span class="k">else</span> <span class="o">{</span>
+      <span class="n">result</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">value</span><span class="o">;</span> <i class="conum" data-value="4"></i><b>(4)</b>
+    <span class="o">}</span>
+  <span class="o">}</span>
+
+  <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The current number is divisible by 3 <em>and</em> 5: emit <code>FIZZ_BUZZ</code> (-3)</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The current number is divisible by 3: emit <code>FIZZ</code> (-1)</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The current number is divisible by 5: emit <code>BUZZ</code> (-2)</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The current number is divisible by neither 3 nor 5: emit the number itself</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>As a baseline, this implementation can be executed ~2.2M times per second in a simple <a href="https://openjdk.java.net/projects/code-tools/jmh/">JMH</a> benchmark running on my Macbook Pro 2019,
+with a 2.6 GHz 6-Core Intel Core i7 CPU:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>Benchmark                              (arrayLength)   Mode  Cnt        Score        Error  Units
+<strong>FizzBuzzBenchmark.sequentialFizzBuzz            256  thrpt    5  2204774,792 ±  76581,374  ops/s</strong></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now let&#8217;s see how this calculation could be vectorized and what performance improvements can be gained by doing so.
+When looking at the incubating <a href="https://download.java.net/java/early_access/jdk16/docs/api/jdk.incubator.vector/jdk/incubator/vector/package-summary.html">Vector API</a>,
+you may be overwhelmed at first by its large API surface.
+But it&#8217;s becoming manageable once you realize that all the types like <code>IntVector</code>, <code>LongVector</code>, etc. essentially expose the same set of methods,
+only specific for each of the supported data types
+(and indeed, as per the JavaDoc, all these classes were not hand-written by some poor soul, but generated, from some sort of parameterized template supposedly).</p>
+</div>
+<div class="paragraph">
+<p>Amongst the plethora of API methods, there is no modulo operation, though
+(which makes sense, as for instance there isn&#8217;t such instruction in any of the x86 SIMD extensions).
+So what could we do to solve the FizzBuzz task?
+After skimming through the API for some time, the method <a href="https://download.java.net/java/early_access/jdk16/docs/api/jdk.incubator.vector/jdk/incubator/vector/IntVector.html#blend(jdk.incubator.vector.Vector,jdk.incubator.vector.VectorMask))"><code>blend​(Vector&lt;Integer&gt; v, VectorMask&lt;Integer&gt; m)</code></a> caught my attention:</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>Replaces selected lanes of this vector with corresponding lanes from a second input vector under the control of a mask. [&#8230;&#8203;]</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>For any lane set in the mask, the new lane value is taken from the second input vector, and replaces whatever value was in the that lane of this vector.</p>
+</li>
+<li>
+<p>For any lane unset in the mask, the replacement is suppressed and this vector retains the original value stored in that lane.</p>
+</li>
+</ul>
+</div>
+</blockquote>
+</div>
+<div class="paragraph">
+<p>This sounds pretty useful;
+The pattern of expected -1, -2, and -3 values repeats every 15 input values.
+So we can "pre-calculate" that pattern once and persist it in form of vectors and masks for the <code>blend()</code> method.
+While stepping through the input array,
+the right vector and mask are obtained based on the current position and are used with <code>blend()</code> in order to mark the values divisible by 3, 5, and 15
+(another option could be <a href="https://download.java.net/java/early_access/jdk16/docs/api/jdk.incubator.vector/jdk/incubator/vector/IntVector.html#min(jdk.incubator.vector.Vector)"><code>min(Vector&lt;Integer&gt; v)</code></a>,
+but I decided against it, as we&#8217;d need some magic value for representing those numbers which should be emitted as-is).</p>
+</div>
+<div class="paragraph">
+<p>Here is a visualization of the approach, assuming a vector length of eight elements ("lanes"):</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/simd_fizzbuzz.png" alt="Determining FizzBuzz Values Via Vector Blending">
+</div>
+</div>
+<div class="paragraph">
+<p>So let&#8217;s see how we can implement this using the Vector API.
+The mask and second input vector repeat every 120 characters (least common multiple of 8 and 15),
+so 15 masks and vectors need to be determined.
+They can be created like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">FizzBuzz</span> <span class="o">{</span>
+
+  <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">VectorSpecies</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span> <span class="no">SPECIES</span> <span class="o">=</span>
+      <span class="nc">IntVector</span><span class="o">.</span><span class="na">SPECIES_256</span><span class="o">;</span> <i class="conum" data-value="1"></i><b>(1)</b>
+
+  <span class="kd">private</span> <span class="kd">final</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">VectorMask</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;&gt;</span> <span class="n">resultMasks</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;(</span><span class="mi">15</span><span class="o">);</span>
+  <span class="kd">private</span> <span class="kd">final</span> <span class="nc">IntVector</span><span class="o">[]</span> <span class="n">resultVectors</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">IntVector</span><span class="o">[</span><span class="mi">15</span><span class="o">];</span>
+
+  <span class="kd">public</span> <span class="nf">FizzBuzz</span><span class="o">()</span> <span class="o">{</span>
+    <span class="nc">List</span><span class="o">&lt;</span><span class="nc">VectorMask</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;&gt;</span> <span class="n">threes</span> <span class="o">=</span> <span class="nc">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span> <i class="conum" data-value="2"></i><b>(2)</b>
+        <span class="nc">VectorMask</span><span class="o">.&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span><span class="n">fromLong</span><span class="o">(</span><span class="no">SPECIES</span><span class="o">,</span> <span class="mb">0b00100100</span><span class="o">),</span>
+        <span class="nc">VectorMask</span><span class="o">.&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span><span class="n">fromLong</span><span class="o">(</span><span class="no">SPECIES</span><span class="o">,</span> <span class="mb">0b01001001</span><span class="o">),</span>
+        <span class="nc">VectorMask</span><span class="o">.&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span><span class="n">fromLong</span><span class="o">(</span><span class="no">SPECIES</span><span class="o">,</span> <span class="mb">0b10010010</span><span class="o">)</span>
+    <span class="o">);</span>
+
+    <span class="nc">List</span><span class="o">&lt;</span><span class="nc">VectorMask</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;&gt;</span> <span class="n">fives</span> <span class="o">=</span> <span class="nc">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span> <i class="conum" data-value="3"></i><b>(3)</b>
+        <span class="nc">VectorMask</span><span class="o">.&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span><span class="n">fromLong</span><span class="o">(</span><span class="no">SPECIES</span><span class="o">,</span> <span class="mb">0b00010000</span><span class="o">),</span>
+        <span class="nc">VectorMask</span><span class="o">.&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span><span class="n">fromLong</span><span class="o">(</span><span class="no">SPECIES</span><span class="o">,</span> <span class="mb">0b01000010</span><span class="o">),</span>
+        <span class="nc">VectorMask</span><span class="o">.&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span><span class="n">fromLong</span><span class="o">(</span><span class="no">SPECIES</span><span class="o">,</span> <span class="mb">0b00001000</span><span class="o">),</span>
+        <span class="nc">VectorMask</span><span class="o">.&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span><span class="n">fromLong</span><span class="o">(</span><span class="no">SPECIES</span><span class="o">,</span> <span class="mb">0b00100001</span><span class="o">),</span>
+        <span class="nc">VectorMask</span><span class="o">.&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span><span class="n">fromLong</span><span class="o">(</span><span class="no">SPECIES</span><span class="o">,</span> <span class="mb">0b10000100</span><span class="o">)</span>
+    <span class="o">);</span>
+
+    <span class="k">for</span><span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">15</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span> <i class="conum" data-value="4"></i><b>(4)</b>
+      <span class="nc">VectorMask</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">threeMask</span> <span class="o">=</span> <span class="n">threes</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">%</span><span class="mi">3</span><span class="o">);</span>
+      <span class="nc">VectorMask</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">fiveMask</span> <span class="o">=</span> <span class="n">fives</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">%</span><span class="mi">5</span><span class="o">);</span>
+
+      <span class="n">resultMasks</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">threeMask</span><span class="o">.</span><span class="na">or</span><span class="o">(</span><span class="n">fm</span><span class="o">));</span> <i class="conum" data-value="5"></i><b>(5)</b>
+      <span class="n">resultVectors</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="nc">IntVector</span><span class="o">.</span><span class="na">zero</span><span class="o">(</span><span class="no">SPECIES</span><span class="o">)</span> <i class="conum" data-value="6"></i><b>(6)</b>
+          <span class="o">.</span><span class="na">blend</span><span class="o">(</span><span class="no">FIZZ</span><span class="o">,</span> <span class="n">threeMask</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">blend</span><span class="o">(</span><span class="no">BUZZ</span><span class="o">,</span> <span class="n">fiveMask</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">blend</span><span class="o">(</span><span class="no">FIZZ_BUZZ</span><span class="o">,</span> <span class="n">threeMask</span><span class="o">.</span><span class="na">and</span><span class="o">(</span><span class="n">fiveMask</span><span class="o">));</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>A vector species describes the combination of an vector element type (in this case <code>Integer</code>) and a vector <em>shape</em> (in this case 256 bit); i.e. here we&#8217;re going to deal with vectors that hold 8 32 bit int values</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Vector masks describing the numbers divisible by three (read the bit values from right to left)</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Vector masks describing the numbers divisible by five</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Let&#8217;s create the fifteen required result masks and vectors</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>A value in the output array should be set to another value if it&#8217;s divisible by three or five</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Set the value to -1, -2, or -3, depending on whether its divisible by three, five, or fifteen, respectively; otherwise set it to the corresponding value from the input array</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>With this infrastructure in place, we can implement the actual method for calculating the FizzBuzz values for an arbitrarily long input array:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="kt">int</span><span class="o">[]</span> <span class="nf">simdFizzBuzz</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">values</span><span class="o">)</span> <span class="o">{</span>
+  <span class="kt">int</span><span class="o">[]</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="n">values</span><span class="o">.</span><span class="na">length</span><span class="o">];</span>
+  <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+  <span class="kt">int</span> <span class="n">upperBound</span> <span class="o">=</span> <span class="no">SPECIES</span><span class="o">.</span><span class="na">loopBound</span><span class="o">(</span><span class="n">values</span><span class="o">.</span><span class="na">length</span><span class="o">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
+
+  <span class="k">for</span> <span class="o">(;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">upperBound</span><span class="o">;</span> <span class="n">i</span> <span class="o">+=</span> <span class="no">SPECIES</span><span class="o">.</span><span class="na">length</span><span class="o">())</span> <span class="o">{</span> <i class="conum" data-value="2"></i><b>(2)</b>
+      <span class="nc">IntVector</span> <span class="n">chunk</span> <span class="o">=</span> <span class="nc">IntVector</span><span class="o">.</span><span class="na">fromArray</span><span class="o">(</span><span class="no">SPECIES</span><span class="o">,</span> <span class="n">values</span><span class="o">,</span> <span class="n">i</span><span class="o">);</span> <i class="conum" data-value="3"></i><b>(3)</b>
+      <span class="kt">int</span> <span class="n">maskIdx</span> <span class="o">=</span> <span class="o">(</span><span class="n">i</span><span class="o">/</span><span class="no">SPECIES</span><span class="o">.</span><span class="na">length</span><span class="o">())%</span><span class="mi">15</span><span class="o">;</span> <i class="conum" data-value="4"></i><b>(4)</b>
+      <span class="nc">IntVector</span> <span class="n">fizzBuzz</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="na">blend</span><span class="o">(</span><span class="n">resultValues</span><span class="o">[</span><span class="n">maskIdx</span><span class="o">],</span>
+          <span class="n">resultMasks</span><span class="o">[</span><span class="n">maskIdx</span><span class="o">]);</span> <i class="conum" data-value="5"></i><b>(5)</b>
+
+      <span class="n">fizzBuzz</span><span class="o">.</span><span class="na">intoArray</span><span class="o">(</span><span class="n">result</span><span class="o">,</span> <span class="n">i</span><span class="o">);</span> <i class="conum" data-value="6"></i><b>(6)</b>
+  <span class="o">}</span>
+
+  <span class="k">for</span> <span class="o">(;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">values</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span> <i class="conum" data-value="7"></i><b>(7)</b>
+      <span class="kt">int</span> <span class="n">value</span> <span class="o">=</span> <span class="n">values</span><span class="o">[</span><span class="n">i</span><span class="o">];</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">value</span> <span class="o">%</span> <span class="mi">3</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+          <span class="k">if</span> <span class="o">(</span><span class="n">value</span> <span class="o">%</span> <span class="mi">5</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+              <span class="n">result</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="no">FIZZ_BUZZ</span><span class="o">;</span>
+          <span class="o">}</span>
+          <span class="k">else</span> <span class="o">{</span>
+              <span class="n">result</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="no">FIZZ</span><span class="o">;</span>
+          <span class="o">}</span>
+      <span class="o">}</span>
+      <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">value</span> <span class="o">%</span> <span class="mi">5</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+          <span class="n">result</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="no">BUZZ</span><span class="o">;</span>
+      <span class="o">}</span>
+      <span class="k">else</span> <span class="o">{</span>
+          <span class="n">result</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">value</span><span class="o">;</span>
+      <span class="o">}</span>
+  <span class="o">}</span>
+
+  <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>determine the maximum index in the array that&#8217;s divisible by the species length; e.g. if the input array is 100 elements long, that&#8217;d be 96 in the case of vectors with eight elements each</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Iterate through the input array in steps of the vector length</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Load the current chunk of the input array into an <code>IntVector</code></td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Obtain the index of the right result vector and mask</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Determine the FizzBuzz numbers for the current chunk (i.e. that&#8217;s the actual SIMD instruction, processing all eight elements of the current chunk at once)</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Copy the result values at the right index into the result array</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>Process any remainder (e.g. the last four remaining elements in case of an input array with 100 elements) using the traditional scalar approach, as those values couldn&#8217;t fill up another vector instance</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To re-iterate what&#8217;s happening here: instead of processing the values of the input array one by one, they are processed in chunks of eight elements each by means of the <code>blend()</code> vector operation,
+which can be mapped to an equivalent SIMD instruction of the CPU.
+In case the input array doesn&#8217;t have a length that&#8217;s a multiple of the vector length,
+the remainder is processed in the traditional scalar way.
+The resulting duplication of the logic seems a bit inelegant, we&#8217;ll discuss in a bit what can be done about that.</p>
+</div>
+<div class="paragraph">
+<p>For now, let&#8217;s see whether our efforts pay off;
+i.e. is this vectorized approach actually faster then the basic scalar implementation?
+Turns out it is!
+Here are the numbers I get from JMH on my machine, showing through-put increasing by factor 3:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
+FizzBuzzBenchmark.sequentialFizzBuzz                 256  thrpt    5  2204774,792 ±  76581,374  ops/s
+<strong>FizzBuzzBenchmark.simdFizzBuzz                       256  thrpt    5  6748723,261 ±  34725,507  ops/s</strong></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Is there anything that could be further improved?
+I&#8217;m pretty sure, but as said I&#8217;m not an expert here, so I&#8217;ll leave it to smarter folks to point out more efficient implementations in the comments.
+One thing I figured is that the division and modulo operation for obtaining the current mask index isn&#8217;t ideal.
+Keeping a separate loop variable that&#8217;s reset to 0 after reaching 15 proved to be quite a bit faster:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="kt">int</span><span class="o">[]</span> <span class="nf">simdFizzBuzz</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">values</span><span class="o">)</span> <span class="o">{</span>
+  <span class="kt">int</span><span class="o">[]</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="n">values</span><span class="o">.</span><span class="na">length</span><span class="o">];</span>
+  <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+  <span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+  <span class="kt">int</span> <span class="n">upperBound</span> <span class="o">=</span> <span class="no">SPECIES</span><span class="o">.</span><span class="na">loopBound</span><span class="o">(</span><span class="n">values</span><span class="o">.</span><span class="na">length</span><span class="o">);</span>
+
+  <span class="k">for</span> <span class="o">(;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">upperBound</span><span class="o">;</span> <span class="n">i</span> <span class="o">+=</span> <span class="no">SPECIES</span><span class="o">.</span><span class="na">length</span><span class="o">())</span> <span class="o">{</span>
+    <span class="nc">IntVector</span> <span class="n">chunk</span> <span class="o">=</span> <span class="nc">IntVector</span><span class="o">.</span><span class="na">fromArray</span><span class="o">(</span><span class="no">SPECIES</span><span class="o">,</span> <span class="n">values</span><span class="o">,</span> <span class="n">i</span><span class="o">);</span>
+    <span class="nc">IntVector</span> <span class="n">fizzBuzz</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="na">blend</span><span class="o">(</span><span class="n">resultValues</span><span class="o">[</span><span class="n">j</span><span class="o">],</span> <span class="n">resultMasks</span><span class="o">[</span><span class="n">j</span><span class="o">]);</span>
+    <span class="n">fizzBuzz</span><span class="o">.</span><span class="na">intoArray</span><span class="o">(</span><span class="n">result</span><span class="o">,</span> <span class="n">i</span><span class="o">);</span>
+
+    <span class="n">j</span><span class="o">++;</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">j</span> <span class="o">==</span> <span class="mi">15</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+
+  <span class="c1">// processing of remainder...</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
+FizzBuzzBenchmark.sequentialFizzBuzz                 256  thrpt    5  2204774,792 ±  76581,374  ops/s
+FizzBuzzBenchmark.simdFizzBuzz                       256  thrpt    5  6748723,261 ±  34725,507  ops/s
+<strong>FizzBuzzBenchmark.simdFizzBuzzSeparateMaskIndex      256  thrpt    5  8830433,250 ±  69955,161  ops/s</strong></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This makes for another nice improvement, yielding 4x the throughput of the original scalar implementation.
+Now, to make this a true apple-to-apple comparison,
+a mask-based approach can also be applied to the purely scalar implementation,
+only that each value needs to be looked up individually:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="kd">private</span> <span class="kt">int</span><span class="o">[]</span> <span class="n">serialMask</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[]</span> <span class="o">{</span><span class="mi">0</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="o">-</span><span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="o">-</span><span class="mi">2</span><span class="o">,</span>
+                                     <span class="o">-</span><span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="o">-</span><span class="mi">1</span><span class="o">,</span> <span class="o">-</span><span class="mi">10</span><span class="o">,</span>
+                                      <span class="mi">0</span><span class="o">,</span> <span class="o">-</span><span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="o">-</span><span class="mi">3</span><span class="o">};</span>
+
+<span class="kd">public</span> <span class="kt">int</span><span class="o">[]</span> <span class="nf">serialFizzBuzzMasked</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">values</span><span class="o">)</span> <span class="o">{</span>
+  <span class="kt">int</span><span class="o">[]</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="n">values</span><span class="o">.</span><span class="na">length</span><span class="o">];</span>
+  <span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+
+  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">values</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">res</span> <span class="o">=</span> <span class="n">serialMask</span><span class="o">[</span><span class="n">j</span><span class="o">];</span>
+    <span class="n">result</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">res</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">?</span> <span class="n">values</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">:</span> <span class="n">res</span><span class="o">;</span>
+
+    <span class="n">j</span><span class="o">++;</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">j</span> <span class="o">==</span> <span class="mi">15</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+
+  <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Indeed, this implementation is quite a bit better than the original one,
+but still the SIMD-based approach is more than twice as fast:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
+FizzBuzzBenchmark.sequentialFizzBuzz                 256  thrpt    5  2204774,792 ±  76581,374  ops/s
+<strong>FizzBuzzBenchmark.sequentialFizzBuzzMasked           256  thrpt    5  4156751,424 ±  23668,949  ops/s</strong>
+FizzBuzzBenchmark.simdFizzBuzz                       256  thrpt    5  6748723,261 ±  34725,507  ops/s
+FizzBuzzBenchmark.simdFizzBuzzSeparateMaskIndex      256  thrpt    5  8830433,250 ±  69955,161  ops/s</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_examining_the_native_code">Examining the Native Code</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This all is pretty cool, but can we trust that under the hood things actually happen the way we expect them to happen?
+In order to verify that, let&#8217;s take a look at the native assembly code that gets produced by the JIT compiler for this implementation.
+This requires you to run the JVM with the <a href="https://wiki.openjdk.java.net/display/HotSpot/PrintAssembly">hsdis</a> plug-in;
+see <a href="/blog/building-hsdis-for-openjdk-15/">this post</a> for instructions on how to build and install hsdis.
+Let&#8217;s create a simple main class which executes the method in question in a loop,
+so to make sure the method actually gets JIT-compiled:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Main</span> <span class="o">{</span>
+
+  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">int</span><span class="o">[]</span> <span class="n">blackhole</span><span class="o">;</span>
+
+  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">FizzBuzz</span> <span class="n">fizzBuzz</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">FizzBuzz</span><span class="o">();</span>
+
+    <span class="kt">var</span> <span class="n">values</span> <span class="o">=</span> <span class="nc">IntStream</span><span class="o">.</span><span class="na">range</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">257</span><span class="o">).</span><span class="na">toArray</span><span class="o">();</span>
+
+    <span class="k">for</span><span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">5_000_000</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+      <span class="n">blackhole</span> <span class="o">=</span> <span class="n">fizzBuzz</span><span class="o">.</span><span class="na">simdFizzBuzz</span><span class="o">(</span><span class="n">values</span><span class="o">);</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Run the program, enabling the output of the assembly, and piping its output into a log file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>java -XX:+UnlockDiagnosticVMOptions \
+  -XX:+PrintAssembly -XX:+LogCompilation \
+  --add-modules=jdk.incubator.vector \
+  --class-path target/classes \
+  dev.morling.demos.simdfizzbuzz.Main &gt; fizzbuzz.log</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Open the <em>fizzbuzz.log</em> file and look for the <code>C2-compiled nmethod</code> block of the <code>simdFizzBuzz</code> method.
+Somewhere within the method&#8217;s native code, you should find the <code>vpblendvb</code> instruction
+(output slightly adjusted for better readability):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>...
+
+=========================== C2-compiled nmethod ============================
+--------------------------------- Assembly ---------------------------------
+
+Compiled method (c2) ... dev.morling.demos.simdfizzbuzz.FizzBuzz::  ↩
+                                                    simdFizzBuzz (161 bytes)
+
+...
+
+0x000000011895e18d:   vpmovsxbd %xmm7,%ymm7 ↩
+  ;*invokestatic store {reexecute=0 rethrow=0 return_oop=0}
+  ; - jdk.incubator.vector.IntVector::intoArray@42 (line 2962)
+  ; - dev.morling.demos.simdfizzbuzz.FizzBuzz::simdFizzBuzz@76 (line 92)
+
+<strong>0x000000011895e192:   vpblendvb %ymm7,%ymm5,%ymm8,%ymm0</strong> ↩
+  ;*invokestatic blend {reexecute=0 rethrow=0 return_oop=0}
+  ; - jdk.incubator.vector.IntVector::blendTemplate@26 (line 1895)
+  ; - jdk.incubator.vector.Int256Vector::blend@11 (line 376)
+  ; - jdk.incubator.vector.Int256Vector::blend@3 (line 41)
+  ; - dev.morling.demos.simdfizzbuzz.FizzBuzz::simdFizzBuzz@67 (line 91)
+
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><a href="https://www.felixcloutier.com/x86/pblendvb">vpblendvb</a> is part of the x86 AVX2 instruction set and "conditionally copies byte elements from the source operand (second operand) to the destination operand (first operand) depending on mask bits defined in the implicit third register argument",
+as such exactly corresponding to the <code>blend()</code> method in the JEP 338 API.</p>
+</div>
+<div class="paragraph">
+<p>One detail not quite clear to me is why <code>vpmovsxbd</code> for copying the results into the output array
+(the <code>intoArray()</code> call) shows up <em>before</em> <code>vpblendvb</code>.
+If you happen to know the reason for this, I&#8217;d love to hear from you and learn about this.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_avoiding_scalar_processing_of_tail_elements">Avoiding Scalar Processing of Tail Elements</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let&#8217;s get back to the scalar processing of the potential remainder of the input array.
+This feels a bit "un-DRY", as it requires the algorithm to be implemented twice,
+once vectorized and once in a scalar way.</p>
+</div>
+<div class="paragraph">
+<p>The Vector API recognizes the desire for avoiding this duplication and provides masked versions of all the required operations,
+so that during the last iteration no access beyond the array length will happen.
+Using this approach, the SIMD FizzBuzz method looks like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="kt">int</span><span class="o">[]</span> <span class="nf">simdFizzBuzzMasked</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">values</span><span class="o">)</span> <span class="o">{</span>
+  <span class="kt">int</span><span class="o">[]</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="n">values</span><span class="o">.</span><span class="na">length</span><span class="o">];</span>
+  <span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+
+  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">values</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span> <span class="o">+=</span> <span class="no">SPECIES</span><span class="o">.</span><span class="na">length</span><span class="o">())</span> <span class="o">{</span>
+    <span class="kt">var</span> <span class="n">mask</span> <span class="o">=</span> <span class="no">SPECIES</span><span class="o">.</span><span class="na">indexInRange</span><span class="o">(</span><span class="n">i</span><span class="o">,</span> <span class="n">values</span><span class="o">.</span><span class="na">length</span><span class="o">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="kt">var</span> <span class="n">chunk</span> <span class="o">=</span> <span class="nc">IntVector</span><span class="o">.</span><span class="na">fromArray</span><span class="o">(</span><span class="no">SPECIES</span><span class="o">,</span> <span class="n">values</span><span class="o">,</span> <span class="n">i</span><span class="o">,</span> <span class="n">mask</span><span class="o">);</span> <i class="conum" data-value="2"></i><b>(2)</b>
+    <span class="kt">var</span> <span class="n">fizzBuzz</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="na">blend</span><span class="o">(</span><span class="n">resultValues</span><span class="o">[</span><span class="n">j</span><span class="o">],</span> <span class="n">resultMasks</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">j</span><span class="o">));</span>
+    <span class="n">fizzBuzz</span><span class="o">.</span><span class="na">intoArray</span><span class="o">(</span><span class="n">result</span><span class="o">,</span> <span class="n">i</span><span class="o">,</span> <span class="n">mask</span><span class="o">);</span> <i class="conum" data-value="2"></i><b>(2)</b>
+
+    <span class="n">j</span><span class="o">++;</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">j</span> <span class="o">==</span> <span class="mi">15</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+
+  <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Obtain a mask which, during the last iteration, will have bits for those lanes unset, which are larger than the last encountered multiple of the vector length</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Perform the same operations as above, but using the mask to prevent any access beyond the array length</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The implementation looks quite a bit nicer than the version with the explicit scalar processing of the remainder portion.
+But the impact on throughput is significant, the result is quite a disapointing:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
+FizzBuzzBenchmark.sequentialFizzBuzz                 256  thrpt    5  2204774,792 ±  76581,374  ops/s
+FizzBuzzBenchmark.sequentialFizzBuzzMasked           256  thrpt    5  4156751,424 ±  23668,949  ops/s
+FizzBuzzBenchmark.simdFizzBuzz                       256  thrpt    5  6748723,261 ±  34725,507  ops/s
+FizzBuzzBenchmark.simdFizzBuzzSeparateMaskIndex      256  thrpt    5  8830433,250 ±  69955,161  ops/s
+<strong>FizzBuzzBenchmark.simdFizzBuzzMasked                 256  thrpt    5  1204128,029 ±   5556,553  ops/s</strong></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In its current form, this approach is even slower than the pure scalar implementation.
+It remains to be seen whether and how performance gets improved here, as the Vector API matures.
+Ideally, the mask would have to be only applied during the very last iteration.
+This is something we either could do ourselves&#8201;&#8212;&#8201;re-introducing some special remainder handling,
+albeit less different from the core implementation than with the pure scalar approach discussed above&#8201;&#8212;&#8201;or perhaps even the compiler itelf may be able to apply such transformation.</p>
+</div>
+<div class="paragraph">
+<p>One important take-away from this is that a SIMD-based approach does not necessarily have to be faster than a scalar one.
+So every algorithmic adjustment should be validated with a corresponding benchmark,
+before drawing any conclusions.
+Speaking of which, I also ran the benchmark on that shiny new Mac Mini M1 (i.e. an AArch64-based machine) that found its way to my desk recently,
+and numbers are, mh, interesting:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>Benchmark                                  (arrayLength)   Mode  Cnt        Score       Error  Units
+FizzBuzzBenchmark.sequentialFizzBuzz                 256  thrpt    5  2717990,097 ±  4203,628  ops/s
+FizzBuzzBenchmark.sequentialFizzBuzzMasked           256  thrpt    5  5750402,582 ±  2479,462  ops/s
+FizzBuzzBenchmark.simdFizzBuzz                       256  thrpt    5  1297631,404 ± 15613,288  ops/s
+FizzBuzzBenchmark.simdFizzBuzzMasked                 256  thrpt    5   374313,033 ±  2219,940  ops/s
+FizzBuzzBenchmark.simdFizzBuzzMasksInArray           256  thrpt    5  1316375,073 ±  1178,704  ops/s
+FizzBuzzBenchmark.simdFizzBuzzSeparateMaskIndex      256  thrpt    5   998979,324 ± 69997,361  ops/s</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The sequential implementation on the M1 out-performs the x86 MacBook Pro by quite a bit,
+but SIMD numbers are significantly lower.</p>
+</div>
+<div class="paragraph">
+<p>I haven&#8217;t checked the assembly code, but solely based on the figures, my guess is that the JEP 338 implementation in the current JDK 16 early access builds does not yet support AArch64, and the API falls back to scalar execution.
+Here it would be nice to have some method in the API which reveals whether SIMD support is provided by the current platform or not,
+as e.g. done by .NET with its <a href="https://docs.microsoft.com/en-us/dotnet/api/system.numerics.vector.ishardwareaccelerated?view=net-5.0#System_Numerics_Vector_IsHardwareAccelerated"><code>Vector.IsHardwareAccelerated()</code></a> method.</p>
+</div>
+<div class="paragraph">
+<p>Fun fact: during the entire benchmark runtime of 10 min the fan of the Mac Mini was barely to hear, if at all.
+Definitely a very exciting platform, and I&#8217;m looking forward to doing more Java experiments on it soon.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_wrap_up">Wrap-Up</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Am I suggesting you should go and implement your next FizzBuzz using SIMD?
+Of course not, FizzBuzz just served as an example here for exploring how a well-known "problem" can be solved more efficiently via the new Java Vector API
+(at the cost of increased complexity in the code),
+also without being a seasoned systems programmer.
+On the other hand, it may make an impression during your next job interview ;)</p>
+</div>
+<div class="paragraph">
+<p>If you want to get started with your own experiments around the Vector API and SIMD,
+install a current JDK 16 early access build and grab the SIMD FizzBuzz example from <a href="https://github.com/gunnarmorling/simd-fizzbuzz">this GitHub repo</a>.
+A nice twist to explore would for instance be using <code>ShortVector</code> instead of <code>IntVector</code>
+(allowing to put 16 values into 256-bit vector),
+running the benchmark on machines with the AVX-512 extension
+(e.g. via the <a href="https://aws.amazon.com/ec2/instance-types/c5/">C5 instance type</a> on AWS EC2),
+or both :)</p>
+</div>
+<div class="paragraph">
+<p>Apart from the JEP document itself, there isn&#8217;t too much info out yet about the Vector API;
+a great starting point are the <a href="https://richardstartin.github.io/tags/vector-api">"vector" tagged posts</a> on the blog of Richard Startin.
+Another inspirational resource is August Nagro&#8217;s project for vectorized <a href="https://github.com/AugustNagro/utf8.java">UTF-8 validation</a> based on a paper by John Keiser and Daniel Lemire.</p>
+</div>
+<div class="paragraph">
+<p>Taking a step back, it&#8217;s hard to overstate the impact which the Vector API potentially will have on the Java platform.
+Providing SIMD capabilities in a rather easy-to-use, portable way, without having to rely on CPU instruction set specific intrinsics, may result in nothing less than a "democratization of SIMD",
+making these powerful means of parallelizing computations available to a much larger developer audience.</p>
+</div>
+<div class="paragraph">
+<p>Also the JDK class library itself may benefit from the Vector API;
+while JDK authors&#8201;&#8212;&#8201;unlike Java application developers&#8201;&#8212;&#8201;already have the <a href="https://www.baeldung.com/jvm-intrinsics">JVM intrinsics mechanism</a> at their disposal,
+the new API will "make prototyping easier, and broaden what might be economical to consider",
+as <a href="https://twitter.com/cl4es/status/1365722232413188100">pointed out</a> by Claes Redestad.</p>
+</div>
+<div class="paragraph">
+<p>But nothing in life is free,
+and code will have to be restructured or even re-written in order to benefit from this.
+Some problems lend themselves better than others to SIMD-style processing,
+and only time will tell in which areas the new API will be adopted.
+As said above, use cases like image processing and AI can benefit from SIMD a lot,
+due to the nature of the underlying calculations.
+Also specific data store operations can be <a href="https://questdb.io/blog/2020/04/02/using-simd-to-aggregate-billions-of-rows-per-second/">sped up significantly</a> using SIMD instructions;
+so my personal hope is that the Vector API can contribute to making Java an attractive choice for such applications,
+which previously were not considered a sweet spot for the Java platform.</p>
+</div>
+<div class="paragraph">
+<p>As such, I can&#8217;t think of many recent Java API additions which may prove as influental as the Vector API.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread"></div>
+<script type="text/javascript">
+	(function () {
+		
+		
+		if (window.location.hostname == "localhost")
+			return;
+
+		var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+		var disqus_shortname = 'morlingdev';
+		dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+		(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+	})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by
+		Disqus.</a></noscript>
+<a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2021 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
