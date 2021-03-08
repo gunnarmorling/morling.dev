@@ -16,7 +16,7 @@ which aims at &#34;interconnecting JVM and native code&#34;.
 Vectors?!?
 Of course this is not about renewing the ancient Java collection types like java.util.Vector
 (&lt;insert some pun about this here&gt;),
-but rather about an API which lets Java delopers take advantage of the vector calculation capabilities you can find in most CPUs these days.
+but rather about an API which lets Java developers take advantage of the vector calculation capabilities you can find in most CPUs these days.
 Now I&#8217;m by no means an expert on low-level programming leveraging specific CPU instructions,
 but exactly that&#8217;s why I hope to make the case with this post that the new Vector API makes these capabilities approachable to a wide audience of Java programmers.
 " />
@@ -38,7 +38,7 @@ which aims at &#34;interconnecting JVM and native code&#34;.
 Vectors?!?
 Of course this is not about renewing the ancient Java collection types like java.util.Vector
 (&lt;insert some pun about this here&gt;),
-but rather about an API which lets Java delopers take advantage of the vector calculation capabilities you can find in most CPUs these days.
+but rather about an API which lets Java developers take advantage of the vector calculation capabilities you can find in most CPUs these days.
 Now I&#8217;m by no means an expert on low-level programming leveraging specific CPU instructions,
 but exactly that&#8217;s why I hope to make the case with this post that the new Vector API makes these capabilities approachable to a wide audience of Java programmers.
 "/>
@@ -261,7 +261,7 @@ which aims at "interconnecting JVM and native code".</p>
 <p><em>Vectors?!?</em>
 Of course this is not about renewing the ancient Java collection types like <code>java.util.Vector</code>
 (&lt;insert some pun about this here&gt;),
-but rather about an API which lets Java delopers take advantage of the vector calculation capabilities you can find in most CPUs these days.
+but rather about an API which lets Java developers take advantage of the vector calculation capabilities you can find in most CPUs these days.
 Now I&#8217;m by no means an expert on low-level programming leveraging specific CPU instructions,
 but exactly that&#8217;s why I hope to make the case with this post that the new Vector API makes these capabilities approachable to a wide audience of Java programmers.</p>
 </div>
@@ -326,7 +326,7 @@ where it may not be the first choice today.</p>
 <div class="paragraph">
 <p>To see how the Vector API can help with improving the performance of some calculation,
 let&#8217;s consider FizzBuzz.
-Originally, <a href="https://en.wikipedia.org/wiki/Fizz_buzz">FizzBuzz is a game</a> to help teaching childen division;
+Originally, <a href="https://en.wikipedia.org/wiki/Fizz_buzz">FizzBuzz is a game</a> to help teaching children division;
 but interestingly, it also serves as entry-level interview question for hiring software engineers in some places.
 In any case, it&#8217;s a nice example for exploring how some calculation can benefit from vectorization.
 The rules of FizzBuzz are simple:</p>
@@ -420,7 +420,7 @@ with a 2.6 GHz 6-Core Intel Core i7 CPU:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code>Benchmark                              (arrayLength)   Mode  Cnt        Score        Error  Units
-<strong>FizzBuzzBenchmark.scalarFizzBuzz                256  thrpt    5  2204774,792 ±  76581,374  ops/s</strong></code></pre>
+<strong>FizzBuzzBenchmark.scalarFizzBuzz                 256  thrpt    5  2204774,792 ±  76581,374  ops/s</strong></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -618,7 +618,7 @@ They can be created like so:</p>
 </table>
 </div>
 <div class="paragraph">
-<p>To re-iterate what&#8217;s happening here: instead of processing the values of the input array one by one, they are processed in chunks of eight elements each by means of the <code>blend()</code> vector operation,
+<p>To reiterate what&#8217;s happening here: instead of processing the values of the input array one by one, they are processed in chunks of eight elements each by means of the <code>blend()</code> vector operation,
 which can be mapped to an equivalent SIMD instruction of the CPU.
 In case the input array doesn&#8217;t have a length that&#8217;s a multiple of the vector length,
 the remainder is processed in the traditional scalar way.
@@ -852,7 +852,7 @@ Using this approach, the SIMD FizzBuzz method looks like this:</p>
 </div>
 <div class="paragraph">
 <p>The implementation looks quite a bit nicer than the version with the explicit scalar processing of the remainder portion.
-But the impact on throughput is significant, the result is quite a disapointing:</p>
+But the impact on throughput is significant, the result is quite a disappointing:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -869,7 +869,7 @@ FizzBuzzBenchmark.simdFizzBuzzSeparateMaskIndex      256  thrpt    5  8830433,25
 It remains to be seen whether and how performance gets improved here, as the Vector API matures.
 Ideally, the mask would have to be only applied during the very last iteration.
 This is something we either could do ourselves&#8201;&#8212;&#8201;re-introducing some special remainder handling,
-albeit less different from the core implementation than with the pure scalar approach discussed above&#8201;&#8212;&#8201;or perhaps even the compiler itelf may be able to apply such transformation.</p>
+albeit less different from the core implementation than with the pure scalar approach discussed above&#8201;&#8212;&#8201;or perhaps even the compiler itself may be able to apply such transformation.</p>
 </div>
 <div class="paragraph">
 <p>One important take-away from this is that a SIMD-based approach does not necessarily have to be faster than a scalar one.
@@ -952,7 +952,7 @@ so my personal hope is that the Vector API can contribute to making Java an attr
 which previously were not considered a sweet spot for the Java platform.</p>
 </div>
 <div class="paragraph">
-<p>As such, I can&#8217;t think of many recent Java API additions which may prove as influental as the Vector API.</p>
+<p>As such, I can&#8217;t think of many recent Java API additions which may prove as influential as the Vector API.</p>
 </div>
 </div>
 </div>
