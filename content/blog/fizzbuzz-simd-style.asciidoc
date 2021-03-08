@@ -515,7 +515,7 @@ FizzBuzzBenchmark.simdFizzBuzzSeparateMaskIndex      256  thrpt    5   998979,32
 The sequential implementation on the M1 out-performs the x86 MacBook Pro by quite a bit,
 but SIMD numbers are significantly lower.
 
-I haven't checked the assembly code, but solely based on the figures, my guess is that the JEP 338 implementation in the current JDK 16 early access builds does not yet support AArch64, and the API falls back to scalar execution.
+I haven't checked the assembly code, but solely based on the figures, my guess is that the JEP 338 implementation in the current JDK 16 builds does not yet support AArch64, and the API falls back to scalar execution.
 Here it would be nice to have some method in the API which reveals whether SIMD support is provided by the current platform or not,
 as e.g. done by .NET with its https://docs.microsoft.com/en-us/dotnet/api/system.numerics.vector.ishardwareaccelerated?view=net-5.0#System_Numerics_Vector_IsHardwareAccelerated[`Vector.IsHardwareAccelerated()`] method.
 
@@ -531,7 +531,7 @@ also without being a seasoned systems programmer.
 On the other hand, it may make an impression during your next job interview ;)
 
 If you want to get started with your own experiments around the Vector API and SIMD,
-install a current JDK 16 early access build and grab the SIMD FizzBuzz example from https://github.com/gunnarmorling/simd-fizzbuzz[this GitHub repo].
+install a current JDK 16 RC (release candidate) build and grab the SIMD FizzBuzz example from https://github.com/gunnarmorling/simd-fizzbuzz[this GitHub repo].
 A nice twist to explore would for instance be using `ShortVector` instead of `IntVector`
 (allowing to put 16 values into 256-bit vector),
 running the benchmark on machines with the AVX-512 extension
