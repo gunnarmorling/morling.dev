@@ -21,7 +21,7 @@ which aims at "interconnecting JVM and native code".
 _Vectors?!?_
 Of course this is not about renewing the ancient Java collection types like `java.util.Vector`
 (<insert some pun about this here>),
-but rather about an API which lets Java delopers take advantage of the vector calculation capabilities you can find in most CPUs these days.
+but rather about an API which lets Java developers take advantage of the vector calculation capabilities you can find in most CPUs these days.
 Now I'm by no means an expert on low-level programming leveraging specific CPU instructions,
 but exactly that's why I hope to make the case with this post that the new Vector API makes these capabilities approachable to a wide audience of Java programmers.
 
@@ -78,7 +78,7 @@ where it may not be the first choice today.
 
 To see how the Vector API can help with improving the performance of some calculation,
 let's consider FizzBuzz.
-Originally, https://en.wikipedia.org/wiki/Fizz_buzz[FizzBuzz is a game] to help teaching childen division;
+Originally, https://en.wikipedia.org/wiki/Fizz_buzz[FizzBuzz is a game] to help teaching children division;
 but interestingly, it also serves as entry-level interview question for hiring software engineers in some places.
 In any case, it's a nice example for exploring how some calculation can benefit from vectorization.
 The rules of FizzBuzz are simple:
@@ -142,7 +142,7 @@ with a 2.6 GHz 6-Core Intel Core i7 CPU:
 [source,subs=+quotes]
 ----
 Benchmark                              (arrayLength)   Mode  Cnt        Score        Error  Units
-*FizzBuzzBenchmark.scalarFizzBuzz                256  thrpt    5  2204774,792 ±  76581,374  ops/s*
+*FizzBuzzBenchmark.scalarFizzBuzz                 256  thrpt    5  2204774,792 ±  76581,374  ops/s*
 ----
 
 Now let's see how this calculation could be vectorized and what performance improvements can be gained by doing so.
@@ -271,7 +271,7 @@ public int[] simdFizzBuzz(int[] values) {
 <6> Copy the result values at the right index into the result array
 <7> Process any remainder (e.g. the last four remaining elements in case of an input array with 100 elements) using the traditional scalar approach, as those values couldn't fill up another vector instance
 
-To re-iterate what's happening here: instead of processing the values of the input array one by one, they are processed in chunks of eight elements each by means of the `blend()` vector operation,
+To reiterate what's happening here: instead of processing the values of the input array one by one, they are processed in chunks of eight elements each by means of the `blend()` vector operation,
 which can be mapped to an equivalent SIMD instruction of the CPU.
 In case the input array doesn't have a length that's a multiple of the vector length,
 the remainder is processed in the traditional scalar way.
@@ -477,7 +477,7 @@ public int[] simdFizzBuzzMasked(int[] values) {
 <2> Perform the same operations as above, but using the mask to prevent any access beyond the array length
 
 The implementation looks quite a bit nicer than the version with the explicit scalar processing of the remainder portion.
-But the impact on throughput is significant, the result is quite a disapointing:
+But the impact on throughput is significant, the result is quite a disappointing:
 
 [source,subs=+quotes]
 ----
@@ -495,7 +495,7 @@ Ideally, the mask would have to be only applied during the very last iteration.
 This is something we either could do ourselves
 -- re-introducing some special remainder handling,
 albeit less different from the core implementation than with the pure scalar approach discussed above --
-or perhaps even the compiler itelf may be able to apply such transformation.
+or perhaps even the compiler itself may be able to apply such transformation.
 
 One important take-away from this is that a SIMD-based approach does not necessarily have to be faster than a scalar one.
 So every algorithmic adjustment should be validated with a corresponding benchmark,
@@ -565,4 +565,4 @@ Also specific data store operations can be https://questdb.io/blog/2020/04/02/us
 so my personal hope is that the Vector API can contribute to making Java an attractive choice for such applications,
 which previously were not considered a sweet spot for the Java platform.
 
-As such, I can't think of many recent Java API additions which may prove as influental as the Vector API.
+As such, I can't think of many recent Java API additions which may prove as influential as the Vector API.
