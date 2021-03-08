@@ -8,7 +8,9 @@
 Java 16 is around the corner, so there&#8217;s no better time than now for learning more about the features which the new version will bring.
 After exploring the support for Unix domain sockets a while ago,
 I&#8217;ve lately been really curious about the incubating Vector API,
-as defined by JEP 338.
+as defined by JEP 338,
+developed under the umbrella of Project Panama,
+which aims at &#34;interconnecting JVM and native code&#34;.
 
 
 Vectors?!?
@@ -28,7 +30,9 @@ but exactly that&#8217;s why I hope to make the case with this post that the new
 Java 16 is around the corner, so there&#8217;s no better time than now for learning more about the features which the new version will bring.
 After exploring the support for Unix domain sockets a while ago,
 I&#8217;ve lately been really curious about the incubating Vector API,
-as defined by JEP 338.
+as defined by JEP 338,
+developed under the umbrella of Project Panama,
+which aims at &#34;interconnecting JVM and native code&#34;.
 
 
 Vectors?!?
@@ -249,7 +253,9 @@ but exactly that&#8217;s why I hope to make the case with this post that the new
 <p>Java 16 is around the corner, so there&#8217;s no better time than now for learning more about the features which the new version will bring.
 After exploring the support for <a href="/blog/talking-to-postgres-through-java-16-unix-domain-socket-channels/">Unix domain sockets</a> a while ago,
 I&#8217;ve lately been really curious about the incubating Vector API,
-as defined by <a href="https://openjdk.java.net/jeps/338">JEP 338</a>.</p>
+as defined by <a href="https://openjdk.java.net/jeps/338">JEP 338</a>,
+developed under the umbrella of <a href="https://openjdk.java.net/projects/panama/">Project Panama</a>,
+which aims at "interconnecting JVM and native code".</p>
 </div>
 <div class="paragraph">
 <p><em>Vectors?!?</em>
@@ -353,7 +359,7 @@ the output an array with the FizzBuzz sequence:</p>
 </div>
 </div>
 <div class="paragraph">
-<p>The task is easily solved using a plain sequential <code>for</code> loop:</p>
+<p>The task is easily solved using a plain <code>for</code> loop processing scalar values one by one:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -361,7 +367,7 @@ the output an array with the FizzBuzz sequence:</p>
 <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="no">BUZZ</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span><span class="o">;</span>
 <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="no">FIZZ_BUZZ</span> <span class="o">=</span> <span class="o">-</span><span class="mi">3</span><span class="o">;</span>
 
-<span class="kd">public</span> <span class="kt">int</span><span class="o">[]</span> <span class="nf">sequentialFizzBuzz</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">values</span><span class="o">)</span> <span class="o">{</span>
+<span class="kd">public</span> <span class="kt">int</span><span class="o">[]</span> <span class="nf">scalarFizzBuzz</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">values</span><span class="o">)</span> <span class="o">{</span>
   <span class="kt">int</span><span class="o">[]</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="n">values</span><span class="o">.</span><span class="na">length</span><span class="o">];</span>
 
   <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">values</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
@@ -414,7 +420,7 @@ with a 2.6 GHz 6-Core Intel Core i7 CPU:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code>Benchmark                              (arrayLength)   Mode  Cnt        Score        Error  Units
-<strong>FizzBuzzBenchmark.sequentialFizzBuzz            256  thrpt    5  2204774,792 ±  76581,374  ops/s</strong></code></pre>
+<strong>FizzBuzzBenchmark.scalarFizzBuzz                256  thrpt    5  2204774,792 ±  76581,374  ops/s</strong></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -627,7 +633,7 @@ Here are the numbers I get from JMH on my machine, showing through-put increasin
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code>Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
-FizzBuzzBenchmark.sequentialFizzBuzz                 256  thrpt    5  2204774,792 ±  76581,374  ops/s
+FizzBuzzBenchmark.scalarFizzBuzz                     256  thrpt    5  2204774,792 ±  76581,374  ops/s
 <strong>FizzBuzzBenchmark.simdFizzBuzz                       256  thrpt    5  6748723,261 ±  34725,507  ops/s</strong></code></pre>
 </div>
 </div>
@@ -663,7 +669,7 @@ Keeping a separate loop variable that&#8217;s reset to 0 after reaching 15 prove
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code>Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
-FizzBuzzBenchmark.sequentialFizzBuzz                 256  thrpt    5  2204774,792 ±  76581,374  ops/s
+FizzBuzzBenchmark.scalarFizzBuzz                     256  thrpt    5  2204774,792 ±  76581,374  ops/s
 FizzBuzzBenchmark.simdFizzBuzz                       256  thrpt    5  6748723,261 ±  34725,507  ops/s
 <strong>FizzBuzzBenchmark.simdFizzBuzzSeparateMaskIndex      256  thrpt    5  8830433,250 ±  69955,161  ops/s</strong></code></pre>
 </div>
@@ -705,8 +711,8 @@ but still the SIMD-based approach is more than twice as fast:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code>Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
-FizzBuzzBenchmark.sequentialFizzBuzz                 256  thrpt    5  2204774,792 ±  76581,374  ops/s
-<strong>FizzBuzzBenchmark.sequentialFizzBuzzMasked           256  thrpt    5  4156751,424 ±  23668,949  ops/s</strong>
+FizzBuzzBenchmark.scalarFizzBuzz                     256  thrpt    5  2204774,792 ±  76581,374  ops/s
+<strong>FizzBuzzBenchmark.scalarFizzBuzzMasked               256  thrpt    5  4156751,424 ±  23668,949  ops/s</strong>
 FizzBuzzBenchmark.simdFizzBuzz                       256  thrpt    5  6748723,261 ±  34725,507  ops/s
 FizzBuzzBenchmark.simdFizzBuzzSeparateMaskIndex      256  thrpt    5  8830433,250 ±  69955,161  ops/s</code></pre>
 </div>
@@ -851,8 +857,8 @@ But the impact on throughput is significant, the result is quite a disapointing:
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code>Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
-FizzBuzzBenchmark.sequentialFizzBuzz                 256  thrpt    5  2204774,792 ±  76581,374  ops/s
-FizzBuzzBenchmark.sequentialFizzBuzzMasked           256  thrpt    5  4156751,424 ±  23668,949  ops/s
+FizzBuzzBenchmark.scalarFizzBuzz                     256  thrpt    5  2204774,792 ±  76581,374  ops/s
+FizzBuzzBenchmark.scalarFizzBuzzMasked               256  thrpt    5  4156751,424 ±  23668,949  ops/s
 FizzBuzzBenchmark.simdFizzBuzz                       256  thrpt    5  6748723,261 ±  34725,507  ops/s
 FizzBuzzBenchmark.simdFizzBuzzSeparateMaskIndex      256  thrpt    5  8830433,250 ±  69955,161  ops/s
 <strong>FizzBuzzBenchmark.simdFizzBuzzMasked                 256  thrpt    5  1204128,029 ±   5556,553  ops/s</strong></code></pre>
@@ -875,8 +881,8 @@ and numbers are, mh, interesting:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code>Benchmark                                  (arrayLength)   Mode  Cnt        Score       Error  Units
-FizzBuzzBenchmark.sequentialFizzBuzz                 256  thrpt    5  2717990,097 ±  4203,628  ops/s
-FizzBuzzBenchmark.sequentialFizzBuzzMasked           256  thrpt    5  5750402,582 ±  2479,462  ops/s
+FizzBuzzBenchmark.scalarFizzBuzz                     256  thrpt    5  2717990,097 ±  4203,628  ops/s
+FizzBuzzBenchmark.scalarFizzBuzzMasked               256  thrpt    5  5750402,582 ±  2479,462  ops/s
 FizzBuzzBenchmark.simdFizzBuzz                       256  thrpt    5  1297631,404 ± 15613,288  ops/s
 FizzBuzzBenchmark.simdFizzBuzzMasked                 256  thrpt    5   374313,033 ±  2219,940  ops/s
 FizzBuzzBenchmark.simdFizzBuzzMasksInArray           256  thrpt    5  1316375,073 ±  1178,704  ops/s
@@ -884,7 +890,7 @@ FizzBuzzBenchmark.simdFizzBuzzSeparateMaskIndex      256  thrpt    5   998979,32
 </div>
 </div>
 <div class="paragraph">
-<p>The sequential implementation on the M1 out-performs the x86 MacBook Pro by quite a bit,
+<p>The scalar implementation on the M1 out-performs the x86 MacBook Pro by quite a bit,
 but SIMD numbers are significantly lower.</p>
 </div>
 <div class="paragraph">
@@ -920,7 +926,8 @@ or both :)</p>
 <div class="paragraph">
 <p>Apart from the JEP document itself, there isn&#8217;t too much info out yet about the Vector API;
 a great starting point are the <a href="https://richardstartin.github.io/tags/vector-api">"vector" tagged posts</a> on the blog of Richard Startin.
-Another inspirational resource is August Nagro&#8217;s project for vectorized <a href="https://github.com/AugustNagro/utf8.java">UTF-8 validation</a> based on a paper by John Keiser and Daniel Lemire.</p>
+Another inspirational resource is August Nagro&#8217;s project for vectorized <a href="https://github.com/AugustNagro/utf8.java">UTF-8 validation</a> based on a paper by John Keiser and Daniel Lemire.
+Kishor Kharbas and Paul Sandoz did a <a href="https://www.youtube.com/watch?v=PnVw1uFxSyw">talk about the Vector API</a> at CodeOne a while ago.</p>
 </div>
 <div class="paragraph">
 <p>Taking a step back, it&#8217;s hard to overstate the impact which the Vector API potentially will have on the Java platform.
