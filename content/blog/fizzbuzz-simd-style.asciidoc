@@ -14,7 +14,9 @@ endif::[]
 Java 16 is around the corner, so there's no better time than now for learning more about the features which the new version will bring.
 After exploring the support for link:/blog/talking-to-postgres-through-java-16-unix-domain-socket-channels/[Unix domain sockets] a while ago,
 I've lately been really curious about the incubating Vector API,
-as defined by https://openjdk.java.net/jeps/338[JEP 338].
+as defined by https://openjdk.java.net/jeps/338[JEP 338],
+developed under the umbrella of https://openjdk.java.net/projects/panama/[Project Panama],
+which aims at "interconnecting JVM and native code".
 
 _Vectors?!?_
 Of course this is not about renewing the ancient Java collection types like `java.util.Vector`
@@ -96,7 +98,7 @@ the output an array with the FizzBuzz sequence:
 1, 2, -1, 4, -2, -1, 7, 8, -1, -2, 11, -1, 13, 14, -3, 16, ...
 ----
 
-The task is easily solved using a plain sequential `for` loop:
+The task is easily solved using a plain `for` loop processing scalar values one by one:
 
 [source,java]
 ----
@@ -104,7 +106,7 @@ private static final int FIZZ = -1;
 private static final int BUZZ = -2;
 private static final int FIZZ_BUZZ = -3;
 
-public int[] sequentialFizzBuzz(int[] values) {
+public int[] scalarFizzBuzz(int[] values) {
   int[] result = new int[values.length];
 
   for (int i = 0; i < values.length; i++) {
@@ -140,7 +142,7 @@ with a 2.6 GHz 6-Core Intel Core i7 CPU:
 [source,subs=+quotes]
 ----
 Benchmark                              (arrayLength)   Mode  Cnt        Score        Error  Units
-*FizzBuzzBenchmark.sequentialFizzBuzz            256  thrpt    5  2204774,792 ±  76581,374  ops/s*
+*FizzBuzzBenchmark.scalarFizzBuzz                256  thrpt    5  2204774,792 ±  76581,374  ops/s*
 ----
 
 Now let's see how this calculation could be vectorized and what performance improvements can be gained by doing so.
@@ -283,7 +285,7 @@ Here are the numbers I get from JMH on my machine, showing through-put increasin
 [source,subs=+quotes]
 ----
 Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
-FizzBuzzBenchmark.sequentialFizzBuzz                 256  thrpt    5  2204774,792 ±  76581,374  ops/s
+FizzBuzzBenchmark.scalarFizzBuzz                     256  thrpt    5  2204774,792 ±  76581,374  ops/s
 *FizzBuzzBenchmark.simdFizzBuzz                       256  thrpt    5  6748723,261 ±  34725,507  ops/s*
 ----
 
@@ -318,7 +320,7 @@ public int[] simdFizzBuzz(int[] values) {
 [source,subs=+quotes]
 ----
 Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
-FizzBuzzBenchmark.sequentialFizzBuzz                 256  thrpt    5  2204774,792 ±  76581,374  ops/s
+FizzBuzzBenchmark.scalarFizzBuzz                     256  thrpt    5  2204774,792 ±  76581,374  ops/s
 FizzBuzzBenchmark.simdFizzBuzz                       256  thrpt    5  6748723,261 ±  34725,507  ops/s
 *FizzBuzzBenchmark.simdFizzBuzzSeparateMaskIndex      256  thrpt    5  8830433,250 ±  69955,161  ops/s*
 ----
@@ -358,8 +360,8 @@ but still the SIMD-based approach is more than twice as fast:
 [source,subs=+quotes]
 ----
 Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
-FizzBuzzBenchmark.sequentialFizzBuzz                 256  thrpt    5  2204774,792 ±  76581,374  ops/s
-*FizzBuzzBenchmark.sequentialFizzBuzzMasked           256  thrpt    5  4156751,424 ±  23668,949  ops/s*
+FizzBuzzBenchmark.scalarFizzBuzz                     256  thrpt    5  2204774,792 ±  76581,374  ops/s
+*FizzBuzzBenchmark.scalarFizzBuzzMasked               256  thrpt    5  4156751,424 ±  23668,949  ops/s*
 FizzBuzzBenchmark.simdFizzBuzz                       256  thrpt    5  6748723,261 ±  34725,507  ops/s
 FizzBuzzBenchmark.simdFizzBuzzSeparateMaskIndex      256  thrpt    5  8830433,250 ±  69955,161  ops/s
 ----
@@ -480,8 +482,8 @@ But the impact on throughput is significant, the result is quite a disapointing:
 [source,subs=+quotes]
 ----
 Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
-FizzBuzzBenchmark.sequentialFizzBuzz                 256  thrpt    5  2204774,792 ±  76581,374  ops/s
-FizzBuzzBenchmark.sequentialFizzBuzzMasked           256  thrpt    5  4156751,424 ±  23668,949  ops/s
+FizzBuzzBenchmark.scalarFizzBuzz                     256  thrpt    5  2204774,792 ±  76581,374  ops/s
+FizzBuzzBenchmark.scalarFizzBuzzMasked               256  thrpt    5  4156751,424 ±  23668,949  ops/s
 FizzBuzzBenchmark.simdFizzBuzz                       256  thrpt    5  6748723,261 ±  34725,507  ops/s
 FizzBuzzBenchmark.simdFizzBuzzSeparateMaskIndex      256  thrpt    5  8830433,250 ±  69955,161  ops/s
 *FizzBuzzBenchmark.simdFizzBuzzMasked                 256  thrpt    5  1204128,029 ±   5556,553  ops/s*
@@ -504,15 +506,15 @@ and numbers are, mh, interesting:
 [source,subs=+quotes]
 ----
 Benchmark                                  (arrayLength)   Mode  Cnt        Score       Error  Units
-FizzBuzzBenchmark.sequentialFizzBuzz                 256  thrpt    5  2717990,097 ±  4203,628  ops/s
-FizzBuzzBenchmark.sequentialFizzBuzzMasked           256  thrpt    5  5750402,582 ±  2479,462  ops/s
+FizzBuzzBenchmark.scalarFizzBuzz                     256  thrpt    5  2717990,097 ±  4203,628  ops/s
+FizzBuzzBenchmark.scalarFizzBuzzMasked               256  thrpt    5  5750402,582 ±  2479,462  ops/s
 FizzBuzzBenchmark.simdFizzBuzz                       256  thrpt    5  1297631,404 ± 15613,288  ops/s
 FizzBuzzBenchmark.simdFizzBuzzMasked                 256  thrpt    5   374313,033 ±  2219,940  ops/s
 FizzBuzzBenchmark.simdFizzBuzzMasksInArray           256  thrpt    5  1316375,073 ±  1178,704  ops/s
 FizzBuzzBenchmark.simdFizzBuzzSeparateMaskIndex      256  thrpt    5   998979,324 ± 69997,361  ops/s
 ----
 
-The sequential implementation on the M1 out-performs the x86 MacBook Pro by quite a bit,
+The scalar implementation on the M1 out-performs the x86 MacBook Pro by quite a bit,
 but SIMD numbers are significantly lower.
 
 I haven't checked the assembly code, but solely based on the figures, my guess is that the JEP 338 implementation in the current JDK 16 builds does not yet support AArch64, and the API falls back to scalar execution.
@@ -541,6 +543,7 @@ or both :)
 Apart from the JEP document itself, there isn't too much info out yet about the Vector API;
 a great starting point are the https://richardstartin.github.io/tags/vector-api["vector" tagged posts] on the blog of Richard Startin.
 Another inspirational resource is August Nagro's project for vectorized https://github.com/AugustNagro/utf8.java[UTF-8 validation] based on a paper by John Keiser and Daniel Lemire.
+Kishor Kharbas and Paul Sandoz did a https://www.youtube.com/watch?v=PnVw1uFxSyw[talk about the Vector API] at CodeOne a while ago.
 
 Taking a step back, it's hard to overstate the impact which the Vector API potentially will have on the Java platform.
 Providing SIMD capabilities in a rather easy-to-use, portable way, without having to rely on CPU instruction set specific intrinsics, may result in nothing less than a "democratization of SIMD",
