@@ -894,9 +894,34 @@ FizzBuzzBenchmark.simdFizzBuzzSeparateMaskIndex      256  thrpt    5   998979,32
 but SIMD numbers are significantly lower.</p>
 </div>
 <div class="paragraph">
-<p>I haven&#8217;t checked the assembly code, but solely based on the figures, my guess is that the JEP 338 implementation in the current JDK 16 builds does not yet support AArch64, and the API falls back to scalar execution.
-Here it would be nice to have some method in the API which reveals whether SIMD support is provided by the current platform or not,
+<p><del>I haven&#8217;t checked the assembly code, but solely based on the figures, my guess is that the JEP 338 implementation in the current JDK 16 builds does not yet support AArch64, and the API falls back to scalar execution</del>.</p>
+</div>
+<div class="paragraph">
+<p>Here it would be nice to have some method in the API which reveals whether SIMD support is provided by the current platform or not,
 as e.g. done by .NET with its <a href="https://docs.microsoft.com/en-us/dotnet/api/system.numerics.vector.ishardwareaccelerated?view=net-5.0#System_Numerics_Vector_IsHardwareAccelerated"><code>Vector.IsHardwareAccelerated()</code></a> method.</p>
+</div>
+<div class="paragraph">
+<p><em>Update, March 9th:</em> After asking about this on the <a href="https://mail.openjdk.java.net/pipermail/panama-dev/">panama-dev</a> mailing list, Ningsheng Jian from Arm <a href="https://mail.openjdk.java.net/pipermail/panama-dev/2021-March/012386.html">explained</a> that the AArch64 NEON instruction set has a maximum hardware vector size of 128 bits;
+hence the Vector API is transparently falling back to the Java implementation in our case of using 256 bits.
+By passing the <code>-XX:+PrintIntrinsics</code> flag you can inspect which API calls get intrinsified (i.e. executed via corresponding hardware instructions) and which ones not.
+When running the main class from above with this option, we get the relevant information
+(output slightly adjusted for better readability):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>@ 31   jdk.internal.vm.vector.VectorSupport::load (38 bytes) ↩
+    failed to inline (intrinsic)
+...
+@ 26   jdk.internal.vm.vector.VectorSupport::blend (38 bytes) ↩
+    failed to inline (intrinsic)
+...
+@ 42   jdk.internal.vm.vector.VectorSupport::store (38 bytes) ↩
+    failed to inline (intrinsic)
+
+** not supported: arity=0 op=load vlen=8 etype=int ismask=no
+** not supported: arity=2 op=blend vlen=8 etype=int ismask=useload
+** not supported: arity=1 op=store vlen=8 etype=int ismask=no</code></pre>
+</div>
 </div>
 <div class="paragraph">
 <p>Fun fact: during the entire benchmark runtime of 10 min the fan of the Mac Mini was barely to hear, if at all.
