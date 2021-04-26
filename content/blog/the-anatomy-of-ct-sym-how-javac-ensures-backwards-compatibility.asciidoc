@@ -1,0 +1,283 @@
+---
+title: "The Anatomy of ct.sym — How javac Ensures Backwards Compatibility"
+date: 2021-04-26T18:45:00+01:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+One of the ultimate strengths of Java is its strong notion of backwards compatibility:
+Java applications and libraries built many years ago oftentimes run without problems on current JVMs,
+and the compiler of current JDKs can produce byte code, that is executable with earlier Java versions.
+
+For instance, JDK 16 supports byte code levels going back as far as to Java 1.7;
+But: _hic sunt dracones_.
+The emitted byte code level is just one part of the story.
+It's equally important to consider which APIs of the JDK are used by the compiled code,
+and whether they are available in the targeted Java runtime version.
+As an example, let's consider this simple "Hello World" program:
+
+<!--more-->
+
+[source,java]
+----
+package com.example;
+
+import java.util.List;
+
+public class HelloWorld {
+  public static void main(String... args) {
+    System.out.println(List.of("Hello", "World!"));
+  }
+}
+----
+
+Let's assume we're using Java 16 for compiling this code,
+aiming for compatibility with Java 1.8.
+Historically, the Java compiler has provided the _--source_ and _--target_ options for this purpose, which are well known to most Java developers:
+
+[source,shell]
+----
+$ javac --source 1.8 --target 1.8 -d classes HelloWorld.java
+warning: [options] bootstrap class path not set in conjunction with -source 8
+1 warning
+----
+
+This compiles successfully (we'll come back on that warning in a bit).
+But if you actually try to run that class on Java 8, you're in for a bad suprise:
+
+[source,shell]
+----
+$ java -classpath classes com.example.HelloWorld
+Exception in thread "main" java.lang.NoSuchMethodError: ↩
+  java.util.List.of(Ljava/lang/Object;Ljava/lang/Object;)Ljava/util/List;
+  at com.example.HelloWorld.main(HelloWorld.java:7)
+----
+
+This makes sense: the https://docs.oracle.com/javase/9/docs/api/java/util/List.html#of--[`List.of()`] methods were only introduced in Java 9,
+so they are not present in the Java 8 API.
+Shouldn't the compiler have let us know us about this?
+Absolutely, and that's where this warning about the bootstrap class path is coming in:
+the compiler recognized our potentially dangerous endavour and essentially suggested to compile against the class library matching the targeted Java version instead of that one of the JDK used for compilation.
+This is done using the _-Xbootclasspath_ option:
+
+[source,shell]
+----
+$ javac --source 1.8 --target 1.8 \
+  -d classes \
+  -Xbootclasspath:${JAVA_8_HOME}/jre/lib/rt.jar \ <1>
+  HelloWorld.java
+HelloWorld.java:7: error: cannot find symbol
+        System.out.println(List.of("Hello", "World!"));
+                               ^
+  symbol:   method of(String,String)
+  location: interface List
+1 error
+----
+<1> Path to the _rt.jar_ of Java 8
+
+That's much better: now the invocation of the `List.of()` method causes compilation to fail, instead of finding out about this problem only during testing, or worse, in production.
+
+While this approach works, it's not without issues:
+requiring the target Java version's class library complicates things quite a bit;
+multiple Java versions need to be installed,
+and the targeted JDK's location must be known,
+which for instance tends to make build processes not portable between different machines and platforms.
+
+Luckily, Java 9 improved things significantly here;
+by means of the new _--release_ option, code can be compiled for older Java versions in a fully safe and portable way.
+Let's give this a try:
+
+[source,shell]
+----
+$ javac --release 8 -d classes HelloWorld.java
+HelloWorld.java:7: error: cannot find symbol
+        System.out.println(List.of("Hello", "World!"));
+                               ^
+  symbol:   method of(String,String)
+  location: interface List
+1 error
+----
+
+Very nice, the same compilation error as before, but without the need for any complex configuration besides the _--release 8_ option.
+So how does this work?
+Does the JDK come with full class libraries of all the earlier Java versions which it supports?
+Considering that the _modules_ file of Java 16 has a size of more than one hundred megabytes
+(to be precise, 118 MB on macOS),
+that'd clearly be not a good idea;
+We'd end up with a JDK size of nearly one gigabyte.
+
+What's happening instead is that the JDK ships "stripped-down class files corresponding to class files from the target platform versions",
+as we can read in https://openjdk.java.net/jeps/247[JEP 247]
+("Compile for Older Platform Versions"),
+which introduced the _--release_ option.
+Details about the implementation are sparse, though.
+The JEP only mentions a ZIP file named _ct.sym_ which contains those signature files.
+So I started by taking a look at what's in there:
+
+[source,shell]
+----
+$ unzip -l $JAVA_HOME/lib/ct.sym
+
+Archive:  /Library/Java/JavaVirtualMachines/jdk-16.sdk/Contents/Home/lib/ct.sym
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+        0  03-26-2021 18:11   7/java.base/java/awt/peer/
+     2557  03-26-2021 18:11   7/java.base/java/awt/peer/ComponentPeer.sig
+      542  03-26-2021 18:11   7/java.base/java/awt/peer/FramePeer.sig
+      ...
+      856  03-26-2021 18:11   879A/java.activation/javax/activation/ActivationDataFlavor.sig
+      491  03-26-2021 18:11   879A/java.activation/javax/activation/CommandInfo.sig
+      299  03-26-2021 18:11   879A/java.activation/javax/activation/CommandObject.sig
+      ...
+     1566  03-26-2021 18:11   9ABCDE/java.base/java/lang/Byte.sig
+     1616  03-26-2021 18:11   9ABCDE/java.base/java/lang/Short.sig
+      ...
+----
+
+That's interesting, lots of _*.sig_ files, organized in some at first odd-looking directory structure.
+So let's see what's there for the `java.util.List` class:
+
+[source,shell]
+----
+$ unzip -l $JAVA_HOME/lib/ct.sym | grep "java/util/List.sig"
+     1481  03-26-2021 18:11   7/java.base/java/util/List.sig
+     1771  03-26-2021 18:11   8/java.base/java/util/List.sig
+     4040  03-26-2021 18:11   9/java.base/java/util/List.sig
+     4184  03-26-2021 18:11   A/java.base/java/util/List.sig
+     4097  03-26-2021 18:11   BCDEF/java.base/java/util/List.sig
+----
+
+Five different versions altogether, under the directories _7_, _8_, _9_, _A_, and _BCDEF_.
+It took a few moments until the structure began to make sense to me:
+the top-level directory names encode Java version(s),
+and there's a new version of the signature file whenever its API changed.
+I.e. `java.util.List` changed in Java 7, 8, 9, 10 (_A_), and 11 (_B_),
+and has remained stable since then, i.e. from version 11 to 16,
+there have been noch changes to the public `List` API.
+
+So let's dive in a bit further and compare the signature files of Java 8 and 9.
+As JEP 247 states that these files are (stripped-down) class files,
+we should be able to examine them using _javap_.
+In order to so, I had to change the file extensions from _*.sig_ to _*.class_, though.
+After that, I could decompile the files using _javap_,
+save the result in text files and compare them using git:
+
+[source,shell]
+----
+$ javap List8.class > List8.txt
+$ javap List9.class > List9.txt
+$ git diff --no-index List8.txt List9.txt
+
+diff --git a/List8.txt b/List9.txt
+index b2ca320..b276286 100644
+--- a/List8.txt
++++ b/List9.txt
+@@ -27,4 +27,16 @@ public interface java.util.List<E> extends java.util.Collection<E> {
+   public abstract java.util.ListIterator<E> listIterator(int);
+   public abstract java.util.List<E> subList(int, int);
+   public default java.util.Spliterator<E> spliterator();
++  public static <E> java.util.List<E> of();
++  public static <E> java.util.List<E> of(E);
++  public static <E> java.util.List<E> of(E, E);
++  public static <E> java.util.List<E> of(E, E, E);
++  public static <E> java.util.List<E> of(E, E, E, E);
++  public static <E> java.util.List<E> of(E, E, E, E, E);
++  public static <E> java.util.List<E> of(E, E, E, E, E, E);
++  public static <E> java.util.List<E> of(E, E, E, E, E, E, E);
++  public static <E> java.util.List<E> of(E, E, E, E, E, E, E, E);
++  public static <E> java.util.List<E> of(E, E, E, E, E, E, E, E, E);
++  public static <E> java.util.List<E> of(E, E, E, E, E, E, E, E, E, E);
++  public static <E> java.util.List<E> of(E...);
+ }
+----
+
+As expected, the diff between the two signature files reveals the addition of the different `List.of()` methods in Java 9,
+as such exactly the reason why the Hello World example from the beginning cannot be executed on Java 8.
+
+[NOTE]
+.Debugging the Java Compiler
+====
+In order to understand in detail how the _ct.sym_ file is used by the Java compiler,
+it can be useful to run _javac_ in debug mode.
+As _javac_ is written in Java itself, this can be done exactly the same way as when remote debugging any other Java application.
+You only need to start _javac_ using the usual debug switches,
+which must be prepended with _-J_ in this case:
+
+[source,shell]
+----
+$ javac -J-Xdebug \
+  -J-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000 \
+  HelloWorld.java
+----
+
+Make sure to download the right version of the OpenJDK https://github.com/openjdk/jdk[source code] and set it up in your IDE,
+so that you also can step through internal classes whose source code isn't distributed with binary builds.
+An interesting starting point for your explorations could be the 
+https://github.com/openjdk/jdk/blob/master/src/jdk.compiler/share/classes/com/sun/tools/javac/platform/JDKPlatformProvider.java[`JDKPlatformProvider`] class.
+====
+
+To double-check, you could also confirm with the API diffs provided by the https://javaalmanac.io/jdk/9/apidiff/8/[Java Version Almanac] or the Adopt OpenJDK https://github.com/AdoptOpenJDK/jdk-api-diff[JDK API diff generator].
+While doing so, one more thing piqued my curiosity: these reports don't show any changes to `java.util.List` in Java 11,
+whereas _ct.sym_ contains a new version of the corresponding signature file;
+To find out what's going on, again _javap_ -- this time with a bit more detail level -- came in handy:
+
+[source,shell]
+----
+$ javap -p -c -s -v -l List10.class > List10.txt
+$ javap -p -c -s -v -l List11.class > List11.txt
+$ git diff --no-index -w List10.txt List11.txt
+
+...
+-   #96 = Utf8               RuntimeInvisibleAnnotations
+-   #97 = Utf8               Ljdk/Profile+Annotation;
+-   #98 = Utf8               value
+-   #99 = Integer            1
+ {
+   public abstract int size();
+     descriptor: ()I
+@@ -308,8 +304,3 @@ Constant pool:
+     Signature: #87                          // <E:Ljava/lang/Object;>(Ljava/util/Collection<+TE;>;)Ljava/util/List<TE;>;
+ }
+ Signature: #95                          // <E:Ljava/lang/Object;>Ljava/lang/Object;Ljava/util/Collection<TE;>;
+-RuntimeInvisibleAnnotations:
+-  0: #97(#98=I#99)
+-    jdk.Profile+Annotation(
+-      value=1
+-    )
+----
+
+An annotation with the interesting name `@jdk.Profile+Annotion(1)` got removed.
+Now, if you look at the https://github.com/openjdk/jdk/blob/jdk-10%2B46/src/java.base/share/classes/java/util/List.java[_List.java]_ source file in Java 10,
+you won't find this annotation anywhere.
+In fact, this annotation type doesn't exist at all.
+https://github.com/openjdk/jdk/blob/master/make/langtools/src/classes/build/tools/symbolgenerator/CreateSymbols.java[By grepping] through the OpenJDK source code for _ct.sym_,
+I learned that it is a synthetic annotation which gets added during the process of creating the signature files, 
+denoting which _compact profile_ a class belongs to.
+
+[NOTE]
+.Compact Profiles
+====
+https://openjdk.java.net/jeps/161[Compact Profiles] are a notion in Java 8 which defines three specific sub-sets of the Java platform: compact1, compact2, and compact3.
+Each profile contains a fixed set of JDK packages and build upon each other,
+allowing for more size-efficient deployments to constrained devices,
+if such profile is sufficient for a given application.
+With Java 9, the module system, and the ability to create custom runtime images on a much more granular level (using _jlink_),
+compact profiles became pretty much obsolete.
+====
+
+So that's another purpose of the _ct.sym_ file: it allows the compiler to ensure compatibility with a chosen compact profile.
+In current JDKs, _javac_ still supports the _-profile_ option, but only when compiling for Java 8.
+In that light, it's not quite clear why that annotation only was removed from the signature file with Java 11.
+
+Summing up, since Java 9 the _javac_ compiler provides powerful means of ensuring API compatibility with earlier Java versions.
+With a size of 7.2 MB for Java 16, the _ct.sym_ file contains the JDK API signature versions all the way back to Java 7.
+Using the _--release_ compiler option, backwards-compatible builds, fully portable, and without the need for actually installing earlier JDKs, are straight foward.
+With that tool in your box, there's really no need any longer for using the _-source_ and _-target_ options.
+Not only that, _--release_ will also help to spot subtle compatibility issues related to overriding methods with co-variant return types,
+link:/blog/bytebuffer-and-the-dreaded-nosuchmethoderror/[such as ByteBuffer.position()].
