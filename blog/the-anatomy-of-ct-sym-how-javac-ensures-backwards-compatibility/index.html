@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>The Anatomy of ct.sym — How javac Ensures Backwards Compatibility - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="The Anatomy of ct.sym — How javac Ensures Backwards Compatibility" />
+<meta property="og:description" content="
+One of the ultimate strengths of Java is its strong notion of backwards compatibility:
+Java applications and libraries built many years ago oftentimes run without problems on current JVMs,
+and the compiler of current JDKs can produce byte code, that is executable with earlier Java versions.
+
+
+For instance, JDK 16 supports byte code levels going back as far as to Java 1.7;
+But: hic sunt dracones.
+The emitted byte code level is just one part of the story.
+It&#8217;s equally important to consider which APIs of the JDK are used by the compiled code,
+and whether they are available in the targeted Java runtime version.
+As an example, let&#8217;s consider this simple &#34;Hello World&#34; program:
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/the-anatomy-of-ct-sym-how-javac-ensures-backwards-compatibility/" />
+<meta property="article:published_time" content="2021-04-26T18:45:00+01:00" />
+<meta property="article:modified_time" content="2021-04-26T18:45:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="The Anatomy of ct.sym — How javac Ensures Backwards Compatibility"/>
+<meta name="twitter:description" content="
+One of the ultimate strengths of Java is its strong notion of backwards compatibility:
+Java applications and libraries built many years ago oftentimes run without problems on current JVMs,
+and the compiler of current JDKs can produce byte code, that is executable with earlier Java versions.
+
+
+For instance, JDK 16 supports byte code levels going back as far as to Java 1.7;
+But: hic sunt dracones.
+The emitted byte code level is just one part of the story.
+It&#8217;s equally important to consider which APIs of the JDK are used by the compiled code,
+and whether they are available in the targeted Java runtime version.
+As an example, let&#8217;s consider this simple &#34;Hello World&#34; program:
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search.gunnar-morling.workers.dev\/Prod\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">The Anatomy of ct.sym — How javac Ensures Backwards Compatibility</h1>
+				<div class="meta">Posted at Apr 26, 2021</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>One of the ultimate strengths of Java is its strong notion of backwards compatibility:
+Java applications and libraries built many years ago oftentimes run without problems on current JVMs,
+and the compiler of current JDKs can produce byte code, that is executable with earlier Java versions.</p>
+</div>
+<div class="paragraph">
+<p>For instance, JDK 16 supports byte code levels going back as far as to Java 1.7;
+But: <em>hic sunt dracones</em>.
+The emitted byte code level is just one part of the story.
+It&#8217;s equally important to consider which APIs of the JDK are used by the compiled code,
+and whether they are available in the targeted Java runtime version.
+As an example, let&#8217;s consider this simple "Hello World" program:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">example</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">HelloWorld</span> <span class="o">{</span>
+  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">...</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="nc">List</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">,</span> <span class="s">"World!"</span><span class="o">));</span>
+  <span class="o">}</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s assume we&#8217;re using Java 16 for compiling this code,
+aiming for compatibility with Java 1.8.
+Historically, the Java compiler has provided the <em>--source</em> and <em>--target</em> options for this purpose, which are well known to most Java developers:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javac <span class="nt">--source</span> 1.8 <span class="nt">--target</span> 1.8 <span class="nt">-d</span> classes HelloWorld.java
+warning: <span class="o">[</span>options] bootstrap class path not <span class="nb">set </span><span class="k">in </span>conjunction with <span class="nt">-source</span> 8
+1 warning</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This compiles successfully (we&#8217;ll come back on that warning in a bit).
+But if you actually try to run that class on Java 8, you&#8217;re in for a bad suprise:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>java <span class="nt">-classpath</span> classes com.example.HelloWorld
+Exception <span class="k">in </span>thread <span class="s2">"main"</span> java.lang.NoSuchMethodError: ↩
+  java.util.List.of<span class="o">(</span>Ljava/lang/Object<span class="p">;</span>Ljava/lang/Object<span class="p">;</span><span class="o">)</span>Ljava/util/List<span class="p">;</span>
+  at com.example.HelloWorld.main<span class="o">(</span>HelloWorld.java:7<span class="o">)</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This makes sense: the <a href="https://docs.oracle.com/javase/9/docs/api/java/util/List.html#of--"><code>List.of()</code></a> methods were only introduced in Java 9,
+so they are not present in the Java 8 API.
+Shouldn&#8217;t the compiler have let us know us about this?
+Absolutely, and that&#8217;s where this warning about the bootstrap class path is coming in:
+the compiler recognized our potentially dangerous endavour and essentially suggested to compile against the class library matching the targeted Java version instead of that one of the JDK used for compilation.
+This is done using the <em>-Xbootclasspath</em> option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javac <span class="nt">--source</span> 1.8 <span class="nt">--target</span> 1.8 <span class="se">\</span>
+  <span class="nt">-d</span> classes <span class="se">\</span>
+  <span class="nt">-Xbootclasspath</span>:<span class="k">${</span><span class="nv">JAVA_8_HOME</span><span class="k">}</span>/jre/lib/rt.jar <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
+  HelloWorld.java
+HelloWorld.java:7: error: cannot find symbol
+        System.out.println<span class="o">(</span>List.of<span class="o">(</span><span class="s2">"Hello"</span>, <span class="s2">"World!"</span><span class="o">))</span><span class="p">;</span>
+                               ^
+  symbol:   method of<span class="o">(</span>String,String<span class="o">)</span>
+  location: interface List
+1 error</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Path to the <em>rt.jar</em> of Java 8</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>That&#8217;s much better: now the invocation of the <code>List.of()</code> method causes compilation to fail, instead of finding out about this problem only during testing, or worse, in production.</p>
+</div>
+<div class="paragraph">
+<p>While this approach works, it&#8217;s not without issues:
+requiring the target Java version&#8217;s class library complicates things quite a bit;
+multiple Java versions need to be installed,
+and the targeted JDK&#8217;s location must be known,
+which for instance tends to make build processes not portable between different machines and platforms.</p>
+</div>
+<div class="paragraph">
+<p>Luckily, Java 9 improved things significantly here;
+by means of the new <em>--release</em> option, code can be compiled for older Java versions in a fully safe and portable way.
+Let&#8217;s give this a try:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javac <span class="nt">--release</span> 8 <span class="nt">-d</span> classes HelloWorld.java
+HelloWorld.java:7: error: cannot find symbol
+        System.out.println<span class="o">(</span>List.of<span class="o">(</span><span class="s2">"Hello"</span>, <span class="s2">"World!"</span><span class="o">))</span><span class="p">;</span>
+                               ^
+  symbol:   method of<span class="o">(</span>String,String<span class="o">)</span>
+  location: interface List
+1 error</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Very nice, the same compilation error as before, but without the need for any complex configuration besides the <em>--release 8</em> option.
+So how does this work?
+Does the JDK come with full class libraries of all the earlier Java versions which it supports?
+Considering that the <em>modules</em> file of Java 16 has a size of more than one hundred megabytes
+(to be precise, 118 MB on macOS),
+that&#8217;d clearly be not a good idea;
+We&#8217;d end up with a JDK size of nearly one gigabyte.</p>
+</div>
+<div class="paragraph">
+<p>What&#8217;s happening instead is that the JDK ships "stripped-down class files corresponding to class files from the target platform versions",
+as we can read in <a href="https://openjdk.java.net/jeps/247">JEP 247</a>
+("Compile for Older Platform Versions"),
+which introduced the <em>--release</em> option.
+Details about the implementation are sparse, though.
+The JEP only mentions a ZIP file named <em>ct.sym</em> which contains those signature files.
+So I started by taking a look at what&#8217;s in there:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>unzip <span class="nt">-l</span> <span class="nv">$JAVA_HOME</span>/lib/ct.sym
+
+Archive:  /Library/Java/JavaVirtualMachines/jdk-16.sdk/Contents/Home/lib/ct.sym
+  Length      Date    Time    Name
+<span class="nt">---------</span>  <span class="nt">----------</span> <span class="nt">-----</span>   <span class="nt">----</span>
+        0  03-26-2021 18:11   7/java.base/java/awt/peer/
+     2557  03-26-2021 18:11   7/java.base/java/awt/peer/ComponentPeer.sig
+      542  03-26-2021 18:11   7/java.base/java/awt/peer/FramePeer.sig
+      ...
+      856  03-26-2021 18:11   879A/java.activation/javax/activation/ActivationDataFlavor.sig
+      491  03-26-2021 18:11   879A/java.activation/javax/activation/CommandInfo.sig
+      299  03-26-2021 18:11   879A/java.activation/javax/activation/CommandObject.sig
+      ...
+     1566  03-26-2021 18:11   9ABCDE/java.base/java/lang/Byte.sig
+     1616  03-26-2021 18:11   9ABCDE/java.base/java/lang/Short.sig
+      ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>That&#8217;s interesting, lots of <em>*.sig</em> files, organized in some at first odd-looking directory structure.
+So let&#8217;s see what&#8217;s there for the <code>java.util.List</code> class:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>unzip <span class="nt">-l</span> <span class="nv">$JAVA_HOME</span>/lib/ct.sym | <span class="nb">grep</span> <span class="s2">"java/util/List.sig"</span>
+     1481  03-26-2021 18:11   7/java.base/java/util/List.sig
+     1771  03-26-2021 18:11   8/java.base/java/util/List.sig
+     4040  03-26-2021 18:11   9/java.base/java/util/List.sig
+     4184  03-26-2021 18:11   A/java.base/java/util/List.sig
+     4097  03-26-2021 18:11   BCDEF/java.base/java/util/List.sig</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Five different versions altogether, under the directories <em>7</em>, <em>8</em>, <em>9</em>, <em>A</em>, and <em>BCDEF</em>.
+It took a few moments until the structure began to make sense to me:
+the top-level directory names encode Java version(s),
+and there&#8217;s a new version of the signature file whenever its API changed.
+I.e. <code>java.util.List</code> changed in Java 7, 8, 9, 10 (<em>A</em>), and 11 (<em>B</em>),
+and has remained stable since then, i.e. from version 11 to 16,
+there have been noch changes to the public <code>List</code> API.</p>
+</div>
+<div class="paragraph">
+<p>So let&#8217;s dive in a bit further and compare the signature files of Java 8 and 9.
+As JEP 247 states that these files are (stripped-down) class files,
+we should be able to examine them using <em>javap</em>.
+In order to so, I had to change the file extensions from <em>*.sig</em> to <em>*.class</em>, though.
+After that, I could decompile the files using <em>javap</em>,
+save the result in text files and compare them using git:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javap List8.class <span class="o">&gt;</span> List8.txt
+<span class="nv">$ </span>javap List9.class <span class="o">&gt;</span> List9.txt
+<span class="nv">$ </span>git diff <span class="nt">--no-index</span> List8.txt List9.txt
+
+diff <span class="nt">--git</span> a/List8.txt b/List9.txt
+index b2ca320..b276286 100644
+<span class="nt">---</span> a/List8.txt
++++ b/List9.txt
+@@ <span class="nt">-27</span>,4 +27,16 @@ public interface java.util.List&lt;E&gt; extends java.util.Collection&lt;E&gt; <span class="o">{</span>
+   public abstract java.util.ListIterator&lt;E&gt; listIterator<span class="o">(</span>int<span class="o">)</span><span class="p">;</span>
+   public abstract java.util.List&lt;E&gt; subList<span class="o">(</span>int, int<span class="o">)</span><span class="p">;</span>
+   public default java.util.Spliterator&lt;E&gt; spliterator<span class="o">()</span><span class="p">;</span>
++  public static &lt;E&gt; java.util.List&lt;E&gt; of<span class="o">()</span><span class="p">;</span>
++  public static &lt;E&gt; java.util.List&lt;E&gt; of<span class="o">(</span>E<span class="o">)</span><span class="p">;</span>
++  public static &lt;E&gt; java.util.List&lt;E&gt; of<span class="o">(</span>E, E<span class="o">)</span><span class="p">;</span>
++  public static &lt;E&gt; java.util.List&lt;E&gt; of<span class="o">(</span>E, E, E<span class="o">)</span><span class="p">;</span>
++  public static &lt;E&gt; java.util.List&lt;E&gt; of<span class="o">(</span>E, E, E, E<span class="o">)</span><span class="p">;</span>
++  public static &lt;E&gt; java.util.List&lt;E&gt; of<span class="o">(</span>E, E, E, E, E<span class="o">)</span><span class="p">;</span>
++  public static &lt;E&gt; java.util.List&lt;E&gt; of<span class="o">(</span>E, E, E, E, E, E<span class="o">)</span><span class="p">;</span>
++  public static &lt;E&gt; java.util.List&lt;E&gt; of<span class="o">(</span>E, E, E, E, E, E, E<span class="o">)</span><span class="p">;</span>
++  public static &lt;E&gt; java.util.List&lt;E&gt; of<span class="o">(</span>E, E, E, E, E, E, E, E<span class="o">)</span><span class="p">;</span>
++  public static &lt;E&gt; java.util.List&lt;E&gt; of<span class="o">(</span>E, E, E, E, E, E, E, E, E<span class="o">)</span><span class="p">;</span>
++  public static &lt;E&gt; java.util.List&lt;E&gt; of<span class="o">(</span>E, E, E, E, E, E, E, E, E, E<span class="o">)</span><span class="p">;</span>
++  public static &lt;E&gt; java.util.List&lt;E&gt; of<span class="o">(</span>E...<span class="o">)</span><span class="p">;</span>
+ <span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As expected, the diff between the two signature files reveals the addition of the different <code>List.of()</code> methods in Java 9,
+as such exactly the reason why the Hello World example from the beginning cannot be executed on Java 8.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Debugging the Java Compiler</div>
+<div class="paragraph">
+<p>In order to understand in detail how the <em>ct.sym</em> file is used by the Java compiler,
+it can be useful to run <em>javac</em> in debug mode.
+As <em>javac</em> is written in Java itself, this can be done exactly the same way as when remote debugging any other Java application.
+You only need to start <em>javac</em> using the usual debug switches,
+which must be prepended with <em>-J</em> in this case:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javac <span class="nt">-J-Xdebug</span> <span class="se">\</span>
+  <span class="nt">-J-Xrunjdwp</span>:transport<span class="o">=</span>dt_socket,server<span class="o">=</span>y,suspend<span class="o">=</span>y,address<span class="o">=</span>8000 <span class="se">\</span>
+  HelloWorld.java</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Make sure to download the right version of the OpenJDK <a href="https://github.com/openjdk/jdk">source code</a> and set it up in your IDE,
+so that you also can step through internal classes whose source code isn&#8217;t distributed with binary builds.
+An interesting starting point for your explorations could be the
+<a href="https://github.com/openjdk/jdk/blob/master/src/jdk.compiler/share/classes/com/sun/tools/javac/platform/JDKPlatformProvider.java"><code>JDKPlatformProvider</code></a> class.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To double-check, you could also confirm with the API diffs provided by the <a href="https://javaalmanac.io/jdk/9/apidiff/8/">Java Version Almanac</a> or the Adopt OpenJDK <a href="https://github.com/AdoptOpenJDK/jdk-api-diff">JDK API diff generator</a>.
+While doing so, one more thing piqued my curiosity: these reports don&#8217;t show any changes to <code>java.util.List</code> in Java 11,
+whereas <em>ct.sym</em> contains a new version of the corresponding signature file;
+To find out what&#8217;s going on, again <em>javap</em>&#8201;&#8212;&#8201;this time with a bit more detail level&#8201;&#8212;&#8201;came in handy:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javap <span class="nt">-p</span> <span class="nt">-c</span> <span class="nt">-s</span> <span class="nt">-v</span> <span class="nt">-l</span> List10.class <span class="o">&gt;</span> List10.txt
+<span class="nv">$ </span>javap <span class="nt">-p</span> <span class="nt">-c</span> <span class="nt">-s</span> <span class="nt">-v</span> <span class="nt">-l</span> List11.class <span class="o">&gt;</span> List11.txt
+<span class="nv">$ </span>git diff <span class="nt">--no-index</span> <span class="nt">-w</span> List10.txt List11.txt
+
+...
+-   <span class="c">#96 = Utf8               RuntimeInvisibleAnnotations</span>
+-   <span class="c">#97 = Utf8               Ljdk/Profile+Annotation;</span>
+-   <span class="c">#98 = Utf8               value</span>
+-   <span class="c">#99 = Integer            1</span>
+ <span class="o">{</span>
+   public abstract int size<span class="o">()</span><span class="p">;</span>
+     descriptor: <span class="o">()</span>I
+@@ <span class="nt">-308</span>,8 +304,3 @@ Constant pool:
+     Signature: <span class="c">#87                          // &lt;E:Ljava/lang/Object;&gt;(Ljava/util/Collection&lt;+TE;&gt;;)Ljava/util/List&lt;TE;&gt;;</span>
+ <span class="o">}</span>
+ Signature: <span class="c">#95                          // &lt;E:Ljava/lang/Object;&gt;Ljava/lang/Object;Ljava/util/Collection&lt;TE;&gt;;</span>
+<span class="nt">-RuntimeInvisibleAnnotations</span>:
+-  0: <span class="c">#97(#98=I#99)</span>
+-    jdk.Profile+Annotation<span class="o">(</span>
+-      <span class="nv">value</span><span class="o">=</span>1
+-    <span class="o">)</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>An annotation with the interesting name <code>@jdk.Profile+Annotion(1)</code> got removed.
+Now, if you look at the <a href="https://github.com/openjdk/jdk/blob/jdk-10%2B46/src/java.base/share/classes/java/util/List.java"><em>List.java</a></em> source file in Java 10,
+you won&#8217;t find this annotation anywhere.
+In fact, this annotation type doesn&#8217;t exist at all.
+<a href="https://github.com/openjdk/jdk/blob/master/make/langtools/src/classes/build/tools/symbolgenerator/CreateSymbols.java">By grepping</a> through the OpenJDK source code for <em>ct.sym</em>,
+I learned that it is a synthetic annotation which gets added during the process of creating the signature files,
+denoting which <em>compact profile</em> a class belongs to.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Compact Profiles</div>
+<div class="paragraph">
+<p><a href="https://openjdk.java.net/jeps/161">Compact Profiles</a> are a notion in Java 8 which defines three specific sub-sets of the Java platform: compact1, compact2, and compact3.
+Each profile contains a fixed set of JDK packages and build upon each other,
+allowing for more size-efficient deployments to constrained devices,
+if such profile is sufficient for a given application.
+With Java 9, the module system, and the ability to create custom runtime images on a much more granular level (using <em>jlink</em>),
+compact profiles became pretty much obsolete.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>So that&#8217;s another purpose of the <em>ct.sym</em> file: it allows the compiler to ensure compatibility with a chosen compact profile.
+In current JDKs, <em>javac</em> still supports the <em>-profile</em> option, but only when compiling for Java 8.
+In that light, it&#8217;s not quite clear why that annotation only was removed from the signature file with Java 11.</p>
+</div>
+<div class="paragraph">
+<p>Summing up, since Java 9 the <em>javac</em> compiler provides powerful means of ensuring API compatibility with earlier Java versions.
+With a size of 7.2 MB for Java 16, the <em>ct.sym</em> file contains the JDK API signature versions all the way back to Java 7.
+Using the <em>--release</em> compiler option, backwards-compatible builds, fully portable, and without the need for actually installing earlier JDKs, are straight foward.
+With that tool in your box, there&#8217;s really no need any longer for using the <em>-source</em> and <em>-target</em> options.
+Not only that, <em>--release</em> will also help to spot subtle compatibility issues related to overriding methods with co-variant return types,
+<a href="/blog/bytebuffer-and-the-dreaded-nosuchmethoderror/">such as ByteBuffer.position()</a>.</p>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread"></div>
+<script type="text/javascript">
+	(function () {
+		
+		
+		if (window.location.hostname == "localhost")
+			return;
+
+		var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+		var disqus_shortname = 'morlingdev';
+		dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+		(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+	})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by
+		Disqus.</a></noscript>
+<a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2021 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
