@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Exploring ZooKeeper-less Kafka - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Exploring ZooKeeper-less Kafka" />
+<meta property="og:description" content="
+Sometimes, less is more.
+One case where that&#8217;s certainly true is dependencies.
+And so it shouldn&#8217;t come at a surprise that the Apache Kafka community is eagerly awaiting the removal of the dependency to the ZooKeeper service,
+which currently is used for storing Kafka metadata (e.g. about topics and partitions) as well as for the purposes of leader election in the cluster.
+
+
+The Kafka improvement proposal KIP-500
+(&#34;Replace ZooKeeper with a Self-Managed Metadata Quorum&#34;)
+promises to make life better for users in many regards:
+
+
+
+
+Better getting started and operational experience by requiring to run only one system, Kafka, instead of two
+
+
+Removing potential for discrepancies of metadata state between ZooKeeper and the Kafka controller
+
+
+Simplifying configuration, for instance when it comes to security
+
+
+Better scalability, e.g. in terms of number of partitions; faster execution of operations like topic creation
+
+
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/exploring-zookeeper-less-kafka/" />
+<meta property="article:published_time" content="2021-05-17T18:45:00+01:00" />
+<meta property="article:modified_time" content="2021-05-17T18:45:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Exploring ZooKeeper-less Kafka"/>
+<meta name="twitter:description" content="
+Sometimes, less is more.
+One case where that&#8217;s certainly true is dependencies.
+And so it shouldn&#8217;t come at a surprise that the Apache Kafka community is eagerly awaiting the removal of the dependency to the ZooKeeper service,
+which currently is used for storing Kafka metadata (e.g. about topics and partitions) as well as for the purposes of leader election in the cluster.
+
+
+The Kafka improvement proposal KIP-500
+(&#34;Replace ZooKeeper with a Self-Managed Metadata Quorum&#34;)
+promises to make life better for users in many regards:
+
+
+
+
+Better getting started and operational experience by requiring to run only one system, Kafka, instead of two
+
+
+Removing potential for discrepancies of metadata state between ZooKeeper and the Kafka controller
+
+
+Simplifying configuration, for instance when it comes to security
+
+
+Better scalability, e.g. in terms of number of partitions; faster execution of operations like topic creation
+
+
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search.gunnar-morling.workers.dev\/Prod\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Exploring ZooKeeper-less Kafka</h1>
+				<div class="meta">Posted at May 17, 2021</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>Sometimes, less is more.
+One case where that&#8217;s certainly true is dependencies.
+And so it shouldn&#8217;t come at a surprise that the <a href="https://kafka.apache.org/">Apache Kafka</a> community is eagerly awaiting the removal of the dependency to the <a href="https://zookeeper.apache.org/">ZooKeeper</a> service,
+which currently is used for storing Kafka metadata (e.g. about topics and partitions) as well as for the purposes of leader election in the cluster.</p>
+</div>
+<div class="paragraph">
+<p>The Kafka improvement proposal <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-500%3A+Replace+ZooKeeper+with+a+Self-Managed+Metadata+Quorum">KIP-500</a>
+("Replace ZooKeeper with a Self-Managed Metadata Quorum")
+promises to make life better for users in many regards:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Better getting started and operational experience by requiring to run only one system, Kafka, instead of two</p>
+</li>
+<li>
+<p>Removing potential for discrepancies of metadata state between ZooKeeper and the Kafka controller</p>
+</li>
+<li>
+<p>Simplifying configuration, for instance when it comes to security</p>
+</li>
+<li>
+<p>Better scalability, e.g. in terms of number of partitions; faster execution of operations like topic creation</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>With KIP-500, Kafka itself will store all the required metadata in an internal Kafka topic,
+and controller election will be done amongst (a subset of) the Kafka cluster nodes themselves,
+based on a variant of the <a href="https://raft.github.io/">Raft protocol</a> for distributed consensus.
+Removing the ZooKeeper dependency is great not only for running Kafka clusters in production,
+also for local development and testing being able to start up a Kafka node with a single process comes in very handy.</p>
+</div>
+<div class="paragraph">
+<p>Having been in the works for multiple years, ZK-less Kafka,
+also known as KRaft ("Kafka Raft metadata mode"), was recently published as an early access feature with <a href="https://blogs.apache.org/kafka/entry/what-s-new-in-apache5">Kafka 2.8</a>.
+I.e. the perfect time to get my hands on this and get a first feeling for ZK-less Kafka myself.
+Note this post isn&#8217;t meant to be a thorough evaluation or systematic testing of the new Kafka deployment mode,
+rather take it as a description of how to get started with playing with ZK-less Kafka and of a few observations I made while doing so.</p>
+</div>
+<div class="paragraph">
+<p>In the world of ZK-less Kafka, there&#8217;s two node roles for nodes: <em>controller</em> and <em>broker</em>.
+Each node in the cluster can have either one or both roles ("combined nodes").
+All controller nodes elect the <em>active controller</em>,
+which is in charge of coordinating the whole cluster,
+with other controller nodes acting as hot stand-by replicas.
+In the KRaft KIPs, the active controller sometimes also is simply referred to as <em>leader</em>.
+This may appear confusing at first, if you are familiar with the existing concept of <em>partition leaders</em>.
+It started to make sense to me once I realized that the active controller is the leader of the sole partition of the metadata topic.
+All broker nodes are handling client requests, just as before with ZooKeeper.</p>
+</div>
+<div class="paragraph">
+<p>While for smaller clusters it is expected that the majority of, or even all cluster nodes act as controllers,
+you may have dedicated controller-only nodes in larger clusters,
+e.g. 3 controller nodes and 7 broker nodes in a cluster of 10 nodes overall.
+As per the <a href="https://github.com/apache/kafka/blob/trunk/config/kraft/README.md">KRaft README</a>,
+having dedicated controller nodes should increase overall stability,
+as for instance an out-of-memory error on a broker wouldn&#8217;t impact controllers, or potentially even cause a leader re-election.</p>
+</div>
+<div class="sect1">
+<h2 id="_trying_zk_less_kafka_yourself">Trying ZK-less Kafka Yourself</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As a foundation,
+I&#8217;ve <a href="https://github.com/gunnarmorling/docker-images/commit/cbd322d8a1f262be8bc48500f1a0776f835e6e3d">created a variant</a> of the Debezium 1.6 container image,
+which updates Kafka from 2.7 to Kafka 2.8, and also does the required changes to the <a href="https://github.com/gunnarmorling/docker-images/blob/DBZ-3444/kafka/1.6/docker-entrypoint.sh">entrypoint script</a> for using the KRaft mode.
+Note this change hasn&#8217;t been merged yet to the upstream Debezium repository,
+so if you&#8217;d like to try out things by yourself, you&#8217;ll have to clone my repo, and then build the container image yourself like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>git clone git@github.com:gunnarmorling/docker-images.git
+<span class="nv">$ </span><span class="nb">cd </span>docker-images/kafka/1.6
+<span class="nv">$ </span>docker build <span class="nt">-t</span> debezium/zkless-kafka:1.6 <span class="nt">--build-arg</span> <span class="nv">DEBEZIUM_VERSION</span><span class="o">=</span>1.6.0 .</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In order to start the image with Kafka in KRaft mode, the <code>CLUSTER_ID</code> environment variable must be set.
+A value can be obtained using the new <em>bin/kafka-storage.sh</em> script;
+going forward, we&#8217;ll likely add an option to the Debezium Kafka container image for doing so.
+If that variable is set,
+the entrypoint script of the image does the following things:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Use <em>config/kraft/server.properties</em> instead of <em>config/server.properties</em> as the Kafka configuration file;
+this one comes with the Kafka distribution and is meant for nodes which should have both the controller and broker roles;
+i.e. the container image currently only supports combined nodes</p>
+</li>
+<li>
+<p><a href="https://github.com/apache/kafka/blob/trunk/config/kraft/README.md#format-storage-directories">Format</a> the node&#8217;s storage directory, if not the case yet</p>
+</li>
+<li>
+<p>Set up a listener for controller communication</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Based on that, here is what&#8217;s needed in a Docker Compose file for spinning up a Kafka cluster with three nodes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><span class="na">version</span><span class="pi">:</span> <span class="s1">'</span><span class="s">2'</span>
+<span class="na">services</span><span class="pi">:</span>
+  <span class="na">kafka-1</span><span class="pi">:</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s">debezium/zkless-kafka:1.6</span>
+    <span class="na">ports</span><span class="pi">:</span>
+     <span class="pi">-</span> <span class="s">19092:9092</span>
+     <span class="pi">-</span> <span class="s">19093:9093</span>
+    <span class="na">environment</span><span class="pi">:</span>
+     <span class="pi">-</span> <span class="s">CLUSTER_ID=oh-sxaDRTcyAr6pFRbXyzA</span> <i class="conum" data-value="1"></i><b>(1)</b>
+     <span class="pi">-</span> <span class="s">BROKER_ID=1</span> <i class="conum" data-value="2"></i><b>(2)</b>
+     <span class="pi">-</span> <span class="s">KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093</span> <i class="conum" data-value="3"></i><b>(3)</b>
+  <span class="na">kafka-2</span><span class="pi">:</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s">debezium/zkless-kafka:1.6</span>
+    <span class="na">ports</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">29092:9092</span>
+      <span class="pi">-</span> <span class="s">29093:9093</span>
+    <span class="na">environment</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">CLUSTER_ID=oh-sxaDRTcyAr6pFRbXyzA</span> <i class="conum" data-value="1"></i><b>(1)</b>
+      <span class="pi">-</span> <span class="s">BROKER_ID=2</span> <i class="conum" data-value="2"></i><b>(2)</b>
+      <span class="pi">-</span> <span class="s">KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093</span> <i class="conum" data-value="3"></i><b>(3)</b>
+  <span class="na">kafka-3</span><span class="pi">:</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s">debezium/zkless-kafka:1.6</span>
+    <span class="na">ports</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">39092:9092</span>
+      <span class="pi">-</span> <span class="s">39093:9093</span>
+    <span class="na">environment</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">CLUSTER_ID=oh-sxaDRTcyAr6pFRbXyzA</span> <i class="conum" data-value="1"></i><b>(1)</b>
+      <span class="pi">-</span> <span class="s">BROKER_ID=3</span> <i class="conum" data-value="2"></i><b>(2)</b>
+      <span class="pi">-</span> <span class="s">KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093</span> <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Cluster id; must be the <em>same</em> for all the nodes</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Broker id; must be <em>unique</em> for each node</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Addresses of all the controller nodes in the format <code>id1@host1:port1,id2@host2:port2&#8230;&#8203;</code></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>No ZooKeeper nodes, yeah :)</p>
+</div>
+<div class="paragraph">
+<p>Working on <a href="https://debezium.io/">Debezium</a>, and being a Kafka Connect aficionado allaround,
+I&#8217;m also going to add Connect and a Postgres database for testing purposes
+(you can find the complete Compose file <a href="https://github.com/gunnarmorling/debezium-examples/blob/zk-less-kafka/tutorial/docker-compose-zkless-kafka.yaml">here</a>):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><span class="na">version</span><span class="pi">:</span> <span class="s1">'</span><span class="s">2'</span>
+<span class="na">services</span><span class="pi">:</span>
+
+  <span class="c1"># ...</span>
+
+  <span class="na">connect</span><span class="pi">:</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s">debezium/connect:1.6</span>
+    <span class="na">ports</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">8083:8083</span>
+    <span class="na">links</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">kafka-1</span>
+      <span class="pi">-</span> <span class="s">kafka-2</span>
+      <span class="pi">-</span> <span class="s">kafka-3</span>
+      <span class="pi">-</span> <span class="s">postgres</span>
+    <span class="na">environment</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">BOOTSTRAP_SERVERS=kafka-1:9092</span>
+      <span class="pi">-</span> <span class="s">GROUP_ID=1</span>
+      <span class="pi">-</span> <span class="s">CONFIG_STORAGE_TOPIC=my_connect_configs</span>
+      <span class="pi">-</span> <span class="s">OFFSET_STORAGE_TOPIC=my_connect_offsets</span>
+      <span class="pi">-</span> <span class="s">STATUS_STORAGE_TOPIC=my_connect_statuses</span>
+  <span class="na">postgres</span><span class="pi">:</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s">debezium/example-postgres:1.6</span>
+    <span class="na">ports</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">5432:5432</span>
+    <span class="na">environment</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">POSTGRES_USER=postgres</span>
+      <span class="pi">-</span> <span class="s">POSTGRES_PASSWORD=postgres</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now let&#8217;s start everything:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>docker-compose <span class="nt">-f</span> docker-compose-zkless-kafka.yaml up</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s also register an instance of the Debezium Postgres connector,
+which will connect to the PG database and take an initial snapshot,
+so we got some topics with a few messages to play with:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>curl <span class="nt">-0</span> <span class="nt">-v</span> <span class="nt">-X</span> POST http://localhost:8083/connectors <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s2">"Expect:"</span> <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s1">'Content-Type: application/json; charset=utf-8'</span> <span class="se">\</span>
+  <span class="nt">--data-binary</span> @- <span class="o">&lt;&lt;</span> <span class="no">EOF</span><span class="sh">
+{
+    "name": "inventory-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "tasks.max": "1",
+        "database.hostname": "postgres",
+        "database.port": "5432",
+        "database.user": "postgres",
+        "database.password": "postgres",
+        "database.dbname" : "postgres",
+        "database.server.name": "dbserver1",
+        "schema.include": "inventory",
+        "topic.creation.default.replication.factor": 2,
+        "topic.creation.default.partitions": 10
+    }
+}
+EOF</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note how this is using a replication factor of 2 for all the topics <a href="https://debezium.io/documentation/reference/configuration/topic-auto-create-config.html">created via Kafka Connect</a>,
+which will come in handy for some experimenting later on.</p>
+</div>
+<div class="paragraph">
+<p>The nosy person I am, I first wanted to take a look into that new internal metadata topic,
+where all the cluster metadata is stored.
+As per the <a href="https://blogs.apache.org/preview/kafka/?previewEntry=what-s-new-in-apache5">release announcement</a>,
+it should be named <code>@metadata</code>.
+But no such topic shows up when listing the available topics;
+only the <code>__consumer_offsets</code> topic, the change data topics created by Debezium, and some Kafka Connect specific topics are shown:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="c"># Get a shell on one of the broker containers</span>
+<span class="nv">$ </span>docker-compose <span class="nt">-f</span> docker-compose-zkless-kafka.yaml <span class="nb">exec </span>kafka-1 bash
+
+<span class="c"># In that shell</span>
+<span class="nv">$ </span>/kafka/bin/kafka-topics.sh <span class="nt">--bootstrap-server</span> kafka-3:9092  <span class="nt">--list</span>
+
+__consumer_offsets
+dbserver1.inventory.customers
+dbserver1.inventory.geom
+dbserver1.inventory.orders
+dbserver1.inventory.products
+dbserver1.inventory.products_on_hand
+dbserver1.inventory.spatial_ref_sys
+my_connect_configs
+my_connect_offsets
+my_connect_statuses</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Seems that this topic is truly meant to be internal;
+also trying to consume messages from the topic with <em>kafka-console-consumer.sh</em> or <em>kafkacat</em> fails due to the invalid topic name.
+Let&#8217;s see whether things are going to change here,
+since <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-595%3A+A+Raft+Protocol+for+the+Metadata+Quorum">KIP-595</a>
+("A Raft Protocol for the Metadata Quorum") explicitly mentions the ability for consumers to "read the contents of the metadata log for debugging purposes".</p>
+</div>
+<div class="paragraph">
+<p>In the meantime, we can take a look at the contents of the metadata topic using the <a href="https://jaceklaskowski.gitbooks.io/apache-kafka/content/kafka-tools-kafka-dump-log.html"><em>kafka-dump-log.sh</em></a> utility,
+e.g. filtering out all <code>RegisterBroker</code> records:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>/kafka/bin/kafka-dump-log.sh <span class="nt">--cluster-metadata-decoder</span> <span class="se">\</span>
+  <span class="nt">--skip-record-metadata</span> <span class="se">\</span>
+  <span class="nt">--files</span> /kafka/data//<span class="se">\@</span>metadata-0/<span class="k">*</span>.log | <span class="nb">grep </span>REGISTER_BROKER
+
+ payload: <span class="o">{</span><span class="s2">"type"</span>:<span class="s2">"REGISTER_BROKER_RECORD"</span>,<span class="s2">"version"</span>:0,<span class="s2">"data"</span>:<span class="o">{</span><span class="s2">"brokerId"</span>:3,<span class="s2">"incarnationId"</span>:<span class="s2">"O_PiUrjNTsqVEQv61gB2Vg"</span>,<span class="s2">"brokerEpoch"</span>:0,<span class="s2">"endPoints"</span>:[<span class="o">{</span><span class="s2">"name"</span>:<span class="s2">"PLAINTEXT"</span>,<span class="s2">"host"</span>:<span class="s2">"172.18.0.2"</span>,<span class="s2">"port"</span>:9092,<span class="s2">"securityProtocol"</span>:0<span class="o">}]</span>,<span class="s2">"features"</span>:[],<span class="s2">"rack"</span>:null<span class="o">}}</span>
+ payload: <span class="o">{</span><span class="s2">"type"</span>:<span class="s2">"REGISTER_BROKER_RECORD"</span>,<span class="s2">"version"</span>:0,<span class="s2">"data"</span>:<span class="o">{</span><span class="s2">"brokerId"</span>:1,<span class="s2">"incarnationId"</span>:<span class="s2">"FbOZdz9rSZqTyuSKr12JWg"</span>,<span class="s2">"brokerEpoch"</span>:2,<span class="s2">"endPoints"</span>:[<span class="o">{</span><span class="s2">"name"</span>:<span class="s2">"PLAINTEXT"</span>,<span class="s2">"host"</span>:<span class="s2">"172.18.0.3"</span>,<span class="s2">"port"</span>:9092,<span class="s2">"securityProtocol"</span>:0<span class="o">}]</span>,<span class="s2">"features"</span>:[],<span class="s2">"rack"</span>:null<span class="o">}}</span>
+ payload: <span class="o">{</span><span class="s2">"type"</span>:<span class="s2">"REGISTER_BROKER_RECORD"</span>,<span class="s2">"version"</span>:0,<span class="s2">"data"</span>:<span class="o">{</span><span class="s2">"brokerId"</span>:2,<span class="s2">"incarnationId"</span>:<span class="s2">"ZF_WQqk_T5q3l1vhiWT_FA"</span>,<span class="s2">"brokerEpoch"</span>:4,<span class="s2">"endPoints"</span>:[<span class="o">{</span><span class="s2">"name"</span>:<span class="s2">"PLAINTEXT"</span>,<span class="s2">"host"</span>:<span class="s2">"172.18.0.4"</span>,<span class="s2">"port"</span>:9092,<span class="s2">"securityProtocol"</span>:0<span class="o">}]</span>,<span class="s2">"features"</span>:[],<span class="s2">"rack"</span>:null<span class="o">}}</span>
+ ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The individual record formats <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-631%3A+The+Quorum-based+Kafka+Controller#KIP631:TheQuorumbasedKafkaController-RecordFormats.1">are described</a> in KIP-631 ("The Quorum-based Kafka Controller").</p>
+</div>
+<div class="paragraph">
+<p>Another approach would be to use a brand-new tool, <em>kafka-metadata-shell.sh</em>.
+Also defined in KIP-631,
+this utility script allows to browse a cluster&#8217;s metadata,
+similarly to <em>zookeeper-shell.sh</em> known from earlier releases.
+For instance, you can list all brokers and get the metadata of the registration of node 1 like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>/kafka/bin/kafka-metadata-shell.sh <span class="nt">--snapshot</span> /kafka/data/@metadata-0/00000000000000000000.log
+
+Loading...
+Starting...
+<span class="o">[</span> Kafka Metadata Shell <span class="o">]</span>
+<span class="o">&gt;&gt;</span> <span class="nb">ls
+</span>brokers  configs  <span class="nb">local  </span>metadataQuorum  topicIds  topics
+<span class="o">&gt;&gt;</span> <span class="nb">ls </span>brokers
+1  2  3
+<span class="o">&gt;&gt;</span> <span class="nb">cd </span>brokers/1
+<span class="o">&gt;&gt;</span> <span class="nb">cat </span>registration
+RegisterBrokerRecord<span class="o">(</span><span class="nv">brokerId</span><span class="o">=</span>1, <span class="nv">incarnationId</span><span class="o">=</span>TmM_u-_cQ2ChbUy9NZ9wuA, <span class="nv">brokerEpoch</span><span class="o">=</span>265, <span class="nv">endPoints</span><span class="o">=[</span>BrokerEndpoint<span class="o">(</span><span class="nv">name</span><span class="o">=</span><span class="s1">'PLAINTEXT'</span>, <span class="nv">host</span><span class="o">=</span><span class="s1">'172.18.0.3'</span>, <span class="nv">port</span><span class="o">=</span>9092, <span class="nv">securityProtocol</span><span class="o">=</span>0<span class="o">)]</span>, <span class="nv">features</span><span class="o">=[]</span>, <span class="nv">rack</span><span class="o">=</span>null<span class="o">)</span>
+<span class="o">&gt;&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or to display the current leader:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="o">&gt;&gt;</span> <span class="nb">cat</span> /metadataQuorum/leader
+
+MetaLogLeader<span class="o">(</span><span class="nv">nodeId</span><span class="o">=</span>1, <span class="nv">epoch</span><span class="o">=</span>12<span class="o">)</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or to show the metadata of a specific topic partition:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="o">&gt;&gt;</span> <span class="nb">cat</span> /topics/dbserver1.inventory.customers/0/data
+<span class="o">{</span>
+  <span class="s2">"partitionId"</span> : 0,
+  <span class="s2">"topicId"</span> : <span class="s2">"8xjqykVRT_WpkqbXHwbeCA"</span>,
+  <span class="s2">"replicas"</span> : <span class="o">[</span> 2, 3 <span class="o">]</span>,
+  <span class="s2">"isr"</span> : <span class="o">[</span> 2, 3 <span class="o">]</span>,
+  <span class="s2">"removingReplicas"</span> : null,
+  <span class="s2">"addingReplicas"</span> : null,
+  <span class="s2">"leader"</span> : 2,
+  <span class="s2">"leaderEpoch"</span> : 0,
+  <span class="s2">"partitionEpoch"</span> : 0
+<span class="o">}</span>
+<span class="o">&gt;&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Those are just a few of the things you can do with <em>kafka-metadata-shell.sh</em>,
+and it surely will be an invaluable tool in the box of administrators in the ZK-less era.
+Another new tool is <em>kafka-cluster.sh</em>, which currently can do two things:
+displaying the unique id of a cluster, and unregistering a broker.
+While the former worked for me:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>/kafka/bin/kafka-cluster.sh cluster-id <span class="nt">--bootstrap-server</span> kafka-1:9092
+
+Cluster ID: oh-sxaDRTcyAr6pFRbXyzA</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The latter always failed with a <code>NotControllerException</code>, no matter on which node I invoked the command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>/kafka/bin/kafka-cluster.sh unregister <span class="nt">--bootstrap-server</span> kafka-1:9092 <span class="nt">--id</span> 3
+
+<span class="o">[</span>2021-05-15 20:52:54,626] ERROR <span class="o">[</span>AdminClient <span class="nv">clientId</span><span class="o">=</span>adminclient-1] Unregister broker request <span class="k">for </span>broker ID 3 failed: This is not the correct controller <span class="k">for </span>this cluster.</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It&#8217;s not quite clear to me whether I did something wrong, or whether this functionality simply should not be expected to be supported just yet.</p>
+</div>
+<div class="paragraph">
+<p>The Raft-based metadata quorum also comes with a set of new metrics (described in KIP-595),
+allowing to retrieve information like the current active controller, role of the node at hand, and more.
+Here&#8217;s a screenshot of the metrics invoked on a non-leader node:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/zookeeperless-kafka-metrics.png" alt="Kafka Raft Metrics in JDK Mission Control">
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_taking_brokers_down">Taking Brokers Down</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>An essential aspect to any distributed system like Kafka is the fact that invidual nodes of a cluster can disappear at any time,
+be it due to failures (node crashes, network splits, etc.), or due to controlled shut downs, e.g. for a version upgrade.
+So I was curious how Kafka in KRaft mode would deal with the situation where nodes in the cluster are stopped and then restarted.
+Note I&#8217;m stopping nodes gracefully via <em>docker-compose stop</em>, instead of randomly crashing them, Jepsen-style ;)</p>
+</div>
+<div class="paragraph">
+<p>The sequence of events I was testing was the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Stop the current active controller, so two nodes from the original three-node cluster remain</p>
+</li>
+<li>
+<p>Stop the then new active controller node, at which point the majority of cluster nodes isn&#8217;t available any longer</p>
+</li>
+<li>
+<p>Start both nodes again</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Here&#8217;s a few noteworthy things I observed.
+As you&#8217;d expect, when stopping the active controller, a new leader was elected (as per the result of <em>cat /metadataQuorum/leader</em> in the Kafka metadata shell),
+and also all partitions which had the previous active controller as partition leader, got re-assigned
+(in this case node <code>1</code> was the active controller and got stopped):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>/kafka/bin/kafka-topics.sh <span class="nt">--bootstrap-server</span> kafka-2:9092 <span class="nt">--describe</span> <span class="nt">--topic</span> dbserver1.inventory.customers
+
+Topic: dbserver1.inventory.customers	TopicId: a6qzjnQwQ2eLNSXL5svW8g	PartitionCount: 10	ReplicationFactor: 2	Configs: segment.bytes<span class="o">=</span>1073741824
+	Topic: dbserver1.inventory.customers	Partition: 0	Leader: 1	Replicas: 1,3	Isr: 1,3
+	Topic: dbserver1.inventory.customers	Partition: 1	Leader: 1	Replicas: 3,1	Isr: 1,3
+	Topic: dbserver1.inventory.customers	Partition: 2	Leader: 1	Replicas: 1,2	Isr: 1,2
+	Topic: dbserver1.inventory.customers	Partition: 3	Leader: 1	Replicas: 2,1	Isr: 1,2
+	Topic: dbserver1.inventory.customers	Partition: 4	Leader: 1	Replicas: 2,1	Isr: 1,2
+	Topic: dbserver1.inventory.customers	Partition: 5	Leader: 2	Replicas: 3,2	Isr: 2,3
+	Topic: dbserver1.inventory.customers	Partition: 6	Leader: 2	Replicas: 3,2	Isr: 2,3
+	Topic: dbserver1.inventory.customers	Partition: 7	Leader: 2	Replicas: 2,3	Isr: 2,3
+	Topic: dbserver1.inventory.customers	Partition: 8	Leader: 1	Replicas: 2,1	Isr: 1,2
+	Topic: dbserver1.inventory.customers	Partition: 9	Leader: 2	Replicas: 3,2	Isr: 2,3
+
+<span class="c"># After stopping node 1</span>
+<span class="nv">$ </span>/kafka/bin/kafka-topics.sh <span class="nt">--bootstrap-server</span> kafka-2:9092 <span class="nt">--describe</span> <span class="nt">--topic</span> dbserver1.inventory.customers
+
+Topic: dbserver1.inventory.customers	TopicId: a6qzjnQwQ2eLNSXL5svW8g	PartitionCount: 10	ReplicationFactor: 2	Configs: segment.bytes<span class="o">=</span>1073741824
+	Topic: dbserver1.inventory.customers	Partition: 0	Leader: 3	Replicas: 1,3	Isr: 3
+	Topic: dbserver1.inventory.customers	Partition: 1	Leader: 3	Replicas: 3,1	Isr: 3
+	Topic: dbserver1.inventory.customers	Partition: 2	Leader: 2	Replicas: 1,2	Isr: 2
+	Topic: dbserver1.inventory.customers	Partition: 3	Leader: 2	Replicas: 2,1	Isr: 2
+	Topic: dbserver1.inventory.customers	Partition: 4	Leader: 2	Replicas: 2,1	Isr: 2
+	Topic: dbserver1.inventory.customers	Partition: 5	Leader: 2	Replicas: 3,2	Isr: 2,3
+	Topic: dbserver1.inventory.customers	Partition: 6	Leader: 2	Replicas: 3,2	Isr: 2,3
+	Topic: dbserver1.inventory.customers	Partition: 7	Leader: 2	Replicas: 2,3	Isr: 2,3
+	Topic: dbserver1.inventory.customers	Partition: 8	Leader: 2	Replicas: 2,1	Isr: 2
+	Topic: dbserver1.inventory.customers	Partition: 9	Leader: 2	Replicas: 3,2	Isr: 2,3</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Things got interesting though when also stopping the newly elected leader subsequently.
+At this point, the cluster isn&#8217;t in a healthy state any longer,
+as no majority of nodes of the cluster is available for leader election.
+Logs of the remaining node are flooded with an <code>UnknownHostException</code> in this situation:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">kafka-3_1   | 2021-05-16 10:16:45,282 - WARN  <span class="o">[</span>kafka-raft-outbound-request-thread:NetworkClient@992] - <span class="o">[</span>RaftManager <span class="nv">nodeId</span><span class="o">=</span>3] Error connecting to node kafka-2:9093 <span class="o">(</span><span class="nb">id</span>: 2 rack: null<span class="o">)</span>
+kafka-3_1   | java.net.UnknownHostException: kafka-2
+kafka-3_1   | 	at java.base/java.net.InetAddress<span class="nv">$CachedAddresses</span>.get<span class="o">(</span>InetAddress.java:797<span class="o">)</span>
+kafka-3_1   | 	at java.base/java.net.InetAddress.getAllByName0<span class="o">(</span>InetAddress.java:1505<span class="o">)</span>
+kafka-3_1   | 	at java.base/java.net.InetAddress.getAllByName<span class="o">(</span>InetAddress.java:1364<span class="o">)</span>
+kafka-3_1   | 	at java.base/java.net.InetAddress.getAllByName<span class="o">(</span>InetAddress.java:1298<span class="o">)</span>
+kafka-3_1   | 	at org.apache.kafka.clients.DefaultHostResolver.resolve<span class="o">(</span>DefaultHostResolver.java:27<span class="o">)</span>
+kafka-3_1   | 	at org.apache.kafka.clients.ClientUtils.resolve<span class="o">(</span>ClientUtils.java:111<span class="o">)</span>
+kafka-3_1   | 	at org.apache.kafka.clients.ClusterConnectionStates<span class="nv">$NodeConnectionState</span>.currentAddress<span class="o">(</span>ClusterConnectionStates.java:512<span class="o">)</span>
+kafka-3_1   | 	at org.apache.kafka.clients.ClusterConnectionStates<span class="nv">$NodeConnectionState</span>.access<span class="nv">$200</span><span class="o">(</span>ClusterConnectionStates.java:466<span class="o">)</span>
+kafka-3_1   | 	at org.apache.kafka.clients.ClusterConnectionStates.currentAddress<span class="o">(</span>ClusterConnectionStates.java:172<span class="o">)</span>
+kafka-3_1   | 	at org.apache.kafka.clients.NetworkClient.initiateConnect<span class="o">(</span>NetworkClient.java:985<span class="o">)</span>
+kafka-3_1   | 	at org.apache.kafka.clients.NetworkClient.ready<span class="o">(</span>NetworkClient.java:311<span class="o">)</span>
+kafka-3_1   | 	at kafka.common.InterBrokerSendThread.<span class="nv">$anonfun$sendRequests$1</span><span class="o">(</span>InterBrokerSendThread.scala:103<span class="o">)</span>
+kafka-3_1   | 	at kafka.common.InterBrokerSendThread.<span class="nv">$anonfun$sendRequests$1$adapted</span><span class="o">(</span>InterBrokerSendThread.scala:99<span class="o">)</span>
+kafka-3_1   | 	at scala.collection.Iterator.foreach<span class="o">(</span>Iterator.scala:943<span class="o">)</span>
+kafka-3_1   | 	at scala.collection.Iterator.foreach<span class="si">$(</span>Iterator.scala:943<span class="si">)</span>
+kafka-3_1   | 	at scala.collection.AbstractIterator.foreach<span class="o">(</span>Iterator.scala:1431<span class="o">)</span>
+kafka-3_1   | 	at scala.collection.IterableLike.foreach<span class="o">(</span>IterableLike.scala:74<span class="o">)</span>
+kafka-3_1   | 	at scala.collection.IterableLike.foreach<span class="si">$(</span>IterableLike.scala:73<span class="si">)</span>
+kafka-3_1   | 	at scala.collection.AbstractIterable.foreach<span class="o">(</span>Iterable.scala:56<span class="o">)</span>
+kafka-3_1   | 	at kafka.common.InterBrokerSendThread.sendRequests<span class="o">(</span>InterBrokerSendThread.scala:99<span class="o">)</span>
+kafka-3_1   | 	at kafka.common.InterBrokerSendThread.pollOnce<span class="o">(</span>InterBrokerSendThread.scala:73<span class="o">)</span>
+kafka-3_1   | 	at kafka.common.InterBrokerSendThread.doWork<span class="o">(</span>InterBrokerSendThread.scala:94<span class="o">)</span>
+kafka-3_1   | 	at kafka.utils.ShutdownableThread.run<span class="o">(</span>ShutdownableThread.scala:96<span class="o">)</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Here I think it&#8217;d be great to get a more explicit indication in the logs of what&#8217;s going on,
+clearly indicating the unhealthy status of the cluster at large.</p>
+</div>
+<div class="paragraph">
+<p>What&#8217;s also interesting is that the remaining node claims to be a leader as per its exposed metrics and value of <code>/metadataQuorum/leader</code> in the metadata shell.
+This seems a bit dubious, as no leader election can happen without the majority of nodes available.
+Consequently, creation of a topic in this state also times out,
+so I suspect this is more an artifact of displaying the cluster state rather than of what&#8217;s actually going on.</p>
+</div>
+<div class="paragraph">
+<p>Things get a bit more troublesome when restarting the two stopped nodes;
+Very often I&#8217;d then see a very high CPU consumption on the Kafka nodes as well as the Connect node:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>docker stats
+
+CONTAINER ID   NAME                  CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O       PIDS
+642eb697fed6   tutorial_connect_1    122.04%   668.3MiB / 7.775GiB   8.39%     99.7MB / 46.9MB   131kB / 106kB   47
+5d9806526f92   tutorial_kafka-1_1    9.24%     386.4MiB / 7.775GiB   4.85%     105kB / 104kB     0B / 877kB      93
+767e6c0f6cd3   tutorial_kafka-3_1    176.40%   739.2MiB / 7.775GiB   9.28%     14.5MB / 40.6MB   0B / 1.52MB     120
+a0ce8438557f   tutorial_kafka-2_1    87.51%    567.8MiB / 7.775GiB   7.13%     6.52MB / 24.9MB   0B / 881kB      95
+df978d220132   tutorial_postgres_1   0.00%     36.39MiB / 7.775GiB   0.46%     243kB / 5.49MB    0B / 79.4MB     9</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In some cases stopping and restarting the Kafka nodes would help,
+other times only a restart of the Connect node would mitigate the situation.
+I didn&#8217;t further explore this issue by taking a thread dump,
+but I suppose threads are stuck in some kind of busy spin loop at this point.
+The early access state of KRaft mode seems to be somewhat showing here.
+After <a href="https://lists.apache.org/thread.html/r411d22fb8c092de0693eda10f0f0f383ff15fd60d3624ad57b6c2a2a%40%3Cdev.kafka.apache.org%3E">bringing up</a> the issue on the Kafka mailing list,
+I&#8217;ve logged <a href="https://issues.apache.org/jira/browse/KAFKA-12801">KAFKA-12801</a> for this problem,
+as it seems not to have been tracked before.</p>
+</div>
+<div class="paragraph">
+<p>On the bright side, once all brokers were up and running again,
+the cluster and the Debezium connector would happily continue their work.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_wrap_up">Wrap-Up</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Not many features have been awaited by the Kafka community as eagerly as the removal of the ZooKeeper dependency.
+Rightly so: Kafka-based metadata storage and leader election will greatly simplify the operational burden for running Kafka and also allow for better scalability.
+Lifting the requirement for running separate ZooKeeper processes or even machines should also help to make things more cost-effective,
+so you should benefit from this change no matter whether you&#8217;re running Kafka yourself or are using a managed service offering.</p>
+</div>
+<div class="paragraph">
+<p>The early access release of ZooKeeper-less Kafka in version 2.8 gives a first impression of what will hopefully be the standard way of running Kafka in the not too distant future.
+As very clearly stated in the <a href="https://github.com/apache/kafka/blob/trunk/config/kraft/README.md#missing-features">KRaft README</a>,
+you should not use this in production yet;
+this matches with the observerations made above:
+while running Kafka without ZooKeeper definitely feels great,
+there&#8217;s still some rough edges to be sorted out.
+Also check out the README for a list of currently <a href="https://github.com/apache/kafka/blob/trunk/config/kraft/README.md#missing-features">missing features</a>,
+such as support of transactions, adding partitions to existing topics, partition reassignment, and more.
+Lastly, any distributed system should only be fully trusted after going through the grinder of the <a href="https://jepsen.io/">Jepsen</a> test suite,
+which I&#8217;m sure will only be a question of time.</p>
+</div>
+<div class="paragraph">
+<p>Despite the early state, I would very much recommend to get started testing ZooKeeper-less Kafka at this point,
+so to get a feeling for it and of course to report back any findings and insights.
+To do so, either download the <a href="https://kafka.apache.org/downloads">upstream Kafka distribution</a>,
+or build the Debezium 1.6 container image for Kafka with preliminary <a href="https://github.com/gunnarmorling/docker-images/tree/DBZ-3444/kafka/1.6">support for KRaft mode</a>,
+which lets you set up a ZK-less Kafka cluster in no time.</p>
+</div>
+<div class="paragraph">
+<p>In order to learn more about ZK-less Kafka, besides diving into the relevant KIPs (which all are linked from the umbrella KIP-500),
+also check out the QCon talk <a href="https://www.infoq.com/presentations/kafka-zookeeper/">"Kafka Needs No Keeper"</a> by Colin McCabe, one of the main engineers driving this effort.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread"></div>
+<script type="text/javascript">
+	(function () {
+		
+		
+		if (window.location.hostname == "localhost")
+			return;
+
+		var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+		var disqus_shortname = 'morlingdev';
+		dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+		(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+	})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by
+		Disqus.</a></noscript>
+<a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2021 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
