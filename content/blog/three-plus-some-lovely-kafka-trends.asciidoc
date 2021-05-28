@@ -1,0 +1,79 @@
+---
+title: "Three Plus Some Lovely Kafka Trends"
+date: 2021-05-28T10:30:00+02:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+Over the course of the last few months, I've had the pleasure to serve on the https://www.kafka-summit.org/[Kafka Summit] program committee and review several hundred session abstracts for the three Summits happening this year (Europe, APAC, Americas).
+That's not only a big honour, but also a unique opportunity to learn what excites people currently in the Kafka eco-system
+(and yes, it's a fair amount of work, too ;).
+
+While voting on the proposals, and also generally aspiring to stay informed of what's going on in the Kafka community at large, I noticed a few repeating themes and topics which I thought would be interesting to share
+(without touching on any specific talks of course).
+At first I meant to put this out via a Twitter thread, but then it became a bit too long for that, so I decided to write this quick blog post instead.
+Here it goes!
+
+<!--more-->
+
+== Cambrian Explosion of Connectors
+
+Apache Kafka is a great commit log and streaming platform,
+but of course you also need to get data into and out of it.
+https://kafka.apache.org/documentation/#connect[Kafka Connect] is vital for doing just that, linking data sources and sinks to the Kafka backbone.
+Be it integration of legacy apps and databases,
+external systems (e.g. IoT), data lakes, or DWHs,
+different CDC options (including https://debezium.io/[Debezium], of course)
+-- There's connectors for everything.
+
+The ever-increasing number of connectors is accompanied by growing operational maturity
+(large-scale deployments, KC on K8s, etc.) and upcoming improvements like https://cwiki.apache.org/confluence/display/KAFKA/KIP-618%3A+Exactly-Once+Support+for+Source+Connectors[KIP-618] (exactly-once source connectors) or https://cwiki.apache.org/confluence/display/KAFKA/KIP-731%3A+Record+Rate+Limiting+for+Kafka+Connect[KIP-731] (rate limiting).
+There's so much activity within the Kafka connector eco-system, and it really sets Kafka apart from alternatives.
+
+== Democratization of Data Pipelines
+
+Another exciting trend is a move to self-service Kafka environments,
+with portals and infrastructure aimed at reducing the friction for standing up new deployments of Kafka, Connect, and related components like schema registries,
+while keeping track of and running everything in a safe way,
+e.g. when it comes to things like access control, role and schema management, (topic) naming conventions,
+managing data lineage and quality, ensuring compliance, privacy and operational best-practices, or observability.
+
+A healthy combination of in-house as well as open-source developments is happening here,
+and I'm sure it's a field where we'll see more tools and solutions appearing in the next months and years.
+
+== Stream Processing for Everyone
+
+Not exactly a new trend, but definitely a growing one:
+more and more users appreciate the benefits of stream processing for working with their data in Kafka,
+filtering, transforming, enriching and aggregating it either programmatically using libraries such as https://kafka.apache.org/28/documentation/streams/[Kafka Streams] or https://kafka.apache.org/28/documentation/streams/[Apache Flink],
+or in a declarative fashion, e.g. via https://ksqldb.io/[ksqlDB] or https://ci.apache.org/projects/flink/flink-docs-release-1.13/docs/dev/table/overview/[Flink SQL].
+Either way, small, focused stream processing apps are a true manifestation of the microservices idea -- have cohesive, independent application units, each focusing on one particular task and loosely coupled to each other, via Apache Kafka in this case.
+
+It's great to see the uptake here,
+including approaches for dynamic scaling based on end-to-end lag, and innovative new solutions for efficient incremental view materialization.
+
+== Honorable Mentions
+
+Besides these bigger trends, there's also a few more specific topics which I saw several times and which I found very interesting:
+
+* Tools and best practices for testing of Kafka-based applications (e.g. for creating test data or mock producers/consumers)
+* Feeding ML/AI models is becoming a popular Kafka use case; it's not my field of experience at all, but it seems like a very logical choice to run ML algorithms on data ingested via Kafka, allowing to gain new insight into business data with a low latency
+* Pushing data to consumers via GraphQL; (still?) even more niche probably, but I love the idea of push updates to browsers based on data from Kafka; this should allow for some interesting use cases
+
+Of course there's also things like geo-replicated Kafka,
+the ongoing move towards managed Kafka service offerings
+(which raises interesting questions around connectivity to on-prem systems and data),
+architectural trends like https://www.youtube.com/watch?v=QF41q10NSAs[data meshes],
+and so much more.
+
+If you want to learn more about these and many other facets of Apache Kafka,
+its use cases, best practices, and latest developments,
+make sure to register for https://www.kafka-summit.org/[Kafka Summit] (it's free and online).
+The sessions from the Europe run can already be watched,
+while the APAC (July 27 - 28) and Americas (September 14 - 15) editions are still to come.
