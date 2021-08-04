@@ -1,0 +1,194 @@
+---
+title: "Introducing JfrUnit 1.0.0.Alpha1"
+date: 2021-08-04T19:10:00+02:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+_Unit testing, for performance_
+
+It's with great pleasure that I'm announcing the first official release of JfrUnit today!
+
+https://github.com/moditect/jfrunit[JfrUnit] is an extension to JUnit which allows you to assert https://openjdk.java.net/jeps/328[JDK Flight Recorder] events in your unit tests.
+This capability opens up a number of interesting use cases in the field of testing JVM-based applications:
+
+* You can use JfrUnit to ensure your application produces the link:blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/[custom JFR events] you expect it to emit
+* You can use JfrUnit to identify potential performance regressions of your application by means of tracking JFR events e.g. for garbage collection, memory allocation and network I/O
+* You can use JfrUnit together with https://wiki.openjdk.java.net/display/jmc/The+JMC+Agent[JMC Agent] for whitebox tests of your application, ensuring specific methods are invoked with the expected parameters and return values
+
+<!--more-->
+
+== Getting Started With JfrUnit
+
+JfrUnit is available on Maven Central
+(a big shout-out to https://twitter.com/aalmiray[Andres Almiray] for setting up a fully automated release pipeline using the excellent https://jreleaser.org/[JReleaser] project!).
+If you're working with Apache Maven, add the following dependency to your _pom.xml_ file:
+
+[source,xml]
+----
+...
+<dependency>
+  <groupId>org.moditect.jfrunit</groupId>
+  <artifactId>jfrunit</artifactId>
+  <version>1.0.0.Alpha1</version>
+  <scope>test</scope>
+</dependency>
+  ...
+----
+
+Alternatively, you can of course build JfrUnit from source yourself,
+https://github.com/moditect/jfrunit#build[as described] in the project's README file.
+
+[NOTE]
+.What is ModiTect?
+====
+JfrUnit is part of the https://github.com/moditect[ModiTect] family of open-source projects.
+All the ModiTect projects are in some way related to Java infrastructure,
+such as the Java Module System, or JDK Flight Recorder.
+Besides JfrUnit, the following project are currently developed under the ModiTect umbrella:
+
+* **https://github.com/moditect/moditect[ModiTect]**: this eponymous project provides tooling for the Java Module System, e.g. for adding module descriptors while building with Java 8, creating jlink images, etc.
+* **https://github.com/moditect/layrry[Layrry]**: a Runner and API for layered Java applications, which lets you use the module system's notion of module layers for implementing plug-in architectures, loading multiple versions of one dependency into your application, etc.
+* **https://github.com/moditect/deptective[Deptective]** 🕵️: a plug-in for the javac compiler for analysing, validating and enforcing well-defined relationships between the packages of a Java application
+====
+
+With that dependency in place, the steps of using JfrUnit are the following:
+
+* Enable the JFR event type(s) you want to assert against
+* Run the application logic under test
+* Assert the emitted JFR events
+
+To make things more tangible, here's an example that asserts the memory allocation done by a Quarkus-based web application for a specific use case:
+
+[source,java]
+----
+@Test
+@EnableEvent("jdk.ObjectAllocationInNewTLAB") // <1>
+@EnableEvent("jdk.ObjectAllocationOutsideTLAB")
+public void retrieveTodoShouldYieldExpectedAllocation() throws Exception {
+    Random r = new Random();
+
+    HttpClient client = HttpClient.newBuilder()
+            .build();
+
+    // warm-up <2>
+    for (int i = 1; i<= WARMUP_ITERATIONS; i++) {
+        if (i % 1000 == 0) {
+            System.out.println(i);
+        }
+        executeRequest(r.nextInt(20) + 1, client);
+    }
+
+    jfrEvents.awaitEvents();
+    jfrEvents.reset(); // <3>
+
+    // <4>
+    for (int i = 1; i<= ITERATIONS; i++) {
+        if (i % 1000 == 0) {
+            System.out.println(i);
+        }
+        executeRequest(r.nextInt(20) + 1, client);
+    }
+
+    jfrEvents.awaitEvents(); // <5>
+
+    long sum = jfrEvents.filter(this::isObjectAllocationEvent)
+            .filter(this::isRelevantThread)
+            .mapToLong(this::getAllocationSize)
+            .sum();
+
+    assertThat(sum / ITERATIONS).isLessThan(33_000); // <6>
+}
+----
+<1> Enable the `jdk.ObjectAllocationInNewTLAB` and `jdk.ObjectAllocationOutsideTLAB` JFR event types; on Java 16 and beyond, you could also use the new `jdk.ObjectAllocationSample` type instead
+<2> Do some warm-up iterations so to achieve a steady state for the memory allocation rate
+<3> Reset the JfrUnit event collector after the warm-up
+<4> Run the code under test, in this case invoking some REST API of the application
+<5> Wait until all the events from the test have been received
+<6> Run assertions against the JFR events, in this case summing up all memory allocations and asserting that the value per REST call isn't larger than 33K (the exact threshold has been determined upfront)
+
+The general idea behind this testing approach is that a regression in regards to metrics like memory allocation or I/O -- e.g. with a database -- can be a hint for a performance degredation.
+Allocating more memory than anticipated may be an indicator that your application started to do something which it hadn't done before, and which may impact its latency and through-put characteristics.
+
+To learn more about this approach for identifying potential performance regressions,
+please refer to link:/blog/towards-continuous-performance-regression-testing/[this post], which introduced JfrUnit originally.
+
+== Groovier Tests With Spock
+
+Thanks to an outstanding contribution by https://twitter.com/phejl[Petr Hejl],
+instead of the Java-based API,
+you can also use Groovy and the https://spockframework.org/[Spock framework] for your JfrUnit tests,
+which makes for very compact and nicely readable tests.
+Here's an example for asserting two JFR events using the Spock integration:
+
+[source,groovy]
+----
+class JfrSpec extends Specification {
+
+    JfrEvents jfrEvents = new JfrEvents()
+
+    @EnableEvent('jdk.GarbageCollection') // <1>
+    @EnableEvent('jdk.ThreadSleep')
+    def 'should Have GC And Sleep Events'() {
+        when: // <2>
+        System.gc()
+        sleep(1000)
+
+        then: // <3>
+        jfrEvents['jdk.GarbageCollection']
+        jfrEvents['jdk.ThreadSleep'].withTime(Duration.ofMillis(1000))
+    }
+}
+----
+<1> Enable the `jdk.GarbageCollection` and `jdk.ThreadSleep` event types
+<2> Run the test code
+<3> Assert the events; thanks to the integration with Spock, no explicit barrier for awaiting all events is needed
+
+To learn more about the Spock-based approach of using JfrUnit,
+please refer to the https://github.com/moditect/jfrunit#using-spock-framework[instructions] in the README.
+
+For getting started with JfrUnit yourself,
+you may take a look at the https://github.com/moditect/jfrunit-examples[jfrunit-examples] repo,
+which shows some common usages the project.
+
+== Outlook
+
+This first Alpha release is an important milestone for the JfrUnit project.
+Since its inception in the December of last year,
+I've received tons of invaluable feedback, and the project has matured quite a bit.
+
+In terms of next steps, apart from further expanding and honing the API,
+one area I'd like to explore with JfrUnit is keeping track of and analysing historical event data from multiple test runs over a longer period of time.
+
+For instance, consider a case where your REST call allocates 33 KB today, 40 KB next month, 50 KB the month after, etc.
+Each increase by itself may not be problematic, but when comparing the results from today to those of a run in six months from now, a substantial regression may have accumulated.
+For identifying and analysing such trends,
+loading JfrUnit result data into a time series database, or repository systems like https://github.com/Hyperfoil/Horreum[Hyperfoil Horreum], may be a very interesting feature.
+
+On a related note, https://twitter.com/JohnnyDoItAll[John O'Hara] has https://github.com/moditect/jfrunit/issues/71[started work] towards automated event analysis using the rules system of JDK Mission Control,
+so stay tuned for some really exciting developments in this area!
+
+Last but not least, I'd like say thank you to all the folks helping with the work on JfrUnit,
+be it through discussions, raising feature requests or bug reports, or code changes,
+including the following fine folks who have contributed to the JfrUnit repository at this point:
+https://github.com/aalmiray[Andres Almiray],
+https://github.com/HashZhang[Hash Zhang],
+https://github.com/leonard84[Leonard Brünings],
+https://github.com/machi1990[Manyanda Chitimbo],
+https://github.com/benkard[Matthias Andreas Benkard],
+https://github.com/phejl[Petr Hejl],
+https://github.com/sbrannen[Sam Brannen],
+https://github.com/sullis[Sullis],
+https://github.com/everflux[Thomas],
+https://github.com/tivrfoa[Tivrfoa], and
+https://github.com/tbadgu[Tushar Badgu].
+Onwards and upwards!
+
+
+
