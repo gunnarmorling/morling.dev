@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Introducing JfrUnit 1.0.0.Alpha1 - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Introducing JfrUnit 1.0.0.Alpha1" />
+<meta property="og:description" content="
+Unit testing, for performance
+
+
+It&#8217;s with great pleasure that I&#8217;m announcing the first official release of JfrUnit today!
+
+
+JfrUnit is an extension to JUnit which allows you to assert JDK Flight Recorder events in your unit tests.
+This capability opens up a number of interesting use cases in the field of testing JVM-based applications:
+
+
+
+
+You can use JfrUnit to ensure your application produces the custom JFR events you expect it to emit
+
+
+You can use JfrUnit to identify potential performance regressions of your application by means of tracking JFR events e.g. for garbage collection, memory allocation and network I/O
+
+
+You can use JfrUnit together with JMC Agent for whitebox tests of your application, ensuring specific methods are invoked with the expected parameters and return values
+
+
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/introducing-jfrunit-1-0-0-alpha1/" />
+<meta property="article:published_time" content="2021-08-04T19:10:00+02:00" />
+<meta property="article:modified_time" content="2021-08-04T19:10:00+02:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Introducing JfrUnit 1.0.0.Alpha1"/>
+<meta name="twitter:description" content="
+Unit testing, for performance
+
+
+It&#8217;s with great pleasure that I&#8217;m announcing the first official release of JfrUnit today!
+
+
+JfrUnit is an extension to JUnit which allows you to assert JDK Flight Recorder events in your unit tests.
+This capability opens up a number of interesting use cases in the field of testing JVM-based applications:
+
+
+
+
+You can use JfrUnit to ensure your application produces the custom JFR events you expect it to emit
+
+
+You can use JfrUnit to identify potential performance regressions of your application by means of tracking JFR events e.g. for garbage collection, memory allocation and network I/O
+
+
+You can use JfrUnit together with JMC Agent for whitebox tests of your application, ensuring specific methods are invoked with the expected parameters and return values
+
+
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search.gunnar-morling.workers.dev\/Prod\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Introducing JfrUnit 1.0.0.Alpha1</h1>
+				<div class="meta">Posted at Aug 4, 2021</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p><em>Unit testing, for performance</em></p>
+</div>
+<div class="paragraph">
+<p>It&#8217;s with great pleasure that I&#8217;m announcing the first official release of JfrUnit today!</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/moditect/jfrunit">JfrUnit</a> is an extension to JUnit which allows you to assert <a href="https://openjdk.java.net/jeps/328">JDK Flight Recorder</a> events in your unit tests.
+This capability opens up a number of interesting use cases in the field of testing JVM-based applications:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You can use JfrUnit to ensure your application produces the <a href="blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/">custom JFR events</a> you expect it to emit</p>
+</li>
+<li>
+<p>You can use JfrUnit to identify potential performance regressions of your application by means of tracking JFR events e.g. for garbage collection, memory allocation and network I/O</p>
+</li>
+<li>
+<p>You can use JfrUnit together with <a href="https://wiki.openjdk.java.net/display/jmc/The+JMC+Agent">JMC Agent</a> for whitebox tests of your application, ensuring specific methods are invoked with the expected parameters and return values</p>
+</li>
+</ul>
+</div>
+<div class="sect1">
+<h2 id="_getting_started_with_jfrunit">Getting Started With JfrUnit</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>JfrUnit is available on Maven Central
+(a big shout-out to <a href="https://twitter.com/aalmiray">Andres Almiray</a> for setting up a fully automated release pipeline using the excellent <a href="https://jreleaser.org/">JReleaser</a> project!).
+If you&#8217;re working with Apache Maven, add the following dependency to your <em>pom.xml</em> file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml">...
+<span class="nt">&lt;dependency&gt;</span>
+  <span class="nt">&lt;groupId&gt;</span>org.moditect.jfrunit<span class="nt">&lt;/groupId&gt;</span>
+  <span class="nt">&lt;artifactId&gt;</span>jfrunit<span class="nt">&lt;/artifactId&gt;</span>
+  <span class="nt">&lt;version&gt;</span>1.0.0.Alpha1<span class="nt">&lt;/version&gt;</span>
+  <span class="nt">&lt;scope&gt;</span>test<span class="nt">&lt;/scope&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+  ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Alternatively, you can of course build JfrUnit from source yourself,
+<a href="https://github.com/moditect/jfrunit#build">as described</a> in the project&#8217;s README file.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">What is ModiTect?</div>
+<div class="paragraph">
+<p>JfrUnit is part of the <a href="https://github.com/moditect">ModiTect</a> family of open-source projects.
+All the ModiTect projects are in some way related to Java infrastructure,
+such as the Java Module System, or JDK Flight Recorder.
+Besides JfrUnit, the following project are currently developed under the ModiTect umbrella:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><a href="https://github.com/moditect/moditect">ModiTect</a></strong>: this eponymous project provides tooling for the Java Module System, e.g. for adding module descriptors while building with Java 8, creating jlink images, etc.</p>
+</li>
+<li>
+<p><strong><a href="https://github.com/moditect/layrry">Layrry</a></strong>: a Runner and API for layered Java applications, which lets you use the module system&#8217;s notion of module layers for implementing plug-in architectures, loading multiple versions of one dependency into your application, etc.</p>
+</li>
+<li>
+<p><strong><a href="https://github.com/moditect/deptective">Deptective</a></strong> 🕵️: a plug-in for the javac compiler for analysing, validating and enforcing well-defined relationships between the packages of a Java application</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>With that dependency in place, the steps of using JfrUnit are the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Enable the JFR event type(s) you want to assert against</p>
+</li>
+<li>
+<p>Run the application logic under test</p>
+</li>
+<li>
+<p>Assert the emitted JFR events</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To make things more tangible, here&#8217;s an example that asserts the memory allocation done by a Quarkus-based web application for a specific use case:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="nd">@Test</span>
+<span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">"jdk.ObjectAllocationInNewTLAB"</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
+<span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">"jdk.ObjectAllocationOutsideTLAB"</span><span class="o">)</span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">retrieveTodoShouldYieldExpectedAllocation</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+    <span class="nc">Random</span> <span class="n">r</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Random</span><span class="o">();</span>
+
+    <span class="nc">HttpClient</span> <span class="n">client</span> <span class="o">=</span> <span class="nc">HttpClient</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">()</span>
+            <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+
+    <span class="c1">// warm-up </span><i class="conum" data-value="2"></i><b>(2)</b>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span> <span class="n">i</span><span class="o">&lt;=</span> <span class="no">WARMUP_ITERATIONS</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">i</span> <span class="o">%</span> <span class="mi">1000</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="n">executeRequest</span><span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">nextInt</span><span class="o">(</span><span class="mi">20</span><span class="o">)</span> <span class="o">+</span> <span class="mi">1</span><span class="o">,</span> <span class="n">client</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="n">jfrEvents</span><span class="o">.</span><span class="na">awaitEvents</span><span class="o">();</span>
+    <span class="n">jfrEvents</span><span class="o">.</span><span class="na">reset</span><span class="o">();</span> <i class="conum" data-value="3"></i><b>(3)</b>
+
+    <i class="conum" data-value="4"></i><b>(4)</b>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span> <span class="n">i</span><span class="o">&lt;=</span> <span class="no">ITERATIONS</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">i</span> <span class="o">%</span> <span class="mi">1000</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="n">executeRequest</span><span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">nextInt</span><span class="o">(</span><span class="mi">20</span><span class="o">)</span> <span class="o">+</span> <span class="mi">1</span><span class="o">,</span> <span class="n">client</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="n">jfrEvents</span><span class="o">.</span><span class="na">awaitEvents</span><span class="o">();</span> <i class="conum" data-value="5"></i><b>(5)</b>
+
+    <span class="kt">long</span> <span class="n">sum</span> <span class="o">=</span> <span class="n">jfrEvents</span><span class="o">.</span><span class="na">filter</span><span class="o">(</span><span class="k">this</span><span class="o">::</span><span class="n">isObjectAllocationEvent</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">filter</span><span class="o">(</span><span class="k">this</span><span class="o">::</span><span class="n">isRelevantThread</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">mapToLong</span><span class="o">(</span><span class="k">this</span><span class="o">::</span><span class="n">getAllocationSize</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">sum</span><span class="o">();</span>
+
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">sum</span> <span class="o">/</span> <span class="no">ITERATIONS</span><span class="o">).</span><span class="na">isLessThan</span><span class="o">(</span><span class="mi">33_000</span><span class="o">);</span> <i class="conum" data-value="6"></i><b>(6)</b>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Enable the <code>jdk.ObjectAllocationInNewTLAB</code> and <code>jdk.ObjectAllocationOutsideTLAB</code> JFR event types; on Java 16 and beyond, you could also use the new <code>jdk.ObjectAllocationSample</code> type instead</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Do some warm-up iterations so to achieve a steady state for the memory allocation rate</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Reset the JfrUnit event collector after the warm-up</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Run the code under test, in this case invoking some REST API of the application</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Wait until all the events from the test have been received</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Run assertions against the JFR events, in this case summing up all memory allocations and asserting that the value per REST call isn&#8217;t larger than 33K (the exact threshold has been determined upfront)</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The general idea behind this testing approach is that a regression in regards to metrics like memory allocation or I/O&#8201;&#8212;&#8201;e.g. with a database&#8201;&#8212;&#8201;can be a hint for a performance degredation.
+Allocating more memory than anticipated may be an indicator that your application started to do something which it hadn&#8217;t done before, and which may impact its latency and through-put characteristics.</p>
+</div>
+<div class="paragraph">
+<p>To learn more about this approach for identifying potential performance regressions,
+please refer to <a href="/blog/towards-continuous-performance-regression-testing/">this post</a>, which introduced JfrUnit originally.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_groovier_tests_with_spock">Groovier Tests With Spock</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Thanks to an outstanding contribution by <a href="https://twitter.com/phejl">Petr Hejl</a>,
+instead of the Java-based API,
+you can also use Groovy and the <a href="https://spockframework.org/">Spock framework</a> for your JfrUnit tests,
+which makes for very compact and nicely readable tests.
+Here&#8217;s an example for asserting two JFR events using the Spock integration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="groovy"><span class="kd">class</span> <span class="nc">JfrSpec</span> <span class="kd">extends</span> <span class="n">Specification</span> <span class="o">{</span>
+
+    <span class="n">JfrEvents</span> <span class="n">jfrEvents</span> <span class="o">=</span> <span class="k">new</span> <span class="n">JfrEvents</span><span class="o">()</span>
+
+    <span class="nd">@EnableEvent</span><span class="o">(</span><span class="s1">'jdk.GarbageCollection'</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="nd">@EnableEvent</span><span class="o">(</span><span class="s1">'jdk.ThreadSleep'</span><span class="o">)</span>
+    <span class="kt">def</span> <span class="s1">'should Have GC And Sleep Events'</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nl">when:</span> <i class="conum" data-value="2"></i><b>(2)</b>
+        <span class="n">System</span><span class="o">.</span><span class="na">gc</span><span class="o">()</span>
+        <span class="n">sleep</span><span class="o">(</span><span class="mi">1000</span><span class="o">)</span>
+
+        <span class="nl">then:</span> <i class="conum" data-value="3"></i><b>(3)</b>
+        <span class="n">jfrEvents</span><span class="o">[</span><span class="s1">'jdk.GarbageCollection'</span><span class="o">]</span>
+        <span class="n">jfrEvents</span><span class="o">[</span><span class="s1">'jdk.ThreadSleep'</span><span class="o">].</span><span class="na">withTime</span><span class="o">(</span><span class="n">Duration</span><span class="o">.</span><span class="na">ofMillis</span><span class="o">(</span><span class="mi">1000</span><span class="o">))</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Enable the <code>jdk.GarbageCollection</code> and <code>jdk.ThreadSleep</code> event types</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Run the test code</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Assert the events; thanks to the integration with Spock, no explicit barrier for awaiting all events is needed</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To learn more about the Spock-based approach of using JfrUnit,
+please refer to the <a href="https://github.com/moditect/jfrunit#using-spock-framework">instructions</a> in the README.</p>
+</div>
+<div class="paragraph">
+<p>For getting started with JfrUnit yourself,
+you may take a look at the <a href="https://github.com/moditect/jfrunit-examples">jfrunit-examples</a> repo,
+which shows some common usages the project.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_outlook">Outlook</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This first Alpha release is an important milestone for the JfrUnit project.
+Since its inception in the December of last year,
+I&#8217;ve received tons of invaluable feedback, and the project has matured quite a bit.</p>
+</div>
+<div class="paragraph">
+<p>In terms of next steps, apart from further expanding and honing the API,
+one area I&#8217;d like to explore with JfrUnit is keeping track of and analysing historical event data from multiple test runs over a longer period of time.</p>
+</div>
+<div class="paragraph">
+<p>For instance, consider a case where your REST call allocates 33 KB today, 40 KB next month, 50 KB the month after, etc.
+Each increase by itself may not be problematic, but when comparing the results from today to those of a run in six months from now, a substantial regression may have accumulated.
+For identifying and analysing such trends,
+loading JfrUnit result data into a time series database, or repository systems like <a href="https://github.com/Hyperfoil/Horreum">Hyperfoil Horreum</a>, may be a very interesting feature.</p>
+</div>
+<div class="paragraph">
+<p>On a related note, <a href="https://twitter.com/JohnnyDoItAll">John O&#8217;Hara</a> has <a href="https://github.com/moditect/jfrunit/issues/71">started work</a> towards automated event analysis using the rules system of JDK Mission Control,
+so stay tuned for some really exciting developments in this area!</p>
+</div>
+<div class="paragraph">
+<p>Last but not least, I&#8217;d like say thank you to all the folks helping with the work on JfrUnit,
+be it through discussions, raising feature requests or bug reports, or code changes,
+including the following fine folks who have contributed to the JfrUnit repository at this point:
+<a href="https://github.com/aalmiray">Andres Almiray</a>,
+<a href="https://github.com/HashZhang">Hash Zhang</a>,
+<a href="https://github.com/leonard84">Leonard Brünings</a>,
+<a href="https://github.com/machi1990">Manyanda Chitimbo</a>,
+<a href="https://github.com/benkard">Matthias Andreas Benkard</a>,
+<a href="https://github.com/phejl">Petr Hejl</a>,
+<a href="https://github.com/sbrannen">Sam Brannen</a>,
+<a href="https://github.com/sullis">Sullis</a>,
+<a href="https://github.com/everflux">Thomas</a>,
+<a href="https://github.com/tivrfoa">Tivrfoa</a>, and
+<a href="https://github.com/tbadgu">Tushar Badgu</a>.
+Onwards and upwards!</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread"></div>
+<script type="text/javascript">
+	(function () {
+		
+		
+		if (window.location.hostname == "localhost")
+			return;
+
+		var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+		var disqus_shortname = 'morlingdev';
+		dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+		(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+	})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by
+		Disqus.</a></noscript>
+<a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2021 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
