@@ -1,0 +1,399 @@
+---
+title: "Resource Bundle Look-ups in Modular Java Applications"
+date: 2021-08-29T18:30:00+02:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+The https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ResourceBundle.html[`ResourceBundle`] class is Java's workhorse for managing and retrieving locale specific resources,
+such as error messages of internationalized applications.
+With the advent of the module system in Java 9, specifics around discovering and loading resource bundles have changed quite a bit, in particular when it comes to retrieving resource bundles across the boundaries of named modules.
+
+In this blog post I'd like to discuss how resource bundles can be used in a multi-module application
+(i.e. a "modular monolith") for internationalizing error messages.
+The following requirements should be satisified:
+
+<!--more-->
+
+* The individual modules of the application should contribute bundles with their specific error messages,
+avoiding the need for developers from the team having to work on one large shared resource bundle
+* One central component (like an error handler) should use these bundles for displaying or logging the error messages in a uniform way
+* There should be no knowledge about the specific modules needed in the central component,
+i.e. it should be possible to add further modules to the application,
+each with their own set of resource bundles, without having to modify the central component
+
+The rationale of this design is to enable individual development teams to work independently on their respective components,
+including the error message resource bundles,
+while ensuring consistent preparation of messages via the central error handler.
+
+As an example, we're going to use https://github.com/gunnarmorling/modular-resource-bundles[Links], a hypothetical management software for golf courses.
+It is comprised of the following modules (click on image to enlarge):
+
+image::links-architecture.png[Modules of the Links Application]
+
+The _core_ module contains common "framework" code, such as the error handler class.
+The modules _greenkeeping_, _tournament_, and _membership_ represent different parts of the business domain of the Links application.
+Normally, this is where we'd put our business logic, but in the case at hand they'll just contain the different resource bundles.
+Lastly, the _app_ module provides the entry point of the application in form of a simple main class.
+
+== The `ResourceBundleProvider` Interface
+
+If you have worked with resource bundles before, you may have come across approaches for merging multiple bundles into one.
+While technically still doable when running with named Java modules, it is not adviseable;
+in order to be found across module boundaries, your bundles would have to reside in _open packages_.
+Also, as no package must be contained in more than one module,
+you'd have to implement some potentially complex logic for identifying bundles contributed by different modules,
+whose exact names you don't know (see the third requirement above).
+You may consider to use automatic modules, but then you'd void some advantages of the Java module system,
+such as the ability to create link:/blog/smaller-faster-starting-container-images-with-jlink-and-appcds/[modular runtime images].
+
+The solution to these issues comes in the form of the https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/spi/ResourceBundleProvider.html[`ResourceBundleProvider`] API,
+introduced alongside the module system in Java 9.
+Based on the Java https://www.infoq.com/articles/java11-aware-service-module/[service loader mechanism],
+it enables one module to retrieve bundles from other modules in a loosely coupled way;
+the consuming module neither needs to know about the providing modules themselves,
+nor about implementation details such as their internally used bundle names and locations.
+
+So let's see how we can use `ResourceBundleProvider` in the Links application.
+The first step is to define a bundle-specific service provider interface, derived from `ResourceBundleProvider`:
+
+[source,java,linenums=true]
+----
+package dev.morling.links.core.spi;
+
+import java.util.spi.ResourceBundleProvider;
+
+public interface LinksMessagesProvider extends ResourceBundleProvider {
+}
+----
+
+The name of bundle provider interfaces must follow the pattern `<package of baseName> + ".spi." + <simple name of baseName> + "Provider"`.
+As the base name is `dev.morling.links.core.LinksMessages` in our case, the provider interface name must be `dev.morling.links.core.spi.LinksMessagesProvider`.
+This can be sort of a stumbling stone, as an innocent typo in the package or type name will cause your bundle not to be found,
+without good means of analyzing the situation, other than double and triple checking that all names are correct.
+
+Next, we need to declare the usage of this provider interface in the consuming module.
+Assuming the afore-mentioned error handler class is located in the _core_ module,
+the module descriptor of the same looks like so:
+
+[source,java,linenums=true]
+----
+module dev.morling.links.core {
+  exports dev.morling.links.core;
+  exports dev.morling.links.core.spi; // <1>
+  uses dev.morling.links.core.spi.LinksMessagesProvider; // <2>
+}
+----
+<1> Export the package of the resource bundle provider interface so that implementations can be created in other modules
+<2> Declare the usage of the `LinksMessagesProvider` service
+
+Using the resource bundle in the error handler class is rather un-exciting;
+note that not our own application code retrieves the resource bundle provider via the service loader,
+but instead this is happening in the `ResourceBundle::getBundle()` factory method:
+
+[source,java,linenums=true]
+----
+public class ErrorHandler {
+
+  public String getErrorMessage(String key, UserContext context) {
+    ResourceBundle bundle = ResourceBundle.getBundle(
+        "dev.morling.links.base.LinksMessages", context.getLocale());
+
+    return "[User: " + context.getName() + "] " + bundle.getString(key);
+  }
+}
+----
+
+Here, the error handler simply obtains the message for a given key from the bundle,
+using the locale of some user context object, and returning a message prefixed with the user's name.
+This implementation just serves for example purposes of course;
+in an actual application, message keys might for instance be obtained from application specific exception types,
+raised in the different modules, and logged in a unified way via the error handler.
+
+== Resource Bundle Providers
+
+With the code in the _core_ module in place
+(mostly, that is, as we'll see in a bit),
+let's shift our attention towards the resource bundle providers in the different application modules.
+Not too suprising, they need to define an implementation of the `LinksMessagesProvider` contract.
+
+There is one challenge though:
+how can the different modules contribute implementations for one and the same bundle base name and locale?
+Once the look-up code in `ResourceBundle` has found a provider which returns a bundle for a requested name and locale,
+it will not query any other bundle providers.
+In our case though, we need to be able to obtain messages from any of the bundles contributed by the different modules:
+messages related to green keeping must be obtained from the bundle of the `dev.morling.links.greenkeeping` module,
+tournament messages from `dev.morling.links.tournament`, and so on.
+
+The idea to address this concern is the following:
+
+* Prefix each message key with a module specific string, resulting in keys like `tournament.fullybooked`, `greenkeeping.greenclosed`, etc.
+* When requesting the bundle for a given key in the error handler class, obtain the key's prefix and pass it to bundle providers
+* Let bundle providers react only to their specific message prefix
+
+This is where things become a little bit fiddly:
+there isn't a really good way for passing such contextual information from bundle consumers to providers.
+Our loop hole here will be to squeeze that information into the the requested https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/Locale.html[`Locale`] instance.
+Besides the well-known language and country attributes, `Locale` can also carry _variant_ data and even application specific https://docs.oracle.com/javase/tutorial/i18n/locale/extensions.html[_extensions_].
+
+The latter would actually be pretty much ideal for our purposes.
+But unfortunately, extensions aren't evaluated by the look-up routine in `ResourceBundle`.
+So instead we'll go with propagating the key namespace information via the locale's variant.
+First, let's revisit the code in the `ErrorHandler` class:
+
+[source,java,linenums=true]
+----
+public class ErrorHandler {
+
+  public String getErrorMessage(String key, UserContext context) {
+      String component = key.split("\\.")[0]; // <1>
+      Locale locale = new Locale( // <2>
+          context.getLocale().getLanguage(),
+          context.getLocale().getCountry(),
+          component
+      );
+      
+      ResourceBundle bundle = ResourceBundle.getBundle(
+          "dev.morling.links.core.LinksMessages", locale); // <3>
+
+      return "[User: " + context.getName() + "] " +
+          bundle.getString(key); // <4>
+  }
+}
+----
+<1> Extract the key prefix, e.g. "greenkeeping"
+<2> Construct a new `Locale`, using the language and country information from the current user's locale and the key prefix as variant
+<3> Retrieve the bundle using the adjusted locale
+<4> Prepare the error message
+
+Based on this approach, the resource bundle provider implementation in the _greenkeeping_ module looks like so:
+
+[source,java,linenums=true]
+----
+public class GreenKeepingMessagesProvider extends
+    AbstractResourceBundleProvider implements LinksMessagesProvider {
+
+  @Override
+  public ResourceBundle getBundle(String baseName, Locale locale) {
+    if (locale.getVariant().equals("greenkeeping")) { // <1>
+      baseName = baseName.replace("core.LinksMessages",
+          "greenkeeping.internal.LinksMessages"); // <2>
+      locale = new Locale(locale.getLanguage(), locale.getCountry()); // <3>
+
+      return super.getBundle(baseName), locale);
+    }
+
+    return null; // <4>
+  }
+}
+----
+<1> This provider only should return a bundle for "greenkeeping" messages
+<2> Retrieve the bundle, adjusting the name (see below)
+<3> Create a `Locale` without the variant
+<4> Let other providers kick in for messages unrelated to green-keeping
+
+The adjustment of the bundle name deserves some more explanation.
+The module system forbids so-called "split packages",
+i.e. packages of the same name in several modules of an application.
+That's why we cannot have a bundle named `dev.morling.links.core.LinksMessages` in multiple modules,
+even if the package `dev.morling.links.core` isn't exported by any of them.
+So each module must have its bundles in a specific package, and the bundle provider has to adjust the name accordingly,
+e.g. into `dev.morling.links.greenkeeping.internal.LinksMessages` in the `greenkeeping` module.
+
+As with the service consumer,
+the service provider also must be declared in the module's descriptor:
+
+[source,java,linenums=true]
+----
+module dev.morling.links.greenkeeping {
+  requires dev.morling.links.core;
+  provides dev.morling.links.core.spi.LinksMessagesProvider
+      with dev.morling.links.greenkeeping.internal. ↩
+          GreenKeepingMessagesProvider;
+}
+----
+
+Note how the package of the provider and the bundle isn't exported or opened,
+solely being exposed via the service loader mechanism.
+For the sake of completeness, here are two resource bundle files from the `greenkeeping` module,
+one for English, and one for German:
+
+[source,linenums=true]
+----
+greenkeeping.greenclosed=Green closed due to mowing
+----
+
+[source,linenums=true]
+----
+greenkeeping.greenclosed=Grün wegen Pflegearbeiten gesperrt
+----
+
+Lastly, some test for the `ErrorHandler` class, making sure it works as expected:
+
+[source,java,linenums=true]
+----
+ErrorHandler errorHandler = new ErrorHandler();
+
+String message = errorHandler.getErrorMessage("greenkeeping.greenclosed",
+    new UserContext("Bob", Locale.US));
+assert message.equals("[User: Bob] Green closed due to mowing");
+
+message = errorHandler.getErrorMessage("greenkeeping.greenclosed",
+    new UserContext("Herbert", Locale.GERMANY));
+assert message.equals("[User: Herbert] Grün wegen " +
+    "Pflegearbeiten gesperrt");
+
+message = errorHandler.getErrorMessage("tournament.fullybooked",
+    new UserContext("Bob", Locale.US));
+assert message.equals("[User: Bob] This tournament is fully booked");
+----
+
+== Running on the Classpath
+
+At this point, the design supports cross-module look-ups of resource bundles when running the application on the module path.
+Can we also make it work when running the same modules on the classpath instead?
+Indeed we can, but some slight additions to the _core_ module will be needed.
+The reason being, that `ResourceBundleProvider` service contract isn't considered at all by the the bundle retrieval logic in `ResourceBundle` when running on the classpath.
+
+The way out is to provide a custom https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ResourceBundle.Control.html[`ResourceBundle.Control`] implementation which mimicks the logic for adjusting the bundle names based on the requested locale variant, as done by the different providers above:
+
+[source,java,linenums=true]
+----
+public class LinksMessagesControl extends Control {
+
+  @Override
+  public String toBundleName(String baseName, Locale locale) {
+    if (locale.getVariant() != null) {
+      baseName = baseName.replace("core.LinksMessages",
+        locale.getVariant() + ".internal.LinksMessages"); // <1>
+      locale = new Locale(locale.getLanguage(), locale.getCountry()); // <2>
+
+      return super.toBundleName(baseName, locale);
+    }
+
+    return super.toBundleName(baseName, locale);
+  }
+}
+----
+<1> Adjust the requested bundle name so that the module-specific bundles are retrieved
+<2> Drop the variant name from the locale
+
+Now we could https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ResourceBundle.html#getBundle(java.lang.String,java.util.Locale,java.util.ResourceBundle.Control)[explicitly pass in] an instance of that `Control` implementation when retrieving a resource bundle through `ResourceBundle::getBundle()`,
+but there's a simpler solution in form of the not overly widely known https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/spi/ResourceBundleControlProvider.html[`ResourceBundleControlProvider`] API:
+
+[source,java,linenums=true]
+----
+public class LinksMessagesControlProvider implements ResourceBundleControlProvider {
+
+  @Override
+  public Control getControl(String baseName) {
+    if (baseName.equals("dev.morling.links.core.LinksMessages")) { // <1>
+      return new LinksMessagesControl();
+    }
+
+    return null;
+  }
+}
+----
+<1> Return the `LinksMessagesControl` when the `LinksMessages` bundle is requested
+
+This is another service provider contract; its implementations are retrieved from the classpath when obtaining a resource bundle and no control has been given explicity.
+Of course, the service implementation still needs to be registered, this time using the traditional approach of specifying the implementation name(s) in the _META-INF/services/java.util.spi.ResourceBundleControlProvider_ file:
+
+[source]
+----
+dev.morling.links.core.internal.LinksMessagesControlProvider
+----
+
+With the control and control provider in place, the modular resource bundle look-up will work on the module path as well as the classpath, when running on Java 9+.
+There's one caveat remaining though if we want to enable the application also to be run on the classpath with Java 8.
+
+In Java 8, `ResourceBundleControlProvider` implementations are not picked up from the classpath,
+but only via the https://docs.oracle.com/javase/8/docs/technotes/guides/extensions/index.html[Java extension mechanism] (now deprecated).
+This means you'd have to provide the custom control provider through the _lib/ext_ or _jre/lib/ext_ directory of your JRE or JDK, respectively, which often isn't very practical.
+At this point we might be ready to cave in and just pass in the custom control implementation to `ResourceBundle::getBundle()`.
+But we can't actually do that:
+when invoked in a named module on Java 9+ (which is the case when running the application on the module path),
+the `getBundle(String, Locale, Control)` method will raise an `UnsupportedOperationException`!
+
+To overcome this last obstacle and make the application useable across the different Java versions,
+we can resort to the multi-release JAR mechanism:
+two different versions of the `ErrorHandler` class can be provided within a single JAR,
+one to be used with Java 8, and another one to be used with Java 9 and later.
+The latter calls `getBundle(String, Locale)`, i.e. not passing the control, thus using the resource bundle providers (when running on the module path) or the control provider (when running on the classpath).
+The former invokes `getBundle(String, Locale, Control)`, allowing the custom control to be used on Java 8.
+
+[NOTE]
+.Building Multi-Release JARs
+====
+When multi-release JARs were first introduced in Java 9 with http://openjdk.java.net/jeps/238+[JEP 238],
+tool support for building them was non-existent, making this task quite a https://in.relation.to/2017/02/13/building-multi-release-jars-with-maven/[challenging one].
+Luckily, the situation has improved a lot since then.
+When using Apache Maven, only two plug-ins need to be configured:
+
+[source,xml,linenums=true]
+----
+...
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-compiler-plugin</artifactId>
+  <executions>
+    <execution> // <1>
+      <id>compile-java-9</id>
+      <phase>compile</phase>
+      <goals>
+        <goal>compile</goal>
+      </goals>
+      <configuration>
+        <release>9</release> // <2>
+        <compileSourceRoots>
+          <compileSourceRoot>
+            ${project.basedir}/src/main/java-9 // <3>
+          </compileSourceRoot>
+        </compileSourceRoots>
+      <multiReleaseOutput>true</multiReleaseOutput> // <4>
+    </configuration>
+    </execution>
+  </executions>
+</plugin>
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-jar-plugin</artifactId>
+  <configuration>
+    <archive>
+      <manifestEntries>
+        <Multi-Release>true</Multi-Release> // <5>
+      </manifestEntries>
+    </archive>
+  </configuration>
+</plugin>
+...
+----
+<1> Set up another execution of the https://maven.apache.org/plugins/maven-compiler-plugin/[Maven compiler plug-in] for the Java 9 specific sources,
+<2> using Java 9 bytecode level,
+<3> picking up the sources from _src/main/java-9_,
+<4> and organizing the compilation output in the multi-relese structure under _META-INF/versions/..._
+<5> Configure the https://maven.apache.org/plugins/maven-compiler-plugin/[Maven JAR plug-in] so that the `Multi-Release` manifest entry is set, marking the JAR als a multi-release JAR
+====
+
+== Discussion and Wrap-Up
+
+Let's wrap up and evaluate whether the proposed implementation satisfies our original requirements:
+
+* _Modules of the application contribute bundles with their specific error messages:_ ✅  Each module of the Links application can provide its own bundle(s), using a specific key prefix; we could even take it a step further and provide bundles via separate i18n modules, for instance created by an external translation agency, independent from the development teams
+* _Central error handler component can use these bundles for displaying or logging the error messages:_ ✅  The error handler in the _core_ module can retrieve messages from all the bundles in the different modules, freeing the developers of the application modules from details like adding the user's name to the final messages
+* _No knowledge about the specific modules in the central component:_ ✅  Thanks to the different providers (or the custom `Control`, respectively), there is no need for registering the specific bundles with the error handler in the _core_ module; further modules could be added to the Links application and the error handler would be able to obtain messages from the resource bundles contributed by them
+
+With a little bit of extra effort, it also was possible to design the code in the _core_ module in a way that the application can be used with different Java versions and configurations:
+on the module path with Java 9+, on the classpath with Java 9+, on the classpath with Java 8.
+
+If you'd like to explore the complete code by yourself, you can find it in the https://github.com/gunnarmorling/modular-resource-bundles[modular-resource-bundles] GitHub repository.
+To learn more about resource bundle retrieval in named modules,
+please refer to the extensive documentation of https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ResourceBundle.html#resource-bundle-modules[`ResourceBundle`] and https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/spi/ResourceBundleProvider.html[`ResourceBundleProvider`].
