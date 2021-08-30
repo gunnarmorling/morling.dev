@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Resource Bundle Look-ups in Modular Java Applications - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Resource Bundle Look-ups in Modular Java Applications" />
+<meta property="og:description" content="
+The ResourceBundle class is Java&#8217;s workhorse for managing and retrieving locale specific resources,
+such as error messages of internationalized applications.
+With the advent of the module system in Java 9, specifics around discovering and loading resource bundles have changed quite a bit, in particular when it comes to retrieving resource bundles across the boundaries of named modules.
+
+
+In this blog post I&#8217;d like to discuss how resource bundles can be used in a multi-module application
+(i.e. a &#34;modular monolith&#34;) for internationalizing error messages.
+The following requirements should be satisified:
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/resource-bundle-lookups-in-modular-java-applications/" />
+<meta property="article:published_time" content="2021-08-29T18:30:00+02:00" />
+<meta property="article:modified_time" content="2021-08-29T18:30:00+02:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Resource Bundle Look-ups in Modular Java Applications"/>
+<meta name="twitter:description" content="
+The ResourceBundle class is Java&#8217;s workhorse for managing and retrieving locale specific resources,
+such as error messages of internationalized applications.
+With the advent of the module system in Java 9, specifics around discovering and loading resource bundles have changed quite a bit, in particular when it comes to retrieving resource bundles across the boundaries of named modules.
+
+
+In this blog post I&#8217;d like to discuss how resource bundles can be used in a multi-module application
+(i.e. a &#34;modular monolith&#34;) for internationalizing error messages.
+The following requirements should be satisified:
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search.gunnar-morling.workers.dev\/Prod\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Resource Bundle Look-ups in Modular Java Applications</h1>
+				<div class="meta">Posted at Aug 29, 2021</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>The <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ResourceBundle.html"><code>ResourceBundle</code></a> class is Java&#8217;s workhorse for managing and retrieving locale specific resources,
+such as error messages of internationalized applications.
+With the advent of the module system in Java 9, specifics around discovering and loading resource bundles have changed quite a bit, in particular when it comes to retrieving resource bundles across the boundaries of named modules.</p>
+</div>
+<div class="paragraph">
+<p>In this blog post I&#8217;d like to discuss how resource bundles can be used in a multi-module application
+(i.e. a "modular monolith") for internationalizing error messages.
+The following requirements should be satisified:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The individual modules of the application should contribute bundles with their specific error messages,
+avoiding the need for developers from the team having to work on one large shared resource bundle</p>
+</li>
+<li>
+<p>One central component (like an error handler) should use these bundles for displaying or logging the error messages in a uniform way</p>
+</li>
+<li>
+<p>There should be no knowledge about the specific modules needed in the central component,
+i.e. it should be possible to add further modules to the application,
+each with their own set of resource bundles, without having to modify the central component</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The rationale of this design is to enable individual development teams to work independently on their respective components,
+including the error message resource bundles,
+while ensuring consistent preparation of messages via the central error handler.</p>
+</div>
+<div class="paragraph">
+<p>As an example, we&#8217;re going to use <a href="https://github.com/gunnarmorling/modular-resource-bundles">Links</a>, a hypothetical management software for golf courses.
+It is comprised of the following modules (click on image to enlarge):</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/links-architecture.png" alt="Modules of the Links Application">
+</div>
+</div>
+<div class="paragraph">
+<p>The <em>core</em> module contains common "framework" code, such as the error handler class.
+The modules <em>greenkeeping</em>, <em>tournament</em>, and <em>membership</em> represent different parts of the business domain of the Links application.
+Normally, this is where we&#8217;d put our business logic, but in the case at hand they&#8217;ll just contain the different resource bundles.
+Lastly, the <em>app</em> module provides the entry point of the application in form of a simple main class.</p>
+</div>
+<div class="sect1">
+<h2 id="_the_resourcebundleprovider_interface">The <code>ResourceBundleProvider</code> Interface</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you have worked with resource bundles before, you may have come across approaches for merging multiple bundles into one.
+While technically still doable when running with named Java modules, it is not adviseable;
+in order to be found across module boundaries, your bundles would have to reside in <em>open packages</em>.
+Also, as no package must be contained in more than one module,
+you&#8217;d have to implement some potentially complex logic for identifying bundles contributed by different modules,
+whose exact names you don&#8217;t know (see the third requirement above).
+You may consider to use automatic modules, but then you&#8217;d void some advantages of the Java module system,
+such as the ability to create <a href="/blog/smaller-faster-starting-container-images-with-jlink-and-appcds/">modular runtime images</a>.</p>
+</div>
+<div class="paragraph">
+<p>The solution to these issues comes in the form of the <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/spi/ResourceBundleProvider.html"><code>ResourceBundleProvider</code></a> API,
+introduced alongside the module system in Java 9.
+Based on the Java <a href="https://www.infoq.com/articles/java11-aware-service-module/">service loader mechanism</a>,
+it enables one module to retrieve bundles from other modules in a loosely coupled way;
+the consuming module neither needs to know about the providing modules themselves,
+nor about implementation details such as their internally used bundle names and locations.</p>
+</div>
+<div class="paragraph">
+<p>So let&#8217;s see how we can use <code>ResourceBundleProvider</code> in the Links application.
+The first step is to define a bundle-specific service provider interface, derived from <code>ResourceBundleProvider</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="kn">package</span> <span class="n">dev</span><span class="o">.</span><span class="na">morling</span><span class="o">.</span><span class="na">links</span><span class="o">.</span><span class="na">core</span><span class="o">.</span><span class="na">spi</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">java.util.spi.ResourceBundleProvider</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">interface</span> <span class="nc">LinksMessagesProvider</span> <span class="kd">extends</span> <span class="nc">ResourceBundleProvider</span> <span class="o">{</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The name of bundle provider interfaces must follow the pattern <code>&lt;package of baseName&gt; + ".spi." + &lt;simple name of baseName&gt; + "Provider"</code>.
+As the base name is <code>dev.morling.links.core.LinksMessages</code> in our case, the provider interface name must be <code>dev.morling.links.core.spi.LinksMessagesProvider</code>.
+This can be sort of a stumbling stone, as an innocent typo in the package or type name will cause your bundle not to be found,
+without good means of analyzing the situation, other than double and triple checking that all names are correct.</p>
+</div>
+<div class="paragraph">
+<p>Next, we need to declare the usage of this provider interface in the consuming module.
+Assuming the afore-mentioned error handler class is located in the <em>core</em> module,
+the module descriptor of the same looks like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="n">module</span> <span class="n">dev</span><span class="o">.</span><span class="na">morling</span><span class="o">.</span><span class="na">links</span><span class="o">.</span><span class="na">core</span> <span class="o">{</span>
+  <span class="n">exports</span> <span class="n">dev</span><span class="o">.</span><span class="na">morling</span><span class="o">.</span><span class="na">links</span><span class="o">.</span><span class="na">core</span><span class="o">;</span>
+  <span class="n">exports</span> <span class="n">dev</span><span class="o">.</span><span class="na">morling</span><span class="o">.</span><span class="na">links</span><span class="o">.</span><span class="na">core</span><span class="o">.</span><span class="na">spi</span><span class="o">;</span> <i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="n">uses</span> <span class="n">dev</span><span class="o">.</span><span class="na">morling</span><span class="o">.</span><span class="na">links</span><span class="o">.</span><span class="na">core</span><span class="o">.</span><span class="na">spi</span><span class="o">.</span><span class="na">LinksMessagesProvider</span><span class="o">;</span> <i class="conum" data-value="2"></i><b>(2)</b>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Export the package of the resource bundle provider interface so that implementations can be created in other modules</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Declare the usage of the <code>LinksMessagesProvider</code> service</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Using the resource bundle in the error handler class is rather unexciting;
+note that not our own application code retrieves the resource bundle provider via the service loader,
+but instead this is happening in the <code>ResourceBundle::getBundle()</code> factory method:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ErrorHandler</span> <span class="o">{</span>
+
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">getErrorMessage</span><span class="o">(</span><span class="nc">String</span> <span class="n">key</span><span class="o">,</span> <span class="nc">UserContext</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">ResourceBundle</span> <span class="n">bundle</span> <span class="o">=</span> <span class="nc">ResourceBundle</span><span class="o">.</span><span class="na">getBundle</span><span class="o">(</span>
+        <span class="s">"dev.morling.links.base.LinksMessages"</span><span class="o">,</span> <span class="n">context</span><span class="o">.</span><span class="na">getLocale</span><span class="o">());</span>
+
+    <span class="k">return</span> <span class="s">"[User: "</span> <span class="o">+</span> <span class="n">context</span><span class="o">.</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">"] "</span> <span class="o">+</span> <span class="n">bundle</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Here, the error handler simply obtains the message for a given key from the bundle,
+using the locale of some user context object, and returning a message prefixed with the user&#8217;s name.
+This implementation just serves for example purposes of course;
+in an actual application, message keys might for instance be obtained from application specific exception types,
+raised in the different modules, and logged in a unified way via the error handler.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_resource_bundle_providers">Resource Bundle Providers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With the code in the <em>core</em> module in place
+(mostly, that is, as we&#8217;ll see in a bit),
+let&#8217;s shift our attention towards the resource bundle providers in the different application modules.
+Not too suprising, they need to define an implementation of the <code>LinksMessagesProvider</code> contract.</p>
+</div>
+<div class="paragraph">
+<p>There is one challenge though:
+how can the different modules contribute implementations for one and the same bundle base name and locale?
+Once the look-up code in <code>ResourceBundle</code> has found a provider which returns a bundle for a requested name and locale,
+it will not query any other bundle providers.
+In our case though, we need to be able to obtain messages from any of the bundles contributed by the different modules:
+messages related to green keeping must be obtained from the bundle of the <code>dev.morling.links.greenkeeping</code> module,
+tournament messages from <code>dev.morling.links.tournament</code>, and so on.</p>
+</div>
+<div class="paragraph">
+<p>The idea to address this concern is the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Prefix each message key with a module specific string, resulting in keys like <code>tournament.fullybooked</code>, <code>greenkeeping.greenclosed</code>, etc.</p>
+</li>
+<li>
+<p>When requesting the bundle for a given key in the error handler class, obtain the key&#8217;s prefix and pass it to bundle providers</p>
+</li>
+<li>
+<p>Let bundle providers react only to their specific message prefix</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This is where things become a little bit fiddly:
+there isn&#8217;t a really good way for passing such contextual information from bundle consumers to providers.
+Our loop hole here will be to squeeze that information into the the requested <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/Locale.html"><code>Locale</code></a> instance.
+Besides the well-known language and country attributes, <code>Locale</code> can also carry <em>variant</em> data and even application specific <a href="https://docs.oracle.com/javase/tutorial/i18n/locale/extensions.html"><em>extensions</em></a>.</p>
+</div>
+<div class="paragraph">
+<p>The latter, in form of a <em>private use extension</em>, would actually be pretty much ideal for our purposes.
+But unfortunately, extensions aren&#8217;t evaluated by the look-up routine in <code>ResourceBundle</code>.
+So instead we&#8217;ll go with propagating the key namespace information via the locale&#8217;s variant.
+First, let&#8217;s revisit the code in the <code>ErrorHandler</code> class:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ErrorHandler</span> <span class="o">{</span>
+
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">getErrorMessage</span><span class="o">(</span><span class="nc">String</span> <span class="n">key</span><span class="o">,</span> <span class="nc">UserContext</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">String</span> <span class="n">prefix</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">"\\."</span><span class="o">)[</span><span class="mi">0</span><span class="o">];</span> <i class="conum" data-value="1"></i><b>(1)</b>
+      <span class="nc">Locale</span> <span class="n">locale</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Locale</span><span class="o">(</span> <i class="conum" data-value="2"></i><b>(2)</b>
+          <span class="n">context</span><span class="o">.</span><span class="na">getLocale</span><span class="o">().</span><span class="na">getLanguage</span><span class="o">(),</span>
+          <span class="n">context</span><span class="o">.</span><span class="na">getLocale</span><span class="o">().</span><span class="na">getCountry</span><span class="o">(),</span>
+          <span class="n">prefix</span>
+      <span class="o">);</span>
+
+      <span class="nc">ResourceBundle</span> <span class="n">bundle</span> <span class="o">=</span> <span class="nc">ResourceBundle</span><span class="o">.</span><span class="na">getBundle</span><span class="o">(</span>
+          <span class="s">"dev.morling.links.core.LinksMessages"</span><span class="o">,</span> <span class="n">locale</span><span class="o">);</span> <i class="conum" data-value="3"></i><b>(3)</b>
+
+      <span class="k">return</span> <span class="s">"[User: "</span> <span class="o">+</span> <span class="n">context</span><span class="o">.</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">"] "</span> <span class="o">+</span>
+          <span class="n">bundle</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="n">key</span><span class="o">);</span> <i class="conum" data-value="4"></i><b>(4)</b>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Extract the key prefix, e.g. "greenkeeping"</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Construct a new <code>Locale</code>, using the language and country information from the current user&#8217;s locale and the key prefix as variant</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Retrieve the bundle using the adjusted locale</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Prepare the error message</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Based on this approach, the resource bundle provider implementation in the <em>greenkeeping</em> module looks like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">GreenKeepingMessagesProvider</span> <span class="kd">extends</span>
+    <span class="nc">AbstractResourceBundleProvider</span> <span class="kd">implements</span> <span class="nc">LinksMessagesProvider</span> <span class="o">{</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="nc">ResourceBundle</span> <span class="nf">getBundle</span><span class="o">(</span><span class="nc">String</span> <span class="n">baseName</span><span class="o">,</span> <span class="nc">Locale</span> <span class="n">locale</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">locale</span><span class="o">.</span><span class="na">getVariant</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="s">"greenkeeping"</span><span class="o">))</span> <span class="o">{</span> <i class="conum" data-value="1"></i><b>(1)</b>
+      <span class="n">baseName</span> <span class="o">=</span> <span class="n">baseName</span><span class="o">.</span><span class="na">replace</span><span class="o">(</span><span class="s">"core.LinksMessages"</span><span class="o">,</span>
+          <span class="s">"greenkeeping.internal.LinksMessages"</span><span class="o">);</span> <i class="conum" data-value="2"></i><b>(2)</b>
+      <span class="n">locale</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Locale</span><span class="o">(</span><span class="n">locale</span><span class="o">.</span><span class="na">getLanguage</span><span class="o">(),</span> <span class="n">locale</span><span class="o">.</span><span class="na">getCountry</span><span class="o">());</span> <i class="conum" data-value="3"></i><b>(3)</b>
+
+      <span class="k">return</span> <span class="kd">super</span><span class="o">.</span><span class="na">getBundle</span><span class="o">(</span><span class="n">baseName</span><span class="o">),</span> <span class="n">locale</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="k">return</span> <span class="kc">null</span><span class="o">;</span> <i class="conum" data-value="4"></i><b>(4)</b>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>This provider only should return a bundle for "greenkeeping" messages</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Retrieve the bundle, adjusting the name (see below)</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Create a <code>Locale</code> without the variant</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Let other providers kick in for messages unrelated to green-keeping</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The adjustment of the bundle name deserves some more explanation.
+The module system forbids so-called "split packages",
+i.e. packages of the same name in several modules of an application.
+That&#8217;s why we cannot have a bundle named <code>dev.morling.links.core.LinksMessages</code> in multiple modules,
+even if the package <code>dev.morling.links.core</code> isn&#8217;t exported by any of them.
+So each module must have its bundles in a specific package, and the bundle provider has to adjust the name accordingly,
+e.g. into <code>dev.morling.links.greenkeeping.internal.LinksMessages</code> in the <code>greenkeeping</code> module.</p>
+</div>
+<div class="paragraph">
+<p>As with the service consumer,
+the service provider also must be declared in the module&#8217;s descriptor:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="n">module</span> <span class="n">dev</span><span class="o">.</span><span class="na">morling</span><span class="o">.</span><span class="na">links</span><span class="o">.</span><span class="na">greenkeeping</span> <span class="o">{</span>
+  <span class="n">requires</span> <span class="n">dev</span><span class="o">.</span><span class="na">morling</span><span class="o">.</span><span class="na">links</span><span class="o">.</span><span class="na">core</span><span class="o">;</span>
+  <span class="n">provides</span> <span class="n">dev</span><span class="o">.</span><span class="na">morling</span><span class="o">.</span><span class="na">links</span><span class="o">.</span><span class="na">core</span><span class="o">.</span><span class="na">spi</span><span class="o">.</span><span class="na">LinksMessagesProvider</span>
+      <span class="n">with</span> <span class="n">dev</span><span class="o">.</span><span class="na">morling</span><span class="o">.</span><span class="na">links</span><span class="o">.</span><span class="na">greenkeeping</span><span class="o">.</span><span class="na">internal</span><span class="o">.</span> <span class="err">↩</span>
+          <span class="nc">GreenKeepingMessagesProvider</span><span class="o">;</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note how the package of the provider and the bundle isn&#8217;t exported or opened,
+solely being exposed via the service loader mechanism.
+For the sake of completeness, here are two resource bundle files from the <code>greenkeeping</code> module,
+one for English, and one for German:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>greenkeeping.greenclosed=Green closed due to mowing
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>greenkeeping.greenclosed=Grün wegen Pflegearbeiten gesperrt
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Lastly, some test for the <code>ErrorHandler</code> class, making sure it works as expected:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+</pre></td><td class="code"><pre><span class="nc">ErrorHandler</span> <span class="n">errorHandler</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ErrorHandler</span><span class="o">();</span>
+
+<span class="nc">String</span> <span class="n">message</span> <span class="o">=</span> <span class="n">errorHandler</span><span class="o">.</span><span class="na">getErrorMessage</span><span class="o">(</span><span class="s">"greenkeeping.greenclosed"</span><span class="o">,</span>
+    <span class="k">new</span> <span class="nf">UserContext</span><span class="o">(</span><span class="s">"Bob"</span><span class="o">,</span> <span class="nc">Locale</span><span class="o">.</span><span class="na">US</span><span class="o">));</span>
+<span class="k">assert</span> <span class="n">message</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"[User: Bob] Green closed due to mowing"</span><span class="o">);</span>
+
+<span class="n">message</span> <span class="o">=</span> <span class="n">errorHandler</span><span class="o">.</span><span class="na">getErrorMessage</span><span class="o">(</span><span class="s">"greenkeeping.greenclosed"</span><span class="o">,</span>
+    <span class="k">new</span> <span class="nf">UserContext</span><span class="o">(</span><span class="s">"Herbert"</span><span class="o">,</span> <span class="nc">Locale</span><span class="o">.</span><span class="na">GERMANY</span><span class="o">));</span>
+<span class="k">assert</span> <span class="n">message</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"[User: Herbert] Grün wegen "</span> <span class="o">+</span>
+    <span class="s">"Pflegearbeiten gesperrt"</span><span class="o">);</span>
+
+<span class="n">message</span> <span class="o">=</span> <span class="n">errorHandler</span><span class="o">.</span><span class="na">getErrorMessage</span><span class="o">(</span><span class="s">"tournament.fullybooked"</span><span class="o">,</span>
+    <span class="k">new</span> <span class="nf">UserContext</span><span class="o">(</span><span class="s">"Bob"</span><span class="o">,</span> <span class="nc">Locale</span><span class="o">.</span><span class="na">US</span><span class="o">));</span>
+<span class="k">assert</span> <span class="n">message</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"[User: Bob] This tournament is fully booked"</span><span class="o">);</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_running_on_the_classpath">Running on the Classpath</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>At this point, the design supports cross-module look-ups of resource bundles when running the application on the module path.
+Can we also make it work when running the same modules on the classpath instead?
+Indeed we can, but some slight additions to the <em>core</em> module will be needed.
+The reason being, that <code>ResourceBundleProvider</code> service contract isn&#8217;t considered at all by the the bundle retrieval logic in <code>ResourceBundle</code> when running on the classpath.</p>
+</div>
+<div class="paragraph">
+<p>The way out is to provide a custom <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ResourceBundle.Control.html"><code>ResourceBundle.Control</code></a> implementation which mimicks the logic for adjusting the bundle names based on the requested locale variant, as done by the different providers above:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LinksMessagesControl</span> <span class="kd">extends</span> <span class="nc">Control</span> <span class="o">{</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">toBundleName</span><span class="o">(</span><span class="nc">String</span> <span class="n">baseName</span><span class="o">,</span> <span class="nc">Locale</span> <span class="n">locale</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">locale</span><span class="o">.</span><span class="na">getVariant</span><span class="o">()</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">baseName</span> <span class="o">=</span> <span class="n">baseName</span><span class="o">.</span><span class="na">replace</span><span class="o">(</span><span class="s">"core.LinksMessages"</span><span class="o">,</span>
+        <span class="n">locale</span><span class="o">.</span><span class="na">getVariant</span><span class="o">()</span> <span class="o">+</span> <span class="s">".internal.LinksMessages"</span><span class="o">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
+      <span class="n">locale</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Locale</span><span class="o">(</span><span class="n">locale</span><span class="o">.</span><span class="na">getLanguage</span><span class="o">(),</span> <span class="n">locale</span><span class="o">.</span><span class="na">getCountry</span><span class="o">());</span> <i class="conum" data-value="2"></i><b>(2)</b>
+
+      <span class="k">return</span> <span class="kd">super</span><span class="o">.</span><span class="na">toBundleName</span><span class="o">(</span><span class="n">baseName</span><span class="o">,</span> <span class="n">locale</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="k">return</span> <span class="kd">super</span><span class="o">.</span><span class="na">toBundleName</span><span class="o">(</span><span class="n">baseName</span><span class="o">,</span> <span class="n">locale</span><span class="o">);</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Adjust the requested bundle name so that the module-specific bundles are retrieved</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Drop the variant name from the locale</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Now we could <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ResourceBundle.html#getBundle(java.lang.String,java.util.Locale,java.util.ResourceBundle.Control)">explicitly pass in</a> an instance of that <code>Control</code> implementation when retrieving a resource bundle through <code>ResourceBundle::getBundle()</code>,
+but there&#8217;s a simpler solution in form of the not overly widely known <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/spi/ResourceBundleControlProvider.html"><code>ResourceBundleControlProvider</code></a> API:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LinksMessagesControlProvider</span> <span class="kd">implements</span> <span class="nc">ResourceBundleControlProvider</span> <span class="o">{</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="nc">Control</span> <span class="nf">getControl</span><span class="o">(</span><span class="nc">String</span> <span class="n">baseName</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">baseName</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"dev.morling.links.core.LinksMessages"</span><span class="o">))</span> <span class="o">{</span> <i class="conum" data-value="1"></i><b>(1)</b>
+      <span class="k">return</span> <span class="k">new</span> <span class="nf">LinksMessagesControl</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Return the <code>LinksMessagesControl</code> when the <code>LinksMessages</code> bundle is requested</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>This is another service provider contract; its implementations are retrieved from the classpath when obtaining a resource bundle and no control has been given explicity.
+Of course, the service implementation still needs to be registered, this time using the traditional approach of specifying the implementation name(s) in the <em>META-INF/services/java.util.spi.ResourceBundleControlProvider</em> file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>dev.morling.links.core.internal.LinksMessagesControlProvider</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With the control and control provider in place, the modular resource bundle look-up will work on the module path as well as the classpath, when running on Java 9+.
+There&#8217;s one caveat remaining though if we want to enable the application also to be run on the classpath with Java 8.</p>
+</div>
+<div class="paragraph">
+<p>In Java 8, <code>ResourceBundleControlProvider</code> implementations are not picked up from the classpath,
+but only via the <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/extensions/index.html">Java extension mechanism</a> (now deprecated).
+This means you&#8217;d have to provide the custom control provider through the <em>lib/ext</em> or <em>jre/lib/ext</em> directory of your JRE or JDK, respectively, which often isn&#8217;t very practical.
+At this point we might be ready to cave in and just pass in the custom control implementation to <code>ResourceBundle::getBundle()</code>.
+But we can&#8217;t actually do that:
+when invoked in a named module on Java 9+ (which is the case when running the application on the module path),
+the <code>getBundle(String, Locale, Control)</code> method will raise an <code>UnsupportedOperationException</code>!</p>
+</div>
+<div class="paragraph">
+<p>To overcome this last obstacle and make the application useable across the different Java versions,
+we can resort to the multi-release JAR mechanism:
+two different versions of the <code>ErrorHandler</code> class can be provided within a single JAR,
+one to be used with Java 8, and another one to be used with Java 9 and later.
+The latter calls <code>getBundle(String, Locale)</code>, i.e. not passing the control, thus using the resource bundle providers (when running on the module path) or the control provider (when running on the classpath).
+The former invokes <code>getBundle(String, Locale, Control)</code>, allowing the custom control to be used on Java 8.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Building Multi-Release JARs</div>
+<div class="paragraph">
+<p>When multi-release JARs were first introduced in Java 9 with <a href="http://openjdk.java.net/jeps/238+">JEP 238</a>,
+tool support for building them was non-existent, making this task quite a <a href="https://in.relation.to/2017/02/13/building-multi-release-jars-with-maven/">challenging one</a>.
+Luckily, the situation has improved a lot since then.
+When using Apache Maven, only two plug-ins need to be configured:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+</pre></td><td class="code"><pre>...
+<span class="nt">&lt;plugin&gt;</span>
+  <span class="nt">&lt;groupId&gt;</span>org.apache.maven.plugins<span class="nt">&lt;/groupId&gt;</span>
+  <span class="nt">&lt;artifactId&gt;</span>maven-compiler-plugin<span class="nt">&lt;/artifactId&gt;</span>
+  <span class="nt">&lt;executions&gt;</span>
+    <span class="nt">&lt;execution&gt;</span> <i class="conum" data-value="1"></i><b>(1)</b>
+      <span class="nt">&lt;id&gt;</span>compile-java-9<span class="nt">&lt;/id&gt;</span>
+      <span class="nt">&lt;phase&gt;</span>compile<span class="nt">&lt;/phase&gt;</span>
+      <span class="nt">&lt;goals&gt;</span>
+        <span class="nt">&lt;goal&gt;</span>compile<span class="nt">&lt;/goal&gt;</span>
+      <span class="nt">&lt;/goals&gt;</span>
+      <span class="nt">&lt;configuration&gt;</span>
+        <span class="nt">&lt;release&gt;</span>9<span class="nt">&lt;/release&gt;</span> <i class="conum" data-value="2"></i><b>(2)</b>
+        <span class="nt">&lt;compileSourceRoots&gt;</span>
+          <span class="nt">&lt;compileSourceRoot&gt;</span>
+            ${project.basedir}/src/main/java-9 <i class="conum" data-value="3"></i><b>(3)</b>
+          <span class="nt">&lt;/compileSourceRoot&gt;</span>
+        <span class="nt">&lt;/compileSourceRoots&gt;</span>
+      <span class="nt">&lt;multiReleaseOutput&gt;</span>true<span class="nt">&lt;/multiReleaseOutput&gt;</span> <i class="conum" data-value="4"></i><b>(4)</b>
+    <span class="nt">&lt;/configuration&gt;</span>
+    <span class="nt">&lt;/execution&gt;</span>
+  <span class="nt">&lt;/executions&gt;</span>
+<span class="nt">&lt;/plugin&gt;</span>
+<span class="nt">&lt;plugin&gt;</span>
+  <span class="nt">&lt;groupId&gt;</span>org.apache.maven.plugins<span class="nt">&lt;/groupId&gt;</span>
+  <span class="nt">&lt;artifactId&gt;</span>maven-jar-plugin<span class="nt">&lt;/artifactId&gt;</span>
+  <span class="nt">&lt;configuration&gt;</span>
+    <span class="nt">&lt;archive&gt;</span>
+      <span class="nt">&lt;manifestEntries&gt;</span>
+        <span class="nt">&lt;Multi-Release&gt;</span>true<span class="nt">&lt;/Multi-Release&gt;</span> <i class="conum" data-value="5"></i><b>(5)</b>
+      <span class="nt">&lt;/manifestEntries&gt;</span>
+    <span class="nt">&lt;/archive&gt;</span>
+  <span class="nt">&lt;/configuration&gt;</span>
+<span class="nt">&lt;/plugin&gt;</span>
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Set up another execution of the <a href="https://maven.apache.org/plugins/maven-compiler-plugin/">Maven compiler plug-in</a> for the Java 9 specific sources,</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>using Java 9 bytecode level,</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>picking up the sources from <em>src/main/java-9</em>,</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>and organizing the compilation output in the multi-release structure under <em>META-INF/versions/&#8230;&#8203;</em></td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Configure the <a href="https://maven.apache.org/plugins/maven-compiler-plugin/">Maven JAR plug-in</a> so that the <code>Multi-Release</code> manifest entry is set, marking the JAR als a multi-release JAR</td>
+</tr>
+</table>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_discussion_and_wrap_up">Discussion and Wrap-Up</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let&#8217;s wrap up and evaluate whether the proposed implementation satisfies our original requirements:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><em>Modules of the application contribute bundles with their specific error messages:</em> ✅  Each module of the Links application can provide its own bundle(s), using a specific key prefix; we could even take it a step further and provide bundles via separate i18n modules, for instance created by an external translation agency, independent from the development teams</p>
+</li>
+<li>
+<p><em>Central error handler component can use these bundles for displaying or logging the error messages:</em> ✅  The error handler in the <em>core</em> module can retrieve messages from all the bundles in the different modules, freeing the developers of the application modules from details like adding the user&#8217;s name to the final messages</p>
+</li>
+<li>
+<p><em>No knowledge about the specific modules in the central component:</em> ✅  Thanks to the different providers (or the custom <code>Control</code>, respectively), there is no need for registering the specific bundles with the error handler in the <em>core</em> module; further modules could be added to the Links application and the error handler would be able to obtain messages from the resource bundles contributed by them</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>With a little bit of extra effort, it also was possible to design the code in the <em>core</em> module in a way that the application can be used with different Java versions and configurations:
+on the module path with Java 9+, on the classpath with Java 9+, on the classpath with Java 8.</p>
+</div>
+<div class="paragraph">
+<p>If you&#8217;d like to explore the complete code by yourself, you can find it in the <a href="https://github.com/gunnarmorling/modular-resource-bundles">modular-resource-bundles</a> GitHub repository.
+To learn more about resource bundle retrieval in named modules,
+please refer to the extensive documentation of <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ResourceBundle.html#resource-bundle-modules"><code>ResourceBundle</code></a> and <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/spi/ResourceBundleProvider.html"><code>ResourceBundleProvider</code></a>.</p>
+</div>
+<div class="paragraph">
+<p><em>Many thanks to <a href="https://twitter.com/hpgrahsl">Hans-Peter Grahsl</a> for providing feedback while writing this post!</em></p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread"></div>
+<script type="text/javascript">
+	(function () {
+		
+		
+		if (window.location.hostname == "localhost")
+			return;
+
+		var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+		var disqus_shortname = 'morlingdev';
+		dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+		(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+	})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by
+		Disqus.</a></noscript>
+<a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2021 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
