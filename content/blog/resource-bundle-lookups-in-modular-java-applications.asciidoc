@@ -143,7 +143,7 @@ there isn't a really good way for passing such contextual information from bundl
 Our loop hole here will be to squeeze that information into the the requested https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/Locale.html[`Locale`] instance.
 Besides the well-known language and country attributes, `Locale` can also carry _variant_ data and even application specific https://docs.oracle.com/javase/tutorial/i18n/locale/extensions.html[_extensions_].
 
-The latter would actually be pretty much ideal for our purposes.
+The latter, in form of a _private use extension_, would actually be pretty much ideal for our purposes.
 But unfortunately, extensions aren't evaluated by the look-up routine in `ResourceBundle`.
 So instead we'll go with propagating the key namespace information via the locale's variant.
 First, let's revisit the code in the `ErrorHandler` class:
