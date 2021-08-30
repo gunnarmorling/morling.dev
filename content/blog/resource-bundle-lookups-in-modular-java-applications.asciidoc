@@ -94,7 +94,7 @@ module dev.morling.links.core {
 <1> Export the package of the resource bundle provider interface so that implementations can be created in other modules
 <2> Declare the usage of the `LinksMessagesProvider` service
 
-Using the resource bundle in the error handler class is rather un-exciting;
+Using the resource bundle in the error handler class is rather unexciting;
 note that not our own application code retrieves the resource bundle provider via the service loader,
 but instead this is happening in the `ResourceBundle::getBundle()` factory method:
 
@@ -153,11 +153,11 @@ First, let's revisit the code in the `ErrorHandler` class:
 public class ErrorHandler {
 
   public String getErrorMessage(String key, UserContext context) {
-      String component = key.split("\\.")[0]; // <1>
+      String prefix = key.split("\\.")[0]; // <1>
       Locale locale = new Locale( // <2>
           context.getLocale().getLanguage(),
           context.getLocale().getCountry(),
-          component
+          prefix
       );
       
       ResourceBundle bundle = ResourceBundle.getBundle(
@@ -379,7 +379,7 @@ When using Apache Maven, only two plug-ins need to be configured:
 <1> Set up another execution of the https://maven.apache.org/plugins/maven-compiler-plugin/[Maven compiler plug-in] for the Java 9 specific sources,
 <2> using Java 9 bytecode level,
 <3> picking up the sources from _src/main/java-9_,
-<4> and organizing the compilation output in the multi-relese structure under _META-INF/versions/..._
+<4> and organizing the compilation output in the multi-release structure under _META-INF/versions/..._
 <5> Configure the https://maven.apache.org/plugins/maven-compiler-plugin/[Maven JAR plug-in] so that the `Multi-Release` manifest entry is set, marking the JAR als a multi-release JAR
 ====
 
@@ -397,3 +397,5 @@ on the module path with Java 9+, on the classpath with Java 9+, on the classpath
 If you'd like to explore the complete code by yourself, you can find it in the https://github.com/gunnarmorling/modular-resource-bundles[modular-resource-bundles] GitHub repository.
 To learn more about resource bundle retrieval in named modules,
 please refer to the extensive documentation of https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ResourceBundle.html#resource-bundle-modules[`ResourceBundle`] and https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/spi/ResourceBundleProvider.html[`ResourceBundleProvider`].
+
+_Many thanks to https://twitter.com/hpgrahsl[Hans-Peter Grahsl] for providing feedback while writing this post!_
