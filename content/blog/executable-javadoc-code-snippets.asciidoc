@@ -1,0 +1,178 @@
+---
+title: "Executable JavaDoc Code Snippets"
+date: 2021-10-18T08:30:00+02:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+It has been just a few weeks since the https://www.infoq.com/news/2021/09/java17-released/[release of Java 17], but the first changes scheduled for Java 18 begin to show up in early access builds.
+One feature in particular that excites me as a maintainer of different Java libraries is https://openjdk.java.net/jeps/413[JEP 413] ("Code Snippets in Java API Documentation").
+
+<!--more-->
+
+So far, JavaDoc has not made it exactly comfortable to include example code which shows how to use an API:
+you had to escape special characters like "<", ">", and "&", indentation handling was cumbersome.
+But the biggest problem was that any such code snippet would have to be specified within the actual JavaDoc comment itself,
+i.e. you did not have proper editor support when creating it, and worse, it was not validated that the shown code actually is correct.
+This often led to code snippets which wouldn't compile if you were to copy them into a Java source file,
+be it due to an oversight by the author, or simply because APIs changed over time and no one was thinking of updating the corresponding snippets in JavaDoc comments.
+
+All this is going to change with JEP 413:
+it does not only improve ergonomics of inline snippets, but it also allows you to include code snippets from external source files.
+This means that you'll be able to edit and refactor any example code using your regular Java toolchain;
+better yet: you can also compile and test it as part of your build.
+Welcome to 2021 -- no more wrong or outdated code snippets in JavaDoc!
+
+== Including Snippets From Your Test Directory
+
+You could think of different ways for organizing your snippet files with JEP 413,
+but one particularly intriguing option is to source them straight from the tests of your project,
+e.g. the _src/test/java_ directory in case of a Maven project.
+That way, any incorrect snippet code -- be it due to compilation failures or due to failing test assertions -- will be directly flagged within your build.
+
+So let's see how to set this up,
+using the Jakarta https://beanvalidation.org/[Bean Validation API] project as an example.
+The required configuration is refreshingly simple;
+all we need to do is to specify _src/test/java_ as our "snippet path".
+While the Maven JavaDoc plug-in does not yet provide a bespoke configuration option for this,
+we can simply pass it using the `<additionalOptions>` property
+(make sure to use version 3.0.0 or later):
+
+[source,xml,linenums=true]
+----
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-javadoc-plugin</artifactId>
+  <version>3.3.1</version>
+  <executions>
+    <execution>
+      <id>attach-javadocs</id>
+      <goals>
+        <goal>jar</goal>
+      </goals>
+      <configuration>
+        <additionalOptions>
+          <additionalOption>  // <1>
+            --snippet-path=${basedir}/src/test/java
+          </additionalOption>
+        </additionalOptions>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
+----
+<1> Obtain snippets from _src/test/java_
+
+And that's all there is to it really,
+you now can start to work with example code as actual source code.
+Here's an example for a snippet to be included into the API documentation of `jakarta.validation.Validation`,
+the entry point into the Bean Validation API:
+
+[source,java,linenums=true]
+----
+package snippets; // <1>
+
+import jakarta.validation.Validation;
+import jakarta.validation.ValidatorFactory;
+
+public class CustomProviderSnippet {
+
+  public void customProvider() {
+    // @start region="provider" <2>
+    ACMEConfiguration configuration = Validation
+        .byProvider(ACMEProvider.class)
+        .providerResolver( new MyResolverStrategy() )
+        .configure();
+    ValidatorFactory factory = configuration.buildValidatorFactory();
+    // @end <2>
+  }
+}
+----
+<1> There's no specific requirements on the package to be used; I like using a descriptive name `snippets`,
+so to easily tell apart snippets from functional tests
+<2> If you don't want to include the entire file, regions allow to specify the exact section(s) to include
+
+While a plain method is shown here,
+this could of course also be an JUnit test with assertions for making sure that the snippet code does what it is supposed to do
+(being an API specification, the Bean Validation project itself doesn't provide an implementation we could test against).
+Including the snippet into the JavaDoc in the source file is straight-forward:
+
+[source,java,linenums=true]
+----
+/**
+ * ...
+ * <li>
+ * The third approach allows you to specify explicitly and in
+ * a type safe fashion the expected provider.
+ * <p>
+ * Optionally you can choose a custom {@code ValidationProviderResolver}.
+ * {@snippet class="snippets.CustomProviderSnippet" region="provider"} <1>
+ * </li>
+ * ...
+ */
+----
+<1> Specify the snippet either using the `class` or the `file` attribute; optionally define a specific snippet region to be included
+
+If needed, you also can customize appearance of the rendered snippet,
+so to add links, highlight key parts (using custom CSS styles if needed), or replace specific parts of the snippet.
+The latter comes in handy for instance to replace non-critical parts with a placeholder such as "...".
+This is one of the details I really like about this JEP:
+Even if you did manage example code in separate source files in the past, then manually copying them into JavaDoc,
+such placeholders made things cumbersome.
+Naturally, they'd fail compilation,
+e.e. you always had to do some manual editing when copying over the snippet into JavaDoc.
+Getting all this "for free" is a very nice improvement.
+
+Here's an example showing these adjustments in source form
+(scroll to the right to see all the snippet tag attributes, as these lines can become fairly long):
+
+[source,java,linenums=true]
+----
+public void customProvider() {
+  // @start region="provider"
+  ACMEConfiguration configuration = Validation
+      .byProvider(ACMEProvider.class) // @highlight substring="byProvider" <1>
+      .providerResolver( new MyResolverStrategy() ) // @replace regex=" new MyResolverStrategy\(\) " replacement="..." <2>
+      .configure();
+  ValidatorFactory factory = configuration.buildValidatorFactory(); // @link regex="^.*?ValidatorFactory" target="jakarta.validation.ValidatorFactory" <3>
+  // @end
+}
+----
+<1> Highlight the `byProvider()` method
+<2> Replace the parameter value of the method call with "..."
+<3> Make the `ValidatorFactory` class name a link to its own JavaDoc
+
+And this is how the snippet will looks like in the rendered documention:
+
+image::executable_javadoc_code_snippets.png[Code snippet in rendered JavaDoc]
+
+Some folks may argue that it might be nice to have proper colored syntax highlighting support.
+I'm not sure whether I agree though:
+your typical code snippets in API docs should be rather short,
+and simply highlighting key parts like shown above may be more useful than colorizing the entire thing.
+Note the extra new line at the beginning of the snippet shouldn't really be there,
+it's not quite clear to me where it's coming from.
+I'll try and get this clarified on the https://mail.openjdk.java.net/mailman/listinfo/javadoc-dev[javadoc-dev] mailing list.
+
+== Summary
+
+Being able to include code snippets from actual source files into API documentation is a highly welcomed improvement for Java API docs authors and users alike.
+It's great to see Java catching up here with other language eco-systems like Rust,
+which already support https://doc.rust-lang.org/rustdoc/documentation-tests.html[executable documentation examples].
+I'm expecting this feature to be used very quickly,
+with first folks https://twitter.com/JonathanGiles/status/1449913540299476992[already announcing] to build their API docs with Java 18 as soon as it's out.
+Of course you can still ensure compatibility of your code with earlier Java versions also when doing so.
+
+If you'd like get your hands on executable JavaDoc code snippets yourself,
+you can start with https://github.com/gunnarmorling/beanvalidation-api/commit/cb1c88b5115c1e363007afbca9bdc36e29d08ee0[this commit] showing the required changes for the Bean Validation API.
+Run `mvn clean verify`,
+and you'll find the rendered JavaDoc under _target/apidocs_.
+Just make sure to build this project using a current https://jdk.java.net/18/[Java 18 early access build].
+Happy snippeting!
