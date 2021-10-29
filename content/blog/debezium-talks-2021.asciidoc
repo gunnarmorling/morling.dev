@@ -1,0 +1,131 @@
+---
+title: "Debezium and Friends – Conference Talks 2021"
+date: 2021-11-02T10:50:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+If you love to attend conferences around the world without actually leaving the comfort of your house,
+2021 certainly was (and is!) a perfect year for you.
+Tons of online conferences, many of them available for free,
+boast talks on all kinds of topics,
+and virtual conference platforms are getting better, too.
+
+As the year is slowly reaching its end,
+I thought it might be nice to do a quick recap and gather in one place all the talks on Debezium and change data capture (CDC) which I did in 2021.
+An overarching theme for these talks was to discuss different CDC usage patterns and putting Debezium into the context of solving common data engineering tasks by combining it with other open-source projects such as Infinispan and Apache Pinot.
+In order to not feel too lonely in front of the screen and make things a bit more exciting,
+I decided to team up with some amazing friends from the open-source community for the different talks.
+A big thank you for these phantastic collaborations to https://twitter.com/karesti[Katia Aresti], https://twitter.com/kennybastani[Kenny Bastani], and https://twitter.com/hpgrahsl[Hans-Peter Grahsl]!
+
+So without further ado,
+here are four Debezium talks I had the pleasure to do in 2021.
+
+== Don't Fear Outdated Caches – Change Data Capture to the Rescue!
+
+{{< youtube pXkM9tlxwHY >}}
+
+As per an old saying in software engineering, there's only two hard things: cache invalidation and naming things.
+Well, turns out the first is solved actually ;)
+
+In this talk at the http://www.bordeauxjug.org/[Bordeaux Java User Group], Katia Aresti from the https://infinispan.org/[Infinispan] team and I explored how users of an application can benefit from low response times by means of read data models, persisted in distributed caches close to the user.
+When working with a central database as the authoritative data source -- thus receiving all the write requests -- these local caches need to be kept up to date, of course. This is where Debezium comes in:
+any data changes are captured and propagated to the caches via Apache Kafka.
+
+And as if the combination of Kafka, Infinispan and Debezium was not already exciting enough,
+we also threw some Quarkus and Kafka Streams into the mix,
+joining the data from multiple Debezium change data topics,
+allowing to retrieve entire aggregate structures via a single key look-up from the local caches.
+It's still on our agenda to describe that archicture in a blog post, so stay tuned for that.
+
+* 📺 https://www.youtube.com/watch?v=pXkM9tlxwHY[Recording on YouTube]
+* 🖥️ https://speakerdeck.com/gunnarmorling/dont-fear-outdated-caches-change-data-capture-to-the-rescue[Slides]
+* 🤖 https://github.com/debezium/debezium-examples/tree/main/distributed-caching[Demo source code]
+
+== Change Data Streaming Patterns in Distributed Systems
+
+{{< youtube CLv2EcYnr2g >}}
+
+While some folks already might feel something like microservices fatigue,
+the fact is undeniable that organizing business functionality into multiple, loosely coupled services has been one of the biggest trends in software engineering over the last years.
+
+Of course these services don't exist in isolation, but they need to exchange data and cooperate;
+Apache Kafka has become the de-facto standard as the backbone for connecting services,
+facilitating asynchronous event-driven communication between them.
+In this joint presentation, my dear friend Hans-Peter Grahsl and I set out to explore what role change data capture can play in such architectures,
+and which patterns there are for applying CDC to solve common problems related to handling data in microservices architectures.
+We focused on three patterns in particular, each implemented using log-based CDC via Debezium:
+
+* The _outbox pattern_ for reliable, eventually consistent data exchange between microservices, without incurring unsafe dual writes or tight coupling
+* The _strangler fig pattern_ for gradually extract microservices from existing monolithic applications
+* The _saga pattern_ for coordinating long-running business transactions across multiple services, ensuring such activity gets consistently applied or aborted by all participating services
+
+We presented that talk at several conferences, including https://www.confluent.de/events/kafka-summit-europe-2021/advanced-change-data-streaming-patterns-in-distributed-systems/[Kafka Summit Europe], https://2021.berlinbuzzwords.de/session/change-data-streaming-patterns-distributed-systems[Berlin BuzzWords], and https://jlove.konfy.care/schedule.html[jLove].
+We also did a variation of the presentation at Flink Forward, discussing how to implement the different CDC patterns using Debezium and Apache Flink.
+The recording of this session should be published soon, in the meantime you can find the slides https://speakerdeck.com/hpgrahsl/change-data-streaming-patterns-in-distributed-systems-at-flink-forward-2021[here].
+I also highly recommend to take a blog post at https://developers.redhat.com/articles/2021/06/14/application-modernization-patterns-apache-kafka-debezium-and-kubernetes#after_the_migration__modernization_challenges[this blog post] by Bilgin Ibryam,
+in which he discusses these patterns in depth.
+
+* 📺 https://www.youtube.com/watch?v=CLv2EcYnr2g[Recording on YouTube]
+* 🖥️ https://speakerdeck.com/hpgrahsl/advanced-change-data-streaming-patterns-in-distributed-systems-at-kafka-summit-europe-2021[Slides]
+* 🤖 https://github.com/debezium/debezium-examples/tree/main/saga[Demo source code]
+
+== Analyzing Real-time Order Deliveries using CDC with Debezium and Pinot
+
+{{< youtube yWFFOkWlLoY >}}
+
+Traditionally, there has been a chasm between operational databases backing enterprise application (i.e. _OLTP_ systems),
+and systems meant for ad-hoc analytics use cases, such as queries run by a business analyst in the back office. (_OLAP_ systems).
+Data would typically be propagated in batches from the former to the latter,
+resulting in multi-hour delays until the analytics system would be able to run queries on changed production data.
+
+With the current shift to user-facing analytics, we are observing nothing less than a revolution:
+the ability to serve low-latency analytical queries on large data sets to the end users of an application,
+based on data that is really fresh (seconds old, rather than hours).
+Compared to response times and freshness guarantees you'd typically get from earlier generations of data warehouses, this is a game changer.
+
+In this model, Debezium is used to capture all data changes from the operational database and propagate them into the analytics system.
+Kenny Bastani of https://www.startree.ai/[StartTree] and I spoke about the opportunities and use cases enabled by combining Debezium with https://pinot.apache.org/[Apache Pinot], a realtime distributed OLAP datastore, at the https://www.meetup.com/apache-pinot/events/279202435/[Pinot meet-up].
+A massive shout-out to Kenny again for putting together an awesome demo, showing how to use Debezium and the outbox pattern for getting the data into Apache Kafka,
+transform the data and ingest it into Pinot, and do some really cool visualizations via Apache Superset.
+
+* 📺 https://www.youtube.com/watch?v=yWFFOkWlLoY[Recording on YouTube]
+* 🤖 https://github.com/kbastani/order-delivery-microservice-example[Demo source code]
+
+== Dissecting our Legacy: The Strangler Fig Pattern with Apache Kafka, Debezium and MongoDB
+
+{{< youtube R1kOuvLYcYo >}}
+
+After talking about three different CDC patterns,
+Hans-Peter and I decided to explore one of the patterns in some more depth and did this talk focusing exclusively on the strangler fig pattern.
+Existing monolithic applications are a reality in many enterprises,
+and oftentimes it's just not feasible to replace them with a microservices architecture all at once in one single migration step.
+
+This is where the https://martinfowler.com/bliki/StranglerFigApplication.html[strangler fig pattern] comes in:
+it helps you to gradually extract components from a monolith into separate services,
+relying on CDC for keeping the data stores of the different systems in sync.
+A routing component, such as Nginx or Envoy Proxy, in front of all the systems sends each incoming request to that system which is in charge of a specific part of the domain at a given point in time during the migration.
+
+This talk (which we presented at https://www.mongodb.com/live[MongoDB.Live], https://www.confluent.io/events/kafka-summit-americas-2021/dissecting-our-legacy-the-strangler-fig-pattern-with-debezium-apache-kafka/[Kafka Summit Americas], and https://romania.voxxeddays.com/talk/?id=3318[VoxxedDays Romania]), also contains a demo, we show how to implement the strangler fig pattern using Debezium,
+gradually moving data from a legacy system's MySQL database over to the MongoDB instance of a new microservice, which is built using Quarkus.
+
+* 📺 https://www.youtube.com/watch?v=R1kOuvLYcYo[Recording on YouTube]
+* 🖥️ https://speakerdeck.com/hpgrahsl/dissecting-our-legacy-the-strangler-fig-pattern-with-apache-kafka-debezium-and-mongodb-at-mongodb-dot-live-2021[Slides]
+* 🤖 https://github.com/hpgrahsl/voxxedromania21-sfp-demo[Demo source code]
+
+== Learning More
+
+Thanks again to Katia, Kenny, and Hans-Peter for joining the virtual conference stages with me this year!
+It would not have been half as much fun without you.
+
+If these talks have piqued your interest in open-source change data capture and Debezium,
+head over to the https://debezium.io/[Debezium website] to learn more.
+You can also find many more examples in the Debezium https://github.com/debezium/debezium-examples[examples repo] on GitHub,
+and if you look for reports by folks from the community about their experiences using Debezium, take a look at https://debezium.io/documentation/online-resources/[this currated list] of blog posts and other resources.
