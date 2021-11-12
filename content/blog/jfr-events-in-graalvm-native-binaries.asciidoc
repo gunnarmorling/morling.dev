@@ -1,0 +1,116 @@
+---
+title: "JDK Flight Recorder Events in GraalVM Native Binaries"
+date: 2021-11-12T18:30:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+If you have followed this blog for a while,
+you'll know that I am a big fan of https://openjdk.java.net/jeps/328[JDK Flight Recorder] (JFR),
+the low-overhead diagnostics and profiling framework built into the HotSpot Java virtual machine.
+And indeed, until recently, this meant _only_ HotSpot:
+Folks compiling their Java applications into https://www.graalvm.org/reference-manual/native-image/[GraalVM native binaries] could not benefit from all the JFR goodness so far.
+
+<!--more-->
+
+But luckily,
+this situation https://medium.com/graalvm/graalvm-21-2-ee2cce3b57aa[has changed] with GraalVM 21.2:
+Thanks to a collaboration of engineers from Red Hat and Oracle,
+GraalVM native binaries now also support JDK Flight Recorder.
+At this point, the JFR recording engine itself has been put in place,
+there are not many event types actually emitted yet.
+As Jie Kang wrote recently in https://developers.redhat.com/articles/2021/07/23/jdk-flight-recorder-support-graalvm-native-image-journey-so-far[a post] about this ongoing work,
+this should change soon, though:
+
+[quote, JDK Flight Recorder support for GraalVM Native Image: The journey so far]
+The initial merge for JFR infrastructure is complete but there is a long road ahead before the system can provide a view into native executables produced by GraalVM that is similar to what is possible for HotSpot. Up next is the work to add events for garbage collection, threads, exceptions, and other useful locations in SubstrateVM.
+
+What already _does_ work is emitting custom JFR events from your application code.
+So I took the Quarkus-based todo management application from my earlier post about https://www.morling.dev/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/[monitoring REST APIs with JFR] and explored what it'd take to make it work as a native binary.
+And what should I say, essentially things "just worked ™️".
+All I had to do, was the following:
+
+* Use a current version of GraalVM (21.3 at the time of writing)
+* Upgrade Quarkus to the current version (2.4.2.Final, https://quarkus.io/blog/quarkus-2-4-2-final-released/[released just today]); with 2.2.3.Final, which I had been using before, I'd get an error at image build time about a modifier mismatch with a native method substituted by Quarkus
+* Enable GraalVM's `AllowVMInspection` option when creating the native binary
+
+As per the https://www.graalvm.org/reference-manual/native-image/JFR/[GraalVM documentation], the latter is required in order to use JFR events in native binaries.
+Unfortunately, failing to do so will only be reported at application runtime with an exception like this:
+
+[source,linenums=true]
+----
+2021-11-12 15:31:22,456 ERROR [io.qua.run.Application] (main) Failed to start application (with profile prod): java.lang.UnsatisfiedLinkError: jdk.jfr.internal.JVM.getHandler(Ljava/lang/Class;)Ljava/lang/Object; [symbol: Java_jdk_jfr_internal_JVM_getHandler or Java_jdk_jfr_internal_JVM_getHandler__Ljava_lang_Class_2]
+	at com.oracle.svm.jni.access.JNINativeLinkage.getOrFindEntryPoint(JNINativeLinkage.java:153)
+	at com.oracle.svm.jni.JNIGeneratedMethodSupport.nativeCallAddress(JNIGeneratedMethodSupport.java:57)
+	at jdk.jfr.internal.JVM.getHandler(JVM.java)
+	at jdk.jfr.internal.Utils.getHandler(Utils.java:448)
+	at jdk.jfr.internal.MetadataRepository.getHandler(MetadataRepository.java:174)
+	at jdk.jfr.internal.MetadataRepository.register(MetadataRepository.java:135)
+	at jdk.jfr.internal.MetadataRepository.register(MetadataRepository.java:130)
+	at jdk.jfr.FlightRecorder.register(FlightRecorder.java:136)
+	at dev.morling.demos.jfr.Metrics.registerEvent(Metrics.java:27)
+  ...
+----
+
+This is triggered by the application code registering the custom JFR event type:
+
+[source,java,linenums=true]
+----
+public void registerEvent(@Observes StartupEvent se) {
+    FlightRecorder.register(JaxRsInvocationEvent.class);
+}
+----
+
+Here I'd wish that either GraalVM's `native-image` tool or Quarkus would tell me about this situation already upon build time,
+in particular as the cause of that problem is not readily apparent from the exception above.
+In any case,
+the required fix is simple enough, all we need to do is to set the https://quarkus.io/guides/building-native-image#quarkus-native-pkg-native-config_quarkus.native.enable-vm-inspection[`quarkus.native.enable-vm-inspection`] option in the _application.properties_ file of the Quarkus application:
+
+[source,linenums=true]
+----
+quarkus.native.enable-vm-inspection=true
+----
+
+With that configuration in place, the application can be built as a native binary via `mvn clean verify -Pnative`.
+Grab a coffee while the build is running (it takes about two minutes on my laptop),
+and then you can start the resulting native binary with the following options for creating a JFR recording:
+
+[source,linenums=true]
+----
+./target/flight-recorder-demo-1.0.0-SNAPSHOT-runner \
+  -XX:+FlightRecorder \
+  -XX:StartFlightRecording="filename=my-recording.jfr"
+----
+
+You can also configure https://www.graalvm.org/reference-manual/native-image/JFR/#configure-the-recording[some more] of the known JFR options,
+such as maximum recording size and duration.
+What is not possible at this point is starting recordings dynamically at runtime e.g. via _jcmd_ or JDK Mission Control,
+as the JMX-based infrastructure required for this isn't present in native binaries
+(I haven't tried to do so programmatically from within the application itself, this may be supported already).
+JFR Event Streaming (as introduced with https://openjdk.java.net/jeps/349[JEP 349] in Java 14) also doesn't work yet.
+
+After creating some todos in the web application,
+we can open the JFR recording in https://openjdk.java.net/projects/jmc/[JDK Mission Control] and examine the JFR events emitted for each invocation of the REST API:
+
+image::jfr-events-in-native-graalvm-binary.png[Custom JFR Events Emitted From a Native GraalVM Binary in JDK Mission Control]
+
+As you see, besides the custom REST invocation events and some system events representing environment variables and system properties,
+the recording is rather empty.
+Also note how the thread attribute of the custom event type isn't populated.
+
+I've updated the https://github.com/gunnarmorling/jfr-custom-events[jfr-custom-events] repository on GitHub,
+so you can get started with your own explorations around JFR events in GraalVM native binaries easily.
+Just make sure to have a current GraalVM and its `native-image` tool installed.
+The initial https://github.com/oracle/graal/issues/3018[feature request] for adding JFR support to GraalVM native binaries provides some more background information.
+You also can use JFR with the https://github.com/graalvm/mandrel[Mandrel] distribution of GraalVM.
+
+To learn more about JFR in general, have a look at https://developers.redhat.com/blog/2020/08/25/get-started-with-jdk-flight-recorder-in-openjdk-8u[this post] by Mario Torre.
+Finally, if you'd like to find out how to use JFR for identifying potential performance regressions in your Java applications,
+check out https://www.p99conf.io/session/continuous-performance-regression-testing-with-jfrunit/[this talk] about https://github.com/moditect/jfrunit[JfrUnit] which I did at the P99Conf conference a few weeks ago.
