@@ -1,0 +1,325 @@
+---
+title: "Refining The Return Type Of Java Methods Without Breaking Backwards-Compatibility"
+date: 2021-11-22T18:30:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+If you work on any kind of software library,
+ensuring backwards-compatibility is a key concern:
+if there's one thing which users really dislike, it is breaking changes in a new version of a library.
+The rules of what can (and cannot) be changed in a Java API without breaking existing consumers are well defined in the Java language specification (JLS),
+but things can get pretty interesting in certain corner cases.
+
+The Eclipse team provides a https://wiki.eclipse.org/Evolving_Java-based_APIs_2[comprehensive overview] about API evolution guidelines in their wiki.
+When I shared the link to this great resource on Twitter the other day,
+I received an https://twitter.com/lukaseder/status/1462358911072317440[interesting reply] from Lukas Eder:
+
+[quote]
+I wish Java had a few tools to prevent some cases of binary compatibility breakages. E.g. when refining a method return type, I'd like to keep the old method around in byte code (but not in source code).
+ +
+ +
+I think kotlin has such tools?
+
+In the remainder of this post,
+I'd like to provide some more insight into that problem mentioned by Lukas,
+and how it can be addressed using an open-source tool called https://github.com/dmlloyd/bridger[Bridger].
+
+<!--more-->
+
+== The Problem
+
+Let's assume we have a Java library which provides a public class and method like this:
+
+[source,java,linenums=true]
+----
+public class SomeService {
+
+  public Number getSomeNumber() {
+    return 42L;
+  }
+}
+----
+
+The library is released as open-source and it gets adopted quickly by the community;
+it's a great service after all, providing https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#The_Answer_to_the_Ultimate_Question_of_Life,_the_Universe,_and_Everything_is_42[42 as the answer], right?
+
+After some time though, people start to complain:
+instead of the generic `Number` return type, they'd rather prefer a more specific return type of `Long`,
+which for instance offers the `compareTo()` method.
+Since the returned value is always a long value indeed (and no other `Number` subtype such as `Double`),
+we agree that the initial API definition wasn't ideal, and we alter the method definition,
+now returning `Long` instead.
+
+But soon after we've released version 2.0 of the library with that change,
+users report a new problem:
+after upgrading to the new version,
+they suddenly get the following error when running their application:
+
+[source,linenums=true]
+----
+java.lang.NoSuchMethodError: 'java.lang.Number dev.morling.demos.bridgemethods.SomeService.getSomeNumber()'
+  at dev.morling.demos.bridgemethods.SomeClientTest.shouldReturn42(SomeClientTest.java:27)
+----
+
+That doesn't look good!
+Interestingly, other users don't have a problem with version 2.0,
+so what is going on here?
+In order to understand that,
+let's take a look at how this method is used, in source code and in Java binary code.
+First the source code:
+
+[source,java,linenums=true]
+----
+public class SomeClient {
+
+  public String getSomeNumber() {
+  SomeService service = new SomeService();
+  return String.valueOf(service.getSomeNumber());
+  }
+}
+----
+
+Rather unspectacular;
+so let's use _javap_ to examine the byte code of that class:
+
+[source,linenums=true]
+----
+  public java.lang.String getSomeNumber();
+    descriptor: ()Ljava/lang/String;
+    flags: (0x0001) ACC_PUBLIC
+    Code:
+      stack=2, locals=2, args_size=1
+         0: new           #7                  // class dev/morling/demos/bridgemethods/SomeService
+         3: dup
+         4: invokespecial #9                  // Method dev/morling/demos/bridgemethods/SomeService."<init>":()V
+         7: astore_1
+         8: aload_1
+         9: invokevirtual #10                 // Method dev/morling/demos/bridgemethods/SomeService.getSomeNumber:()Ljava/lang/Number;
+        12: invokestatic  #14                 // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+        15: areturn
+      LineNumberTable:
+        line 21: 0
+        line 22: 8
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      16     0  this   Ldev/morling/demos/bridgemethods/SomeClient;
+            8       8     1 service   Ldev/morling/demos/bridgemethods/SomeService;
+----
+
+The interesting part is the `invokevirtual` at label 9;
+that's the invocation of the `SomeService::getSomeNumber()` method,
+and as we see, the return type of the invoked method is part of the byte code of that invocation, too.
+As developers writing code in the Java _language_, this might come at a suprise at first,
+as we tend to think of just a method's names and its parameter types as the method signature.
+For instance,
+we may not declare two methods which only differ by their return type in the same Java class.
+But from the perspective of the Java _runtime_, the return type of a method is part of method signatures as well.
+
+This explains the error reports we got from our users:
+when changing the method return type from `Number` to `Long`,
+we did a change that broke the _binary compatibility_ of our library.
+The JVM was looking for a method `SomeService::getSomeNumber()` returning `Number`,
+but it couldn't find it in the class file of version 2.0 of our service.
+
+It also explains why not all the users reported that problem:
+those that recompiled their own application when upgrading to 2.0 would not run into any issues,
+as the compiler would simply use the new version of the method and put the invocation of that signature into the class files of any callers.
+Only those users who did not re-compile their code encountered the problem,
+i.e. the change actually was _source-compatible_.
+
+== Bridge Methods to the Rescue
+
+At this point you might wonder:
+Isn't it possible to refine method return types in sub-classes?
+How does that work then?
+Indeed it's true, Java does support _co-variant return types_,
+i.e. a sub-class can override a method using a more specific return type than declared in the super-type:
+
+[source,java,linenums=true]
+----
+public class SomeSubService extends SomeService {
+
+  @Override
+  public Long getSomeNumber() {
+  return 42L;
+  }
+}
+----
+
+To make this work for a client coded against the super-type,
+the Java compiler uses a neat trick:
+it injects a so-called _bridge method_ into the class file of the sub-class,
+which has the signature of the overridden method and which calls the overriding method.
+This is how this looks like when disassembling the `SomeSubService` class file:
+
+[source,linenums=true]
+----
+public java.lang.Long getSomeNumber(); // <1>
+  descriptor: ()Ljava/lang/Long;
+  flags: (0x0001) ACC_PUBLIC
+  Code:
+    stack=2, locals=1, args_size=1
+        0: ldc2_w        #14                 // long 42l
+        3: invokestatic  #21                 // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;
+        6: areturn
+    LineNumberTable:
+      line 22: 0
+    LocalVariableTable:
+      Start  Length  Slot  Name   Signature
+          0       7     0  this   Ldev/morling/demos/bridgemethods/SomeSubService;
+
+public java.lang.Number getSomeNumber(); // <2>
+  descriptor: ()Ljava/lang/Number;
+  flags: (0x1041) ACC_PUBLIC, ACC_BRIDGE, ACC_SYNTHETIC // <3>
+  Code:
+    stack=1, locals=1, args_size=1
+        0: aload_0
+        1: invokevirtual #24                 // Method getSomeNumber:()Ljava/lang/Long;
+        4: areturn
+    LineNumberTable:
+      line 18: 0
+    LocalVariableTable:
+      Start  Length  Slot  Name   Signature
+          0       5     0  this   Ldev/morling/demos/bridgemethods/SomeSubService;
+----
+<1> The overriding method as defined in the sub-class
+<2> The bridge method with the signature from the super-class, invoking the overriding method
+<3> The injected method has the `ACC_BRIDGE` and `ACC_SYNTHETIC` modifiers
+
+That way, a client compiled against the super-type method will first invoke the bridge method,
+which in turn delegates to the overriding method of the sub-class,
+providing the https://en.wikipedia.org/wiki/Late_binding[late binding] semantics we'd expect from Java.
+
+[NOTE]
+Another situation where the Java compiler relies on bridge methods is compiling sub-types of generic super-classes or interfaces.
+Refer to the https://docs.oracle.com/javase/tutorial/java/generics/bridgeMethods.html[Java Tutorial] to learn more about this.
+
+== Creating Bridge Methods Ourselves
+
+So as we've seen, with bridge methods, there is a tool in the box to ensure compatibility in case of refining return types in sub-classes.
+Which brings us back to Lukas' question from the beginning:
+is there a way for using the same trick for ensuring compatibility when evolving our API across library versions?
+
+Now you can't define a bridge method using the Java language,
+this concept just doesn't exist at the language level.
+So I thought about quickly hacking together a PoC for this using the https://asm.ow2.io/[ASM] bytecode manipulation toolkit;
+but what's better than creating open-source?
+Re-using existing open-source!
+As it turns out, there's a tool for that very purpose exactly:
+https://github.com/dmlloyd/bridger[Bridger], created by my fellow Red Hatter https://twitter.com/dmlloyd0[David M. Lloyd].
+
+Bridger lets you create your own bridge methods,
+using ASM to apply the required class file transformations for turning a method into a bridge method.
+It comes with a Maven plug-in for integrating this transformation step into your build process.
+Here's the plug-in configuration we need:
+
+[source,xml,linenums=true]
+----
+<plugin>
+  <groupId>org.jboss.bridger</groupId>
+  <artifactId>bridger</artifactId>
+  <version>1.5.Final</version>
+  <executions>
+    <execution>
+      <id>weave</id>
+      <phase>process-classes</phase> // <1>
+      <goals>
+        <goal>transform</goal>
+      </goals>
+    </execution>
+  </executions>
+  <dependencies>
+    <dependency> // <2>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>9.2</version>
+    </dependency>
+  </dependencies>
+</plugin>
+----
+<1> Bind the `transform` goal to the `process-classes` build lifecycle phase, so as to modify the classes produced by the Java compiler
+<2> Use the latest version of ASM, so we can work with Java 17
+
+With the plug-in in place,
+you can define bridge methods like so, using the `$$bridge` name suffix
+(seems the syntax highligher doesn't like the $ signs in identifiers...):
+
+[source,java,linenums=true]
+----
+public class SomeService {
+
+  /**
+    * @hidden // <1>
+    */
+  public Number getSomeNumber$$bridge() { // <2>
+    return getSomeNumber();
+  }
+
+  public Long getSomeNumber() {
+    return 42L;
+  }
+}
+----
+<1> By means of the `@hidden` JavaDoc tag (added in Java 9), this method will be excluded from the JavaDoc generated for our library
+<2> The bridge method to be; the name suffix will be removed by Bridger, i.e. it will be named `getSomeNumber`; it will also have the `ACC_BRIDGE` and `ACC_SYNTHETIC` modifiers
+
+And that's how the byte code of `SomeService` looks like after Bridger applied the transformation:
+
+[source,linenums=true]
+----
+public java.lang.Number getSomeNumber();
+  descriptor: ()Ljava/lang/Number;
+  flags: (0x1041) ACC_PUBLIC, ACC_BRIDGE, ACC_SYNTHETIC
+  Code:
+    stack=1, locals=1, args_size=1
+        0: aload_0
+        1: invokevirtual #16                 // Method getSomeNumber:()Ljava/lang/Long;
+        4: areturn
+    LineNumberTable:
+      line 21: 0
+    LocalVariableTable:
+      Start  Length  Slot  Name   Signature
+          0       5     0  this   Ldev/morling/demos/bridgemethods/SomeService;
+
+public java.lang.Long getSomeNumber();
+  descriptor: ()Ljava/lang/Long;
+  flags: (0x0001) ACC_PUBLIC
+  Code:
+    stack=2, locals=1, args_size=1
+        0: ldc2_w        #17                 // long 42l
+        3: invokestatic  #24                 // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;
+        6: areturn
+    LineNumberTable:
+      line 25: 0
+    LocalVariableTable:
+      Start  Length  Slot  Name   Signature
+          0       7     0  this   Ldev/morling/demos/bridgemethods/SomeService;
+----
+
+With that,
+we have solved the challenge:
+utilizing a bridge method,
+we can rectify the glitch in the version 1.0 API and refine the method return type in a new version of our library,
+without breaking source nor binary compatibility with existing users.
+
+By means of the `@hidden` JavaDoc tag,
+the source of our bridge method won't show up in the rendered documentation
+(which would be rather confusing),
+and marked as a synthetic bridge method in the class file,
+it also won't show up when looking at the JAR in an IDE.
+
+If you'd like to start your own explorations of Java bridge methods,
+you can find the complete source code of the example in this https://github.com/gunnarmorling/bridge-methods-demo[GitHub repo].
+Useful tools for tracking API changes and identifying any potential breaking changes include https://github.com/jtulach/netbeans-apitest[SigTest]
+(we use this one for instance in the Bean Validation specification to ensure backwards compatibility) and https://github.com/revapi/revapi[Revapi]
+(which we use in Debezium).
+Lastly, here's a https://stuartmarks.wordpress.com/2020/09/22/incompatibilities-with-jdk-15-charsequence-isempty/[great blog post] by https://twitter.com/stuartmarks[Stuart Marks],
+where he describes how even the seemingly innocent addition of a Java default method to a widely used (and implemented) interface may lead to problems in the real world.
