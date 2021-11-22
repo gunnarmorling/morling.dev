@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Refining The Return Type Of Java Methods Without Breaking Backwards-Compatibility - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Refining The Return Type Of Java Methods Without Breaking Backwards-Compatibility" />
+<meta property="og:description" content="
+If you work on any kind of software library,
+ensuring backwards-compatibility is a key concern:
+if there&#8217;s one thing which users really dislike, it is breaking changes in a new version of a library.
+The rules of what can (and cannot) be changed in a Java API without breaking existing consumers are well defined in the Java language specification (JLS),
+but things can get pretty interesting in certain corner cases.
+
+
+The Eclipse team provides a comprehensive overview about API evolution guidelines in their wiki.
+When I shared the link to this great resource on Twitter the other day,
+I received an interesting reply from Lukas Eder:
+
+
+
+I wish Java had a few tools to prevent some cases of binary compatibility breakages. E.g. when refining a method return type, I&#8217;d like to keep the old method around in byte code (but not in source code).
+
+
+I think kotlin has such tools?
+
+
+
+In the remainder of this post,
+I&#8217;d like to provide some more insight into that problem mentioned by Lukas,
+and how it can be addressed using an open-source tool called Bridger.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/refining-return-type-java-methods-without-breaking-backwards-compatibility/" />
+<meta property="article:published_time" content="2021-11-22T18:30:00+01:00" />
+<meta property="article:modified_time" content="2021-11-22T18:30:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Refining The Return Type Of Java Methods Without Breaking Backwards-Compatibility"/>
+<meta name="twitter:description" content="
+If you work on any kind of software library,
+ensuring backwards-compatibility is a key concern:
+if there&#8217;s one thing which users really dislike, it is breaking changes in a new version of a library.
+The rules of what can (and cannot) be changed in a Java API without breaking existing consumers are well defined in the Java language specification (JLS),
+but things can get pretty interesting in certain corner cases.
+
+
+The Eclipse team provides a comprehensive overview about API evolution guidelines in their wiki.
+When I shared the link to this great resource on Twitter the other day,
+I received an interesting reply from Lukas Eder:
+
+
+
+I wish Java had a few tools to prevent some cases of binary compatibility breakages. E.g. when refining a method return type, I&#8217;d like to keep the old method around in byte code (but not in source code).
+
+
+I think kotlin has such tools?
+
+
+
+In the remainder of this post,
+I&#8217;d like to provide some more insight into that problem mentioned by Lukas,
+and how it can be addressed using an open-source tool called Bridger.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search.gunnar-morling.workers.dev\/Prod\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Refining The Return Type Of Java Methods Without Breaking Backwards-Compatibility</h1>
+				<div class="meta">Posted at Nov 22, 2021</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>If you work on any kind of software library,
+ensuring backwards-compatibility is a key concern:
+if there&#8217;s one thing which users really dislike, it is breaking changes in a new version of a library.
+The rules of what can (and cannot) be changed in a Java API without breaking existing consumers are well defined in the Java language specification (JLS),
+but things can get pretty interesting in certain corner cases.</p>
+</div>
+<div class="paragraph">
+<p>The Eclipse team provides a <a href="https://wiki.eclipse.org/Evolving_Java-based_APIs_2">comprehensive overview</a> about API evolution guidelines in their wiki.
+When I shared the link to this great resource on Twitter the other day,
+I received an <a href="https://twitter.com/lukaseder/status/1462358911072317440">interesting reply</a> from Lukas Eder:</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+I wish Java had a few tools to prevent some cases of binary compatibility breakages. E.g. when refining a method return type, I&#8217;d like to keep the old method around in byte code (but not in source code).
+<br>
+<br>
+I think kotlin has such tools?
+</blockquote>
+</div>
+<div class="paragraph">
+<p>In the remainder of this post,
+I&#8217;d like to provide some more insight into that problem mentioned by Lukas,
+and how it can be addressed using an open-source tool called <a href="https://github.com/dmlloyd/bridger">Bridger</a>.</p>
+</div>
+<div class="sect1">
+<h2 id="_the_problem">The Problem</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let&#8217;s assume we have a Java library which provides a public class and method like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">SomeService</span> <span class="o">{</span>
+
+  <span class="kd">public</span> <span class="nc">Number</span> <span class="nf">getSomeNumber</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="mi">42L</span><span class="o">;</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The library is released as open-source and it gets adopted quickly by the community;
+it&#8217;s a great service after all, providing <a href="https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#The_Answer_to_the_Ultimate_Question_of_Life,_the_Universe,_and_Everything_is_42">42 as the answer</a>, right?</p>
+</div>
+<div class="paragraph">
+<p>After some time though, people start to complain:
+instead of the generic <code>Number</code> return type, they&#8217;d rather prefer a more specific return type of <code>Long</code>,
+which for instance offers the <code>compareTo()</code> method.
+Since the returned value is always a long value indeed (and no other <code>Number</code> subtype such as <code>Double</code>),
+we agree that the initial API definition wasn&#8217;t ideal, and we alter the method definition,
+now returning <code>Long</code> instead.</p>
+</div>
+<div class="paragraph">
+<p>But soon after we&#8217;ve released version 2.0 of the library with that change,
+users report a new problem:
+after upgrading to the new version,
+they suddenly get the following error when running their application:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre>java.lang.NoSuchMethodError: 'java.lang.Number dev.morling.demos.bridgemethods.SomeService.getSomeNumber()'
+  at dev.morling.demos.bridgemethods.SomeClientTest.shouldReturn42(SomeClientTest.java:27)
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>That doesn&#8217;t look good!
+Interestingly, other users don&#8217;t have a problem with version 2.0,
+so what is going on here?
+In order to understand that,
+let&#8217;s take a look at how this method is used, in source code and in Java binary code.
+First the source code:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">SomeClient</span> <span class="o">{</span>
+
+  <span class="kd">public</span> <span class="nc">String</span> <span class="nf">getSomeNumber</span><span class="o">()</span> <span class="o">{</span>
+  <span class="nc">SomeService</span> <span class="n">service</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">SomeService</span><span class="o">();</span>
+  <span class="k">return</span> <span class="nc">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">service</span><span class="o">.</span><span class="na">getSomeNumber</span><span class="o">());</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Rather unspectacular;
+so let&#8217;s use <em>javap</em> to examine the byte code of that class:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre></td><td class="code"><pre>  public java.lang.String getSomeNumber();
+    descriptor: ()Ljava/lang/String;
+    flags: (0x0001) ACC_PUBLIC
+    Code:
+      stack=2, locals=2, args_size=1
+         0: new           #7                  // class dev/morling/demos/bridgemethods/SomeService
+         3: dup
+         4: invokespecial #9                  // Method dev/morling/demos/bridgemethods/SomeService."&lt;init&gt;":()V
+         7: astore_1
+         8: aload_1
+         9: invokevirtual #10                 // Method dev/morling/demos/bridgemethods/SomeService.getSomeNumber:()Ljava/lang/Number;
+        12: invokestatic  #14                 // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+        15: areturn
+      LineNumberTable:
+        line 21: 0
+        line 22: 8
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      16     0  this   Ldev/morling/demos/bridgemethods/SomeClient;
+            8       8     1 service   Ldev/morling/demos/bridgemethods/SomeService;
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The interesting part is the <code>invokevirtual</code> at label 9;
+that&#8217;s the invocation of the <code>SomeService::getSomeNumber()</code> method,
+and as we see, the return type of the invoked method is part of the byte code of that invocation, too.
+As developers writing code in the Java <em>language</em>, this might come at a suprise at first,
+as we tend to think of just a method&#8217;s names and its parameter types as the method signature.
+For instance,
+we may not declare two methods which only differ by their return type in the same Java class.
+But from the perspective of the Java <em>runtime</em>, the return type of a method is part of method signatures as well.</p>
+</div>
+<div class="paragraph">
+<p>This explains the error reports we got from our users:
+when changing the method return type from <code>Number</code> to <code>Long</code>,
+we did a change that broke the <em>binary compatibility</em> of our library.
+The JVM was looking for a method <code>SomeService::getSomeNumber()</code> returning <code>Number</code>,
+but it couldn&#8217;t find it in the class file of version 2.0 of our service.</p>
+</div>
+<div class="paragraph">
+<p>It also explains why not all the users reported that problem:
+those that recompiled their own application when upgrading to 2.0 would not run into any issues,
+as the compiler would simply use the new version of the method and put the invocation of that signature into the class files of any callers.
+Only those users who did not re-compile their code encountered the problem,
+i.e. the change actually was <em>source-compatible</em>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_bridge_methods_to_the_rescue">Bridge Methods to the Rescue</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>At this point you might wonder:
+Isn&#8217;t it possible to refine method return types in sub-classes?
+How does that work then?
+Indeed it&#8217;s true, Java does support <em>co-variant return types</em>,
+i.e. a sub-class can override a method using a more specific return type than declared in the super-type:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">SomeSubService</span> <span class="kd">extends</span> <span class="nc">SomeService</span> <span class="o">{</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="nc">Long</span> <span class="nf">getSomeNumber</span><span class="o">()</span> <span class="o">{</span>
+  <span class="k">return</span> <span class="mi">42L</span><span class="o">;</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To make this work for a client coded against the super-type,
+the Java compiler uses a neat trick:
+it injects a so-called <em>bridge method</em> into the class file of the sub-class,
+which has the signature of the overridden method and which calls the overriding method.
+This is how this looks like when disassembling the <code>SomeSubService</code> class file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+</pre></td><td class="code"><pre>public java.lang.Long getSomeNumber(); <i class="conum" data-value="1"></i><b>(1)</b>
+  descriptor: ()Ljava/lang/Long;
+  flags: (0x0001) ACC_PUBLIC
+  Code:
+    stack=2, locals=1, args_size=1
+        0: ldc2_w        #14                 // long 42l
+        3: invokestatic  #21                 // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;
+        6: areturn
+    LineNumberTable:
+      line 22: 0
+    LocalVariableTable:
+      Start  Length  Slot  Name   Signature
+          0       7     0  this   Ldev/morling/demos/bridgemethods/SomeSubService;
+
+public java.lang.Number getSomeNumber(); <i class="conum" data-value="2"></i><b>(2)</b>
+  descriptor: ()Ljava/lang/Number;
+  flags: (0x1041) ACC_PUBLIC, ACC_BRIDGE, ACC_SYNTHETIC <i class="conum" data-value="3"></i><b>(3)</b>
+  Code:
+    stack=1, locals=1, args_size=1
+        0: aload_0
+        1: invokevirtual #24                 // Method getSomeNumber:()Ljava/lang/Long;
+        4: areturn
+    LineNumberTable:
+      line 18: 0
+    LocalVariableTable:
+      Start  Length  Slot  Name   Signature
+          0       5     0  this   Ldev/morling/demos/bridgemethods/SomeSubService;
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The overriding method as defined in the sub-class</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The bridge method with the signature from the super-class, invoking the overriding method</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The injected method has the <code>ACC_BRIDGE</code> and <code>ACC_SYNTHETIC</code> modifiers</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>That way, a client compiled against the super-type method will first invoke the bridge method,
+which in turn delegates to the overriding method of the sub-class,
+providing the <a href="https://en.wikipedia.org/wiki/Late_binding">late binding</a> semantics we&#8217;d expect from Java.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Another situation where the Java compiler relies on bridge methods is compiling sub-types of generic super-classes or interfaces.
+Refer to the <a href="https://docs.oracle.com/javase/tutorial/java/generics/bridgeMethods.html">Java Tutorial</a> to learn more about this.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_creating_bridge_methods_ourselves">Creating Bridge Methods Ourselves</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>So as we&#8217;ve seen, with bridge methods, there is a tool in the box to ensure compatibility in case of refining return types in sub-classes.
+Which brings us back to Lukas' question from the beginning:
+is there a way for using the same trick for ensuring compatibility when evolving our API across library versions?</p>
+</div>
+<div class="paragraph">
+<p>Now you can&#8217;t define a bridge method using the Java language,
+this concept just doesn&#8217;t exist at the language level.
+So I thought about quickly hacking together a PoC for this using the <a href="https://asm.ow2.io/">ASM</a> bytecode manipulation toolkit;
+but what&#8217;s better than creating open-source?
+Re-using existing open-source!
+As it turns out, there&#8217;s a tool for that very purpose exactly:
+<a href="https://github.com/dmlloyd/bridger">Bridger</a>, created by my fellow Red Hatter <a href="https://twitter.com/dmlloyd0">David M. Lloyd</a>.</p>
+</div>
+<div class="paragraph">
+<p>Bridger lets you create your own bridge methods,
+using ASM to apply the required class file transformations for turning a method into a bridge method.
+It comes with a Maven plug-in for integrating this transformation step into your build process.
+Here&#8217;s the plug-in configuration we need:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+</pre></td><td class="code"><pre><span class="nt">&lt;plugin&gt;</span>
+  <span class="nt">&lt;groupId&gt;</span>org.jboss.bridger<span class="nt">&lt;/groupId&gt;</span>
+  <span class="nt">&lt;artifactId&gt;</span>bridger<span class="nt">&lt;/artifactId&gt;</span>
+  <span class="nt">&lt;version&gt;</span>1.5.Final<span class="nt">&lt;/version&gt;</span>
+  <span class="nt">&lt;executions&gt;</span>
+    <span class="nt">&lt;execution&gt;</span>
+      <span class="nt">&lt;id&gt;</span>weave<span class="nt">&lt;/id&gt;</span>
+      <span class="nt">&lt;phase&gt;</span>process-classes<span class="nt">&lt;/phase&gt;</span> <i class="conum" data-value="1"></i><b>(1)</b>
+      <span class="nt">&lt;goals&gt;</span>
+        <span class="nt">&lt;goal&gt;</span>transform<span class="nt">&lt;/goal&gt;</span>
+      <span class="nt">&lt;/goals&gt;</span>
+    <span class="nt">&lt;/execution&gt;</span>
+  <span class="nt">&lt;/executions&gt;</span>
+  <span class="nt">&lt;dependencies&gt;</span>
+    <span class="nt">&lt;dependency&gt;</span> <i class="conum" data-value="2"></i><b>(2)</b>
+      <span class="nt">&lt;groupId&gt;</span>org.ow2.asm<span class="nt">&lt;/groupId&gt;</span>
+      <span class="nt">&lt;artifactId&gt;</span>asm<span class="nt">&lt;/artifactId&gt;</span>
+      <span class="nt">&lt;version&gt;</span>9.2<span class="nt">&lt;/version&gt;</span>
+    <span class="nt">&lt;/dependency&gt;</span>
+  <span class="nt">&lt;/dependencies&gt;</span>
+<span class="nt">&lt;/plugin&gt;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Bind the <code>transform</code> goal to the <code>process-classes</code> build lifecycle phase, so as to modify the classes produced by the Java compiler</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Use the latest version of ASM, so we can work with Java 17</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>With the plug-in in place,
+you can define bridge methods like so, using the <code>$$bridge</code> name suffix
+(seems the syntax highligher doesn&#8217;t like the $ signs in identifiers&#8230;&#8203;):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">SomeService</span> <span class="o">{</span>
+
+  <span class="cm">/**
+    * @hidden <i class="conum" data-value="1"></i><b>(1)</b>
+    */</span>
+  <span class="kd">public</span> <span class="nc">Number</span> <span class="n">getSomeNumber</span><span class="err">$</span><span class="n">$bridge</span><span class="o">()</span> <span class="o">{</span> <i class="conum" data-value="2"></i><b>(2)</b>
+    <span class="k">return</span> <span class="nf">getSomeNumber</span><span class="o">();</span>
+  <span class="o">}</span>
+
+  <span class="kd">public</span> <span class="nc">Long</span> <span class="nf">getSomeNumber</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="mi">42L</span><span class="o">;</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>By means of the <code>@hidden</code> JavaDoc tag (added in Java 9), this method will be excluded from the JavaDoc generated for our library</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The bridge method to be; the name suffix will be removed by Bridger, i.e. it will be named <code>getSomeNumber</code>; it will also have the <code>ACC_BRIDGE</code> and <code>ACC_SYNTHETIC</code> modifiers</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>And that&#8217;s how the byte code of <code>SomeService</code> looks like after Bridger applied the transformation:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+</pre></td><td class="code"><pre>public java.lang.Number getSomeNumber();
+  descriptor: ()Ljava/lang/Number;
+  flags: (0x1041) ACC_PUBLIC, ACC_BRIDGE, ACC_SYNTHETIC
+  Code:
+    stack=1, locals=1, args_size=1
+        0: aload_0
+        1: invokevirtual #16                 // Method getSomeNumber:()Ljava/lang/Long;
+        4: areturn
+    LineNumberTable:
+      line 21: 0
+    LocalVariableTable:
+      Start  Length  Slot  Name   Signature
+          0       5     0  this   Ldev/morling/demos/bridgemethods/SomeService;
+
+public java.lang.Long getSomeNumber();
+  descriptor: ()Ljava/lang/Long;
+  flags: (0x0001) ACC_PUBLIC
+  Code:
+    stack=2, locals=1, args_size=1
+        0: ldc2_w        #17                 // long 42l
+        3: invokestatic  #24                 // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;
+        6: areturn
+    LineNumberTable:
+      line 25: 0
+    LocalVariableTable:
+      Start  Length  Slot  Name   Signature
+          0       7     0  this   Ldev/morling/demos/bridgemethods/SomeService;
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With that,
+we have solved the challenge:
+utilizing a bridge method,
+we can rectify the glitch in the version 1.0 API and refine the method return type in a new version of our library,
+without breaking source nor binary compatibility with existing users.</p>
+</div>
+<div class="paragraph">
+<p>By means of the <code>@hidden</code> JavaDoc tag,
+the source of our bridge method won&#8217;t show up in the rendered documentation
+(which would be rather confusing),
+and marked as a synthetic bridge method in the class file,
+it also won&#8217;t show up when looking at the JAR in an IDE.</p>
+</div>
+<div class="paragraph">
+<p>If you&#8217;d like to start your own explorations of Java bridge methods,
+you can find the complete source code of the example in this <a href="https://github.com/gunnarmorling/bridge-methods-demo">GitHub repo</a>.
+Useful tools for tracking API changes and identifying any potential breaking changes include <a href="https://github.com/jtulach/netbeans-apitest">SigTest</a>
+(we use this one for instance in the Bean Validation specification to ensure backwards compatibility) and <a href="https://github.com/revapi/revapi">Revapi</a>
+(which we use in Debezium).
+Lastly, here&#8217;s a <a href="https://stuartmarks.wordpress.com/2020/09/22/incompatibilities-with-jdk-15-charsequence-isempty/">great blog post</a> by <a href="https://twitter.com/stuartmarks">Stuart Marks</a>,
+where he describes how even the seemingly innocent addition of a Java default method to a widely used (and implemented) interface may lead to problems in the real world.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2021 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
