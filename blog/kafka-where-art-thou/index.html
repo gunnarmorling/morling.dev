@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Oh Kafka, Where Art Thou? - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Oh Kafka, Where Art Thou?" />
+<meta property="og:description" content="
+The other day, I came across an interesting thread in the Java sub-reddit, with someone asking:
+&#34;Has anyone attempted to write logs directly to Kafka?&#34;.
+This triggered a number of thoughts and questions for myself,
+in particular how one should deal in an application when an attempt to send messages to Kafka fails,
+for instance due to some network connectivity issue?
+What do you do when you cannot reach the Kafka broker?
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/kafka-where-art-thou/" />
+<meta property="article:published_time" content="2021-11-29T18:55:00+01:00" />
+<meta property="article:modified_time" content="2021-11-29T18:55:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Oh Kafka, Where Art Thou?"/>
+<meta name="twitter:description" content="
+The other day, I came across an interesting thread in the Java sub-reddit, with someone asking:
+&#34;Has anyone attempted to write logs directly to Kafka?&#34;.
+This triggered a number of thoughts and questions for myself,
+in particular how one should deal in an application when an attempt to send messages to Kafka fails,
+for instance due to some network connectivity issue?
+What do you do when you cannot reach the Kafka broker?
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search.gunnar-morling.workers.dev\/Prod\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Oh Kafka, Where Art Thou?</h1>
+				<div class="meta">Posted at Nov 29, 2021</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>The other day, I came across an <a href="https://www.reddit.com/r/java/comments/r2z17a/has_any_one_attempted_to_write_logs_directly_to/">interesting thread</a> in the Java sub-reddit, with someone asking:
+"Has anyone attempted to write logs directly to Kafka?".
+This triggered a number of thoughts and questions for myself,
+in particular how one should deal in an application when an attempt to send messages to Kafka fails,
+for instance due to some network connectivity issue?
+What do you do when you cannot reach the Kafka broker?</p>
+</div>
+<div class="paragraph">
+<p>While the Java Kafka producer <a href="https://towardsdatascience.com/10-configs-to-make-your-kafka-producer-more-resilient-ec6903c63e3f">buffers requests</a> internally (primarily for performance reasons) and also supports retries,
+you cannot do so indefinitely
+(or can you?),
+so I went to ask the Kafka community on Twitter how they would handle this situation:</p>
+</div>
+<div align="center">
+<blockquote class="twitter-tweet"  data-conversation="none" data-dnt="true"><p lang="en" dir="ltr" align="left"><a href="https://twitter.com/hashtag/Kafka?src=hash&amp;ref_src=twsrc%5Etfw">#Kafka</a> users: how do you deal in producers with brokers not being available? Take a use case like sending logs; you don&#39;t want to fail your business process due to Kafka issues here, it&#39;s fine do this later on. Large producer buffer and retries? Some extra buffer (e.g. off-heap)?</p>&mdash; Gunnar Morling 🌍 (@gunnarmorling) <a href="https://twitter.com/gunnarmorling/status/1464651790675288069">November 27, 2021</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+<div class="paragraph">
+<p>This question spawned a great discussion with tons of insightful replies (thanks a lot to you all!),
+so I thought I&#8217;d try and give an overview on the different comments and arguments.
+As with everything, the right strategy and solution depends on the specific requirements of the use case at hand;
+in particular whether you can or cannot <a href="https://www.confluent.io/blog/how-to-survive-a-kafka-outage/">afford for potential inconsistencies</a> between the state of the caller of your application,
+its own state,
+and the state in the Kafka cluster.</p>
+</div>
+<div class="paragraph">
+<p>As an example,
+let&#8217;s consider an application which exposes a REST API for placing purchase orders.
+Acknowledging such a request while actually failing to send a Kafka message with the purchase order to some fulfillment system would be pretty bad:
+the user would believe their order has been received and will be fulfilled eventually,
+whereas that&#8217;s actually not the case.</p>
+</div>
+<div class="paragraph">
+<p>On the other hand, if the incoming request was savely persisted in a database, and a message is sent to Kafka only for logging purposes,
+we may be fine to accept this inconsistency between the user&#8217;s state
+("my order has been received"),
+the application&#8217;s state
+(order is stored in the database),
+and the state in Kafka
+(log message got lost; not ideal, but not the end of the world either).</p>
+</div>
+<div class="paragraph">
+<p>Understanding these different semantics helps to put the replies to the question into context.
+There&#8217;s one group of replies along the lines of "buffer indefinitely, block inbound requests until messages are sent",
+e.g. by <a href="https://twitter.com/purbon/">Pere Urbón-Bayes</a>:</p>
+</div>
+<div align="center">
+<blockquote class="twitter-tweet"  data-conversation="none" data-dnt="true"><p lang="en" dir="ltr" align="left">This would certainly depend on the client used and your app use case. Generally speaking, retry forever and block if the buffer is full, leave time for broker to recover, with backpressure.<br>if backpressure not possible, cause use case, off-load off-heap for later recovery.</p>&mdash; Pere Urbón-Bayes (@purbon) <a href="https://twitter.com/purbon/status/1464859621126983689">November 28, 2021</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+<div class="paragraph">
+<p>This strategy makes a lot of sense if you cannot afford any inconsistency between the state of the different actors at all:
+e.g. when you&#8217;d rather tell the user that you cannot receive their purchase order right now,
+instead of being at the risk of telling them that you did, whereas you actually didn&#8217;t.</p>
+</div>
+<div class="paragraph">
+<p>What though, if we don&#8217;t want to let the availability of a resource like Apache Kafka&#8201;&#8212;&#8201;which is used for <em>asynchronous</em> message exchanges to begin with&#8201;&#8212;&#8201;impact the availability of our own application?
+Can we somehow buffer requests in a safe way, if they cannot be sent to Kafka right away?
+This would allow to complete the inbound request,
+while hopefully still avoiding any inconsistencies,
+at least eventually.</p>
+</div>
+<div class="paragraph">
+<p>Now simply buffering requests in memory isn&#8217;t reliable in any meaningful sense of the word;
+if the producing application crashes,
+any unsent messages will be lost,
+making this approach not different in terms of reliability from working with <code>ack</code> = 0,
+i.e. not waiting for any acknowledgements from the Kafka broker.
+It may be useful for pure fire-and-forget use cases, where you don&#8217;t care about delivery guarantees at at all,
+but these tend to be rare.</p>
+</div>
+<div class="paragraph">
+<p>Multiple folks therefore suggested more reliable means of implementing such buffering,
+e.g. by storing un-sent messages on disk or by using some local, persistent queuing implementation.
+Some have built solutions using existing open-source components, as <a href="https://twitter.com/antonmry/">Antón Rodriguez</a> and <a href="https://twitter.com/joshdreagan/status/">Josh Reagan</a> suggest:</p>
+</div>
+<div align="center">
+<blockquote class="twitter-tweet"  data-conversation="none" data-dnt="true"><p lang="en" dir="ltr" align="left">I usually retry forever, specially when reading from another topic because we can apply backpressure. In some cases, discard after some time is ok. Very rarely off-heap with ChronicleQueue or MapsDB. I have considered but never used an external service as DLQ or a Kafka mesh</p>&mdash; Antón (@antonmry) <a href="https://twitter.com/antonmry/status/1464692826478940167">November 27, 2021</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+<div align="center">
+<blockquote class="twitter-tweet" data-conversation="none" data-dnt="true"><p lang="en" dir="ltr" align="left">Embedded broker and in-vm protocol. Either ActiveMQ or Artemis work great.</p>&mdash; Josh Reagan (@joshdreagan) <a href="https://twitter.com/joshdreagan/status/1464746065005932548">November 28, 2021</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+<div class="paragraph">
+<p>You even could think of having a Kafka cluster close by (which then may have other accessibility characteristics than your "primary" cluster e.g. running in another availability zone) and keeping everything in sync via tools such as <a href="https://strimzi.io/blog/2020/03/30/introducing-mirrormaker2/">MirrorMaker 2</a>.
+Others, like <a href="https://twitter.com/pachilo/">Jonathan Santilli</a>, create their own custom solutions by forking existing projects:</p>
+</div>
+<div align="center">
+<blockquote class="twitter-tweet"  data-conversation="none" data-dnt="true"><p lang="en" dir="ltr" align="left">I forked Apache Flume and modified it to used a WAL on the disk, so, messages are technically sent, but store on disk, when the Broker is available, the local queue gets flushed, all transparent for the producer.</p>&mdash; Jonathan Santilli (@pachilo) <a href="https://twitter.com/pachilo/status/1464717867266592768">November 27, 2021</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+<div class="paragraph">
+<p>Also ready-made wrappers aound the producer exists, e.g. in Wix' Greyhound Kafka client library, which supports <a href="https://github.com/wix/greyhound#producing-via-local-disk">producing via local disk</a> as per <a href="https://twitter.com/derekm00r3/">Derek Moore</a>:</p>
+</div>
+<div align="center">
+<blockquote class="twitter-tweet"  data-conversation="none" data-dnt="true"><p lang="en" dir="ltr" align="left">I built a proprietary &quot;data refinery&quot; on Kafka for <a href="https://twitter.com/fanthreesixty">@fanthreesixty</a> and we built ourselves libraries not dissimilar to <a href="https://t.co/uQdepGHTzj">https://t.co/uQdepGHTzj</a></p>&mdash; Derek Moore (@derekm00r3) <a href="https://twitter.com/derekm00r3/status/1464684330244993025">November 27, 2021</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+<div class="paragraph">
+<p>But there be dragons!
+Persisting to disk will actually not be any better at all,
+if it&#8217;s for instance an ephermeral disk of a Kubernetes pod which gets destroyed after an application crash.
+But even when using persistent volumes,
+you may end up with an inherently unreliable solution,
+as <a href="https://twitter.com/hussey_mic">Mic Hussey</a> points out:</p>
+</div>
+<div align="center">
+<blockquote class="twitter-tweet" data-conversation="none" data-dnt="true"><p lang="en" dir="ltr" align="left">These are two contradictory requirements 😉 Sooner or later you will run out of local storage capacity. And unless you are very careful you end up moving from a well understood shared queue to a hacked together implicit queue.</p>&mdash; Mic Hussey (@hussey_mic) <a href="https://twitter.com/hussey_mic/status/1465216076564860930">November 29, 2021</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+<div class="paragraph">
+<p>So it shouldn&#8217;t come at a surprise that people in this situation have been looking at alternatives,
+e.g. by using DynamoDB or S3 as an intermediary buffer;
+The team around <a href="https://twitter.com/NSilnitsky">Natan Silnitsky</a> working on Greyhound at Wix are exploring this option currently:</p>
+</div>
+<div align="center">
+<blockquote class="twitter-tweet" data-conversation="none" data-dnt="true"><p lang="en" dir="ltr" align="left">So instead we want to fallback only on failure to send. In addition we want to skip the disk all together, because recovery mechanism when a pod is killed in <a href="https://twitter.com/hashtag/Kubernetes?src=hash&amp;ref_src=twsrc%5Etfw">#Kubernetes</a> is too complex (involves a daemonset...), So we&#39;re doing a POC, writing to <a href="https://twitter.com/hashtag/DynamoDB?src=hash&amp;ref_src=twsrc%5Etfw">#DynamoDB</a>/<a href="https://twitter.com/hashtag/S3?src=hash&amp;ref_src=twsrc%5Etfw">#S3</a> upon failure 2/3 🧵</p>&mdash; Natan Silnitsky (@NSilnitsky) <a href="https://twitter.com/NSilnitsky/status/1465217940161183744">November 29, 2021</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+<div class="paragraph">
+<p>At this point it&#8217;s worth thinking about failure domains, though.
+Say your application is in its own network and it cannot write to Kafka due to some network split,
+chances are that it cannot reach other services like S3 either.
+So another option could be to use a datastore close by as a buffer,
+for instance a replicated database running on the same Kubernetes cluster or at least in the same availability zone.</p>
+</div>
+<div class="paragraph">
+<p>If this reminds you of <a href="https://en.wikipedia.org/wiki/Change_data_capture">change data capture</a> (CDC) and the <a href="https://debezium.io/blog/2019/02/19/reliable-microservices-data-exchange-with-the-outbox-pattern/">outbox pattern</a>,
+you&#8217;re absolutely right;
+multiple folks made this point as well in the conversation, including Natan Silnitsky and <a href="https://twitter.com/realjenius/">R.J. Lorimer</a>:</p>
+</div>
+<div align="center">
+<blockquote class="twitter-tweet" data-conversation="none" data-dnt="true"><p lang="en" dir="ltr" align="left">Then a dedicated service will listen to <a href="https://twitter.com/hashtag/DynamoDB?src=hash&amp;ref_src=twsrc%5Etfw">#DynamoDB</a> CDC events and produce to <a href="https://twitter.com/hashtag/ApacheKafka?src=hash&amp;ref_src=twsrc%5Etfw">#ApacheKafka</a> including payload, key, headers, etc...</p>&mdash; Natan Silnitsky (@NSilnitsky) <a href="https://twitter.com/NSilnitsky/status/1465218473341206530">November 29, 2021</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+<div align="center">
+<blockquote class="twitter-tweet" data-conversation="none" data-dnt="true"><p lang="en" dir="ltr" align="left">For our event sourcing systems the event being delivered actually is critical. For &quot;pure&quot; cqrs services, Kafka being down is paramount to not having a db so we fail. Other systems use a transactional outbox that persists in the db. If Kafka is down it sits there until ready.</p>&mdash; R.J. Lorimer (He/Him) (@realjenius) <a href="https://twitter.com/realjenius/status/1464653128570228736">November 27, 2021</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+<div class="paragraph">
+<p>As <a href="https://twitter.com/xkzielinski/">Kacper Zielinski</a> tells us, this approach is an example of a <a href="https://en.wikipedia.org/wiki/Staged_event-driven_architecture">staged event-driven architecture</a>, or SEDA for short:</p>
+</div>
+<div align="center">
+<blockquote class="twitter-tweet" data-conversation="none" data-dnt="true"><p lang="en" dir="ltr" align="left">Outbox / SEDA to rescue here. Not sure if any “retry” can guarantee you more than “either you will loose some messages or fail the business logic by eating all resources” :)</p>&mdash; Kacper Zielinski (@xkzielinski) <a href="https://twitter.com/xkzielinski/status/1464676092380332039">November 27, 2021</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+<div class="paragraph">
+<p>In this model, a database serves as the buffer for persisting messages before they are sent to Kafka,
+which makes for for a highly reliable solution, provided the right degree of redundancy is implemented e.g. in form of replicas.
+In fact, if your application needs to write to a database anyways,
+"sending" messages to Kafka via an outbox table and CDC tools like <a href="https://debezium.io/">Debezium</a> is a great way to avoid any inconsistencies between the state in the database and Kafka,
+without incurring any unsafe dual writes.</p>
+</div>
+<div class="paragraph">
+<p>But of course there is a price to pay here too:
+end-to-end latency will be increased when going through a database first and then to Kafka,
+rather than going to Kafka directly.
+You also should keep in mind that the more moving pieces your solution has,
+the more complex to operate it will become of course,
+and the more subtle and hard-to-understand failure modes and edge cases it will have.</p>
+</div>
+<div class="paragraph">
+<p>An excellent point is made by <a href="https://twitter.com/AKotwasinski">Adam Kotwasinski</a> by stating that it&#8217;s not a question of <em>whether</em> things will go wrong, but only <em>when</em> they will go wrong, and that you need to have the right policies in place in order to be prepared for that:</p>
+</div>
+<div align="center">
+<blockquote class="twitter-tweet" data-conversation="none" data-dnt="true"><p lang="en" dir="ltr" align="left">For some of my usecases I have a wrapper for Kafka&#39;s producer that requires users to _explicitly_ set up policies like retry/backoff/drop. It allows my customers to think about outages (that will happen!) up front instead of being surprised. Each usecase is different.</p>&mdash; Adam Kotwasinski (@AKotwasinski) <a href="https://twitter.com/AKotwasinski/status/1464765601180643328">November 28, 2021</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+<div class="paragraph">
+<p>In the end it&#8217;s all about trade-offs, probabilities and acceptable risks.
+For instance, would you receive and acknowledge that purchase order request as long as you can store it in a replicated database in the local availability zone,
+or would you rather reject it, as long as you cannot safely persist it in a multi-AZ Kafka cluster?</p>
+</div>
+<div class="paragraph">
+<p>These questions aren&#8217;t merely technical ones any longer,
+but they require close collaboration with product owners and subject matter experts in the business domain at hand,
+so to make the most suitable decisions for your specific situation.
+Managed services with defined SLAs guaranteeing high availability values can make the deciding difference here,
+as <a href="https://twitter.com/Sood1Vikas/">Vikas Sood</a> mentions:</p>
+</div>
+<div align="center">
+<blockquote class="twitter-tweet" data-conversation="none" data-dnt="true"><p lang="en" dir="ltr" align="left">That’s why we decided to go with a managed offering to avoid disruptions in some critical processes.Some teams still had another decoupling layer (rabbit) between producers and Kafka. Was never a huge fan of that coz it simply meant more points of failure.</p>&mdash; Vikas Sood (@Sood1Vikas) <a href="https://twitter.com/Sood1Vikas/status/1464656813169659910">November 27, 2021</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+<div class="paragraph">
+<p>Thanks a lot again to everyone chiming in and sharing their experiences,
+this was highly interesting and insightful!
+You have further ideas and thoughts to share?
+Let me and the community at large know either by leaving a comment below,
+or by replying to the thread on Twitter.
+I&#8217;m also curious about your feedback on this format of putting a Twitter discussion into some expanded context.
+It&#8217;s the first time I&#8217;ve been doing it, and I&#8217;d be eager to know whether you find it useful or not.
+Thanks!</p>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2021 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
