@@ -1,0 +1,89 @@
+---
+title: "Introducing the OSS Quickstart Archetype"
+date: 2021-12-02T18:30:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+I am very happy to announce the availability of the https://github.com/moditect/oss-quickstart[OSS Quickstart Archetype]!
+
+Part of the https://github.com/moditect/[ModiTect] family of open-source projects,
+this is a Maven archetype which makes it very easy to bootstrap new Maven-based open-source projects,
+satisfying common requirements such as configuring plug-in versions, and adhering to best practices like auto-formatting the source code.
+Think https://maven.apache.org/archetypes/maven-archetype-quickstart/scm.html[Maven Quickstart Archetype] and friends, but more modern, complete, and opinionated.
+
+<!--more-->
+
+== The Challenge
+
+When bootstrapping new Maven-based projects, be it long-running ones, a short-lived proof-of-concept projects, or just some quick demo you'd like to publish on GitHub,
+there's always some boilerplate involved:
+creating the POM with the right plug-in versions and configurations,
+preparing CI e.g. on GitHub Actions,
+providing a license file, etc.
+
+While you could try and copy (parts of) an existing project you already have,
+Maven has a better answer to this problem: https://maven.apache.org/guides/introduction/introduction-to-archetypes.html[_archetypes_], pre-configured project templates which can be parameterized to some degree and which let you create new projects with just a few steps.
+Unfortunately, the canonical Maven quickstart archetype is rather outdated,
+creating projects for Java 1.7, using JUnit 4, etc.
+
+== The OSS Quickstart Archetype
+
+The OSS (open-source software) quickstart archetype is meant as a fresh alternative,
+not only providing more current defaults and dependency versions,
+but also going beyond what's provided by the traditional quickstart archetype.
+More specifically, it
+
+* defines up-to-date versions of all plug-ins in use, as well as of https://junit.org/junit5/[JUnit 5] and https://assertj.github.io/doc/[AssertJ] (the opinionated part ;)
+* enforces all plug-in versions to be defined via the https://maven.apache.org/enforcer/maven-enforcer-plugin/[Maven enforcer plug-in]
+* provides a license file and uses the https://github.com/mathieucarbou/license-maven-plugin[license Maven plug-in] for formatting/checking license headers in all source files
+* defines a basic set up for CI on https://github.com/features/actions[GitHub Actions],
+building the project upon each push to the `main` branch of your repository and for each PR
+* configures plug-ins for auto-formatting code and imports (I told you, it's opinionated)
+* defines a _-Dquick_ option for skipping all non-essential plug-ins, allowing you to produce the project's JAR as quickly as possible
+* (optionally) provides a _module-info.java_ descriptor
+
+And most importantly, opening braces are _not_ on the next line. We all agree nobody likes that, right?!
+Using the OSS Quickstart Archetype for bootstrapping a new project is as simple as running the following command:
+
+[source,shell,linenums=true]
+----
+mvn archetype:generate -B \
+  -DarchetypeGroupId=org.moditect.ossquickstart \
+  -DarchetypeArtifactId=oss-quickstart-simple-archetype \
+  -DarchetypeVersion=1.0.0.Alpha1 \
+  -DgroupId=com.example.demos \
+  -DartifactId=fancy-project \
+  -Dversion=1.0.0-SNAPSHOT \
+  -DmoduleName=com.example.fancy
+----
+
+Just a few seconds later, and you'll have a new project applying all the configuration above,
+ready for you to start some open-source awesomeness.
+
+== Outlook
+
+Version 1.0.0.Alpha1 of the OSS Quickstart Archetype is available today on https://search.maven.org/artifact/org.moditect.ossquickstart/oss-quickstart-simple-archetype/1.0.0.Alpha1/maven-archetype[Maven Central],
+i.e. you can starting using it for bootstrapping new projects right now.
+It already contains most of the things I wanted it to have,
+but there's also a few https://github.com/moditect/oss-quickstart/issues[more improvements] I would like to make:
+
+* Add the https://github.com/takari/maven-wrapper[Maven wrapper] (https://github.com/moditect/oss-quickstart/issues/1[#1])
+* Make the license of the generated project configurable; currently, it uses Apache License, version 2. I'd like to make this an option of the archetype, which would let you choose between this license and a few other key open-source licenses, like MIT and BSD 3-clause (https://github.com/moditect/oss-quickstart/issues/2[#2])
+* Provide a variant of the archetype for creating multi-module Maven projects (https://github.com/moditect/oss-quickstart/issues/7[#7])
+* Add basic https://github.com/checkstyle/checkstyle[CheckStyle] configuration (also skippable via _-Dquick_, https://github.com/moditect/oss-quickstart/issues/10[#10])
+
+Any contributions for implementing these, as well as other feature requests are highly welcome.
+Note the idea is to keep these archetypes lean and mean, i.e. they should only contain widely applicable features,
+leaving more specific things for the user to add after they created a project with the archetype.
+
+Happy open-sourcing!
+
+_Many thanks to https://twitter.com/aalmiray/[Andres Almiray] for setting up the release pipeline for this project, using the amazing https://jreleaser.org/[JReleaser] tool!_
