@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Introducing the OSS Quickstart Archetype - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Introducing the OSS Quickstart Archetype" />
+<meta property="og:description" content="
+I am very happy to announce the availability of the OSS Quickstart Archetype!
+
+
+Part of the ModiTect family of open-source projects,
+this is a Maven archetype which makes it very easy to bootstrap new Maven-based open-source projects,
+satisfying common requirements such as configuring plug-in versions, and adhering to best practices like auto-formatting the source code.
+Think Maven Quickstart Archetype and friends, but more modern, complete, and opinionated.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/introducing-oss-quickstart-archetype/" />
+<meta property="article:published_time" content="2021-12-02T18:30:00+01:00" />
+<meta property="article:modified_time" content="2021-12-02T18:30:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Introducing the OSS Quickstart Archetype"/>
+<meta name="twitter:description" content="
+I am very happy to announce the availability of the OSS Quickstart Archetype!
+
+
+Part of the ModiTect family of open-source projects,
+this is a Maven archetype which makes it very easy to bootstrap new Maven-based open-source projects,
+satisfying common requirements such as configuring plug-in versions, and adhering to best practices like auto-formatting the source code.
+Think Maven Quickstart Archetype and friends, but more modern, complete, and opinionated.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search.gunnar-morling.workers.dev\/Prod\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Introducing the OSS Quickstart Archetype</h1>
+				<div class="meta">Posted at Dec 2, 2021</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>I am very happy to announce the availability of the <a href="https://github.com/moditect/oss-quickstart">OSS Quickstart Archetype</a>!</p>
+</div>
+<div class="paragraph">
+<p>Part of the <a href="https://github.com/moditect/">ModiTect</a> family of open-source projects,
+this is a Maven archetype which makes it very easy to bootstrap new Maven-based open-source projects,
+satisfying common requirements such as configuring plug-in versions, and adhering to best practices like auto-formatting the source code.
+Think <a href="https://maven.apache.org/archetypes/maven-archetype-quickstart/scm.html">Maven Quickstart Archetype</a> and friends, but more modern, complete, and opinionated.</p>
+</div>
+<div class="sect1">
+<h2 id="_the_challenge">The Challenge</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When bootstrapping new Maven-based projects, be it long-running ones, a short-lived proof-of-concept projects, or just some quick demo you&#8217;d like to publish on GitHub,
+there&#8217;s always some boilerplate involved:
+creating the POM with the right plug-in versions and configurations,
+preparing CI e.g. on GitHub Actions,
+providing a license file, etc.</p>
+</div>
+<div class="paragraph">
+<p>While you could try and copy (parts of) an existing project you already have,
+Maven has a better answer to this problem: <a href="https://maven.apache.org/guides/introduction/introduction-to-archetypes.html"><em>archetypes</em></a>, pre-configured project templates which can be parameterized to some degree and which let you create new projects with just a few steps.
+Unfortunately, the canonical Maven quickstart archetype is rather outdated,
+creating projects for Java 1.7, using JUnit 4, etc.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_oss_quickstart_archetype">The OSS Quickstart Archetype</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The OSS (open-source software) quickstart archetype is meant as a fresh alternative,
+not only providing more current defaults and dependency versions,
+but also going beyond what&#8217;s provided by the traditional quickstart archetype.
+More specifically, it</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>defines up-to-date versions of all plug-ins in use, as well as of <a href="https://junit.org/junit5/">JUnit 5</a> and <a href="https://assertj.github.io/doc/">AssertJ</a> (the opinionated part ;)</p>
+</li>
+<li>
+<p>enforces all plug-in versions to be defined via the <a href="https://maven.apache.org/enforcer/maven-enforcer-plugin/">Maven enforcer plug-in</a></p>
+</li>
+<li>
+<p>provides a license file and uses the <a href="https://github.com/mathieucarbou/license-maven-plugin">license Maven plug-in</a> for formatting/checking license headers in all source files</p>
+</li>
+<li>
+<p>defines a basic set up for CI on <a href="https://github.com/features/actions">GitHub Actions</a>,
+building the project upon each push to the <code>main</code> branch of your repository and for each PR</p>
+</li>
+<li>
+<p>configures plug-ins for auto-formatting code and imports (I told you, it&#8217;s opinionated)</p>
+</li>
+<li>
+<p>defines a <em>-Dquick</em> option for skipping all non-essential plug-ins, allowing you to produce the project&#8217;s JAR as quickly as possible</p>
+</li>
+<li>
+<p>(optionally) provides a <em>module-info.java</em> descriptor</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>And most importantly, opening braces are <em>not</em> on the next line. We all agree nobody likes that, right?!
+Using the OSS Quickstart Archetype for bootstrapping a new project is as simple as running the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre>mvn archetype:generate <span class="nt">-B</span> <span class="se">\</span>
+  <span class="nt">-DarchetypeGroupId</span><span class="o">=</span>org.moditect.ossquickstart <span class="se">\</span>
+  <span class="nt">-DarchetypeArtifactId</span><span class="o">=</span>oss-quickstart-simple-archetype <span class="se">\</span>
+  <span class="nt">-DarchetypeVersion</span><span class="o">=</span>1.0.0.Alpha1 <span class="se">\</span>
+  <span class="nt">-DgroupId</span><span class="o">=</span>com.example.demos <span class="se">\</span>
+  <span class="nt">-DartifactId</span><span class="o">=</span>fancy-project <span class="se">\</span>
+  <span class="nt">-Dversion</span><span class="o">=</span>1.0.0-SNAPSHOT <span class="se">\</span>
+  <span class="nt">-DmoduleName</span><span class="o">=</span>com.example.fancy
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Just a few seconds later, and you&#8217;ll have a new project applying all the configuration above,
+ready for you to start some open-source awesomeness.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_outlook">Outlook</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Version 1.0.0.Alpha1 of the OSS Quickstart Archetype is available today on <a href="https://search.maven.org/artifact/org.moditect.ossquickstart/oss-quickstart-simple-archetype/1.0.0.Alpha1/maven-archetype">Maven Central</a>,
+i.e. you can starting using it for bootstrapping new projects right now.
+It already contains most of the things I wanted it to have,
+but there&#8217;s also a few <a href="https://github.com/moditect/oss-quickstart/issues">more improvements</a> I would like to make:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Add the <a href="https://github.com/takari/maven-wrapper">Maven wrapper</a> (<a href="https://github.com/moditect/oss-quickstart/issues/1">#1</a>)</p>
+</li>
+<li>
+<p>Make the license of the generated project configurable; currently, it uses Apache License, version 2. I&#8217;d like to make this an option of the archetype, which would let you choose between this license and a few other key open-source licenses, like MIT and BSD 3-clause (<a href="https://github.com/moditect/oss-quickstart/issues/2">#2</a>)</p>
+</li>
+<li>
+<p>Provide a variant of the archetype for creating multi-module Maven projects (<a href="https://github.com/moditect/oss-quickstart/issues/7">#7</a>)</p>
+</li>
+<li>
+<p>Add basic <a href="https://github.com/checkstyle/checkstyle">CheckStyle</a> configuration (also skippable via <em>-Dquick</em>, <a href="https://github.com/moditect/oss-quickstart/issues/10">#10</a>)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Any contributions for implementing these, as well as other feature requests are highly welcome.
+Note the idea is to keep these archetypes lean and mean, i.e. they should only contain widely applicable features,
+leaving more specific things for the user to add after they created a project with the archetype.</p>
+</div>
+<div class="paragraph">
+<p>Happy open-sourcing!</p>
+</div>
+<div class="paragraph">
+<p><em>Many thanks to <a href="https://twitter.com/aalmiray/">Andres Almiray</a> for setting up the release pipeline for this project, using the amazing <a href="https://jreleaser.org/">JReleaser</a> tool!</em></p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2021 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
