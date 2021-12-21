@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Announcing the First Release of kcctl - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Announcing the First Release of kcctl" />
+<meta property="og:description" content="
+🧸 It&#8217;s Casey. Casey Cuddle.
+
+
+I am very happy to announce the first stable release of kcctl,
+a modern and intuitive command line client for Apache Kafka Connect!
+
+
+Forget about having to memorize and type the right REST API paths and curl flags;
+with kcctl, managing your Kafka connectors is done via concise and logically structured commands,
+modeled after the semantics of the kubectl tool known from Kubernetes.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/announcing-first-release-of-kcctl/" />
+<meta property="article:published_time" content="2021-12-21T17:48:00+01:00" />
+<meta property="article:modified_time" content="2021-12-21T17:48:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Announcing the First Release of kcctl"/>
+<meta name="twitter:description" content="
+🧸 It&#8217;s Casey. Casey Cuddle.
+
+
+I am very happy to announce the first stable release of kcctl,
+a modern and intuitive command line client for Apache Kafka Connect!
+
+
+Forget about having to memorize and type the right REST API paths and curl flags;
+with kcctl, managing your Kafka connectors is done via concise and logically structured commands,
+modeled after the semantics of the kubectl tool known from Kubernetes.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search.gunnar-morling.workers.dev\/Prod\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Announcing the First Release of kcctl</h1>
+				<div class="meta">Posted at Dec 21, 2021</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>🧸 <em>It&#8217;s Casey. Casey Cuddle.</em></p>
+</div>
+<div class="paragraph">
+<p>I am very happy to announce the first stable release of <a href="https://github.com/kcctl/kcctl">kcctl</a>,
+a modern and intuitive command line client for <a href="https://kafka.apache.org/documentation/#connect">Apache Kafka Connect</a>!</p>
+</div>
+<div class="paragraph">
+<p>Forget about having to memorize and type the right REST API paths and curl flags;
+with kcctl, managing your Kafka connectors is done via concise and logically structured commands,
+modeled after the semantics of the kubectl tool known from Kubernetes.</p>
+</div>
+<div class="paragraph">
+<p>Starting now, kcctl is <a href="https://sdkman.io/sdks#kcctl">available via SDKMan</a>, which means it&#8217;s as easy as running <code>sdk install kcctl</code> for getting the latest kcctl release onto your Linux, macOS, or Windows x86 machine.
+For the best experience, also install the kcctl shell completion script, which not only <code>&lt;TAB&gt;</code>-completes command names and options,
+but also dynamic information such as connector, task, and logger names:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre>wget https://raw.githubusercontent.com/kcctl/kcctl/main/kcctl_completion
+<span class="nb">.</span> kcctl_completion
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>kcctl offers commands for all the common tasks you&#8217;ll encounter when dealing with Kafka Connect,
+such as listing the available connector plug-ins,
+registering new connectors,
+changing their configuration,
+pausing and resuming them,
+changing log levels, and much more.</p>
+</div>
+<div class="paragraph">
+<p>Similar to kubectl, kcctl works with the notion of named configuration contexts.
+Contexts allow you to set up multiple named Kafka Connect environments (e.g. "local" and "testing") and easily switch between them,
+without having to specify the current Connect cluster URL all the time:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre></td><td class="code"><pre><span class="nv">$ </span>kcctl config get-contexts
+ NAME      KAFKA CONNECT URI
+ <span class="nb">local     </span>http://localhost:8083
+ testing<span class="k">*</span>  http://localhost:8084
+
+<span class="nv">$ </span>kcctl config use-context <span class="nb">local
+</span>Using context <span class="s1">'local'</span>
+
+<span class="nv">$ </span>kcctl get plugins
+ TYPE     CLASS                                                       VERSION
+ <span class="nb">source   </span>io.debezium.connector.db2.Db2Connector                      1.8.0.Final
+ <span class="nb">source   </span>io.debezium.connector.mongodb.MongoDbConnector              1.8.0.Final
+ <span class="nb">source   </span>io.debezium.connector.mysql.MySqlConnector                  1.8.0.Final
+ <span class="nb">source   </span>org.apache.kafka.connect.file.FileStreamSourceConnector     3.0.0
+ <span class="nb">source   </span>org.apache.kafka.connect.mirror.MirrorCheckpointConnector   1
+ <span class="nb">source   </span>org.apache.kafka.connect.mirror.MirrorHeartbeatConnector    1
+ <span class="nb">source   </span>org.apache.kafka.connect.mirror.MirrorSourceConnector       1
+ sink     org.apache.kafka.connect.file.FileStreamSinkConnector       3.0.0
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once you&#8217;ve set up a kcctl context,
+you can start using the tool for managing your connectors.
+Here is a video which shows a typical workflow in kcctl
+(note this recording shows an earlier version of kcctl, there&#8217;s a few less commands and the notion of contexts has is slightly changed since then):</p>
+</div>
+<div class="paragraph">
+
+<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+  <iframe src="https://www.youtube-nocookie.com/embed/F9bUsM1ZwKk" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen title="YouTube Video"></iframe>
+</div>
+
+</div>
+<div class="paragraph">
+<p>As shown in the video, connectors are registered and updated via <code>kcctl apply</code>.
+This command can also read input from stdin,
+which for instance comes in handy when templating connector configuration using <a href="https://jsonnet.org/">Jsonnet</a> and setting up multiple similar connectors at once:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/kcctl_stdin.gif" alt="kcctl stdin">
+</div>
+</div>
+<div class="paragraph">
+<p>To learn more about these and all the other commands available in kcctl, run <code>kcctl --help</code>.</p>
+</div>
+<div class="sect1">
+<h2 id="_discussion_and_outlook">Discussion and Outlook</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>kcctl offers an easy yet very powerful way for solving your day-to-day tasks with Kafka Connect.
+In comparison to using the REST API directly via clients such as curl or httpie,
+kcctl as a dedicated tool offers commands which are more concise and intuitive;
+also its output is logically organized, using colored formatting to highlight key information.
+It has become an invaluable tool for my own work on Debezium, e.g. when testing, or doing some demo.
+These days, I find myself very rarely using the REST API directly any more.</p>
+</div>
+<div class="paragraph">
+<p>I hope kcctl becomes useful helper for folks working with Kafka Connect.
+As such, I see it as a complement to other means of interacting with Kafka Connect.
+Sometimes a CLI client may be what does the job the best,
+while at other times you may prefer to work with a graphical user interface such as <a href="https://debezium.io/documentation/reference/stable/operations/debezium-ui.html">Debezium UI</a> or the vendor-specific consoles of managed connector services,
+Kubernetes operators such as <a href="https://strimzi.io/docs/operators/latest/overview.html#configuration-points-connect_str">Strimzi</a>,
+<a href="https://registry.terraform.io/providers/Mongey/kafka-connect/latest">Terraform</a>,
+or perhaps even a <a href="https://github.com/SourceLabOrg/kafka-connect-client">Java API</a>.
+It&#8217;s all about options!</p>
+</div>
+<div class="paragraph">
+<p>While all the typical Kafka Connect workflows are supported by kcctl already,
+there&#8217;s quite a few additional features I&#8217;d love to see.
+First and foremost, the ability to <a href="https://github.com/kcctl/kcctl/issues/2">display</a> (and reset) the offsets of Kafka Connect source connectors.
+Work on that is well underway, and I expect this to be available very soon.
+There also should be support for <a href="https://github.com/kcctl/kcctl/issues/98">different output formats</a> such as JSON,
+improving useability in conjunction with other CLI tools such as jq.
+The restart command <a href="https://github.com/kcctl/kcctl/issues/102">should be expanded</a>,
+so as to take advantage of the API for restarting all (failed) connector tasks added in Kafka Connect 3.0.
+Going beyond the scope of supporting plain Kafka Connect,
+there could also be connector specific commands, such as an option for <a href="https://github.com/kcctl/kcctl/pull/71">compacting the history topic</a> of Debezium connectors.
+Of course, your feature requests are welcome, too!
+Please <a href="https://github.com/kcctl/kcctl/issues">log an issue</a> in the kcctl project for any useful additions to the tool.</p>
+</div>
+<div class="paragraph">
+<p>Lastly, a big thank you to all the amazing people who have contributed to kcctl up to this point:</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/aalmiray">Andres Almiray</a>,
+<a href="https://github.com/gsmet">Guillaume Smet</a>,
+<a href="https://github.com/hpgrahsl">Hans-Peter Grahsl</a>,
+<a href="https://github.com/iabudiab">Iskandar Abudiab</a>,
+<a href="https://github.com/sfc-gh-japatel">Jay Patel</a>,
+<a href="https://github.com/karim-elngr">Karim ElNaggar</a>,
+<a href="https://github.com/michael-simons">Michael Simons</a>,
+<a href="https://github.com/mimaison">Mickael Maison</a>,
+<a href="https://github.com/helpermethod">Oliver Weiler</a>,
+<a href="https://github.com/snuyanzin">Sergey Nuyanzin</a>,
+<a href="https://github.com/SiddiqueAhmad">Siddique Ahmad</a>,
+<a href="https://github.com/ThomasDangleterre">Thomas Dangleterre</a>, and
+<a href="https://github.com/tonyfosterdev">Tony Foster</a>!</p>
+</div>
+<div class="paragraph">
+<p>You&#8217;re the best 🧸!</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2021 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
