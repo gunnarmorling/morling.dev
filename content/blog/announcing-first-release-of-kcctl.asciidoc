@@ -1,0 +1,131 @@
+---
+title: "Announcing the First Release of kcctl"
+date: 2021-12-21T17:48:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+🧸 _It's Casey. Casey Cuddle._
+
+I am very happy to announce the first stable release of https://github.com/kcctl/kcctl[kcctl],
+a modern and intuitive command line client for https://kafka.apache.org/documentation/#connect[Apache Kafka Connect]!
+
+Forget about having to memorize and type the right REST API paths and curl flags;
+with kcctl, managing your Kafka connectors is done via concise and logically structured commands,
+modeled after the semantics of the kubectl tool known from Kubernetes.
+
+<!--more-->
+
+Starting now, kcctl is https://sdkman.io/sdks#kcctl[available via SDKMan], which means it's as easy as running `sdk install kcctl` for getting the latest kcctl release onto your Linux, macOS, or Windows x86 machine.
+For the best experience, also install the kcctl shell completion script, which not only `<TAB>`-completes command names and options,
+but also dynamic information such as connector, task, and logger names:
+
+[source,shell,linenums=true]
+----
+wget https://raw.githubusercontent.com/kcctl/kcctl/main/kcctl_completion
+. kcctl_completion
+----
+
+kcctl offers commands for all the common tasks you'll encounter when dealing with Kafka Connect,
+such as listing the available connector plug-ins,
+registering new connectors,
+changing their configuration,
+pausing and resuming them,
+changing log levels, and much more.
+
+Similar to kubectl, kcctl works with the notion of named configuration contexts.
+Contexts allow you to set up multiple named Kafka Connect environments (e.g. "local" and "testing") and easily switch between them,
+without having to specify the current Connect cluster URL all the time:
+
+[source,shell,linenums=true]
+----
+$ kcctl config get-contexts
+ NAME      KAFKA CONNECT URI
+ local     http://localhost:8083
+ testing*  http://localhost:8084
+
+$ kcctl config use-context local
+Using context 'local'
+
+$ kcctl get plugins
+ TYPE     CLASS                                                       VERSION
+ source   io.debezium.connector.db2.Db2Connector                      1.8.0.Final
+ source   io.debezium.connector.mongodb.MongoDbConnector              1.8.0.Final
+ source   io.debezium.connector.mysql.MySqlConnector                  1.8.0.Final
+ source   org.apache.kafka.connect.file.FileStreamSourceConnector     3.0.0
+ source   org.apache.kafka.connect.mirror.MirrorCheckpointConnector   1
+ source   org.apache.kafka.connect.mirror.MirrorHeartbeatConnector    1
+ source   org.apache.kafka.connect.mirror.MirrorSourceConnector       1
+ sink     org.apache.kafka.connect.file.FileStreamSinkConnector       3.0.0
+----
+
+Once you've set up a kcctl context,
+you can start using the tool for managing your connectors.
+Here is a video which shows a typical workflow in kcctl
+(note this recording shows an earlier version of kcctl, there's a few less commands and the notion of contexts has is slightly changed since then):
+
+{{< youtube F9bUsM1ZwKk >}}
+
+As shown in the video, connectors are registered and updated via `kcctl apply`.
+This command can also read input from stdin,
+which for instance comes in handy when templating connector configuration using https://jsonnet.org/[Jsonnet] and setting up multiple similar connectors at once:
+
+image::kcctl_stdin.gif[]
+
+To learn more about these and all the other commands available in kcctl, run `kcctl --help`.
+
+== Discussion and Outlook
+
+kcctl offers an easy yet very powerful way for solving your day-to-day tasks with Kafka Connect.
+In comparison to using the REST API directly via clients such as curl or httpie,
+kcctl as a dedicated tool offers commands which are more concise and intuitive;
+also its output is logically organized, using colored formatting to highlight key information.
+It has become an invaluable tool for my own work on Debezium, e.g. when testing, or doing some demo.
+These days, I find myself very rarely using the REST API directly any more.
+
+I hope kcctl becomes useful helper for folks working with Kafka Connect.
+As such, I see it as a complement to other means of interacting with Kafka Connect.
+Sometimes a CLI client may be what does the job the best,
+while at other times you may prefer to work with a graphical user interface such as https://debezium.io/documentation/reference/stable/operations/debezium-ui.html[Debezium UI] or the vendor-specific consoles of managed connector services,
+Kubernetes operators such as https://strimzi.io/docs/operators/latest/overview.html#configuration-points-connect_str[Strimzi],
+https://registry.terraform.io/providers/Mongey/kafka-connect/latest[Terraform],
+or perhaps even a https://github.com/SourceLabOrg/kafka-connect-client[Java API].
+It's all about options!
+
+While all the typical Kafka Connect workflows are supported by kcctl already,
+there's quite a few additional features I'd love to see.
+First and foremost, the ability to https://github.com/kcctl/kcctl/issues/2[display] (and reset) the offsets of Kafka Connect source connectors.
+Work on that is well underway, and I expect this to be available very soon.
+There also should be support for https://github.com/kcctl/kcctl/issues/98[different output formats] such as JSON,
+improving useability in conjunction with other CLI tools such as jq.
+The restart command https://github.com/kcctl/kcctl/issues/102[should be expanded],
+so as to take advantage of the API for restarting all (failed) connector tasks added in Kafka Connect 3.0.
+Going beyond the scope of supporting plain Kafka Connect,
+there could also be connector specific commands, such as an option for https://github.com/kcctl/kcctl/pull/71[compacting the history topic] of Debezium connectors.
+Of course, your feature requests are welcome, too!
+Please https://github.com/kcctl/kcctl/issues[log an issue] in the kcctl project for any useful additions to the tool.
+
+Lastly, a big thank you to all the amazing people who have contributed to kcctl up to this point:
+
+https://github.com/aalmiray[Andres Almiray],
+https://github.com/gsmet[Guillaume Smet],
+https://github.com/hpgrahsl[Hans-Peter Grahsl],
+https://github.com/iabudiab[Iskandar Abudiab],
+https://github.com/sfc-gh-japatel[Jay Patel],
+https://github.com/karim-elngr[Karim ElNaggar],
+https://github.com/michael-simons[Michael Simons],
+https://github.com/mimaison[Mickael Maison],
+https://github.com/helpermethod[Oliver Weiler],
+https://github.com/snuyanzin[Sergey Nuyanzin],
+https://github.com/SiddiqueAhmad[Siddique Ahmad],
+https://github.com/ThomasDangleterre[Thomas Dangleterre], and
+https://github.com/tonyfosterdev[Tony Foster]!
+
+You're the best 🧸!
