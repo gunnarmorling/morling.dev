@@ -83,6 +83,12 @@ So if your messages are meant to show up in logs, setting contextual information
 In Debezium this is used for instance to propagate the name of the affected connector,
 allowing Kafka Connect users to tell part log messages originating from different connectors deployed to the same Connect cluster.
 
+[NOTE]
+As far as propagating contextual information via log messages is concerned (as opposed to, say, error messages printed by a CLI tool),
+https://www.innoq.com/en/blog/structured-logging/[structured logging], typically in form of JSON, simplifies any downstream processing.
+By putting contextual information into separate attributes of a structured log entry,
+consumers can easily filter messages, ingest only specific sub-sets of messages based on their contents, etc.
+
 In case of exceptions, the chain of exceptions leading to the root cause is an important contextual information, too.
 So I'd recommend to always log the entire exception chain,
 rather than catching exceptions and only logging some substitute message instead.
