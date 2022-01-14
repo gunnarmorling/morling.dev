@@ -49,7 +49,7 @@ For an error message, this should tell the recipient what the code in question w
 In that light, the first example above, _"Couldn't parse config file"_,
 is addressing this aspect (and only this one) to some degree,
 but probably it's not enough.
-For instance, it would be very useful to know the exact name the file:
+For instance, it would be very useful to know the exact name of the file:
 
 > Couldn't parse config file: /etc/sample-config.properties"
 
@@ -81,7 +81,7 @@ Many logging frameworks also support the notion of a https://www.baeldung.com/md
 a map for propagating arbitrary key/value pairs into log messages.
 So if your messages are meant to show up in logs, setting contextual information to the MDC can be very useful.
 In Debezium this is used for instance to propagate the name of the affected connector,
-allowing Kafka Connect users to tell part log messages originating from different connectors deployed to the same Connect cluster.
+allowing Kafka Connect users to tell apart log messages originating from different connectors deployed to the same Connect cluster.
 
 [NOTE]
 As far as propagating contextual information via log messages is concerned (as opposed to, say, error messages printed by a CLI tool),
@@ -109,7 +109,8 @@ Other than that, there's not too much to be said here;
 try to be efficient: make messages as long as needed, and as short as possible.
 One idea could be to work with different variants of messages for the same kind of error, a shorter and a longer one.
 Which one is used could be controlled via log levels or some kind of "verbose" flag.
-I haven't used such an approach yet, but it may be worth the effort for specific situations.
+Java developers may find Cédric Champeau's https://github.com/melix/jdoctor[jdoctor] library useful for implementing this.
+Personally, I haven't used such an approach yet, but it may be worth the effort for specific situations.
 
 == Mitigation
 
