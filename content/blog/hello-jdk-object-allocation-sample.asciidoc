@@ -1,0 +1,168 @@
+---
+title: "Hello, jdk.ObjectAllocationSample!"
+date: 2021-05-25T17:30:00+02:00
+draft: false
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+With OpenJDK shipping a release of every six months, packed with new API, language, and JVM features,
+it can sometimes be challenging to stay up-to-date and not miss out on any of the latest Java improvements.
+One little gem which may not have received as much attention as it perhaps should, is the new `jdk.ObjectAllocationSample` event type of the JDK Flight Recorder (JFR).
+
+Added in Java 16, this event type allows for the first time to use JFR for continuous allocation profiling _in production_,
+without any significant performance penalty or the risk of JFR recording files becoming impractically large.
+
+https://bugs.openjdk.java.net/browse/JDK-8257602
+
+== The Problem With TLAB Allocation Events
+
+Before diving more into the details of the new `jdk.ObjectAllocationSample` event type,
+let's first recap how object allocation could be tracked with JFR before,
+and what were the challenges doing so.
+
+As discussed in link:/blog/towards-continuous-performance-regression-testing/[Towards Continuous Performance Regression Testing],
+JFR 
+
+first thought may be heap dump, but it's not enough:
+don't see rate, don't see where
+
+<!--more-->
+
+=== Exploring `jdk.ObjectAllocationSample`
+
+For making ourselves acquainted with the new event type, let's start a new flight recording,
+taking one of the https://github.com/moditect/jfrunit-examples/[JfrUnit examples] as a basis.
+To follow along, check out the repository and then run one of the tests:
+
+[source,shell]
+----
+$ git@github.com:moditect/jfrunit-examples.git
+$ cd example-service
+$ mvn clean test -Dtest=TodoResourceMemoryAllocationTest#setupTodos,TodoResourceMemoryAllocationTest#retrieveTodoShouldYieldExpectedAllocation
+----
+
+In a separate shell, identify the process id of the running test (look for the Surefire booter JAR) and start a JFR recording for this process:
+
+[source,shell]
+----
+# Identify process id of running test
+$ jcmd | grep booter
+
+# Start a 10 sec recording for that process
+$ jcmd <PID> JFR.start name=\"Object allocation test\" duration=10s filename=object-allocation-test.jfr
+----
+
+Using the _jfr_ utility coming with the JDK, you can inspect the events of the `jdk.ObjectAllocationSample` type;
+its attributes are mostly self-descriptive:
+
+[source,shell]
+----
+$ jfr print --events jdk.ObjectAllocationSample objectallocationtest.jfr
+
+...
+jdk.ObjectAllocationSample {
+  startTime = 12:09:56.944 # <1>
+  objectClass = java.lang.Integer (classLoader = bootstrap) # <2>
+  weight = 1,4 kB # <3>
+  eventThread = "vert.x-eventloop-thread-20" (javaThreadId = 113) # <4>
+  stackTrace = [ # <5>
+    java.lang.Integer.valueOf(int) line: 1081
+    sun.nio.ch.KQueueSelectorImpl.processEvents(int, Consumer) line: 219
+    sun.nio.ch.KQueueSelectorImpl.doSelect(Consumer, long) line: 139
+    sun.nio.ch.SelectorImpl.lockAndDoSelect(Consumer, long) line: 129
+    sun.nio.ch.SelectorImpl.select(long) line: 141
+    ...
+  ]
+}
+...
+----
+<1> The time of the event
+<2> The type of the object allocated
+<3> Total amount of memory allocated since the last event was sampled
+<4> The thread triggering the allocation
+<5> The stacktrace of the allocation, identifying where in the code the allocation happened
+
+Via the `weight` and `stackTrace` attributes, it's possible to identify those parts of an application which allocate lots of objects and thus may be good starting points for optimizations in order to reduce GC pressure.
+
+When summing up the `weight` values of a recording, you'll get the overall number of bytes allocated during that run.
+As such, the value should be pretty similar to the number you'd get from the TLAB allocation events.
+
+[source,java]
+----
+----
+
+== `jdk.ObjectAllocationSample` and JDK Mission Control
+
+Instead of analysing JFR data on the command line using the _jfr_ tool,
+most users will prefer to use JDK Mission Control for doing so.
+The current stable version of JMC, 8.0, doesn't support the object allocation sample event type yet.
+At the same time, the legacy event types `jdk.ObjectAllocationInNewTLAB` and `jdk.ObjectAllocationOutsideTLAB` are disabled in the two built-in JFR recording configurations "default" and "profile" as of Java 16.
+Implications of this may be slightly confusing at first,
+in particular when upgrading from earlier Java versions,
+where the two TLAB events were enabled in the "profile" configuration.
+Now, when using JMC 8.0 to analyse a recording based on either of the configurations built into Java 16,
+you'll see no allocation data in the "Memory" or "TLAB Allocations" views.
+
+But good news is that the feature already has https://github.com/openjdk/jmc/pull/244[been implemented] (shout out to https://twitter.com/jpbempel[Jean-Philippe Bempel]!) and will be part of the upcoming JMC 8.1 release.
+JMC 8.1 is in ramp-down phase right now, with the GA release https://twitter.com/hirt/status/1404163457562337283[scheduled for August 2nd].
+In order to use the feature right now, you either have to build JMC from https://github.com/openjdk/jmc[source] yourself,
+or use the https://adoptopenjdk.net/jmc.html[JMC preview builds] provided by the AdoptOpenJDK project.
+The currently published preview builds already come with support for the new event type.
+
+If you open a JFR recording with `jdk.ObjectAllocationSample` events in JMC 8.1,
+you'll see the allocation data in the "Memory" view:
+
+Unlike with the earlier TLAB events, that's the case with both the "profile" and the "default" JFR configurations,
+underscoring the point that the new event type is meant for always-on style allocation profiling.
+
+Note that no data is displayed in the "TLAB Allocations" view,
+which exclusively is sourced from the the TLAB events.
+
+== Performance Impact
+
+== Rate Limiting Custom Events
+
+While the `jdk.ObjectAllocationSample` event type is the first JFR event type to use a rate-limited sampling strategy,
+other event types may follow that pattern in future JDK releases.
+The rate limiter is implemented in a generic way, so it could be used for other event types too.
+Unfortunately, as of JDK 16, this is not supported for custom, user-defined event types, though
+(if you want this to become an officially supported JDK capability, make sure to raise your voice on the JFR dev mailing list for instance,
+as JFR developer Eric Gahlin indicated this to https://twitter.com/ErikGahlin/status/1395760416907743234[be a possibility],
+provided there's reasonable interest)
+This doesn't mean you'll have to start from scratch though if you wanted to rate-limit some custom event type:
+DataDog's https://github.com/DataDog/dd-trace-java[tracing library] contains an https://github.com/DataDog/dd-trace-java/blob/master/internal-api/internal-api-8/src/main/java/datadog/trace/api/sampling/AdaptiveSampler.java[adaptive sampler class], which essentially is the template for the JDK-internal implementation.
+While this library is meant to be used with DataDog's https://docs.datadoghq.com/tracing/setup_overview/setup/java/?tab=containers[APM product],
+it is licensed under the Apache 2.0 license, so nothing speaks against using this class just for sampling your custom JFR events.
+Here's an example how this could look like:
+
+sampling budget
+https://withent.blogspot.com/2021/01/improved-jfr-allocation-profiling-in.html
+
+Shenandoah
+
+[NOTE]
+.JEP 331: Low-Overhead Heap Profiling
+====
+Another interesting approach for profiling object allocations was introduced in Java 11 with https://openjdk.java.net/jeps/331[JEP 331].
+This JEP defines a new event and callback method `SampledObjectAlloc` for https://docs.oracle.com/en/java/javase/16/docs/specs/jvmti.html[JVMTI] (JVM Tool Interface),
+allowing for allocation tracking via agents attached to the JVM.
+Both approaches enable efficient object allocation sampling of applications running in production,
+with some small differences in terms of semantics and capabilities.
+While sampling is based on event rate with the new JFR event type ("sample every n milliseconds"),
+sampling is done based on allocation size in JEP 331  ("sample every n allocated bytes").
+The JVMTI-based approach also allows to enable sampling only for specific threads,
+whereas the JFR event type is globally enabled or disabled.
+
+JEP 331 is utilized by profilers such as https://www.yourkit.com/changes/yjp_2019_1.jsp[YourKit].
+While async-profiler does not support it yet (there's a pending https://github.com/jvm-profiling-tools/async-profiler/issues/169[feature request] for adding this),
+you can find an https://github.com/odnoklassniki/jvmti-tools/blob/master/heapsampler/heapsampler.cpp[example implementation] for using `SampledObjectAlloc` in the https://github.com/odnoklassniki/jvmti-tools[jvmti-tools] project by Andrei Pangin,
+the author of async-profiler.
+====
+
+https://twitter.com/hirt/status/1404163457562337283[August 2nd]
