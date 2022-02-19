@@ -1,0 +1,112 @@
+---
+title: "The JDK Flight Recorder File Format"
+date: 2022-02-20T21:15:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+The https://openjdk.java.net/jeps/328[JDK Flight Recorder] (JFR) is one of Java's secret weapons;
+deeply integrated into the Hotspot VM, it's a high-performance event collection framework,
+which lets you collect metrics on runtime aspects like object allocation and garbage collection,
+class loading, file and network I/O, and lock contention, do method profiling, and much more.
+
+JFR data is persisted in recording files
+(since Java 14, also https://openjdk.java.net/jeps/349["realtime" event streaming] is supported),
+which can be loaded for analysis into tools like JDK Mission Control (JMC),
+or the _jfr_ utility coming with OpenJDK itself.
+
+<!--more-->
+
+While there's lots of blog posts, conference talks, and other coverage on JFR itself,
+information about the format of recording files is surprisingly heard to come by.
+There is no official specification,
+so the only way to actually understand the JFR file format is to read the source code for writing recordings in the JDK itself,
+which is a combination of https://github.com/openjdk/jdk/tree/master/src/jdk.jfr/share/classes/jdk/jfr/internal[Java] and https://github.com/openjdk/jdk/tree/jdk-17%2B35/src/hotspot/share/jfr/recorder[C++ code].
+Alternatively, you can study the code for https://github.com/openjdk/jmc/tree/master/core/org.openjdk.jmc.flightrecorder[parsing recordings] in JMC (an official JDK project).
+Btw., JMC comes with a pure Java-based JFR file https://github.com/openjdk/jmc/tree/master/core/org.openjdk.jmc.flightrecorder.writer[writer implementation] too.
+
+Apart from the source code itself,
+the only other somewhat related resources are several http://hirt.se/blog/?tag=jfr[JFR-related blog posts] by Marcus Hirt,
+and a post https://richardstartin.github.io/posts/jfr-event-sizes[about JFR event sizes] by Richard Startin.
+But there's no in-depth discussion or explanation of the file format.
+As it turns out, all this by design;
+the OpenJDK team shied away https://twitter.com/ErikGahlin/status/1495338682651402242[from creating a spec],
+"because of the overhead of maintaining and staying compatible with it".
+I.e. the JFR file format is an implementation detail of OpenJDK,
+and as such the only stable contract for interacting with it are the APIs provided by JFR.
+
+Now, also if it is an implementation detail, knowing more about the JFR file format is certainly useful,
+as for instance it would allow to implement tools for analyzing and visualizing JFR data in non-JVM programming languages,
+say Python.
+So my curiosity was piqued and I thought it'd be fun to try and find out how JFR recording files are structured.
+In particular, I was curious about which techniques are used for keeping files relatively small,
+also with hundreds of thousands or even millions of recoreded events.
+
+I grabbed a hex editor, the source code of JMC's recording parser
+(which I found a bit easier to grasp than the Java/C++ hybrid in the JDK itself),
+and loaded several example recordings from my https://github.com/moditect/jfr-analytics[JFR Analytic]s project,
+stepping through the parser code in debug mode
+(fun fact: while doing so, I noticed JMC currently fails to parse events with https://github.com/openjdk/jmc/pull/378[`char` attributes]).
+
+Just a feeew hours later, and I largely understood how the thing works.
+As an image says more than a thousand words,
+and I'll never say no to an opportunity to draw something in the fabuluous https://excalidraw.com/[Excalidraw],
+here's a visualization of the JFR file format as per my understanding
+(click to enlarge):
+
+image::jfr_file_format.png[]
+
+It's best viewed on a big screen 😎.
+Alternatively, here's a link:/images/jfr_file_format.svg[SVG version, window="_blank"].
+Now this doesn't go into all the finest aspects,
+so you probably couldn't go off and implement a clean-room JFR file parser solely based on this.
+But it does show the relevant concepts and mechanisms.
+I suggest you spend some time going through sections one to five in the picture,
+and dive into the sections for header, metadata, constant pool, and actual recorded events.
+Studying the image should give you a good understanding of the JFR file format and its structure.
+
+Here are some observations I made as I found my way through the file format:
+
+* _JFR recordings are organized in chunks:_ Chunks are self-contained independent containers of recorded events and all the metadata required for interpreting these events.
+A multi-chunk recording file can be split up into the individual chunks using the https://docs.oracle.com/en/java/javase/17/docs/specs/man/jfr.html[_jfr_] utility which comes with OpenJDK:
++
+[source,xml,linenums=true]
+----
+jfr disassemble --output <target-dir> some-recording.jfr
+----
++
+The default chunksize is 12MB, but if needed, you can override this, e.g. using the `-XX:FlightRecorderOptions:maxchunksize=1MB` option when starting a recording.
+A smaller chunk size can come in handy if for instance you only want to transmit a specific section of a long-running recording.
+On the other hand, many small chunks will increase the overall size of a recording,
+due to the repeatedly stored metadata and constant pools
+* _The event format is self-descriptive:_ The metadata part of each chunk describes the structure of the contained events, all referenced types, their attributes, etc.; by means of JFR https://docs.oracle.com/en/java/javase/17/docs/api/jdk.jfr/jdk/jfr/MetadataDefinition.html[metadata annotations], such as `@Label`, `@Description`, `@Timestamp` etc., further metadata like human-readable names and description as well as units of measurements are expressed,
+allowing to consume and parse an event stream without a-priori knowledge of specific event types. In particular, this allows for the definition of link:/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/[custom event types] and displaying them in the generic event browser of JMC (of course, bespoke views such as the "Memory" view rely on type-specific interpretations of individual event types)
+* _The format is geared towards space efficiency:_ Integer values are stored in a variable-length encoded way (https://en.wikipedia.org/wiki/LEB128[LEB128]), which will safe lots of space when storing small values.
+A constant pool is used to store repeatedly referenced objects, such as String literals,
+stack traces, class and method names, etc.;
+for each usage of such constant in a recorded event, only the constant pool index is stored
+(a var-length encoded `long`).
+Note that Strings can either be stored as raw values within events themselves, or in the constant pool. Unfortunately, no control is provided for choosing between the two; strings with a length between 16 and 128 will be stored in the constant pool, any others as raw value. It could be a nice extension to give event authors more control here, e.g. by means of an annotation on the event attribute definition
+
+[NOTE]
+When using the `jdk.OldObjectSample` event type,
+beware of bug https://bugs.openjdk.java.net/browse/JDK-8277919[JDK-8277919],
+which may cause a bloat of the constant pool,
+as the same entry is duplicated in the pool many times.
+This will be fixed in Java 17.0.3 and 18.
+
+* _The format is row-based:_ Events are stored sequentially one after another in recording files; this means that for instance boolean attributes will consume one full byte, also if actually eight boolean values could be stored in a single byte.
+It could be interesting to explore a columnar format as an alternative,
+which may help to further reduce recording size,
+for instance also allowing to efficiently compress event timestamps values using https://en.wikipedia.org/wiki/Delta_encoding[delta-encoding]
+* _Compression support in JMC reader implementation:_ The JFR parser implementation of JMC transparently unpacks recording files which are compressed using GZip, ZIP, or LZ4
+(Marcus Hirt discusses the compression of JFR recordings in http://hirt.se/blog/?p=1166[this post]).
+Interestingly, JMC 8.1 still failed to open such compressed recording with an error message.
+The _jfr_ utility doesn't support compressed recording files, and I suppose the JFR writer in the JDK doesn't produce compressed recordings either
