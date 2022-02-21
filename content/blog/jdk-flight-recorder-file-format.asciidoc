@@ -42,9 +42,9 @@ the OpenJDK team shied away https://twitter.com/ErikGahlin/status/14953386826514
 I.e. the JFR file format is an implementation detail of OpenJDK,
 and as such the only stable contract for interacting with it are the APIs provided by JFR.
 
-Now, also if it is an implementation detail, knowing more about the JFR file format is certainly useful,
-as for instance it would allow to implement tools for analyzing and visualizing JFR data in non-JVM programming languages,
-say Python.
+Now, also if it is an implementation detail, knowing more about the JFR file format would certainly be useful;
+for instance, you could use this to implement tools for analyzing and visualizing JFR data in non-JVM programming languages,
+say Python, or to patch corrupted recording files.
 So my curiosity was piqued and I thought it'd be fun to try and find out how JFR recording files are structured.
 In particular, I was curious about which techniques are used for keeping files relatively small,
 also with hundreds of thousands or even millions of recoreded events.
@@ -58,7 +58,7 @@ stepping through the parser code in debug mode
 Just a feeew hours later, and I largely understood how the thing works.
 As an image says more than a thousand words,
 and I'll never say no to an opportunity to draw something in the fabuluous https://excalidraw.com/[Excalidraw],
-here's a visualization of the JFR file format as per my understanding
+so I proudly present to you this visualization of the JFR file format as per my understanding
 (click to enlarge):
 
 image::jfr_file_format.png[]
@@ -75,6 +75,7 @@ Studying the image should give you a good understanding of the JFR file format a
 Here are some observations I made as I found my way through the file format:
 
 * _JFR recordings are organized in chunks:_ Chunks are self-contained independent containers of recorded events and all the metadata required for interpreting these events.
+There's no additional content in recordings besides the chunks, i.e. https://twitter.com/BriceDutheil/status/1495506834387619847[concat several chunk files], and you'll have a JFR recording file.
 A multi-chunk recording file can be split up into the individual chunks using the https://docs.oracle.com/en/java/javase/17/docs/specs/man/jfr.html[_jfr_] utility which comes with OpenJDK:
 +
 [source,xml,linenums=true]
