@@ -274,9 +274,9 @@ I.e. the JFR file format is an implementation detail of OpenJDK,
 and as such the only stable contract for interacting with it are the APIs provided by JFR.</p>
 </div>
 <div class="paragraph">
-<p>Now, also if it is an implementation detail, knowing more about the JFR file format is certainly useful,
-as for instance it would allow to implement tools for analyzing and visualizing JFR data in non-JVM programming languages,
-say Python.
+<p>Now, also if it is an implementation detail, knowing more about the JFR file format would certainly be useful;
+for instance, you could use this to implement tools for analyzing and visualizing JFR data in non-JVM programming languages,
+say Python, or to patch corrupted recording files.
 So my curiosity was piqued and I thought it&#8217;d be fun to try and find out how JFR recording files are structured.
 In particular, I was curious about which techniques are used for keeping files relatively small,
 also with hundreds of thousands or even millions of recoreded events.</p>
@@ -292,7 +292,7 @@ stepping through the parser code in debug mode
 <p>Just a feeew hours later, and I largely understood how the thing works.
 As an image says more than a thousand words,
 and I&#8217;ll never say no to an opportunity to draw something in the fabuluous <a href="https://excalidraw.com/">Excalidraw</a>,
-here&#8217;s a visualization of the JFR file format as per my understanding
+so I proudly present to you this visualization of the JFR file format as per my understanding
 (click to enlarge):</p>
 </div>
 <div class="imageblock">
@@ -317,6 +317,7 @@ Studying the image should give you a good understanding of the JFR file format a
 <ul>
 <li>
 <p><em>JFR recordings are organized in chunks:</em> Chunks are self-contained independent containers of recorded events and all the metadata required for interpreting these events.
+There&#8217;s no additional content in recordings besides the chunks, i.e. <a href="https://twitter.com/BriceDutheil/status/1495506834387619847">concat several chunk files</a>, and you&#8217;ll have a JFR recording file.
 A multi-chunk recording file can be split up into the individual chunks using the <a href="https://docs.oracle.com/en/java/javase/17/docs/specs/man/jfr.html"><em>jfr</em></a> utility which comes with OpenJDK:</p>
 <div class="listingblock">
 <div class="content">
