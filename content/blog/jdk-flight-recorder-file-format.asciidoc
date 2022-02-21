@@ -33,10 +33,11 @@ Alternatively, you can study the code for https://github.com/openjdk/jmc/tree/ma
 Btw., JMC comes with a pure Java-based JFR file https://github.com/openjdk/jmc/tree/master/core/org.openjdk.jmc.flightrecorder.writer[writer implementation] too.
 
 Apart from the source code itself,
-the only other somewhat related resources are several http://hirt.se/blog/?tag=jfr[JFR-related blog posts] by Marcus Hirt,
+the only somewhat related resources which I could find are this https://www.slideshare.net/stalar/con5091-larsen-jfr[JavaOne presentation] by Staffan Larssan (2013, still referring to the proprietary Oracle JFR),
+several http://hirt.se/blog/?tag=jfr[JFR-related blog posts] by Marcus Hirt,
 and a post https://richardstartin.github.io/posts/jfr-event-sizes[about JFR event sizes] by Richard Startin.
 But there's no in-depth discussion or explanation of the file format.
-As it turns out, all this by design;
+As it turns out, this by design;
 the OpenJDK team shied away https://twitter.com/ErikGahlin/status/1495338682651402242[from creating a spec],
 "because of the overhead of maintaining and staying compatible with it".
 I.e. the JFR file format is an implementation detail of OpenJDK,
@@ -51,7 +52,7 @@ also with hundreds of thousands or even millions of recoreded events.
 
 I grabbed a hex editor, the source code of JMC's recording parser
 (which I found a bit easier to grasp than the Java/C++ hybrid in the JDK itself),
-and loaded several example recordings from my https://github.com/moditect/jfr-analytics[JFR Analytic]s project,
+and loaded several example recordings from my https://github.com/moditect/jfr-analytics[JFR Analytics] project,
 stepping through the parser code in debug mode
 (fun fact: while doing so, I noticed JMC currently fails to parse events with https://github.com/openjdk/jmc/pull/378[`char` attributes]).
 
