@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Running JDK Mission Control on Apple M1 - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Running JDK Mission Control on Apple M1" />
+<meta property="og:description" content="JDK Mission Control (JMC) is invaluable for analysing performance data recording using JDK Flight Recorder (JFR). The other day, I ran into a problem when trying to run JMC on my Mac Mini M1. Mostly for my own reference, here&#8217;s what I did to overcome it.
+ Upon launching a freshly downloaded JMC (I tried both the upstream build from OpenJDK and the one from the Eclipse Adoptium project), I&#8217;d get the following error message:" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/running-jmc-on-apple-m1/" />
+<meta property="article:published_time" content="2022-05-17T09:20:00+01:00" />
+<meta property="article:modified_time" content="2022-05-17T09:20:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Running JDK Mission Control on Apple M1"/>
+<meta name="twitter:description" content="JDK Mission Control (JMC) is invaluable for analysing performance data recording using JDK Flight Recorder (JFR). The other day, I ran into a problem when trying to run JMC on my Mac Mini M1. Mostly for my own reference, here&#8217;s what I did to overcome it.
+ Upon launching a freshly downloaded JMC (I tried both the upstream build from OpenJDK and the one from the Eclipse Adoptium project), I&#8217;d get the following error message:"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search.gunnar-morling.workers.dev\/Prod\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Running JDK Mission Control on Apple M1</h1>
+				<div class="meta">Posted at May 17, 2022</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p><a href="https://jdk.java.net/jmc/8/">JDK Mission Control</a> (JMC) is invaluable for analysing performance data recording using <a href="https://openjdk.java.net/jeps/328">JDK Flight Recorder</a> (JFR).
+The other day, I ran into a problem when trying to run JMC on my Mac Mini M1.
+Mostly for my own reference, here&#8217;s what I did to overcome it.</p>
+</div>
+<div class="paragraph">
+<p>Upon launching a freshly downloaded JMC (I tried both the upstream build from OpenJDK and the one from the <a href="https://adoptium.net/de/jmc/">Eclipse Adoptium project</a>),
+I&#8217;d get the following error message:</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>The JVM shared library "/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home/bin/../lib/server/libjvm.dylib"
+does not contain the JNI_CreateJavaVM symbol.</p>
+</div>
+</blockquote>
+</div>
+<div class="paragraph">
+<p>"temurin-17.jdk" is my default JDK; it&#8217;s the Java 17 build provided by the <a href="https://projects.eclipse.org/projects/adoptium.temurin">Eclipse Temurin</a> project for macOS/AArch64, i.e. the right one for the ARM chip of the M1 ("Apple silicon").
+The error message isn&#8217;t overly helpful; after all, that referenced JDK works just fine for all my other applications.
+The problem though is that JMC itself currently only is shipped as an x64 application:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre>$ file "JDK Mission Control.app"/Contents/MacOS/jmc
+.../JDK Mission Control.app/Contents/MacOS/jmc: Mach-O 64-bit executable x86_64
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>So I decided to try with an x64 JDK build instead;
+thanks to Apple&#8217;s <a href="https://support.apple.com/en-gb/HT211861">Rosetta</a> project, x64 binaries can be executed on the M1 via a rather efficient emulation.</p>
+</div>
+<div class="paragraph">
+<p>After downloading the macOS/x64 Temurin build,
+it needs to be configured as the JDK to use for JMC.
+For that, open the file <em>JDK Mission Control.app/Contents/Info.plist</em> in an editor and look for the <code>Eclipse</code> key.
+Add the <code>-vm</code> parameter with the path to the x64 JDK to the key&#8217;s value.
+Altogether, it should look like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre>...
+<span class="nt">&lt;array&gt;</span>
+  <span class="nt">&lt;string&gt;</span>-keyring<span class="nt">&lt;/string&gt;</span>
+  <span class="nt">&lt;string&gt;</span>~/.eclipse_keyring<span class="nt">&lt;/string&gt;</span>
+  <span class="nt">&lt;string&gt;</span>-vm<span class="nt">&lt;/string&gt;</span>
+  <span class="nt">&lt;string&gt;</span>/path/to/jdk-17.0.3+7-x86-64/Contents/Home/bin/java<span class="nt">&lt;/string&gt;</span>
+<span class="nt">&lt;/array&gt;</span>
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Et voilà, JMC will now start just fine on the Apple M1.
+Note that in some cases I got an intermittent permission issue after editing the plist file.
+Resetting the permissions helped in that case:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>$ sudo chmod -R 755 "JDK Mission Control.app"
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With the x64 JDK around, it&#8217;s a good idea to make sure it&#8217;s only used for JMC,
+while sticking to the AArch64 build for all other usages for the sake of performance.
+Unfortunately, it&#8217;s not quite obvious to see flavour you are running, as the target architecture isn&#8217;t displayed in the output of <em>java --version</em>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+</pre></td><td class="code"><pre>$ export JAVA_HOME=path/to/temurin-17.jdk/Contents/Home
+$ java --version
+openjdk 17.0.3 2022-04-19
+OpenJDK Runtime Environment Temurin-17.0.3+7 (build 17.0.3+7)
+OpenJDK 64-Bit Server VM Temurin-17.0.3+7 (build 17.0.3+7, mixed mode)
+
+$ export JAVA_HOME=path/to/jdk-17.0.3+7-x86-64/Contents/Home
+$ jdks java --version
+openjdk 17.0.3 2022-04-19
+OpenJDK Runtime Environment Temurin-17.0.3+7 (build 17.0.3+7)
+OpenJDK 64-Bit Server VM Temurin-17.0.3+7 (build 17.0.3+7, mixed mode, sharing)
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Not sure what "sharing" exactly means in the x64 output, perhaps it&#8217;s a hint?
+In any case, printing the contents of the <code>os.arch</code> system property will tell the truth, e.g. in <em>jshell</em>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre>$ export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
+$ jdks jshell
+|  Welcome to JShell -- Version 17.0.3
+|  For an introduction type: /help intro
+
+jshell&gt; System.out.println(System.getProperty("os.arch"))
+aarch64
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre>$ export JAVA_HOME=~/Applications/jdks/jdk-17.0.3+7-x86-64/Contents/Home
+$ jshell
+|  Welcome to JShell -- Version 17.0.3
+|  For an introduction type: /help intro
+
+jshell&gt; System.out.println(System.getProperty("os.arch"))
+x86_64
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you are aware of a quicker way for identifying the current JDK&#8217;s target platform,
+I&#8217;d love to learn about it in the comments below.
+Thanks!</p>
+</div>
+
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2021 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
