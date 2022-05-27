@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Loom and Thread Fairness - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Loom and Thread Fairness" />
+<meta property="og:description" content="
+Project Loom (JEP 425) is probably amongst the most awaited feature additions to Java ever;
+its implementation of virtual threads (or &#34;green threads&#34;) promises to developers the ability to create highly concurrent applications,
+for instance with hundreds of thousands of open HTTP connections,
+using the well-known thread-per-request programming model,
+without having to resort to less familiar and often more complex to use reactive approaches.
+
+
+Having been in the workings for several years, Loom got merged into the mainline of OpenJDK just recently and is available as a preview feature in the latest Java 19 early access builds.
+I.e. it&#8217;s the perfect time for everyone to get your hands onto virtual threads and explore the new feature.
+In this post I&#8217;m going to share an interesting aspect I learned about thread scheduling fairness for CPU-bound workloads running on Loom.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/loom-and-thread-fairness/" />
+<meta property="article:published_time" content="2022-05-27T09:20:00+01:00" />
+<meta property="article:modified_time" content="2022-05-27T09:20:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Loom and Thread Fairness"/>
+<meta name="twitter:description" content="
+Project Loom (JEP 425) is probably amongst the most awaited feature additions to Java ever;
+its implementation of virtual threads (or &#34;green threads&#34;) promises to developers the ability to create highly concurrent applications,
+for instance with hundreds of thousands of open HTTP connections,
+using the well-known thread-per-request programming model,
+without having to resort to less familiar and often more complex to use reactive approaches.
+
+
+Having been in the workings for several years, Loom got merged into the mainline of OpenJDK just recently and is available as a preview feature in the latest Java 19 early access builds.
+I.e. it&#8217;s the perfect time for everyone to get your hands onto virtual threads and explore the new feature.
+In this post I&#8217;m going to share an interesting aspect I learned about thread scheduling fairness for CPU-bound workloads running on Loom.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search.gunnar-morling.workers.dev\/Prod\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Loom and Thread Fairness</h1>
+				<div class="meta">Posted at May 27, 2022</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>Project Loom (<a href="https://openjdk.java.net/jeps/425">JEP 425</a>) is probably amongst the most awaited feature additions to Java ever;
+its implementation of virtual threads (or "green threads") promises to developers the ability to create highly concurrent applications,
+for instance with hundreds of thousands of open HTTP connections,
+using the well-known thread-per-request programming model,
+without having to resort to less familiar and often more complex to use reactive approaches.</p>
+</div>
+<div class="paragraph">
+<p>Having been in the workings for several years, Loom got merged into the mainline of OpenJDK <a href="https://github.com/openjdk/jdk/commit/9583e3657e43cc1c6f2101a64534564db2a9bd84">just recently</a> and is available as a preview feature in the latest <a href="https://jdk.java.net/19/">Java 19 early access builds</a>.
+I.e. it&#8217;s the perfect time for everyone to get your hands onto virtual threads and explore the new feature.
+In this post I&#8217;m going to share an interesting aspect I learned about thread scheduling fairness for CPU-bound workloads running on Loom.</p>
+</div>
+<div class="sect1">
+<h2 id="_project_loom">Project Loom</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>First, some context.
+The problem with the classic thread-per-request model is that only scales up to a certain point.
+Threads managed by the operating system are a costly resource, which means you can typically have at most a few thousands of them,
+but not hundreds of thousands, or even millions.
+Now, if for instance a web application makes a blocking request to a database,
+the thread making that request is exactly that, blocked.
+Of course other threads can be scheduled on the CPU in the meantime,
+but we cannot have more concurrent requests than threads available to us.</p>
+</div>
+<div class="paragraph">
+<p><a href="https://developers.redhat.com/blog/2017/06/30/5-things-to-know-about-reactive-programming">Reactive programming models</a> address this limitation by releasing threads upon blocking operations such as IO,
+allowing other requests to be processed in the meantime.
+Once a blocking call has completed,
+the request in question will be continued, using a thread again.
+This model makes much more efficient use of the threads resource for IO-bound workloads,
+unfortunately at the price of a more involved programming model, which doesn&#8217;t feel familiar to many developers.
+Also aspects like debuggability or observability can be more challenging with reactive models,
+as described in the Loom JEP.</p>
+</div>
+<div class="paragraph">
+<p>This explains the huge excitement and anticipation of Project Loom within the Java community.
+Loom introduces a notion of <em>virtual threads</em> which are scheduled onto OS-level <em>carrier threads</em> by the JVM.
+If application code hits a blocking method,
+Loom will <em>unmount</em> the virtual thread from its curring carrier,
+making space for other virtual threads to be scheduled.
+Virtual threads are cheap and managed by the JVM,
+i.e. we can have many of them, even millions.
+The beauty of the model is that developers can stick to the familiar thread-per-request programming model without running into issues due to a limited number of available threads.
+I highly recommend you to read the <a href="https://openjdk.java.net/jeps/425">JEP of Project Loom</a>,
+which is very well written and provides much more details and context.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_scheduling">Scheduling</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now how does Loom&#8217;s scheduler  know that a method is blocking?
+Turns out, it doesn&#8217;t.
+As I learned from <a href="https://twitter.com/pressron/">Ron Pressler</a>, the main author of Project Loom,
+it&#8217;s the other way around:
+blocking methods in the JDK have been adjusted for Loom,
+so as to release the OS-level carrier thread when being called by a virtual thread:</p>
+</div>
+<div align="center">
+<blockquote class="twitter-tweet" data-conversation="none" data-dnt="true"><p lang="en" dir="ltr">All blocking in Java is done through the JDK (unless you explicitly call native code). We changed the &quot;leaf&quot; blocking methods in the JDK to block the virtual thread rather than the platform thread. E.g. in all of java.util.concurrent there&#39;s just one such method: LockSupport.park</p>&mdash; Ron Pressler (@pressron) <a href="https://twitter.com/pressron/status/1529194463242989568?ref_src=twsrc%5Etfw">May 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+<div class="paragraph">
+<p>Ron&#8217;s reply triggered a very <a href="https://twitter.com/timfox/status/1529804141140262913">interesting discussion</a> with <a href="https://twitter.com/timfox">Tim Fox</a> (e.g. of Vert.x fame):
+what happens if code is not IO-bound but CPU-bound?
+I.e. if code in a virtual thread runs some heavy calculation without ever calling any of the JDK&#8217;s blocking methods,
+will that virtual thread ever be unmounted?</p>
+</div>
+<div class="paragraph">
+<p>Perhaps surprisingly, the answer currently is: No.
+Which means that CPU-bound code will actually behave very differently with virtual threads than with OS-level threads.
+So let&#8217;s take a closer look at that phenomenon with the following example program:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LoomTest</span> <span class="o">{</span>
+
+  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">long</span> <span class="n">blackHole</span><span class="o">;</span>
+
+  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+    <span class="nc">ExecutorService</span> <span class="n">executor</span> <span class="o">=</span> <span class="nc">Executors</span><span class="o">.</span><span class="na">newCachedThreadPool</span><span class="o">();</span>
+
+    <span class="k">for</span><span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">64</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+      <span class="kd">final</span> <span class="nc">Instant</span> <span class="n">start</span> <span class="o">=</span> <span class="nc">Instant</span><span class="o">.</span><span class="na">now</span><span class="o">();</span>
+      <span class="kd">final</span> <span class="kt">int</span> <span class="n">id</span> <span class="o">=</span> <span class="n">i</span><span class="o">;</span>
+
+      <span class="n">executor</span><span class="o">.</span><span class="na">submit</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+        <span class="nc">BigInteger</span> <span class="n">res</span> <span class="o">=</span> <span class="nc">BigInteger</span><span class="o">.</span><span class="na">ZERO</span><span class="o">;</span>
+
+        <span class="k">for</span><span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="mi">100_000_000</span><span class="o">;</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
+          <span class="n">res</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="nc">BigInteger</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">1L</span><span class="o">));</span>
+        <span class="o">}</span>
+
+        <span class="n">blackHole</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="na">longValue</span><span class="o">();</span>
+
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">id</span> <span class="o">+</span> <span class="s">";"</span> <span class="o">+</span>
+            <span class="nc">Duration</span><span class="o">.</span><span class="na">between</span><span class="o">(</span><span class="n">start</span><span class="o">,</span> <span class="nc">Instant</span><span class="o">.</span><span class="na">now</span><span class="o">()).</span><span class="na">toMillis</span><span class="o">());</span>
+      <span class="o">});</span>
+    <span class="o">}</span>
+
+    <span class="n">executor</span><span class="o">.</span><span class="na">shutdown</span><span class="o">();</span>
+    <span class="n">executor</span><span class="o">.</span><span class="na">awaitTermination</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="nc">TimeUnit</span><span class="o">.</span><span class="na">HOURS</span><span class="o">);</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>64 threads are started at approximately the same time using a traditional <a href="https://download.java.net/java/early_access/jdk19/docs/api/java.base/java/util/concurrent/Executors.html#newCachedThreadPool()">cached thread pool</a>,
+i.e. OS-level threads.
+Each thread counts to 100M (using <code>BigInteger</code> to make it a bit more CPU-intensive) and then prints out how long it took from scheduling
+the thread to the point of its completion.
+Here are the results from my Mac Mini M1:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/loom_scheduling_os.png" alt="loom scheduling os">
+</div>
+</div>
+<div class="paragraph">
+<p>In wallclock time, it took all the 64 threads roughly 16 seconds to complete.
+The threads are rather equally scheduled between the available cores of my machine.
+I.e. we&#8217;re observing a <em>fair scheduling scheme</em>.
+Now here are the results using virtual threads (by obtaining the executor via <a href="https://download.java.net/java/early_access/jdk19/docs/api/java.base/java/util/concurrent/Executors.html#newVirtualThreadPerTaskExecutor()"><code>Executors::newVirtualThreadPerTaskExecutor()</code></a>):</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/loom_scheduling_virtual.png" alt="loom scheduling virtual">
+</div>
+</div>
+<div class="paragraph">
+<p>That chart looks very differently.
+The first eight threads took a wallclock time of about two seconds to complete,
+the next eight took about four seconds, etc.
+As the executed code doesn&#8217;t hit any of the JDK&#8217;s blocking methods,
+the threads never yield and thus ursurpate their carrier threads until they have run to completion.
+This represents an <em>unfair scheduling scheme</em> of the threads.
+While they were all started at the same time,
+for the first two seconds only eight of them were actually executed,
+followed by the next eight, and so on.</p>
+</div>
+<div class="paragraph">
+<p>Loom&#8217;s scheduler uses by default as many carrier threads as there are CPU cores available;
+There are eight cores in my M1, so processing happens in chunks of eight virtual threads at a time.
+Using the <code>jdk.virtualThreadScheduler.parallelism</code>, the number of carrier threads can be adjusted, e.g. to 16:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/loom_scheduling_virtual_16.png" alt="loom scheduling virtual 16">
+</div>
+</div>
+<div class="paragraph">
+<p>For the fun of it, let&#8217;s add a call to <code>Thread::sleep()</code> to the processing loop and see what happens:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="o">...</span>
+<span class="k">for</span><span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="mi">100_000_000</span><span class="o">;</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
+  <span class="n">res</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="nc">BigInteger</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">1L</span><span class="o">));</span>
+  <span class="k">if</span> <span class="o">(</span><span class="n">j</span> <span class="o">%</span> <span class="mi">1_000_000</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">try</span> <span class="o">{</span>
+      <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">1L</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="k">catch</span> <span class="o">(</span><span class="nc">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+<span class="o">...</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Surely enough, we&#8217;re back to a fair scheduling, with all threads completing after the same wallclock time:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/loom_scheduling_virtual_sleep.png" alt="loom scheduling virtual sleep">
+</div>
+</div>
+<div class="paragraph">
+<p>It&#8217;s noteworthy that the actual durations appear more harmonized in comparison to the original results we got from running with 64 OS-level threads.
+It seems the Loom scheduler can do a slightly better job of distributing the available resources between virtual threads.
+Surprisingly, a call to <a href="https://download.java.net/java/early_access/jdk19/docs/api/java.base/java/lang/Thread.html#yield()"><code>Thread::yield()</code></a> didn&#8217;t have the same result.
+While a scheduler is free to ignore this intend to yield as per the method&#8217;s JavaDoc,
+Sundararajan Athijegannathan  <a href="https://twitter.com/sundararajan_a/status/1529796364733136896">indicated</a> that this would be applied by Loom.
+It would surely be interesting to know why that&#8217;s not the case here.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_discussion">Discussion</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Seeing these results, the big question of course is whether this unfair scheduling of IO-bound threads in Loom poses a problem in practice or not.
+Ron and Tim had an <a href="https://twitter.com/timfox/status/1529804141140262913">expanded debate</a> on that point,
+which I recommend you check out to form an opinion yourself.
+As per Ron,
+support for yielding at points in program execution other than blocking methods has <a href="https://twitter.com/pressron/status/1529816395025764352">been implemented</a> in Loom already,
+but this hasn&#8217;t been merged into the mainline with the initial drop of Loom.
+It should be easy enough though to bring this back if the current behavior turns out to be problematic.</p>
+</div>
+<div class="paragraph">
+<p>Now there&#8217;s not much point in overcommitting to more threads than physically supported by a given CPU anyways for CPU-bound code anyways (nor in using virtual threads to begin with).
+But in any case it&#8217;s worth pointing out that CPU-bound code may behavior differently with virtual threads than with classic OS-level threads.
+This may come at a suprise for Java developers, in particular if authors of such code are not in charge of selecting the thread executor/scheduler actually used by an application.</p>
+</div>
+<div class="paragraph">
+<p>Time will tell whether yield support also for CPU-bound code will be required or not,
+either via support for explict calls to <code>Thread::yield()</code> (which I think should be supported at the very least) or through more implicit means, e.g. by yielding when reaching a <a href="https://shipilev.net/jvm/anatomy-quarks/22-safepoint-polls/">safepoint</a>.
+As I learned, Go&#8217;s goroutines <a href="https://stackoverflow.com/questions/68696886/will-gos-scheduler-yield-control-from-one-goroutine-to-another-for-cpu-intensiv">support yielding</a> in similar scenarios since version 1.14,
+so I wouldn&#8217;t be surprised to see Java and Loom taking the same course eventually.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2021 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
