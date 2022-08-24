@@ -23,8 +23,9 @@ There may be situations though where there is no existing connector matching you
 in which case you can implement your own custom connector using the Kafka Connect framework.
 Naturally, this raises the question of how to test such a Kafka connector,
 making sure it propagates the data between the connected external system and Kafka correctly and completely.
-In this blog post I'd like to focus on testing approaches for Kafka Connect _source connectors_,
+In this blog post I'd like to focus on testing approaches for Kafka Connect _source_ connectors,
 i.e. connectors like https://debezium.io/[Debezium], which ingest data from an external system into Kafka.
+Very similar strategies can be employed for testing sink connectors, though.
 
 <!--more-->
 
@@ -32,12 +33,13 @@ i.e. connectors like https://debezium.io/[Debezium], which ingest data from an e
 
 One first obvious approach is implementing good old unit tests:
 simply instantiate the class under test (typically, your `SourceConnector` or `SourceTask` implementation),
-invoke its methods (e.g. `SourceConnector::taskConfigs()` or `SourceTask::poll()`),
+invoke its methods
+(for instance, `SourceConnector::taskConfigs()`, or `SourceTask::poll()`),
 and assert the return values.
 
-Here's an example for such a test from https://github.com/gunnarmorling/kcetcd[kc-etcd], a simple source connector for https://etcd.io/[Etcd].
-Etcd is a distributed key/value store,
-for instance used by Kubernetes as its metadata storage.
+Here's an example for such a test from https://github.com/gunnarmorling/kcetcd[kc-etcd], a simple source connector for https://etcd.io/[Etcd],
+which is a distributed key/value store,
+most prominently used by Kubernetes as its metadata storage.
 Note that kc-etcd isn't meant to be a production-ready connector;
 I have written it primarily for learning and teaching purposes.
 
@@ -78,7 +80,7 @@ public class EtcdSourceConnectorTest {
 <3> The first task should handle the first two clusters
 <4> The second task should handle the remaining third cluster
 
-Things looks similar for testing the actual polling loop of the connector's task class.
+Things look similar for testing the actual polling loop of the connector's task class.
 As this is about testing a source connector,
 we first need to do some data changes in the configured Etcd cluster(s),
 before we can assert the corresponding ``SourceRecord``s emitted by the task.
@@ -174,7 +176,7 @@ we may be better of for certain tests by deploying our source connector into an 
 
 When it comes to setting up the required infrastructure for integration tests in Java,
 the go-to solution these days is the excellent https://www.testcontainers.org/[Testcontainers] project.
-So let's see what it takes for testing a custom Kafka connector using Testcontainers.
+So let's see what it takes to test a custom Kafka connector using Testcontainers.
 
 As far as Kafka itself is concerned, there's a https://www.testcontainers.org/modules/kafka/[module] for that coming with Testcontainers,
 based on Confluent Platform.
@@ -282,7 +284,7 @@ public class EtcdConnectorIT {
 }
 ----
 <1> Set up Apache Kafka
-<2> Set up Kafka Connect, mounting the _target/kcetcd-connector_ directory onto the plug-in path; as part of the project's Maven build, all the dependencies of the kcetcd connector are copied into that directory
+<2> Set up Kafka Connect, mounting the _target/kcetcd-connector_ directory onto the plug-in path; as part of the project's Maven build, all the dependencies of the kc-etcd connector are copied into that directory
 <3> Set up Etcd
 <4> Package the connector classes from the _target/classes_ directory into a JAR and add that JAR to the mounted plug-in directory; the complete source code for this can be found https://github.com/gunnarmorling/kcetcd/blob/main/src/test/java/dev/morling/kcetcd/source/EtcdConnectorIT.java#L171-L208[here]
 <5> Configure an instance of the Etcd source connector, using String as the key and value format
@@ -312,6 +314,6 @@ with the only difference being that you'd feed records to the connector (either 
 You can find the complete source code for this post, including some parts omitted here for brevity,
 in the https://github.com/gunnarmorling/kcetcd[kc-etcd] repository on GitHub.
 If you think that having a test harness like kcute for unit testing connectors is a good idea and it's something you'd like to contribute to, then please let me know.
-Ultimately, this could be extracted into its own project, independent from kcetcd, or even upstreamed to the Apache Kafka project proper,
+Ultimately, this could be extracted into its own project, independent from kc-etcd, or even upstreamed to the Apache Kafka project proper,
 reusing as much as possible the actual Connect code,
 sans the bits for "deploying" connectors via a separate process.
