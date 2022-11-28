@@ -1,0 +1,255 @@
+---
+title: "Running a Quarkus Native Application on Render"
+date: 2022-11-28T11:45:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+This is a quick run down of the steps required for running JVM applications,
+built using Quarkus and GraalVM, on Render.
+
+https://render.com/[Render] is a cloud platform for running websites and applications.
+Like most other comparable services such as https://fly.io/[fly.io],
+it offers a decent free tier, which lets you try out the service without any financial commitment.
+_Unlike_ most other services,
+with Render, you don't need to provide a credit card in order to use the free tier.
+Which means there's no risk of surprise bills, as often is the case with pay-per-use models,
+where a malicious actor could DDOS your service and drive up cost for consumed CPU resources or egress bandwidth indefinitely.
+
+<!--more-->
+
+If the free tier limits are reached (see https://render.com/docs/free#free-web-services[Free Plans] for details), your services are shut down, until you either upgrade to a paid plan or the next month has started.
+This makes Render particularly interesting for personal projects and hobbyist use cases,
+for which you typically don't have ops staff around who are looking 24/7 at dashboards and budget alerts and could take down the service in case of a DDOS attack.
+
+== Java Applications on Render
+
+Render offers a PaaS-like model:
+when configuring an application,
+you point Render to a Git repository with your source code,
+and the platform will build and deploy it after each push to that repo.
+Unfortunately, Java is not amongst the https://render.com/docs/web-services#get-started[supported languages] right now.
+But Render also allows you to deploy applications via Docker, so that's what we'll use.
+
+As an example project, I have created a very basic https://github.com/gunnarmorling/quarkus-on-render[Quarkus-based web service].
+It is generated using https://code.quarkus.io/[code.quarkus.io] and contains a single `/hello` REST endpoint.
+To make the best use of the resources of the constrained free tier,
+it is compiled into a native application using https://www.graalvm.org/[GraalVM].
+That way, it consumes way less memory than when running on the JVM.
+Feel free to use it for your own experiments.
+
+Render always builds deployed applications from source,
+i.e. there is no way for deploying a ready-made container image from a registry like https://hub.docker.com/[Docker Hub].
+Now we could build our application using Docker on Render,
+but I have decided against that for two reasons:
+
+* It's quite slow: the free tier allocates a rather limited CPU quota to build jobs,
+so building the container image for that simple Quarkus application takes more than ten minutes
+* I like to have my application images in a container image registry,
+which for instance allows me to run exactly the same bits locally for debugging purposes
+
+[NOTE]
+====
+If you still would like to build a container image for your application directly on Render,
+check out the Quarkus documentation on https://quarkus.io/guides/building-native-image#multistage-docker[multi-stage Docker builds].
+It describes how to build a Quarkus application _within_ Docker,
+which is what you need to do in the absence of bespoke support for Java on Render.
+====
+
+So I ended up with the following flow for deploying that Quarkus application on Render:
+
+image::render_deployment_pipeline.png[]
+
+When a commit is pushed to the source repository (1),
+then a https://docs.github.com/en/actions[GitHub Action] is triggered (2), which builds the application as a native binary, using GraalVM's _native-image_ tool. The resulting binary is packaged up as a container image, which is deployed to the Docker Hub registry (3).
+Once the image has been uploaded, a new deployment is triggered on Render (4).
+The deploy job fetches the container image from Docker Hub and builds the actual image for deployment (5),
+and finally the service is published to the outside world (6).
+
+== Configuration Details
+
+Now let's dive into some specifics of the configuration on Render and GitHub.
+Once you have signed up for your Render account,
+go to the main dashboard and click the "New +" button for creating a new "Web Service".
+
+You then have two options: 
+"Connect a repository" and "Public Git repository".
+The former make things a bit simpler to use, for instance by configuring all the webhook magic required for a tight integration between GitHub (or GitLab) and Render.
+It requires more permissions than I'm comfortable with though,
+one of them being "Act on your behalf".
+So my recommendation is to go with the second option;
+it requires some more manual configuration, but it feels a bit safer to me.
+Specify the URL of your repository and click "Continue":
+
+image::render_new_web_service.png[]
+
+On the following page, enter the following information:
+
+* _Name:_ A unique name for your new application
+* _Region:_ Choose where your application should be deployed
+* _Environment:_ Choose Docker here, then "Free" plan
+* _Dockerfile Path (under "Advanced"):_ Specify _./src/main/docker/Dockerfile.render_; this is a very https://github.com/gunnarmorling/quarkus-on-render/blob/main/src/main/docker/Dockerfile.render[simple Dockerfile] which has the sole purpose of letting Render build an image for deployment; it simply is derived from the actual image with the application which is deployed to Docker Hub:
++
+[source,Dockerfile,linenums=true]
+----
+FROM gunnarmorling/quarkus-on-render:latest
+----
++
+* _Deploy Hook:_ Note down this generated URL, you will need it later when configuring the deployment trigger with GitHub Actions
+
+== Docker Hub Access Token
+
+Next, create an access token for Docker Hub.
+This will be used for authenticating the GitHub Action when pushing an image to Docker Hub.
+Log into your Docker Hub account, click on your name at the upper right corner and choose "Account Settings".
+Go to "Security" and click on "New Access Token".
+
+image::render_docker_hub_new_token.png[]
+
+Specify a description for the token and choose "Read & Write" for its access permissions.
+On the next screen, make sure to copy the generated token,
+as it will be the only opportunity where you can see it.
+
+== GitHub Actions
+
+The last part of the puzzle is setting up a GitHub Action which builds the application,
+pushes the container image with the application to Docker Hub and triggers a new deployment on Render.
+Navigate to your repository,
+click on the "Settings" tab and choose "Security" -> "Secrets" -> "Actions".
+
+image::render_github_secrets.png[]
+
+Set up the following three repository secrets:
+
+* `DOCKERHUB_TOKEN`: The access token you just generated on Docker Hub
+* `DOCKERHUB_USERNAME`: Your Docker Hub account name
+* `RENDER_DEPLOY_HOOK`: The deploy hook URL from Render
+
+These secrets will be used in the GitHub Action.
+The Action itself is a big wall of YAML,
+but most of the things should be fairly self-descriptive:
+
+[source,yaml,linenums=true]
+----
+name: ci
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Check out repository' # <1>
+        uses: actions/checkout@v3
+      - uses: graalvm/setup-graalvm@v1 # <2>
+        with:
+          version: 'latest'
+          java-version: '17'
+          components: 'native-image'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: 'Cache Maven packages'
+        uses: actions/cache@v3.0.11
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: 'Build'  # <3>
+        run: >
+          ./mvnw -B --file pom.xml verify -Pnative
+          -Dquarkus.native.additional-build-args=-H:-UseContainerSupport
+
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      -
+        name: Set up Docker Buildx # <4>
+        uses: docker/setup-buildx-action@v2
+      -
+        name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
+        name: Build and push # <5>
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          file: src/main/docker/Dockerfile.native
+          tags: gunnarmorling/quarkus-on-render:latest
+
+      - name: Deploy # <6>
+        uses: fjogeleit/http-request-action@v1
+        with:
+          url: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          method: 'POST'
+----
+<1> Retrieve the source code of the application
+<2> Install GraalVM and its _native-image_ tool
+<3> Build the project; the `-Pnative` build option instructs Quarkus to emit a native binary via GraalVM;
+more on the need for the `-H:-UseContainerSupport` option further below
+<4> Install Docker and log into Docker Hub
+<5> Build the container image and push it to Docker Hub; the used https://github.com/gunnarmorling/quarkus-on-render/blob/main/src/main/docker/Dockerfile.native[Dockerfile] is the one generated by the Quarkus project creation wizard on code.quarkus.io; it packages takes a native binary based on the _ubi-minimal_ base image:
++
+[source,Dockerfile,linenums=true]
+----
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.6
+
+WORKDIR /work/
+RUN chown 1001 /work \
+    && chmod "g+rwX" /work \
+    && chown 1001:root /work
+COPY --chown=1001:root target/*-runner /work/application
+
+EXPOSE 8080
+USER 1001
+
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+----
++
+Note that setting the build context to `.` is vital in order to actually package the binary produced by the previous build step; without this, the Docker action would check out a fresh copy of the source repository itself
+<6> Trigger a new deployment of the application on Render by invoking the deploy hook
+
+You can find the original YAML file here in my example repository.
+In fact, I am quite impressed how powerful GitHub Actions is by means of using ready-made actions for https://github.com/marketplace/actions/build-and-push-docker-images[interacting with Docker],
+https://github.com/marketplace/actions/github-action-for-graalvm[setting up GraalVM],
+https://github.com/marketplace/actions/http-request-action[invoking HTTP endpoints], and others.
+
+One thing which deserves a special mention is the need for specifying the `-H:-UseContainerSupport` option when invoking the _native-image_ tool via Quarkus.
+This is a work-around for GraalVM https://github.com/oracle/graal/issues/4757[bug #4757] which triggers an exception upon invocation the method `java.lang.Runtime::availableProcessors()`.
+It seems the GraalVM code stumbles upon cgroup paths containing a colon,
+which apparently is the case in the Docker environment on Render
+(a similar bug, https://bugs.openjdk.org/browse/JDK-8272124[JDK-8272124], has been fixed in OpenJDK recently).
+
+By disabling the container support when building the application this issue is circumvented,
+the solution is not ideal though:
+when determining the number of available processors,
+any CPU quotas applied for the container will not be considered,
+but rather the number of cores from the host system will be returned
+(8 in the case of Render as per a quick test I did).
+This causes thread pools in the application, like the common fork-join pool, to be sized superfluously large,
+potentially resulting in performance degredations at runtime.
+So let's hope that issue in GraalVM will be fixed soon.
+
+And that's all there is to it:
+at this point, you should have all the configuration in place for running a Java application -- compiled into a native binary using Quarkus and GraalVM -- on the Render cloud platform.
+Whenever you push a commit to the source repository,
+a new version of the application will be built, pushed as a container image to Docker Hub, and deployed on Render.
+The end-to-end execution time for that flow is ca. five minutes, about twice as fast as when building everything on Render itself.
+To further improve build times,
+you'd have to invest in beefier build machines;
+while compilation times with GraalVM have improved quite a bit over the last few years,
+it's still a rather time-consuming experience.
+
+Check out my https://github.com/gunnarmorling/quarkus-on-render[repository] on GitHub for the complete source code of the example application, with GitHub Actions definition, Maven POM file, etc.
