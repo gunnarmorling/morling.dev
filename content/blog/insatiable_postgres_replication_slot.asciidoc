@@ -12,13 +12,13 @@ ifdef::env-github[]
 :imagesdir: ../../static/images
 endif::[]
 
-While working on a demo for processing change events from a Postgres database with Apache Flink,
+While working on a demo for processing change events from Postgres with Apache Flink,
 I noticed an interesting phenomenon:
 A Postgres database which I had set up for that demo on Amazon RDS, ran out of disk space.
 The machine had a disk size of 200 GiB which was fully used up in the course of less than two weeks.
 
 Now a common cause for this kind of issue are replication slots which are not advanced:
-in that case, Postgres will hold on to all WAL segments after the latest LSN which was confirmed for that slot.
+in that case, Postgres will hold on to all WAL segments after the latest log sequence number (https://pgpedia.info/l/LSN-log-sequence-number.html[LSN]) which was confirmed for that slot.
 Indeed I had set up a replication slot (via the https://www.decodable.co/connectors/postgres-cdc[Decodable CDC source connector for Postgres], which is based on https://debezium.io[Debezium]).
 I then had stopped that connector, causing the slot to become inactive.
 The problem was though that I was really sure that there was no traffic in that database whatsoever!
@@ -39,7 +39,12 @@ Then get a session on the database and create a replication slot like this:
 
 [source,sql,linenums=true]
 ----
-SELECT * FROM pg_create_logical_replication_slot('regression_slot', 'test_decoding', false, true);
+SELECT * FROM pg_create_logical_replication_slot(
+  'regression_slot',
+  'test_decoding',
+  false,
+  true
+);
 ----
 
 Now grab a coffee (or two, or three),
@@ -49,20 +54,20 @@ and after some hours take a look into the metrics of the database in the RDS web
 image::rds_free_storage_space.png[]
 
 We've lost more than two GB within three hours,
-meaning that the 20 GiB free tier database would run out of free disk space within less than two days.
+meaning that the 20 GiB free tier database would run out of disk space within less than two days.
 Next, let's take a look at the "Transaction Log Disk Usage" metric.
 It shows the problem in a very pronounced way:
 
 image::rds_transaction_log_disk_usage.png[]
 
-Every few minutes the transaction log of the database grows by 64 MB.
+Roughly very few minutes the transaction log of the database grows by 64 MB.
 The "Write IOPS" metric further completes this picture.
-Every five minutes something causes write IOPS in that idle database:
+Again, every five minutes something causes write IOPS in that idle database:
 
 image::rds_write_iops.png[]
 
 Now let's see whether our replication slot actually is the culprit.
-By looking at the difference between its restart LSN (the earliest LSN which the database needs to retain in order to allow this slot to resume) and the database's current LSN we see how much bytes of WAL this slot prevents from being freed while it is inactive:
+By looking at the difference between its restart LSN (the earliest LSN which the database needs to retain in order to allow for this slot to resume) and the database's current LSN we see how much bytes of WAL this slot prevents from being freed while it is inactive:
 
 [source,sql,linenums=true]
 ----
@@ -83,6 +88,8 @@ SELECT
 Pretty much exactly the size of the WAL we saw in the database metrics.
 The big question now is of course what is causing that growth of the WAL?
 Which process is adding 64 MB to it every five minutes?
+So let's take a look at the active server processes in Postgres,
+using the https://www.postgresql.org/docs/current/monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW[pg_stat_activity] view:
 
 [source,sql,linenums=true]
 ----
@@ -129,12 +136,12 @@ On RDS, this is changed from the default of 16 MB to 64 MB.
 This sounds familiar!
 
 That knowledge center post also led me to the last missing piece of the puzzle, the `archive_timeout` parameter, which defaults to five minutes.
-This is what https://postgresqlco.nf/doc/en/param/archive_timeout/[has to say] about this option:
+This is what the excellent postgresqlco.nf site https://postgresqlco.nf/doc/en/param/archive_timeout/[has to say] about this option:
 
 > When this parameter is greater than zero, the server will switch to a new segment file whenever this amount of time has elapsed since the last segment file switch, and there has been any database activity ... Note that archived files that are closed early due to a forced switch are still the same length as completely full files.
 
 And this finally explains why that inactive replication slot causes the retention of that much WAL on an idle database:
-there actually _is_ some data change in form of that heartbeat in the `rdsadmin` database every five minutes.
+there actually are some data changes made every five minutes in form of that heartbeat in the `rdsadmin` database.
 This in turn causes a new WAL segment of 64 MB to be created every five minutes.
 As long as that replication slot is inactive and doesn't make any progress,
 all those WAL segments will be kept,
@@ -150,17 +157,17 @@ And of course you should monitor your free disk space, too.
 
 That being said, you still might be in for a bad surprise:
 under specific instances, also an active replication slot can cause unexpected WAL retention.
-If for instance large amounts of changes are being made to one database on a host but a replication slot has been set up for another database which doesn't receive any changes,
+If for instance large amounts of changes are being made to one database but a replication slot has been set up for another database which doesn't receive any changes,
 that slot still won't be able to make any progress.
+
 A common solution to that scenario is inducing some sort of artificial traffic into the database,
 as for instance supported by the https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-wal-disk-space[Debezium Postgres connector].
-
 Note this doesn't even require a specific tables,
-writing a message just to the WAL using https://pgpedia.info/p/pg_logical_emit_message.html[`pg_logical_emit_message()`] is enough:
+periodically writing a message just to the WAL using https://pgpedia.info/p/pg_logical_emit_message.html[`pg_logical_emit_message()`] is enough:
 
 [source,sql,linenums=true]
 ----
 SELECT pg_logical_emit_message(false, 'heartbeat', now()::varchar);
 ----
 
-If you use a logical decoding plug-in which supports logical replication messages -- like https://www.postgresql.org/docs/14/protocol-logicalrep-message-formats.html[pgoutput since Postgres 14] -- then that's all that's needed for letting your replication slot advance within an otherwise idle database.
+If you use a logical decoding plug-in which supports logical replication messages -- like https://www.postgresql.org/docs/14/protocol-logicalrep-message-formats.html[pgoutput] since Postgres 14 -- then that's all that's needed for letting your replication slot advance within an otherwise idle database.
