@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>The Insatiable Postgres Replication Slot - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="The Insatiable Postgres Replication Slot" />
+<meta property="og:description" content="
+While working on a demo for processing change events from Postgres with Apache Flink,
+I noticed an interesting phenomenon:
+A Postgres database which I had set up for that demo on Amazon RDS, ran out of disk space.
+The machine had a disk size of 200 GiB which was fully used up in the course of less than two weeks.
+
+
+Now a common cause for this kind of issue are replication slots which are not advanced:
+in that case, Postgres will hold on to all WAL segments after the latest log sequence number (LSN) which was confirmed for that slot.
+Indeed I had set up a replication slot (via the Decodable CDC source connector for Postgres, which is based on Debezium).
+I then had stopped that connector, causing the slot to become inactive.
+The problem was though that I was really sure that there was no traffic in that database whatsoever!
+What could cause a WAL growth of ~18 GB/day then?
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/insatiable_postgres_replication_slot/" />
+<meta property="article:published_time" content="2022-11-30T14:00:00+01:00" />
+<meta property="article:modified_time" content="2022-11-30T14:00:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="The Insatiable Postgres Replication Slot"/>
+<meta name="twitter:description" content="
+While working on a demo for processing change events from Postgres with Apache Flink,
+I noticed an interesting phenomenon:
+A Postgres database which I had set up for that demo on Amazon RDS, ran out of disk space.
+The machine had a disk size of 200 GiB which was fully used up in the course of less than two weeks.
+
+
+Now a common cause for this kind of issue are replication slots which are not advanced:
+in that case, Postgres will hold on to all WAL segments after the latest log sequence number (LSN) which was confirmed for that slot.
+Indeed I had set up a replication slot (via the Decodable CDC source connector for Postgres, which is based on Debezium).
+I then had stopped that connector, causing the slot to become inactive.
+The problem was though that I was really sure that there was no traffic in that database whatsoever!
+What could cause a WAL growth of ~18 GB/day then?
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling-2b44b7229/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling-2b44b7229/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">The Insatiable Postgres Replication Slot</h1>
+				<div class="meta">Posted at Nov 30, 2022</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>While working on a demo for processing change events from Postgres with Apache Flink,
+I noticed an interesting phenomenon:
+A Postgres database which I had set up for that demo on Amazon RDS, ran out of disk space.
+The machine had a disk size of 200 GiB which was fully used up in the course of less than two weeks.</p>
+</div>
+<div class="paragraph">
+<p>Now a common cause for this kind of issue are replication slots which are not advanced:
+in that case, Postgres will hold on to all WAL segments after the latest log sequence number (<a href="https://pgpedia.info/l/LSN-log-sequence-number.html">LSN</a>) which was confirmed for that slot.
+Indeed I had set up a replication slot (via the <a href="https://www.decodable.co/connectors/postgres-cdc">Decodable CDC source connector for Postgres</a>, which is based on <a href="https://debezium.io">Debezium</a>).
+I then had stopped that connector, causing the slot to become inactive.
+The problem was though that I was really sure that there was no traffic in that database whatsoever!
+What could cause a WAL growth of ~18 GB/day then?</p>
+</div>
+<div class="paragraph">
+<p>What follows is a quick write-up of my investigations, mostly as a reference for my future self,
+but I hope this will come in handy for others in the same situation, too.</p>
+</div>
+<div class="sect1">
+<h2 id="_the_observation">The Observation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let&#8217;s start with the observations I made.
+I don&#8217;t have the data and log files from the original situation any longer,
+but the following steps are enough to reproduce the issue.
+The first thing is to create a new Postgres database on <a href="https://aws.amazon.com/rds/postgresql/">Amazon RDS</a> (I used version 14.5 on the free tier).
+Then get a session on the database and create a replication slot like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">pg_create_logical_replication_slot</span><span class="p">(</span>
+  <span class="s1">'regression_slot'</span><span class="p">,</span>
+  <span class="s1">'test_decoding'</span><span class="p">,</span>
+  <span class="k">false</span><span class="p">,</span>
+  <span class="k">true</span>
+<span class="p">);</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now grab a coffee (or two, or three),
+and after some hours take a look into the metrics of the database in the RDS web console.
+"Free Storage Space" shows the following, rather unpleasant, picture:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/rds_free_storage_space.png" alt="rds free storage space">
+</div>
+</div>
+<div class="paragraph">
+<p>We&#8217;ve lost more than two GB within three hours,
+meaning that the 20 GiB free tier database would run out of disk space within less than two days.
+Next, let&#8217;s take a look at the "Transaction Log Disk Usage" metric.
+It shows the problem in a very pronounced way:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/rds_transaction_log_disk_usage.png" alt="rds transaction log disk usage">
+</div>
+</div>
+<div class="paragraph">
+<p>Roughly very few minutes the transaction log of the database grows by 64 MB.
+The "Write IOPS" metric further completes this picture.
+Again, every five minutes something causes write IOPS in that idle database:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/rds_write_iops.png" alt="rds write iops">
+</div>
+</div>
+<div class="paragraph">
+<p>Now let&#8217;s see whether our replication slot actually is the culprit.
+By looking at the difference between its restart LSN (the earliest LSN which the database needs to retain in order to allow for this slot to resume) and the database&#8217;s current LSN we see how much bytes of WAL this slot prevents from being freed while it is inactive:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+</pre></td><td class="code"><pre><span class="k">SELECT</span>
+  <span class="n">slot_name</span><span class="p">,</span>
+  <span class="n">pg_size_pretty</span><span class="p">(</span>
+    <span class="n">pg_wal_lsn_diff</span><span class="p">(</span>
+      <span class="n">pg_current_wal_lsn</span><span class="p">(),</span> <span class="n">restart_lsn</span><span class="p">))</span> <span class="k">AS</span> <span class="n">retained_wal</span><span class="p">,</span>
+  <span class="n">active</span><span class="p">,</span>
+  <span class="n">restart_lsn</span> <span class="k">FROM</span> <span class="n">pg_replication_slots</span><span class="p">;</span>
+<span class="o">+</span><span class="c1">-----------------+----------------+----------+---------------+</span>
+<span class="o">|</span> <span class="n">slot_name</span>       <span class="o">|</span> <span class="n">retained_wal</span>   <span class="o">|</span> <span class="n">active</span>   <span class="o">|</span> <span class="n">restart_lsn</span>   <span class="o">|</span>
+<span class="o">|</span><span class="c1">-----------------+----------------+----------+---------------|</span>
+<span class="o">|</span> <span class="n">regression_slot</span> <span class="o">|</span> <span class="mi">2166</span> <span class="n">MB</span>        <span class="o">|</span> <span class="k">False</span>    <span class="o">|</span> <span class="mi">0</span><span class="o">/</span><span class="mi">4</span><span class="n">A05AF0</span>     <span class="o">|</span>
+<span class="o">+</span><span class="c1">-----------------+----------------+----------+---------------+</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Pretty much exactly the size of the WAL we saw in the database metrics.
+The big question now is of course what is causing that growth of the WAL?
+Which process is adding 64 MB to it every five minutes?
+So let&#8217;s take a look at the active server processes in Postgres,
+using the <a href="https://www.postgresql.org/docs/current/monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW">pg_stat_activity</a> view:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+</pre></td><td class="code"><pre><span class="k">SELECT</span> <span class="n">pid</span> <span class="k">AS</span> <span class="n">process_id</span><span class="p">,</span>
+  <span class="n">usename</span> <span class="k">AS</span> <span class="n">username</span><span class="p">,</span>
+  <span class="n">datname</span> <span class="k">AS</span> <span class="n">database_name</span><span class="p">,</span>
+  <span class="n">client_addr</span> <span class="k">AS</span> <span class="n">client_address</span><span class="p">,</span>
+  <span class="n">application_name</span><span class="p">,</span>
+  <span class="n">backend_start</span><span class="p">,</span>
+  <span class="k">state</span><span class="p">,</span>
+  <span class="n">state_change</span>
+<span class="k">FROM</span> <span class="n">pg_stat_activity</span>
+<span class="k">WHERE</span> <span class="n">usename</span> <span class="k">IS</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">;</span>
+<span class="o">+</span><span class="c1">--------------+------------+-----------------+------------------+------------------------+-------------------------------+---------+-------------------------------+</span>
+<span class="o">|</span> <span class="n">process_id</span>   <span class="o">|</span> <span class="n">username</span>   <span class="o">|</span> <span class="n">database_name</span>   <span class="o">|</span> <span class="n">client_address</span>   <span class="o">|</span> <span class="n">application_name</span>       <span class="o">|</span> <span class="n">backend_start</span>                 <span class="o">|</span> <span class="k">state</span>   <span class="o">|</span> <span class="n">state_change</span>                  <span class="o">|</span>
+<span class="o">|</span><span class="c1">--------------+------------+-----------------+------------------+------------------------+-------------------------------+---------+-------------------------------|</span>
+<span class="o">|</span> <span class="mi">370</span>          <span class="o">|</span> <span class="n">rdsadmin</span>   <span class="o">|</span> <span class="o">&lt;</span><span class="k">null</span><span class="o">&gt;</span>          <span class="o">|</span> <span class="o">&lt;</span><span class="k">null</span><span class="o">&gt;</span>           <span class="o">|</span>                        <span class="o">|</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">11</span><span class="o">-</span><span class="mi">30</span> <span class="mi">11</span><span class="p">:</span><span class="mi">11</span><span class="p">:</span><span class="mi">03</span><span class="p">.</span><span class="mi">424359</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="o">&lt;</span><span class="k">null</span><span class="o">&gt;</span>  <span class="o">|</span> <span class="o">&lt;</span><span class="k">null</span><span class="o">&gt;</span>                        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">468</span>          <span class="o">|</span> <span class="n">rdsadmin</span>   <span class="o">|</span> <span class="n">rdsadmin</span>        <span class="o">|</span> <span class="mi">127</span><span class="p">.</span><span class="mi">0</span><span class="p">.</span><span class="mi">0</span><span class="p">.</span><span class="mi">1</span>        <span class="o">|</span> <span class="n">PostgreSQL</span> <span class="n">JDBC</span> <span class="n">Driver</span> <span class="o">|</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">11</span><span class="o">-</span><span class="mi">30</span> <span class="mi">11</span><span class="p">:</span><span class="mi">12</span><span class="p">:</span><span class="mi">02</span><span class="p">.</span><span class="mi">517528</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="n">idle</span>    <span class="o">|</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">11</span><span class="o">-</span><span class="mi">30</span> <span class="mi">14</span><span class="p">:</span><span class="mi">15</span><span class="p">:</span><span class="mi">05</span><span class="p">.</span><span class="mi">601626</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span>
+<span class="o">|</span> <span class="mi">14760</span>        <span class="o">|</span> <span class="n">postgres</span>   <span class="o">|</span> <span class="n">decodabletest</span>   <span class="o">|</span> <span class="n">www</span><span class="p">.</span><span class="n">xxx</span><span class="p">.</span><span class="n">yyy</span><span class="p">.</span><span class="n">zzz</span>  <span class="o">|</span> <span class="n">pgcli</span>                  <span class="o">|</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">11</span><span class="o">-</span><span class="mi">30</span> <span class="mi">14</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">58</span><span class="p">.</span><span class="mi">765899</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="n">active</span>  <span class="o">|</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">11</span><span class="o">-</span><span class="mi">30</span> <span class="mi">14</span><span class="p">:</span><span class="mi">15</span><span class="p">:</span><span class="mi">06</span><span class="p">.</span><span class="mi">820204</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">--------------+------------+-----------------+------------------+------------------------+-------------------------------+---------+-------------------------------+</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is interesting: besides our own session (user <code>postgres</code>),
+there&#8217;s also two other sessions by a user <code>rdsadmin</code>.
+As we don&#8217;t do any data changes ourselves, they must be somehow related to the WAL growth we observe.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_solution">The Solution</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>At this point I had enough information to do some meaningful Google search,
+and I came across the blog post <a href="https://wolfman.dev/posts/pg-logical-heartbeats/">"Postgres Logical Replication and Idle Databases"</a> by Byron Wolfman,
+who ran into the exact same issue as I did.
+As it turns out, RDS is periodically writing heartbeats into that <code>rdsadmin</code> database:</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>In RDS, we write to a heartbeat table in our internal “rdsadmin” database every 5 minutes</p>
+</div>
+</blockquote>
+</div>
+<div class="paragraph">
+<p>This is one part of the explanation: in our seemingless inactive RDS Postgres database,
+there actually <em>is</em> some traffic.
+But how is it possible that this heartbeat causes such a large amount of WAL growth?
+Surely those heartbeat events won&#8217;t be 64 MB large?</p>
+</div>
+<div class="paragraph">
+<p><a href="https://aws.amazon.com/premiumsupport/knowledge-center/rds-postgresql-upgrade-write-latency/">Another blog post</a> hinted at the next bit of information:
+as of Postgres 11, the WAL segment size&#8201;&#8212;&#8201;i.e. the size of individual files making up the WAL&#8201;&#8212;&#8201;can <a href="https://www.dbi-services.com/blog/the-wal-segement-size-becomes-changeable-in-postgresql-11/">be configured</a>.
+On RDS, this is changed from the default of 16 MB to 64 MB.
+This sounds familiar!</p>
+</div>
+<div class="paragraph">
+<p>That knowledge center post also led me to the last missing piece of the puzzle, the <code>archive_timeout</code> parameter, which defaults to five minutes.
+This is what the excellent postgresqlco.nf site <a href="https://postgresqlco.nf/doc/en/param/archive_timeout/">has to say</a> about this option:</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>When this parameter is greater than zero, the server will switch to a new segment file whenever this amount of time has elapsed since the last segment file switch, and there has been any database activity &#8230;&#8203; Note that archived files that are closed early due to a forced switch are still the same length as completely full files.</p>
+</div>
+</blockquote>
+</div>
+<div class="paragraph">
+<p>And this finally explains why that inactive replication slot causes the retention of that much WAL on an idle database:
+there actually are some data changes made every five minutes in form of that heartbeat in the <code>rdsadmin</code> database.
+This in turn causes a new WAL segment of 64 MB to be created every five minutes.
+As long as that replication slot is inactive and doesn&#8217;t make any progress,
+all those WAL segments will be kept,
+(not so) slowly causing the database server to run out of disk space.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_take_away">Take Away</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The morale of the story?
+Don&#8217;t leave your replication slots unattended!
+There shouldn&#8217;t be any slots which are inactive for too long.
+For instance you could set up an alert based on the query above which notifies you if some slot retains WAL of more than 100 MB.
+And of course you should monitor your free disk space, too.</p>
+</div>
+<div class="paragraph">
+<p>That being said, you still might be in for a bad surprise:
+under specific instances, also an active replication slot can cause unexpected WAL retention.
+If for instance large amounts of changes are being made to one database but a replication slot has been set up for another database which doesn&#8217;t receive any changes,
+that slot still won&#8217;t be able to make any progress.</p>
+</div>
+<div class="paragraph">
+<p>A common solution to that scenario is inducing some sort of artificial traffic into the database,
+as for instance supported by the <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-wal-disk-space">Debezium Postgres connector</a>.
+Note this doesn&#8217;t even require a specific tables,
+periodically writing a message just to the WAL using <a href="https://pgpedia.info/p/pg_logical_emit_message.html"><code>pg_logical_emit_message()</code></a> is enough:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="k">SELECT</span> <span class="n">pg_logical_emit_message</span><span class="p">(</span><span class="k">false</span><span class="p">,</span> <span class="s1">'heartbeat'</span><span class="p">,</span> <span class="n">now</span><span class="p">()::</span><span class="nb">varchar</span><span class="p">);</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you use a logical decoding plug-in which supports logical replication messages&#8201;&#8212;&#8201;like <a href="https://www.postgresql.org/docs/14/protocol-logicalrep-message-formats.html">pgoutput</a> since Postgres 14&#8201;&#8212;&#8201;then that&#8217;s all that&#8217;s needed for letting your replication slot advance within an otherwise idle database.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2022 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
