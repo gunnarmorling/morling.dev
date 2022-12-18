@@ -1,0 +1,163 @@
+---
+title: "Maven, What Are You Waiting For?!"
+date: 2022-12-18T13:45:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+As part of my link:/blog/why-i-joined-decodable/[new job] at Decodable,
+I am also planning to contribute to the https://flink.apache.org/[Apache Flink] project
+(as Decodable's fully-managed https://www.decodable.co/product[stream processing platform] is based on Flink).
+Right now, I am in the process of familiarizing myself with the Flink code base,
+and as such I am of course building the project from source, too.
+
+<!--more-->
+
+Flink uses Apache Maven as its build tool.
+It comes with the https://maven.apache.org/wrapper/[Maven Wrapper],
+simplifying the onboarding experience for new contributors,
+who don't need to have Maven installed upfront.
+The configured Maven version is quite old though, 3.2.5 from 2014.
+Not even coloured output on the CLI yet -- _Boo!_
+So I tried to build Flink with the latest stable version of Maven, 3.8.6 at the time of writing,
+but ran into some issues doing so.
+
+Specifically, there are several dependencies with repository information embedded into their POM files.
+This is generally considered a https://blog.sonatype.com/2009/02/why-putting-repositories-in-your-poms-is-a-bad-idea/[bad practice] for libraries,
+as it will inject those repositories into the build of any consumers,
+e.g. causing slower build processes.
+In the case at hand, the situation is even worse,
+as Maven since version 3.8.1 https://maven.apache.org/docs/3.8.1/release-notes.html[blocks access] to non-HTTPS repositories for security reasons.
+This means that your build will fail if any dependency pulls in an HTTP repository.
+
+Dealing with this is a bit cumbersome, as it's not always obvious which dependency is causing that issue.
+For Flink, I encountered two instances of that problem.
+First, a transitive dependency of the https://github.com/apache/flink/tree/master/flink-connectors/flink-connector-hive[_flink-connector-hive_2.12_] module
+(message slightly adapted for readability):
+
+[source,bash,linenums=true]
+----
+...
+[ERROR] Failed to execute goal on project flink-connector-hive_2.12:
+  Could not resolve dependencies for project org.apache.flink:flink-connector-hive_2.12:jar:1.17-SNAPSHOT:
+  Failed to collect dependencies at org.apache.hive:hive-exec:jar:2.3.9 -> org.pentaho:pentaho-aggdesigner-algorithm:jar:5.1.5-jhyde:
+  Failed to read artifact descriptor for org.pentaho:pentaho-aggdesigner-algorithm:jar:5.1.5-jhyde:
+  Could not transfer artifact org.pentaho:pentaho-aggdesigner-algorithm:pom:5.1.5-jhyde from/to maven-default-http-blocker (http://0.0.0.0/):
+  Blocked mirror for repositories: [
+    repository.jboss.org (http://repository.jboss.org/nexus/content/groups/public/, default, disabled),
+    conjars (http://conjars.org/repo, default, releases+snapshots),
+    apache.snapshots (http://repository.apache.org/snapshots, default, snapshots)
+  ]
+...
+----
+
+There's three non-HTTPS repositories involved here which got blocked by Maven.
+Note that those are _all_ the unsecure repositories found in the dependency chain, they are not necessarily related to that particular error.
+
+Unfortunately, there's no good way for identifying which dependency exactly is pulling them into the build and which repository is the problem here.
+Instead, you need to analyse all the dependencies from the project root to the flagged dependency, including any potential parent POM(s).
+In the case at hand, the problematic repo is the "conjars" one, as defined in the parent POM of the https://repo1.maven.org/maven2/org/apache/hive/hive-exec/2.3.9/[_org:apache:hive:hive-exec_] artifact, _org:apache:hive_.
+
+As far as I am aware, there's no way for overriding such dependency-defined repositories in a downstream build;
+the only way I've found is to define a repository with the same id in a custom _settings.xml_ file, redefining its URL to make use of HTTPS:
+
+[source,xml,linenums=true]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <mirrors>
+    <mirror>
+      <id>conjars</id>
+      <name>conjars</name>
+      <url>https://conjars.org/repo</url>
+      <mirrorOf>conjars</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>
+----
+
+Building Flink with this _settings.xml_ file gets us beyond that error.
+As far as the other two repositories are concerned,
+the JBoss one is actually defined in the root POM of Apache Flink itself.
+I'm not sure whether it's actually needed, but I have created a https://github.com/apache/flink/pull/21524[pull request] for changing it to HTTPS, just in case.
+The "apache.snapshots" repo is defined in the parent POM of _org:apache:hive_ and seems also not needed.
+You could override it in your _settings.xml_ using its https://repository.apache.org/content/groups/snapshots/[HTTPS URL] as a measure of good practice, though.
+
+With that _settings.xml_ in place, I could build Apache Flink using the current Maven version 3.8.6.
+I noticed though that the build gets stuck for quite some time at the following step:
+
+[source,bash,linenums=true]
+----
+...
+[INFO] ------------------< org.apache.flink:flink-hadoop-fs >------------------
+[INFO] Building Flink : FileSystems : Hadoop FS 1.17-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+Downloading from maven-default-http-blocker: http://0.0.0.0/net/minidev/json-smart/maven-metadata.xml
+...
+----
+
+The build wouldn't fail, though: after exactly 75 seconds, it continues and runs to completion.
+So what's causing this stall?
+Again, a non-HTTPS repository is the culprit, but in a slightly more confusing way.
+As it turns out, that transitive dependency to the _net.minidev:json-smart_ library is declared using a version range by the artifact https://mvnrepository.com/artifact/com.nimbusds/nimbus-jose-jwt/4.41.1[_com.nimbusds:nimbus-jose-jwt_]: `[1.3.1,2.3]`.
+
+So Maven reaches out to all configured repositories in order to identify the latest version within that range.
+Now the _hadoop-auth_ dependency (via its parent _hadoop-main_) pulls in the http://repository.jboss.org/nexus/content/groups/public/[JBoss HTTP repository];
+and while access to this is prevented via Maven's HTTP blocker, for some reason it still tries to connect to that blocker's pseudo URL 0.0.0.0.
+After 75 seconds, this request eventually times out and the build continues.
+Go figure.
+
+For preventing this issue, you have a few options:
+
+* Add the JBoss repository with HTTPS to your _settings.xml_ (again, the definition in the root POM of your own build does not suffice for that)
+* Run the build with the _-o_ (offline) flag
+* Pin down the version of the artifact in the dependency management of your build, sidestepping the need for resolving the version range:
++
+[source,xml,linenums=true]
+----
+...
+<dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>net.minidev</groupId>
+      <artifactId>json-smart</artifactId>
+      <version>2.3</version>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+...
+----
++
+This approach has the advantage that it can be done in a persistent way as part of the Maven POM itself, there's no need for a custom _settings.xml_ or build time parameters like the offline flag.
+
+In any case, the build will now skip that 75 seconds pause.
+I.e. less time for drinking a coffee while the build is running, which is a good thing of course.
+Now you might wonder why exactly 75 seconds,
+and I have to admit it's not fully clear to me.
+
+When running the build with a debugger attached
+(I know, I know, it's https://twitter.com/gunnarmorling/status/1603291378166992898[not en-vogue] these days),
+I didn't see any timeout configuration for establishing that HTTP connection.
+Some default TCP connection timeout on macOS perhaps?
+Interestingly, when trying with the latest Alpha of Maven 4,
+the build would only stall for ten seconds when trying to resolve that version range;
+Maven's HTTP client is configured with a timeout of ten seconds as of this release.
+
+The moral of the story?
+Don't put repository information into published Maven POMs.
+If you publish something to Maven Central, all its dependencies should be resolvable from there, too.
+Luckily, Maven 4 will make this problem an issue of the past,
+bringing the long-awaited https://maarten.mulders.it/talks/#whats-cooking-in-maven[separation of build and consumer POMs].
+
+I'd also advise caution when it comes to adding version ranges to dependency definitions,
+it can have unexpected consequences as demonstrated above, and it's probably not worth the hassle.
