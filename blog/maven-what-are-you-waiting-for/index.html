@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Maven, What Are You Waiting For?! - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Maven, What Are You Waiting For?!" />
+<meta property="og:description" content="
+As part of my new job at Decodable,
+I am also planning to contribute to the Apache Flink project
+(as Decodable&#8217;s fully-managed stream processing platform is based on Flink).
+Right now, I am in the process of familiarizing myself with the Flink code base,
+and as such I am of course building the project from source, too.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/maven-what-are-you-waiting-for/" />
+<meta property="article:published_time" content="2022-12-18T13:45:00+01:00" />
+<meta property="article:modified_time" content="2022-12-18T13:45:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Maven, What Are You Waiting For?!"/>
+<meta name="twitter:description" content="
+As part of my new job at Decodable,
+I am also planning to contribute to the Apache Flink project
+(as Decodable&#8217;s fully-managed stream processing platform is based on Flink).
+Right now, I am in the process of familiarizing myself with the Flink code base,
+and as such I am of course building the project from source, too.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling-2b44b7229/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling-2b44b7229/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Maven, What Are You Waiting For?!</h1>
+				<div class="meta">Posted at Dec 18, 2022</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>As part of my <a href="/blog/why-i-joined-decodable/">new job</a> at Decodable,
+I am also planning to contribute to the <a href="https://flink.apache.org/">Apache Flink</a> project
+(as Decodable&#8217;s fully-managed <a href="https://www.decodable.co/product">stream processing platform</a> is based on Flink).
+Right now, I am in the process of familiarizing myself with the Flink code base,
+and as such I am of course building the project from source, too.</p>
+</div>
+<div class="paragraph">
+<p>Flink uses Apache Maven as its build tool.
+It comes with the <a href="https://maven.apache.org/wrapper/">Maven Wrapper</a>,
+simplifying the onboarding experience for new contributors,
+who don&#8217;t need to have Maven installed upfront.
+The configured Maven version is quite old though, 3.2.5 from 2014.
+Not even coloured output on the CLI yet&#8201;&#8212;&#8201;<em>Boo!</em>
+So I tried to build Flink with the latest stable version of Maven, 3.8.6 at the time of writing,
+but ran into some issues doing so.</p>
+</div>
+<div class="paragraph">
+<p>Specifically, there are several dependencies with repository information embedded into their POM files.
+This is generally considered a <a href="https://blog.sonatype.com/2009/02/why-putting-repositories-in-your-poms-is-a-bad-idea/">bad practice</a> for libraries,
+as it will inject those repositories into the build of any consumers,
+e.g. causing slower build processes.
+In the case at hand, the situation is even worse,
+as Maven since version 3.8.1 <a href="https://maven.apache.org/docs/3.8.1/release-notes.html">blocks access</a> to non-HTTPS repositories for security reasons.
+This means that your build will fail if any dependency pulls in an HTTP repository.</p>
+</div>
+<div class="paragraph">
+<p>Dealing with this is a bit cumbersome, as it&#8217;s not always obvious which dependency is causing that issue.
+For Flink, I encountered two instances of that problem.
+First, a transitive dependency of the <a href="https://github.com/apache/flink/tree/master/flink-connectors/flink-connector-hive"><em>flink-connector-hive_2.12</em></a> module
+(message slightly adapted for readability):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+</pre></td><td class="code"><pre>...
+<span class="o">[</span>ERROR] Failed to execute goal on project flink-connector-hive_2.12:
+  Could not resolve dependencies <span class="k">for </span>project org.apache.flink:flink-connector-hive_2.12:jar:1.17-SNAPSHOT:
+  Failed to collect dependencies at org.apache.hive:hive-exec:jar:2.3.9 -&gt; org.pentaho:pentaho-aggdesigner-algorithm:jar:5.1.5-jhyde:
+  Failed to <span class="nb">read </span>artifact descriptor <span class="k">for </span>org.pentaho:pentaho-aggdesigner-algorithm:jar:5.1.5-jhyde:
+  Could not transfer artifact org.pentaho:pentaho-aggdesigner-algorithm:pom:5.1.5-jhyde from/to maven-default-http-blocker <span class="o">(</span>http://0.0.0.0/<span class="o">)</span>:
+  Blocked mirror <span class="k">for </span>repositories: <span class="o">[</span>
+    repository.jboss.org <span class="o">(</span>http://repository.jboss.org/nexus/content/groups/public/, default, disabled<span class="o">)</span>,
+    conjars <span class="o">(</span>http://conjars.org/repo, default, releases+snapshots<span class="o">)</span>,
+    apache.snapshots <span class="o">(</span>http://repository.apache.org/snapshots, default, snapshots<span class="o">)</span>
+  <span class="o">]</span>
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>There&#8217;s three non-HTTPS repositories involved here which got blocked by Maven.
+Note that those are <em>all</em> the unsecure repositories found in the dependency chain, they are not necessarily related to that particular error.</p>
+</div>
+<div class="paragraph">
+<p>Unfortunately, there&#8217;s no good way for identifying which dependency exactly is pulling them into the build and which repository is the problem here.
+Instead, you need to analyse all the dependencies from the project root to the flagged dependency, including any potential parent POM(s).
+In the case at hand, the problematic repo is the "conjars" one, as defined in the parent POM of the <a href="https://repo1.maven.org/maven2/org/apache/hive/hive-exec/2.3.9/"><em>org:apache:hive:hive-exec</em></a> artifact, <em>org:apache:hive</em>.</p>
+</div>
+<div class="paragraph">
+<p>As far as I am aware, there&#8217;s no way for overriding such dependency-defined repositories in a downstream build;
+the only way I&#8217;ve found is to define a repository with the same id in a custom <em>settings.xml</em> file, redefining its URL to make use of HTTPS:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+</pre></td><td class="code"><pre><span class="cp">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="nt">&lt;settings</span> <span class="na">xmlns=</span><span class="s">"http://maven.apache.org/SETTINGS/1.0.0"</span>
+  <span class="na">xmlns:xsi=</span><span class="s">"http://www.w3.org/2001/XMLSchema-instance"</span>
+  <span class="na">xsi:schemaLocation=</span><span class="s">"http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd"</span><span class="nt">&gt;</span>
+
+  <span class="nt">&lt;mirrors&gt;</span>
+    <span class="nt">&lt;mirror&gt;</span>
+      <span class="nt">&lt;id&gt;</span>conjars<span class="nt">&lt;/id&gt;</span>
+      <span class="nt">&lt;name&gt;</span>conjars<span class="nt">&lt;/name&gt;</span>
+      <span class="nt">&lt;url&gt;</span>https://conjars.org/repo<span class="nt">&lt;/url&gt;</span>
+      <span class="nt">&lt;mirrorOf&gt;</span>conjars<span class="nt">&lt;/mirrorOf&gt;</span>
+    <span class="nt">&lt;/mirror&gt;</span>
+  <span class="nt">&lt;/mirrors&gt;</span>
+<span class="nt">&lt;/settings&gt;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Building Flink with this <em>settings.xml</em> file gets us beyond that error.
+As far as the other two repositories are concerned,
+the JBoss one is actually defined in the root POM of Apache Flink itself.
+I&#8217;m not sure whether it&#8217;s actually needed, but I have created a <a href="https://github.com/apache/flink/pull/21524">pull request</a> for changing it to HTTPS, just in case.
+The "apache.snapshots" repo is defined in the parent POM of <em>org:apache:hive</em> and seems also not needed.
+You could override it in your <em>settings.xml</em> using its <a href="https://repository.apache.org/content/groups/snapshots/">HTTPS URL</a> as a measure of good practice, though.</p>
+</div>
+<div class="paragraph">
+<p>With that <em>settings.xml</em> in place, I could build Apache Flink using the current Maven version 3.8.6.
+I noticed though that the build gets stuck for quite some time at the following step:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>...
+<span class="o">[</span>INFO] <span class="nt">------------------</span>&lt; org.apache.flink:flink-hadoop-fs <span class="o">&gt;</span><span class="nt">------------------</span>
+<span class="o">[</span>INFO] Building Flink : FileSystems : Hadoop FS 1.17-SNAPSHOT
+<span class="o">[</span>INFO] <span class="nt">--------------------------------</span><span class="o">[</span> jar <span class="o">]</span><span class="nt">---------------------------------</span>
+Downloading from maven-default-http-blocker: http://0.0.0.0/net/minidev/json-smart/maven-metadata.xml
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The build wouldn&#8217;t fail, though: after exactly 75 seconds, it continues and runs to completion.
+So what&#8217;s causing this stall?
+Again, a non-HTTPS repository is the culprit, but in a slightly more confusing way.
+As it turns out, that transitive dependency to the <em>net.minidev:json-smart</em> library is declared using a version range by the artifact <a href="https://mvnrepository.com/artifact/com.nimbusds/nimbus-jose-jwt/4.41.1"><em>com.nimbusds:nimbus-jose-jwt</em></a>: <code>[1.3.1,2.3]</code>.</p>
+</div>
+<div class="paragraph">
+<p>So Maven reaches out to all configured repositories in order to identify the latest version within that range.
+Now the <em>hadoop-auth</em> dependency (via its parent <em>hadoop-main</em>) pulls in the <a href="http://repository.jboss.org/nexus/content/groups/public/">JBoss HTTP repository</a>;
+and while access to this is prevented via Maven&#8217;s HTTP blocker, for some reason it still tries to connect to that blocker&#8217;s pseudo URL 0.0.0.0.
+After 75 seconds, this request eventually times out and the build continues.
+Go figure.</p>
+</div>
+<div class="paragraph">
+<p>For preventing this issue, you have a few options:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Add the JBoss repository with HTTPS to your <em>settings.xml</em> (again, the definition in the root POM of your own build does not suffice for that)</p>
+</li>
+<li>
+<p>Run the build with the <em>-o</em> (offline) flag</p>
+</li>
+<li>
+<p>Pin down the version of the artifact in the dependency management of your build, sidestepping the need for resolving the version range:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+</pre></td><td class="code"><pre>...
+<span class="nt">&lt;dependencyManagement&gt;</span>
+  <span class="nt">&lt;dependencies&gt;</span>
+    <span class="nt">&lt;dependency&gt;</span>
+      <span class="nt">&lt;groupId&gt;</span>net.minidev<span class="nt">&lt;/groupId&gt;</span>
+      <span class="nt">&lt;artifactId&gt;</span>json-smart<span class="nt">&lt;/artifactId&gt;</span>
+      <span class="nt">&lt;version&gt;</span>2.3<span class="nt">&lt;/version&gt;</span>
+    <span class="nt">&lt;/dependency&gt;</span>
+  <span class="nt">&lt;/dependencies&gt;</span>
+<span class="nt">&lt;/dependencyManagement&gt;</span>
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This approach has the advantage that it can be done in a persistent way as part of the Maven POM itself, there&#8217;s no need for a custom <em>settings.xml</em> or build time parameters like the offline flag.</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In any case, the build will now skip that 75 seconds pause.
+I.e. less time for drinking a coffee while the build is running, which is a good thing of course.
+Now you might wonder why exactly 75 seconds,
+and I have to admit it&#8217;s not fully clear to me.</p>
+</div>
+<div class="paragraph">
+<p>When running the build with a debugger attached
+(I know, I know, it&#8217;s <a href="https://twitter.com/gunnarmorling/status/1603291378166992898">not en-vogue</a> these days),
+I didn&#8217;t see any timeout configuration for establishing that HTTP connection.
+Some default TCP connection timeout on macOS perhaps?
+Interestingly, when trying with the latest Alpha of Maven 4,
+the build would only stall for ten seconds when trying to resolve that version range;
+Maven&#8217;s HTTP client is configured with a timeout of ten seconds as of this release.</p>
+</div>
+<div class="paragraph">
+<p>The moral of the story?
+Don&#8217;t put repository information into published Maven POMs.
+If you publish something to Maven Central, all its dependencies should be resolvable from there, too.
+Luckily, Maven 4 will make this problem an issue of the past,
+bringing the long-awaited <a href="https://maarten.mulders.it/talks/#whats-cooking-in-maven">separation of build and consumer POMs</a>.</p>
+</div>
+<div class="paragraph">
+<p>I&#8217;d also advise caution when it comes to adding version ranges to dependency definitions,
+it can have unexpected consequences as demonstrated above, and it&#8217;s probably not worth the hassle.</p>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2022 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
