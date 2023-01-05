@@ -1,0 +1,76 @@
+---
+title: "Oh... This is Prod?!"
+date: 2023-01-05T22:10:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+I strongly believe that you should avoid connecting to production environments from local developer machines as much as possible.
+But sometimes, e.g. in order to analyse some specific kinds of failures,
+doing can be inevitable.
+
+Now, if this is the case, I really, really want to be sure that I'm aware of the environment I am working in.
+I absolutely want to avoid a situation as in the catchy title of this post, where I realize that I just ran some integration test against a production environment.
+In the context of working with the AWS CLI tool this means I'd like to be aware of the currently active https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html[profile] by means of coloring my shell accordingly.
+Here's how I've set this up using https://iterm2.com/[iTerm2] and https://www.zsh.org/[zsh].
+
+<!--more-->
+
+The first step is to create a https://iterm2.com/documentation-preferences-profiles-general.html[profile] in iTerm2 for each separate environment which you can easily recognize and tell apart.
+In my case, I've set up two profiles:
+
+* A "Dev" profile with a dark green background
+* A "Prod" profile with a dark red background
+
+I have also added a badge with the profile name which is shown a the upper right corner of the window for further emphasis.
+
+While you can specify the right profile to use for each single invocation of the _aws_ CLI tool, this quickly becomes cumbersome.
+So I am enabling profiles using the `AWS_PROFILE` environment variable:
+
+[source,shell,linenums=true]
+----
+export AWS_PROFILE=dev
+----
+
+Whenever the value of this environment variable changes, I would like to activate the corresponding iTerm2 profile.
+This can be done programmatically by echo-ing a specific escape sequence which is interpreted by the terminal emulator:
+
+[source,shell,linenums=true]
+----
+echo -e "\033]50;SetProfile=Dev\a"
+----
+
+To make sure the right profile is set, I am using the `precmd` https://zsh.sourceforge.io/Doc/Release/Functions.html[hook function] in zsh.
+It is invoked every time before the prompt is displayed.
+Just add the following to your _.zshrc_ file
+(if you have multiple actions you'd like to execute,
+it can be worthwhile to set them up as separate hook functions as described in https://stephencharlesweiss.com/zsh-hooks[this post]):
+
+[source,shell,linenums=true] 
+----
+precmd () {
+    if [ "$AWS_PROFILE" = "dev" ]
+    then
+        echo -e "\033]50;SetProfile=Dev\a"
+    elif [ "$AWS_PROFILE" = "prod" ]
+    then
+        echo -e "\033]50;SetProfile=Prod\a"
+    else
+        echo -e "\033]50;SetProfile=Default\a"
+    fi
+}
+----
+
+With that configuration in place (either source your _.zshrc_ or open a new session),
+enabling a specific AWS profile automatically triggers the activation of the matching profile in iTerm2:
+
+image::shell_profile_selection.gif[]
+
+That way, it's very apparent which AWS profile currently is active, substantially reducing the risk for making any stupid mistakes.
