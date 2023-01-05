@@ -14,10 +14,11 @@ endif::[]
 
 I strongly believe that you should avoid connecting to production environments from local developer machines as much as possible.
 But sometimes, e.g. in order to analyse some specific kinds of failures,
-doing can be inevitable.
+doing so can be inevitable.
 
 Now, if this is the case, I really, really want to be sure that I'm aware of the environment I am working in.
-I absolutely want to avoid a situation as in the catchy title of this post, where I realize that I just ran some integration test against a production environment.
+I absolutely want to avoid a situation as in the catchy title of this post,
+when for instance you realize that you just ran some integration test against a production environment.
 In the context of working with the AWS CLI tool this means I'd like to be aware of the currently active https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html[profile] by means of coloring my shell accordingly.
 Here's how I've set this up using https://iterm2.com/[iTerm2] and https://www.zsh.org/[zsh].
 
@@ -29,9 +30,9 @@ In my case, I've set up two profiles:
 * A "Dev" profile with a dark green background
 * A "Prod" profile with a dark red background
 
-I have also added a badge with the profile name which is shown a the upper right corner of the window for further emphasis.
+I have also added badges with the profile name which is shown a the upper right corner of the window for further emphasis.
 
-While you can specify the right profile to use for each single invocation of the _aws_ CLI tool, this quickly becomes cumbersome.
+While you can specify the right profile to use for each single invocation of the _aws_ tool, this quickly becomes cumbersome.
 So I am enabling profiles using the `AWS_PROFILE` environment variable:
 
 [source,shell,linenums=true]
@@ -51,7 +52,8 @@ To make sure the right profile is set, I am using the `precmd` https://zsh.sourc
 It is invoked every time before the prompt is displayed.
 Just add the following to your _.zshrc_ file
 (if you have multiple actions you'd like to execute,
-it can be worthwhile to set them up as separate hook functions as described in https://stephencharlesweiss.com/zsh-hooks[this post]):
+it can be worthwhile to set them up as separate hook functions,
+as described in https://stephencharlesweiss.com/zsh-hooks[this post]):
 
 [source,shell,linenums=true] 
 ----
@@ -68,8 +70,8 @@ precmd () {
 }
 ----
 
-With that configuration in place (either source your _.zshrc_ or open a new session),
-enabling a specific AWS profile automatically triggers the activation of the matching profile in iTerm2:
+With that configuration in place (either source your _.zshrc_ or open a new session for activating it),
+choosing a specific AWS profile automatically triggers the activation of the matching profile in iTerm2:
 
 image::shell_profile_selection.gif[]
 
