@@ -1,0 +1,211 @@
+---
+title: "Getting Started With Java Development in 2023 -- An Opinionated Guide"
+date: 2023-01-15T22:10:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+27 years of age, and alive and kicking -- The Java platform regularly comes out amonst the top contenders in rankings like the https://www.tiobe.com/tiobe-index/[TIOBE index].
+In my opinion, rightly so. The language is very actively maintained and constantly improved;
+its underlying runtime, the Java Virtual Machine (JVM),
+is one of, if not the most, advanced runtime environments for managed programming languages.
+There is a massive eco-system of Java libraries which make it a great tool for a large number of use cases,
+ranging from command-line and desktop applications over, web apps and backend web services, to datastores and stream processing platforms.
+With upcoming features like support for vectorized computations (SIMD),
+improved integration with native code (Project Panama),
+value objects and user-defined primitives (Project Valhalla), and others,
+Java is becoming a great tool for solving a larger number of software development tasks than ever before.
+
+<!--more-->
+
+The immense breadth of Java and its ecosystem, having grown and matured for nearly three decades,
+can it also make a bit tough though to get started for folks just starting their careers as a Java developer.
+Which version should you use? How to install it? Which build tool and IDE are the right ones?
+For all these, and many other questions, there are typically a number of options,
+which can easily overwhelm you if you are new to Java.
+As the platform has evolved, tools have come and gone,
+things which were hugely popular years ago have fallen into obsolecense since then.
+Related information can be found on the internet,
+making it challenging to identify what's still relevant and what not.
+
+The idea for this blog post is to provide an opinionated guide for folks getting started with Java development in 2023,
+helping you with your very first steps with that amazing platform.
+Note I'm not saying that the things I'm going to recommend are the best ones for each and every situation.
+The focus is on providing a good getting-started experience,
+some of the recommended tools or approaches may make less sense to use as you get more experienced.
+Other choices might be better suited for you later on, based on the specific situation and its requirements.
+Also there is a notion of personal taste and preference to these things,
+those are _my_ recommendations, and those of others might look different, which is perfectly fine.
+
+== 📦 Distribution
+
+The Java platform (with key elements being the language, the JVM, and the Java class library) is maintained by the https://openjdk.org/[OpenJDK] open-source project.
+Similar to Linux, multiple vendors provide binary distributions for this project,
+including Amazon, the Eclipse Foundation, Microsoft, Oracle, or Red Hat.
+These distributions differ in aspects like availability of commercial support and duration of the same, supported platforms,
+extend of testing, certain features like available garbage collectors, potentially bug fixes, and others.
+So which one should you use?
+
+For the beginning, I suggest to choose *https://adoptium.net/[Eclipse Temurin]*.
+It is backed by Adoptium, a working group of companies like Google, Red Hat, Microsoft, Alibaba, Azul, and others.
+You can download and use it for free, it contains everything you'll need, passes the test compatibility kit (TCK) of the JDK, and if needed, there is commercial support provided by different vendors.
+
+== 1️⃣7️⃣ Version
+
+A new version of Java is released every six months, with the current one being https://jdk.java.net/19/[Java 19] at the time of writing this.
+Specific releases are long-term support (LTS) releases, for which vendors provide maintenance for many years.
+The current LTS release is *Java 17* and I recommend you to get started with this one.
+
+While newer non-LTS releases may add useful new features, finding a sustainable update strategy can be a bit tricky,
+and many of the new features are preview or incubating features, meaning that you would not use them in production code anyways.
+So I suggest to leave diving into those for later on, once you've gained some experience with Java and its ecosystem.
+
+If specific 3rd-party libraries don't work seamlessly with Java 17 yet, you should use the previous LTS (Java 11).
+Don't use non-LTS releases apart from the current one, as they are mostly unmaintained,
+i.e. you may open up yourself to security issues and other bugs which won't get fixed.
+Also don't use Java 8 (alternatively named 1.8),
+which is the LTS before 11, as it's really ancient by today's standards.
+
+== 🔧 Installation
+
+There's different ways for installing your chosen Java distribution.
+Usually, there'll be a distribution package which you can download from the vendor's website.
+Alternatively, package managers of the operating system allow you to install Java too.
+
+For a simplified getting started experience, my recommendation is to take a look at *https://sdkman.io/[SDKMan]*.
+This is a tool which allows you to install software development kits (SDKs) such as Java's JDK.
+You can also update your installed SDK versions and easily switch between multiple versions.
+
+If you have SDKMan installed, obtaining the current Eclipse Temurin build of Java 17 is as simple as running the following in your shell:
+
+[source,bash,linenums=true]
+----
+$ sdk install java 17.0.5-tem # Install
+$ sdk use java 17.0.5-tem # Activate
+$ java --version # Verify version
+
+openjdk 17.0.5 2022-10-18
+...
+----
+
+== 💡 Your First Java Program
+
+Having installed Java, it's time to write your first Java program.
+Java is an object-oriented language (with some functional flavour),
+hence everything in a Java program is defined in form of classes, which have fields (representing their state) and methods (the behavior operating on that state).
+The canonical "Hello World" example in Java looks like this:
+
+[source,java,linenums=true]
+----
+public class HelloWorld { // <1>
+  public static void main(String... args) { // <2>
+    System.out.println("Hello world!"); // <3>
+  }
+}
+----
+<1> The class `HelloWorld` must be specified in a source file named _HelloWorld.java_
+<2> The `main()` method is the entry point into a Java program
+<3> The `println()` method prints the given text to standard out
+
+Java source code is compiled into class files which then are loaded into the JVM and executed.
+Normally, this is done in two steps: first running the compiler _javac_, then executing the program using the _java_ binary.
+For quick testing and exploring, both steps can be combined, so you can execute your "Hello World" program like this:
+
+[source,bash,linenums=true]
+----
+$ java HelloWorld.java
+Hello world!
+----
+
+For exploring Java in a quick and iterative mode,
+it provides *jshell*, an interactive Read-Evaluate-Print Loop (REPL).
+You can use it for running expressions and statements without defining a surrounding method or class,
+simplifying "Hello World" quite a bit:
+
+[source,bash,linenums=true]
+----
+$ jshell
+
+jshell> System.out.println("Hello World");
+Hello World
+----
+
+Similar to jshell, but quite a bit more fancier is *https://www.jbang.dev/[jbang]*,
+which for instance allows you to easily pull in 3rd party libraries into your single source file Java programs.
+
+== 👷‍♀️ Build Tool
+
+Once you go beyond the basics of manually compiling and running a set of Java classes,
+you'll need a build tool.
+It will help you not only with compiling your code,
+but also with managing dependencies (i.e. 3rd party libraries you are using),
+testing your application, assembling the output artifacts (e.g. a JAR file with your program), and much more.
+There are plug-ins for finding common bugs, auto-formatting your code, etc.
+Commonly used build tool options for Java include Apache Maven, Gradle, and Bazel.
+
+My recommendation is to stick with *Maven* for the beginning;
+it's the most widely used one and in my opinion the easiest to learn.
+While it defines a rather rigid structure for your project,
+that also frees you from having to think about many aspects, which is great in particular when getting started.
+
+== 📝 Editor
+
+Java developers like to fight over their favourite build tools, and it's the same with editors and full-blown integrated development environments (IDEs).
+So whatever I'm going to say here, it's guaranteed a significant number of people won't like it ;)
+My suggestion is to use *VSCode* at the beginning.
+It's a rather light-weight editor, which comes with good Java developer support,
+e.g. for testing and debugging your code.
+It integrates with Maven-based projects very well and has a rich eco-system of plug-ins you can tap into.
+As your needs grow, you'll probably look for an IDE which come with even more advanced functionality, e.g. when it comes to refactoring your code.
+While I'm personally a happy user of the Eclipse IDE,
+most folks tend to use *IntelliJ* these days and it's thus what I'd recommend you too look into.
+It comes with a feature-rich free community edition which will help you a lot will the day-to-day tasks you'll encounter as a Java developer.
+Make sure to spend a few hours to learn the most important keyboard short-cuts,
+it will save you lots of time later on.
+
+== 🐳 Container Image
+
+In particular when you are going to work on an enterprise application,
+chances are that you'll deploy your application in form of a container image,
+so people can run your application on Docker or Kubernetes.
+Sticking to the recommendation on using Eclipse Temurin as your Java distribution,
+I'd suggest to use the *https://hub.docker.com/\_/eclipse-temurin/[Temurin image]* as the base for your application images,
+e.g. `eclipse-temurin:17` for Java 17.
+Just make sure to keep your image up to date,
+so you and your users benefit from updates to the base image.
+One base image you should avoid is the https://hub.docker.com/\_/openjdk[OpenJDK] one,
+which is officially deprecated and not recommended for production usage.
+
+== Application Framework
+
+While you could build a Java application solely based on the class library which comes with Java itself,
+depending on what it is you want to build,
+you'll be better off using an application framework which provides support for building web applications,
+accessing all kinds of databases, structuring your code via dependency injection and much more.
+Again, there's plenty of options in Java here,
+such as Spring Boot, Quarkus, Jakarta EE, Micronaut, Dropwizard, Helidon, and more.
+My personal recommendation here is to use *Quarkus*
+(it's the one I'm most familiar with, having worked for Red Hat before, who are the company behind this framework),
+or alternatively *Spring Boot*.
+Both are widely popular, integrate with a wide range of technologies (e.g. web frameworks and databases of all kinds),
+come with excellent developer tooling, and are backed by very active open-source communities.
+
+== Libraries
+
+== Learning the Language
+
+== Next Steps
+
+JFR
+GraalVM
+jep search
+CI/CD
+Effective Java
+Testcontainers
