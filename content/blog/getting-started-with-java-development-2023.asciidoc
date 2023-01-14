@@ -18,9 +18,10 @@ its underlying runtime, the Java Virtual Machine (JVM),
 is one of, if not the most, advanced runtime environments for managed programming languages.
 There is a massive eco-system of Java libraries which make it a great tool for a large number of use cases,
 ranging from command-line and desktop applications over, web apps and backend web services, to datastores and stream processing platforms.
-With upcoming features like support for vectorized computations (SIMD),
-improved integration with native code (Project Panama),
-value objects and user-defined primitives (Project Valhalla), and others,
+With upcoming features like https://openjdk.org/jeps/426[support for vectorized computations] (SIMD),
+light-weight virtual threads (https://openjdk.org/projects/loom/[Project Loom]),
+improved integration with native code (https://openjdk.org/projects/panama/[Project Panama]),
+value objects and user-defined primitives (https://openjdk.org/projects/valhalla/[Project Valhalla]), and others,
 Java is becoming a great tool for solving a larger number of software development tasks than ever before.
 
 <!--more-->
@@ -188,7 +189,7 @@ It comes with a feature-rich free community edition which will help you a lot wi
 Make sure to spend a few hours to learn the most important keyboard short-cuts,
 it will save you lots of time later on.
 
-== Application Framework
+== 🧱 Application Framework
 
 While you could build a Java application solely based on the class library which comes with Java itself,
 depending on what it is you want to build,
@@ -202,7 +203,7 @@ or alternatively *Spring Boot*.
 Both are widely popular, integrate with a wide range of technologies (e.g. web frameworks and databases of all kinds),
 come with excellent developer tooling, and are backed by very active open-source communities.
 
-== Libraries
+== 🧩 Libraries
 
 The eco-system of 3rd party libraries is one of Java's absolute super-powers:
 there is a ready-made library or framework available for pretty much every task you might think of,
@@ -219,13 +220,14 @@ Sometimes, you might be better off by implementing something yourself, or maybe 
 (provided the license of the original library allows for that).
 
 That said, some popular libraries you will encounter in many projects include JUnit (for unit testing), slf4j (logging),
-Jackson (JSON handling), and Hibernate ORM (object-relational mapping).
+Jackson (JSON handling), Hibernate ORM (object-relational persistence), https://www.testcontainers.org/[integration testing with Docker],
+and https://www.archunit.org/[ArchUnit](enforcing software architecture rules).
 
 Most open-source dependencies are available via the https://search.maven.org/[Maven Central] repository;
 All the build tools integrate with it, not only Maven itself, but also Gradle and all the others.
 The https://mvnrepository.com/[MVN Repository] site is a good starting point for finding dependencies and their latest versions.
 
-== 🐳 Container Image
+== 🐳 Container Base Image
 
 In particular when you are going to work on an enterprise application,
 chances are that you'll deploy your application in form of a container image,
@@ -249,6 +251,19 @@ A must-read for honing your Java skills is https://www.oreilly.com/library/view/
 While this has been updated for Java 9 the last time,
 its contents are pretty much timeless and still apply to current Java versions.
 
+As far as online resources are concerned,
+a classic one are the https://docs.oracle.com/javase/tutorial/index.html[Java Tutorials by Oracle], which touch on a wide range of topics.
+Unfortunately though, they haven't been updated since Java 8, so they don't cover any features added after that.
+They still are a good starting point for learning the basics.
+A very good addition is https://dev.java/learn/["Learn Java"] trail on dev.java,
+which also covers newer developments.
+
+The canonical resource describing the Java language is its specification,
+the https://docs.oracle.com/javase/specs/jls/se17/html/index.html[Java Language Specification], or JLS for short.
+The specification is written in a very concise and very well understandable way,
+and I highly recommend you to take a look if you'd like to understand how specific details of the language exactly work.
+That being said, when you're just about to get started with learning Java, you'll be better off by studying the books or tutorials mentioned above.
+
 If certifications are your thing, you might consider to learn and take the exam for the https://education.oracle.com/products/trackp_OCPJSE17["Oracle Certified Professional: Java SE 17 Developer"] one.
 I'd only recommend doing so after having worked with Java at least for a year or so,
 as the exam actually is quite involved.
@@ -256,13 +271,23 @@ You'll certainly learn a lot about Java, including all kinds of corner cases and
 not everything will necessarily translate into your day-to-day work as a developer, though.
 So you should consciously decide whether you want to spend the time for preparing for the certification or not.
 
-== Next Steps
+== 🔭 Next Steps
 
-JFR
-GraalVM
-jep search
-CI/CD
-Effective Java
-Testcontainers
-jreleaser
-binary tools
+While the points above hopefully can help you to embark onto a successful journey with the Java platform,
+this is only a starting point.
+Depending on your specific needs and requirements, here is a number possible next topics to explore and learn about:
+
+* Exploring https://docs.oracle.com/en/java/javase/17/docs/specs/man/index.html[the tools] which come with the JDK, for instance _javadoc_ (for generating API documentation), _jcmd_ (for sending diagnostic commands to a running Java application), or _jpackage_ (for packaging self-contained Java applications)
+* Building native binaries using GraalVM, allowing for a fast start-up and low memory consumption; very useful for instance for building command-line tools or AWS Lambda functions
+* Analyzing the performance and runtime characteristics of your application using JDK Flight Recorder and JDK Mission Control
+* Setting up continuous integration (CI) workflows for automatically https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven[building and testing] your application with GitHub Actions (the aforementioned Maven oss-quickstart archetype will generate a basic template for that automatically)
+* Publishing open-source libraries to Maven Central with JReleaser
+* Organizing large projects in self-contained, loosely coupled units, using the https://dev.java/learn/modules/[Java Module System]
+
+Finally, a few resources which should help you to stay up-to-date with everything Java and learn what's going on in the community:
+
+* https://dev.java/news/[Java News] on dev.ava
+* https://inside.java/[inside.java] ("news and views from members of the Java team at Oracle")
+* https://chriswhocodes.com/jepsearch.html[JEP Search] (for searching and filtering Java enhancement proposals, i.e. changes to the language and the platform)
+* https://foojay.io/[Foojay] (Friends of OpenJDK)
+* Some Twitter handles to follow: https://twitter.com/java[@java], https://twitter.com/Java_Champions[@Java_Champions], https://twitter.com/JavaAtMicrosoft[JavaAtMicrosoft], https://twitter.com/RedHatJava[RedHatJava]
