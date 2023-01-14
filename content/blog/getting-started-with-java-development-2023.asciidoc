@@ -148,40 +148,45 @@ It will help you not only with compiling your code,
 but also with managing dependencies (i.e. 3rd party libraries you are using),
 testing your application, assembling the output artifacts (e.g. a JAR file with your program), and much more.
 There are plug-ins for finding common bugs, auto-formatting your code, etc.
-Commonly used build tool options for Java include Apache Maven, Gradle, and Bazel.
+Commonly used build tool options for Java include https://maven.apache.org/[Apache Maven], https://gradle.org/[Gradle], and https://bazel.build/docs/bazel-and-java[Bazel].
 
 My recommendation is to stick with *Maven* for the beginning;
 it's the most widely used one and in my opinion the easiest to learn.
 While it defines a rather rigid structure for your project,
 that also frees you from having to think about many aspects, which is great in particular when getting started.
+Maven has support for archetypes, templates which you can use to quickly boostrap new projects.
+For instance you can use the https://github.com/moditect/oss-quickstart[oss-quickstart] archetype which I have built for creating new projects with a reasonable set of pre-configured plug-ins like so:
+
+[source,bash,linenums=true]
+----
+mvn archetype:generate -B \
+  -DarchetypeGroupId=org.moditect.ossquickstart \
+  -DarchetypeArtifactId=oss-quickstart-simple-archetype \
+  -DarchetypeVersion=1.0.0.Alpha1 \
+  -DgroupId=com.example.demos \
+  -DartifactId=fancy-project \
+  -Dversion=1.0.0-SNAPSHOT \
+  -DmoduleName=com.example.fancy
+----
+
+Alternative build tools like Gradle tend to provide more flexibility and interesting features like "compilation avoidance" (rebuilding only affected parts of large code bases after a change) or distributed build caches
+(increasing developer productivity in particular in large projects),
+but I'd wait with looking at those until you truly need them.
 
 == 📝 Editor
 
-Java developers like to fight over their favourite build tools, and it's the same with editors and full-blown integrated development environments (IDEs).
+Many Java developers love to fight over their favourite build tools, and it's the same with editors and full-blown integrated development environments (IDEs).
 So whatever I'm going to say here, it's guaranteed a significant number of people won't like it ;)
-My suggestion is to use *VSCode* at the beginning.
+My suggestion is to start with *VSCode*.
 It's a rather light-weight editor, which comes with good Java developer support,
 e.g. for testing and debugging your code.
-It integrates with Maven-based projects very well and has a rich eco-system of plug-ins you can tap into.
+It integrates very well with Maven-based projects and has a rich eco-system of plug-ins you can tap into.
 As your needs grow, you'll probably look for an IDE which come with even more advanced functionality, e.g. when it comes to refactoring your code.
 While I'm personally a happy user of the Eclipse IDE,
 most folks tend to use *IntelliJ* these days and it's thus what I'd recommend you too look into.
 It comes with a feature-rich free community edition which will help you a lot will the day-to-day tasks you'll encounter as a Java developer.
 Make sure to spend a few hours to learn the most important keyboard short-cuts,
 it will save you lots of time later on.
-
-== 🐳 Container Image
-
-In particular when you are going to work on an enterprise application,
-chances are that you'll deploy your application in form of a container image,
-so people can run your application on Docker or Kubernetes.
-Sticking to the recommendation on using Eclipse Temurin as your Java distribution,
-I'd suggest to use the *https://hub.docker.com/\_/eclipse-temurin/[Temurin image]* as the base for your application images,
-e.g. `eclipse-temurin:17` for Java 17.
-Just make sure to keep your image up to date,
-so you and your users benefit from updates to the base image.
-One base image you should avoid is the https://hub.docker.com/\_/openjdk[OpenJDK] one,
-which is officially deprecated and not recommended for production usage.
 
 == Application Framework
 
@@ -199,7 +204,57 @@ come with excellent developer tooling, and are backed by very active open-source
 
 == Libraries
 
-== Learning the Language
+The eco-system of 3rd party libraries is one of Java's absolute super-powers:
+there is a ready-made library or framework available for pretty much every task you might think of,
+most of the times available as open-source.
+
+Perhaps counter-intuitively, my recommendation here would be to try and refrain from pulling in any libraries into your project,
+and instead work with what's available in Java's standard class library (which is huge and covers a wide range of functionality already).
+Next, check out what your chosen application framework (if you use one) offers either itself or provides integrations for.
+Adding a dependency to an external library should always be a conscious decision,
+as you might easily run into version conflicts between transitive dependencies (i.e. dependencies of dependencies, in different versions),
+more dependencies increase the complexity of your application (for instance, you must keep them all up-to-date),
+they may increase the attack surface of your application, etc.
+Sometimes, you might be better off by implementing something yourself, or maybe copy a method or a class of a dependency into your own codebase
+(provided the license of the original library allows for that).
+
+That said, some popular libraries you will encounter in many projects include JUnit (for unit testing), slf4j (logging),
+Jackson (JSON handling), and Hibernate ORM (object-relational mapping).
+
+Most open-source dependencies are available via the https://search.maven.org/[Maven Central] repository;
+All the build tools integrate with it, not only Maven itself, but also Gradle and all the others.
+The https://mvnrepository.com/[MVN Repository] site is a good starting point for finding dependencies and their latest versions.
+
+== 🐳 Container Image
+
+In particular when you are going to work on an enterprise application,
+chances are that you'll deploy your application in form of a container image,
+so people can run your application on Docker or Kubernetes.
+Sticking to the recommendation on using Eclipse Temurin as your Java distribution,
+I'd suggest to use the *https://hub.docker.com/\_/eclipse-temurin/[Temurin image]* as the base for your application images,
+e.g. `eclipse-temurin:17` for Java 17.
+Just make sure to keep your image up to date,
+so you and your users benefit from updates to the base image.
+One base image you should avoid is the https://hub.docker.com/\_/openjdk[OpenJDK] one,
+which is officially deprecated and not recommended for production usage.
+
+== 📚 Learning the Language
+
+Providing an introduction to all the features of the Java programming language is beyond the scope of this blog post.
+For truly learning the language,
+my recommendation would be to get a good book, grab a coffee (or two, or three, ...) and work through its chapters, in order of your personal interests.
+A popular choice for getting started with Java is https://www.oreilly.com/library/view/head-first-java/9781492091646/["Head First Java, 3rd Edition"]
+by Kathy Sierra, Bert Bates, Trisha Gee, nicely complemented by https://www.manning.com/books/the-well-grounded-java-developer-second-edition[The Well-Grounded Java Developer, 2nd Edition], by Benjamin Evans, Jason Clark, and Martijn Verburg.
+A must-read for honing your Java skills is https://www.oreilly.com/library/view/effective-java-3rd/9780134686097/["Effective Java, 3rd Edition"], by Joshua Bloch.
+While this has been updated for Java 9 the last time,
+its contents are pretty much timeless and still apply to current Java versions.
+
+If certifications are your thing, you might consider to learn and take the exam for the https://education.oracle.com/products/trackp_OCPJSE17["Oracle Certified Professional: Java SE 17 Developer"] one.
+I'd only recommend doing so after having worked with Java at least for a year or so,
+as the exam actually is quite involved.
+You'll certainly learn a lot about Java, including all kinds of corner cases and odd details;
+not everything will necessarily translate into your day-to-day work as a developer, though.
+So you should consciously decide whether you want to spend the time for preparing for the certification or not.
 
 == Next Steps
 
@@ -209,3 +264,5 @@ jep search
 CI/CD
 Effective Java
 Testcontainers
+jreleaser
+binary tools
