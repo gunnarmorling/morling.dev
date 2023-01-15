@@ -50,18 +50,19 @@ those are _my_ recommendations, and those of others might look different, which 
 [NOTE]
 .Java -- What is What?
 ====
-As you do your first steps with Java, it might be confusing to understand what even Java _is_.
+As you make your first steps with Java, it might be confusing to understand what even Java _is_.
 Indeed "Java" refers to several things, which can even trip up more experienced folks.
 Here's a list of key terms and concepts:
 
 *The Java programming language*:: A general-purpose statically-typed object-oriented programming language (with some functional flavors);
 it is compiled into portable byte code which can be executed on a wide range of platforms
-*The Java platform*:: "https://en.wikipedia.org/wiki/Java_(software_platform)[A suite of programs that facilitate developing and running programs written in the Java programming language"], with key elements being the Java compiler (_javac_), the Java virtual machine, and the Java standard class library.
+*The Java platform*:: https://en.wikipedia.org/wiki/Java_(software_platform)["A suite of programs that facilitate developing and running programs written in the Java programming language"], with key elements being the Java compiler (_javac_), the Java virtual machine, and the Java standard class library.
 Focus of this post is the Java Standard Edition (SE), other platforms like Java Micro Edition (ME), and Jakarta Enterprise Edition (EE) are not discussed here.
 A large number of languages other than Java (the language) itself can run on Java SE (the platform), for instance Kotlin, Groovy, and Scala; they are also out of scope for this article, though
 *The Java virtual machine (JVM)*:: A virtual machine for executing Java programs (or more precisely, byte code), e.g. taking care of tasks like loading byte code and verifying its correctness, compiling it into platform-specific machine code using a just-in-time compiler (JIT), automated memory management via garbage collection, ensuring isolation between different components, providing runtime diagnostics, etc.; multiple JVM implementations exist, including https://openjdk.org/groups/hotspot/[HotSpot] and https://www.eclipse.org/openj9/[OpenJ9]
 *The Java Development Kit (JDK)*:: A distribution of tools for developing and running Java applications
 *OpenJDK*:: An open-source implementation of Java SE and related projects; also the name of the open-source community creating this implementation
+*The Java Community Process (JCP)*:: A mechanism for developing specifications in the Java space, including those defining the different Java versions
 ====
 
 == 📦 Distribution
@@ -77,7 +78,7 @@ For the beginning, the differences won't matter too much, and I suggest choosing
 It is backed by Adoptium, a working group of companies like Google, Red Hat, Microsoft, Alibaba, Azul, and others.
 You can download and use it for free, it contains everything you'll need, passes the test compatibility kit (TCK) of the JDK, and if needed, there is commercial support provided by different vendors.
 
-== 1️⃣7️⃣ Version
+== 📆 Version
 
 A new version of Java is released every six months, with the current one at the time of writing this being https://jdk.java.net/19/[Java 19].
 Specific releases are long-term support (LTS) releases, for which vendors provide maintenance for many years.
@@ -196,6 +197,11 @@ mvn archetype:generate -B \
   -DmoduleName=com.example.fancy
 ----
 
+A lesser known yet super-useful companion to Maven is the https://github.com/apache/maven-mvnd[Maven Daemon],
+which helps you to drastically speed up your builds by keeping a daemon process running in the background,
+avoiding the cost of repeatedly launching and initializing the build environment.
+You can install it via SDKMan by running `sdk install mvnd`.
+
 Alternative build tools like Gradle tend to provide more flexibility and interesting features like "compilation avoidance" (rebuilding only affected parts of large code bases after a change) or distributed build caches
 (increasing developer productivity in particular in large projects),
 but I'd wait with looking at those until you've gathered some experience with Java itself.
@@ -245,6 +251,7 @@ https://www.archunit.org/[ArchUnit] (enforcing software architecture rules).
 Most open-source dependencies are available via the https://search.maven.org/[Maven Central] repository;
 All the build tools integrate with it, not only Maven itself, but also Gradle and all the others.
 The https://mvnrepository.com/[MVN Repository] site is a good starting point for finding dependencies and their latest versions.
+If you want to distribute libraries within your own organization, you can do so by self-running repository servers like https://www.sonatype.com/new/products/nexus-repository[Nexus] or https://jfrog.com/artifactory/[Artifactory], or use managed cloud services such as https://docs.aws.amazon.com/codeartifact/latest/ug/welcome.html[AWS CodeArtifact].
 
 == 🐢 Application Framework
 
