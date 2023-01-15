@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Getting Started With Java Development in 2023 — An Opinionated Guide - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Getting Started With Java Development in 2023 — An Opinionated Guide" />
+<meta property="og:description" content="
+27 years of age, and alive and kicking&#8201;&#8212;&#8201;The Java platform regularly comes out amongst the top contenders in rankings like the TIOBE index.
+In my opinion, rightly so. The language is very actively maintained and constantly improved;
+its underlying runtime, the Java Virtual Machine (JVM),
+is one of, if not the most, advanced runtime environments for managed programming languages.
+
+
+There is a massive eco-system of Java libraries which make it a great tool for a large number of use cases,
+ranging from command-line and desktop applications, over web apps and backend web services, to datastores and stream processing platforms.
+With upcoming features like support for vectorized computations (SIMD),
+light-weight virtual threads,
+improved integration with native code,
+value objects and user-defined primitives, and others,
+Java is becoming an excellent tool for solving a larger number of software development tasks than ever before.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/getting-started-with-java-development-2023/" />
+<meta property="article:published_time" content="2023-01-15T22:10:00+01:00" />
+<meta property="article:modified_time" content="2023-01-15T22:10:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Getting Started With Java Development in 2023 — An Opinionated Guide"/>
+<meta name="twitter:description" content="
+27 years of age, and alive and kicking&#8201;&#8212;&#8201;The Java platform regularly comes out amongst the top contenders in rankings like the TIOBE index.
+In my opinion, rightly so. The language is very actively maintained and constantly improved;
+its underlying runtime, the Java Virtual Machine (JVM),
+is one of, if not the most, advanced runtime environments for managed programming languages.
+
+
+There is a massive eco-system of Java libraries which make it a great tool for a large number of use cases,
+ranging from command-line and desktop applications, over web apps and backend web services, to datastores and stream processing platforms.
+With upcoming features like support for vectorized computations (SIMD),
+light-weight virtual threads,
+improved integration with native code,
+value objects and user-defined primitives, and others,
+Java is becoming an excellent tool for solving a larger number of software development tasks than ever before.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling-2b44b7229/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling-2b44b7229/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Getting Started With Java Development in 2023 — An Opinionated Guide</h1>
+				<div class="meta">Posted at Jan 15, 2023</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>27 years of age, and alive and kicking&#8201;&#8212;&#8201;The Java platform regularly comes out amongst the top contenders in rankings like the <a href="https://www.tiobe.com/tiobe-index/">TIOBE index</a>.
+In my opinion, rightly so. The language is very actively maintained and constantly improved;
+its underlying runtime, the Java Virtual Machine (JVM),
+is one of, if not the most, advanced runtime environments for managed programming languages.</p>
+</div>
+<div class="paragraph">
+<p>There is a massive eco-system of Java libraries which make it a great tool for a large number of use cases,
+ranging from command-line and desktop applications, over web apps and backend web services, to datastores and stream processing platforms.
+With upcoming features like <a href="https://openjdk.org/jeps/426">support for vectorized computations</a> (SIMD),
+light-weight <a href="https://openjdk.org/projects/loom">virtual threads</a>,
+improved <a href="https://openjdk.org/projects/panama/">integration with native code</a>,
+<a href="https://openjdk.org/projects/valhalla/">value objects and user-defined primitives</a>, and others,
+Java is becoming an excellent tool for solving a larger number of software development tasks than ever before.</p>
+</div>
+<div class="paragraph">
+<p>The immense breadth of Java and its ecosystem, having grown and matured over nearly three decades,
+can also be challenging though for folks just starting their careers as a Java developer.
+Which Java version should you use? How to install it? Which build tool and IDE are the right ones?
+For all these, and many other questions, there are typically a number of options,
+which can easily overwhelm you if you are new to Java.
+As the platform has evolved, tools have come and gone,
+things which were hugely popular years ago have fallen into obsolescence since then.
+As related information can still be found on the internet,
+it can be hard to identify what&#8217;s still relevant and what not.</p>
+</div>
+<div class="paragraph">
+<p>The idea for this blog post is to provide an opinionated guide for folks getting started with Java development in 2023,
+helping you with your very first steps with that amazing platform.
+Note I&#8217;m not saying that the things I&#8217;m going to recommend are the best ones for each and every situation.
+The focus is on providing a good getting-started experience.
+Some of the recommended tools or approaches may make less sense to use as you get more experienced
+and other choices might be better suited for you then, based on the specific situation and its requirements.</p>
+</div>
+<div class="paragraph">
+<p>Also, very importantly, there is a notion of personal taste and preference to these things,
+those are <em>my</em> recommendations, and those of others might look different, which is perfectly fine.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Java&#8201;&#8212;&#8201;What is What?</div>
+<div class="paragraph">
+<p>As you make your first steps with Java, it might be confusing to understand what even Java <em>is</em>.
+Indeed "Java" refers to several things, which can even trip up more experienced folks.
+Here&#8217;s a list of key terms and concepts:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>The Java programming language</strong></dt>
+<dd>
+<p>A general-purpose statically-typed object-oriented programming language (with some functional flavors);
+it is compiled into portable byte code which can be executed on a wide range of platforms</p>
+</dd>
+<dt class="hdlist1"><strong>The Java platform</strong></dt>
+<dd>
+<p><a href="https://en.wikipedia.org/wiki/Java_(software_platform)">"A suite of programs that facilitate developing and running programs written in the Java programming language"</a>, with key elements being the Java compiler (<em>javac</em>), the Java virtual machine, and the Java standard class library.
+Focus of this post is the Java Standard Edition (SE), other platforms like Java Micro Edition (ME), and Jakarta Enterprise Edition (EE) are not discussed here.
+A large number of languages other than Java (the language) itself can run on Java SE (the platform), for instance Kotlin, Groovy, and Scala; they are also out of scope for this article, though</p>
+</dd>
+<dt class="hdlist1"><strong>The Java virtual machine (JVM)</strong></dt>
+<dd>
+<p>A virtual machine for executing Java programs (or more precisely, byte code), e.g. taking care of tasks like loading byte code and verifying its correctness, compiling it into platform-specific machine code using a just-in-time compiler (JIT), automated memory management via garbage collection, ensuring isolation between different components, providing runtime diagnostics, etc.; multiple JVM implementations exist, including <a href="https://openjdk.org/groups/hotspot/">HotSpot</a> and <a href="https://www.eclipse.org/openj9/">OpenJ9</a></p>
+</dd>
+<dt class="hdlist1"><strong>The Java Development Kit (JDK)</strong></dt>
+<dd>
+<p>A distribution of tools for developing and running Java applications</p>
+</dd>
+<dt class="hdlist1"><strong>OpenJDK</strong></dt>
+<dd>
+<p>An open-source implementation of Java SE and related projects; also the name of the open-source community creating this implementation</p>
+</dd>
+<dt class="hdlist1"><strong>The Java Community Process (JCP)</strong></dt>
+<dd>
+<p>A mechanism for developing specifications in the Java space, including those defining the different Java versions</p>
+</dd>
+</dl>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect1">
+<h2 id="_distribution">📦 Distribution</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Java platform is maintained by the <a href="https://openjdk.org/">OpenJDK</a> open-source project.
+Similar to Linux, multiple vendors provide binary distributions for this project,
+including Amazon, the Eclipse Foundation, Microsoft, Oracle, or Red Hat.
+These distributions differ in aspects like availability of commercial support and duration of the same, supported platforms,
+extent of testing, certain features like available garbage collectors, potentially bug fixes, and others.
+So which one should you use?</p>
+</div>
+<div class="paragraph">
+<p>For the beginning, the differences won&#8217;t matter too much, and I suggest choosing <strong><a href="https://adoptium.net/">Eclipse Temurin</a></strong>.
+It is backed by Adoptium, a working group of companies like Google, Red Hat, Microsoft, Alibaba, Azul, and others.
+You can download and use it for free, it contains everything you&#8217;ll need, passes the test compatibility kit (TCK) of the JDK, and if needed, there is commercial support provided by different vendors.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_version">📆 Version</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A new version of Java is released every six months, with the current one at the time of writing this being <a href="https://jdk.java.net/19/">Java 19</a>.
+Specific releases are long-term support (LTS) releases, for which vendors provide maintenance for many years.
+The current LTS release is <strong>Java 17</strong> and I recommend you to get started with this one.</p>
+</div>
+<div class="paragraph">
+<p>While newer non-LTS releases may add useful new features, finding a sustainable update strategy can be a bit tricky,
+and many of the new features are preview or incubating features, meaning that you would not use them in production code anyways.
+I recommend you diving into those later on, once you&#8217;ve gained some experience with Java and its ecosystem.</p>
+</div>
+<div class="paragraph">
+<p>If specific 3rd-party libraries don&#8217;t work seamlessly with Java 17 yet, you should use the previous LTS (Java 11).
+Don&#8217;t use non-LTS releases apart from the current one, as they are mostly unmaintained,
+i.e. you may open yourself to security issues and other bugs which won&#8217;t get fixed.
+Also don&#8217;t use Java 8 (alternatively named 1.8),
+which is the LTS before 11, as it&#8217;s really ancient by today&#8217;s standards.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_installation">🔧 Installation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>There&#8217;s different ways for installing your chosen Java distribution.
+Usually, there&#8217;ll be a distribution package which you can download from the vendor&#8217;s website.
+Alternatively, package managers of the operating system allow you to install Java too.</p>
+</div>
+<div class="paragraph">
+<p>For a simplified getting started experience, my recommendation is to take a look at <strong><a href="https://sdkman.io/">SDKMan</a></strong>.
+This is a tool which allows you to install software development kits (SDKs) such as Java&#8217;s JDK.
+You can also update your installed SDK versions and easily switch between multiple versions.</p>
+</div>
+<div class="paragraph">
+<p>If you have SDKMan installed, obtaining the current Eclipse Temurin build of Java 17 is as simple as running the following in your shell:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="nv">$ </span>sdk <span class="nb">install </span>java 17.0.5-tem <span class="c"># Install</span>
+<span class="nv">$ </span>sdk use java 17.0.5-tem <span class="c"># Activate</span>
+<span class="nv">$ </span>java <span class="nt">--version</span> <span class="c"># Verify version</span>
+
+openjdk 17.0.5 2022-10-18
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Installation in Windows</div>
+<div class="paragraph">
+<p>SDKMan is implemented in bash, so if you are on Windows, you&#8217;ll need to install either the Windows Subsystem for Linux (WSL) or Cygwin before you can use SDKMan.
+I&#8217;d recommend having either in any case, but if that&#8217;s not an option, the simplest probably is installing Java on Windows by downloading your distribution directly from its vendors website.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_your_first_java_program">💡 Your First Java Program</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Having installed Java, it&#8217;s time to write your first Java program.
+Java is first and foremost an object-oriented language,
+hence everything in a Java program is defined in the form of classes, which have fields (representing their state) and methods (the behavior operating on that state).
+The canonical "Hello World" example in Java looks like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">HelloWorld</span> <span class="o">{</span> <i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">...</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span> <i class="conum" data-value="2"></i><b>(2)</b>
+    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Hello world!"</span><span class="o">);</span> <i class="conum" data-value="3"></i><b>(3)</b>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The class <code>HelloWorld</code> must be specified in a source file named <em>HelloWorld.java</em></td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The <code>main()</code> method is the entry point into a Java program</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The <code>println()</code> method prints the given text to standard out</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Java source code is compiled into class files which then are loaded into the JVM and executed.
+Normally, this is done in two steps: first running the compiler <em>javac</em>, then executing the program using the <em>java</em> binary.
+For quick testing and exploring, both steps can be combined, so you can execute your "Hello World" program like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre><span class="nv">$ </span>java HelloWorld.java
+Hello world!
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For exploring Java in a quick and iterative mode,
+it provides <a href="https://docs.oracle.com/en/java/javase/17/docs/specs/man/jshell.html"><strong>jshell</strong></a>, an interactive Read-Evaluate-Print Loop (REPL).
+You can use it for running expressions and statements without defining a surrounding method or class,
+simplifying "Hello World" quite a bit:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="nv">$ </span>jshell
+
+jshell&gt; System.out.println<span class="o">(</span><span class="s2">"Hello World"</span><span class="o">)</span><span class="p">;</span>
+Hello World
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Similar to jshell, but quite a bit more fancier is <strong><a href="https://www.jbang.dev/">jbang</a></strong>,
+which for instance allows you to easily pull in 3rd party libraries into your single source file Java programs.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_️_build_tool">👷‍♀️ Build Tool</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Once you go beyond the basics of manually compiling and running a set of Java classes,
+you&#8217;ll need a build tool.
+It will not only help you with compiling your code,
+but also with managing dependencies (i.e. 3rd party libraries you are using),
+testing your application, assembling the output artifacts (e.g. a JAR file with your program), and much more.
+There are plug-ins for <a href="https://spotbugs.github.io/">finding common bug patterns</a>, <a href="https://github.com/diffplug/spotless">auto-formatting your code</a>, etc.
+Commonly used build tool options for Java include <a href="https://maven.apache.org/">Apache Maven</a>, <a href="https://gradle.org/">Gradle</a>, and <a href="https://bazel.build/docs/bazel-and-java">Bazel</a>.</p>
+</div>
+<div class="paragraph">
+<p>My recommendation is to stick with <strong>Maven</strong> for the beginning;
+it&#8217;s the most widely used one, and in my opinion the easiest to learn.
+While it defines a rather rigid structure for your project,
+that also frees you from having to think about many aspects, which is great in particular when getting started.
+Maven has support for archetypes, templates which you can use to quickly bootstrap new projects.
+For instance you can use the <a href="https://github.com/moditect/oss-quickstart">oss-quickstart</a> archetype which I have built for creating new projects with a reasonable set of pre-configured plug-ins like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre>mvn archetype:generate <span class="nt">-B</span> <span class="se">\</span>
+  <span class="nt">-DarchetypeGroupId</span><span class="o">=</span>org.moditect.ossquickstart <span class="se">\</span>
+  <span class="nt">-DarchetypeArtifactId</span><span class="o">=</span>oss-quickstart-simple-archetype <span class="se">\</span>
+  <span class="nt">-DarchetypeVersion</span><span class="o">=</span>1.0.0.Alpha1 <span class="se">\</span>
+  <span class="nt">-DgroupId</span><span class="o">=</span>com.example.demos <span class="se">\</span>
+  <span class="nt">-DartifactId</span><span class="o">=</span>fancy-project <span class="se">\</span>
+  <span class="nt">-Dversion</span><span class="o">=</span>1.0.0-SNAPSHOT <span class="se">\</span>
+  <span class="nt">-DmoduleName</span><span class="o">=</span>com.example.fancy
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A lesser known yet super-useful companion to Maven is the <a href="https://github.com/apache/maven-mvnd">Maven Daemon</a>,
+which helps you to drastically speed up your builds by keeping a daemon process running in the background,
+avoiding the cost of repeatedly launching and initializing the build environment.
+You can install it via SDKMan by running <code>sdk install mvnd</code>.</p>
+</div>
+<div class="paragraph">
+<p>Alternative build tools like Gradle tend to provide more flexibility and interesting features like "compilation avoidance" (rebuilding only affected parts of large code bases after a change) or distributed build caches
+(increasing developer productivity in particular in large projects),
+but I&#8217;d wait with looking at those until you&#8217;ve gathered some experience with Java itself.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_editor">📝 Editor</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Many Java developers love to fight over their favorite build tools, and it&#8217;s the same with editors and full-blown integrated development environments (IDEs).
+So whatever I&#8217;m going to say here, it&#8217;s guaranteed a significant number of people won&#8217;t like it ;)</p>
+</div>
+<div class="paragraph">
+<p>My suggestion is to start with <a href="https://code.visualstudio.com/"><strong>VSCode</strong></a>.
+It&#8217;s a rather light-weight editor, which comes with excellent <a href="https://code.visualstudio.com/docs/languages/java">Java developer support</a>,
+e.g. for testing and debugging your code.
+It integrates very well with Maven-based projects and has a rich eco-system of plug-ins you can tap into.</p>
+</div>
+<div class="paragraph">
+<p>As your needs grow, you&#8217;ll probably look for an IDE which comes with even more advanced functionality, e.g. when it comes to refactoring your code.
+While I&#8217;m personally a happy user of the Eclipse IDE,
+most folks tend to use <a href="https://www.jetbrains.com/idea/"><strong>IntelliJ IDEA</strong></a> these days and it&#8217;s thus what I&#8217;d recommend you to look into too.
+It comes with a feature-rich free community edition which will help you a lot with the day-to-day tasks you&#8217;ll encounter as a Java developer.
+Make sure to spend a few hours learning the most important keyboard short-cuts,
+it will save you lots of time later on.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_libraries">🧱 Libraries</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The ecosystem of 3rd party libraries is one of Java&#8217;s absolute super-powers:
+there is a ready-made library or framework available for pretty much every task you might think of,
+most of the times available as open-source.</p>
+</div>
+<div class="paragraph">
+<p>Perhaps counter-intuitively, my recommendation here is to try and be conservative with pulling in libraries into your project,
+and instead work with what&#8217;s available in Java&#8217;s standard class library (which is huge and covers a wide range of functionality already).
+Next, check out what your chosen application framework (if you use one, see below) offers either itself or provides integrations for.</p>
+</div>
+<div class="paragraph">
+<p>Adding a dependency to an external library should always be a conscious decision,
+as you might easily run into version conflicts between transitive dependencies (i.e. dependencies of dependencies) in different versions,
+more dependencies increase the complexity of your application (for instance, you must keep them all up-to-date),
+they may increase the attack surface of your application, etc.
+Sometimes, you might be better off by implementing something yourself, or maybe copy a bit of code from a 3rd party library into your own codebase,
+provided the license of that library allows for that.</p>
+</div>
+<div class="paragraph">
+<p>That said, some popular libraries you will encounter in many projects include
+<a href="https://junit.org/junit5/">JUnit</a> (for unit testing),
+<a href="https://www.slf4j.org/">slf4j</a> (logging),
+<a href="https://github.com/FasterXML/jackson">Jackson</a> (JSON handling),
+<a href="https://hibernate.org/">Hibernate</a> (object-relational persistence, domain model validation, etc.),
+<a href="https://www.testcontainers.org/">Testcontainers</a> (integration testing with Docker), and
+<a href="https://www.archunit.org/">ArchUnit</a> (enforcing software architecture rules).</p>
+</div>
+<div class="paragraph">
+<p>Most open-source dependencies are available via the <a href="https://search.maven.org/">Maven Central</a> repository;
+All the build tools integrate with it, not only Maven itself, but also Gradle and all the others.
+The <a href="https://mvnrepository.com/">MVN Repository</a> site is a good starting point for finding dependencies and their latest versions.
+If you want to distribute libraries within your own organization, you can do so by self-running repository servers like <a href="https://www.sonatype.com/new/products/nexus-repository">Nexus</a> or <a href="https://jfrog.com/artifactory/">Artifactory</a>, or use managed cloud services such as <a href="https://docs.aws.amazon.com/codeartifact/latest/ug/welcome.html">AWS CodeArtifact</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_application_framework">🐢 Application Framework</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Most Java enterprise applications are built on top of an application framework which provides support for structuring your code via dependency injection,
+seamlessly integrates with a curated set of 3rd party libraries in compatible versions,
+helps with configuring and testing your application, and much more.</p>
+</div>
+<div class="paragraph">
+<p>Again, there&#8217;s plenty of options in Java here,
+such as <a href="https://spring.io/projects/spring-boot">Spring Boot</a>, <a href="https://quarkus.io/">Quarkus</a>, <a href="https://jakarta.ee/">Jakarta EE</a>, <a href="https://micronaut.io/">Micronaut</a>, <a href="https://helidon.io/">Helidon</a>, and more.
+My personal recommendation here is to use <strong>Quarkus</strong>
+(it&#8217;s the one I&#8217;m most familiar with, having worked for Red Hat before, who are the company behind this framework),
+or alternatively <strong>Spring Boot</strong>.</p>
+</div>
+<div class="paragraph">
+<p>Both are widely popular, integrate with a wide range of technologies (e.g. web frameworks and databases of all kinds),
+come with excellent developer tooling, and are backed by very active open-source communities.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_container_base_image">🐳 Container Base Image</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In particular when you are going to work on an enterprise application,
+chances are that you&#8217;ll publish your application in form of a container image,
+so people can run it on Docker or Kubernetes.</p>
+</div>
+<div class="paragraph">
+<p>Sticking to the recommendation on using Eclipse Temurin as your Java distribution,
+I suggest to use the <strong><a href="https://hub.docker.com/\_/eclipse-temurin/">Temurin image</a></strong> as the base for your application images,
+e.g. <code>eclipse-temurin:17</code> for Java 17.
+Just make sure to keep your image up to date,
+so you and your users benefit from updates to the base image.</p>
+</div>
+<div class="paragraph">
+<p>One base image you should avoid is the <a href="https://hub.docker.com/\_/openjdk">OpenJDK</a> one,
+which is officially deprecated and not recommended for production usage.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_learning_the_language">📚 Learning the Language</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Providing an introduction to all the features of the Java programming language is beyond the scope of this blog post.
+To truly learn the language and all its details,
+my recommendation would be to get a good book, grab a coffee (or two, or three, &#8230;&#8203;) and work through its chapters, in order of your personal interests.
+A popular choice for getting started with Java is <a href="https://www.oreilly.com/library/view/head-first-java/9781492091646/">"Head First Java, 3rd Edition"</a>
+by Kathy Sierra, Bert Bates, Trisha Gee, nicely complemented by <a href="https://www.manning.com/books/the-well-grounded-java-developer-second-edition">The Well-Grounded Java Developer, 2nd Edition</a>, by Benjamin Evans, Jason Clark, and Martijn Verburg.
+A must-read for honing your Java skills is <a href="https://www.oreilly.com/library/view/effective-java-3rd/9780134686097/">"Effective Java, 3rd Edition"</a>, by Joshua Bloch.
+While this has been updated for Java 9 the last time,
+its contents are pretty much timeless and still apply to current Java versions.</p>
+</div>
+<div class="paragraph">
+<p>If you don&#8217;t want to commit to buying a book just yet, check out the <a href="https://dev.java/learn/">"Learn Java"</a> section on dev.java,
+which has tons of material describing the Java language, key parts of the class library, the JVM and its most important tools, and more in great detail.</p>
+</div>
+<div class="paragraph">
+<p>The authoritative resource on the Java language is the <a href="https://docs.oracle.com/javase/specs/jls/se17/html/index.html">Java Language Specification</a>, or JLS for short.
+The specification is written in a very concise and well understandable way,
+and I highly recommend you to take a look if you&#8217;d like to understand how specific details of the language exactly work.
+That being said, when you&#8217;re just about to get started with learning Java, you&#8217;ll be better off by studying the resources mentioned above.</p>
+</div>
+<div class="paragraph">
+<p>If certifications are your thing, you might consider learning for and taking the exam for the <a href="https://education.oracle.com/products/trackp_OCPJSE17">"Oracle Certified Professional: Java SE 17 Developer"</a> one.
+I&#8217;d only recommend doing so after having worked with Java at least for a year or so,
+as the exam actually is quite involved.
+You&#8217;ll certainly learn a lot about Java, including all kinds of corner cases and odd details;
+not everything will necessarily translate into your day-to-day work as a developer, though.
+So you should consciously decide whether you want to spend the time preparing for the certification or not.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps">🔭 Next Steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The points above hopefully can help you to embark onto a successful journey with the Java platform,
+but they only are a starting point.
+Depending on your specific needs and requirements, here is a number possible next topics to explore and learn about:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Exploring <a href="https://docs.oracle.com/en/java/javase/17/docs/specs/man/index.html">the tools</a> which come with the JDK, for instance <em>javadoc</em> (for generating API documentation), <em>jcmd</em> (for sending diagnostic commands to a running Java application), or <em>jpackage</em> (for packaging self-contained Java applications)</p>
+</li>
+<li>
+<p>Building native binaries using <a href="https://www.graalvm.org/">GraalVM</a>, allowing for a fast start-up and low memory consumption; very useful for instance for building command-line tools or AWS Lambda functions</p>
+</li>
+<li>
+<p>Analyzing the performance and runtime characteristics of your application using <a href="https://openjdk.org/jeps/328">JDK Flight Recorder</a> and <a href="https://jdk.java.net/jmc/8/">JDK Mission Control</a></p>
+</li>
+<li>
+<p>Setting up continuous integration (CI) workflows for automatically <a href="https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven">building and testing</a> your application with GitHub Actions (the aforementioned Maven oss-quickstart archetype will generate a basic template for that automatically)</p>
+</li>
+<li>
+<p>Publishing open-source libraries to Maven Central with <a href="https://jreleaser.org/">JReleaser</a></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Finally, a few resources which should help you to stay up-to-date with everything Java and learn what&#8217;s going on in the community include
+the <a href="https://dev.java/news/">Java News</a> on dev.java,
+<a href="https://inside.java/">inside.java</a> ("news and views from members of the Java team at Oracle")
+the <a href="https://chriswhocodes.com/jepsearch.html">JEP Search</a> (for searching and filtering Java enhancement proposals, i.e. changes to the language and the platform) and <a href="https://foojay.io/">Foojay</a> (Friends of OpenJDK).</p>
+</div>
+<div class="paragraph">
+<p><em>Many thanks to <a href="https://twitter.com/nilshartmann">Nils Hartmann</a>, <a href="https://twitter.com/aalmiray/">Andres Almiray</a>, and <a href="https://twitter.com/djcordhose">Oliver Zeigermann</a> for their input and feedback while writing this post!</em></p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2023 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
