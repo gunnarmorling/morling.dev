@@ -1,0 +1,48 @@
+---
+title: "Finding Java Thread Leaks With JDK Flight Recorder and JFR Analytics?"
+date: 2023-02-19T22:10:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+At work, we recently had a situation where we suspected a thread leak in our code base,
+i.e. code which continuously starts new threads, without taking care of stopping them again.
+As each thread requires a bit of memory, this will lead to memory issues eventually.
+Thus it's vital to detect and fix this kind of problem early on.
+Many folks reach for thread dumps for analysis purposes here,
+but I think that's only of limited use:
+a thread dump will always only be a snapshot of the thread state at a given time,
+i.e. you don't really see how many threads are created, and most importantly, by which part of your application.
+
+Luckily, Java's built-in performance analysis and event recording tool, JDK Flight Recorder,
+provides all the information you need to identify thread leaks and their cause.
+So let's take a look at the details, bidding farewell to those pesky thread leaks once and forever!
+<!--more-->
+
+select TIMESTAMP_SECONDS(UNIX_SECONDS(tsa."startTime")) as ts, count(1) from "jdk.ThreadStart" tsa join "jdk.ThreadEnd" tse on tsa."startTime" = tse."startTime";
+
+ SELECT TRUNCATE_STACKTRACE("stackTrace", 10), count(1) as "Threads Started" from "jdk.ThreadStart" GROUP BY TRUNCATE_STACKTRACE("stackTrace", 10) order by "Threads Started" DESC;
+
+ !connect jdbc:calcite:fun=bigquery;schemaFactory=org.moditect.jfranalytics.JfrSchemaFactory;schema.file=/Users/gunnar/Development/blog/jfr-analytics-leak-analysis/recording.jfr dummy dummy
+
+select TIMESTAMP_SECONDS(UNIX_SECONDS(tsa."startTime")) as ts from "jdk.ThreadStart" tsa join "jdk.ThreadEnd" tse on TIMESTAMP_SECONDS(UNIX_SECONDS(tsa."startTime")) = TIMESTAMP_SECONDS(UNIX_SECONDS(tse."startTime"));
+
+[NOTE]
+====
+====
+
+
+
+== Emitting Custom Events
+
+
+[source,xml,linenums=true]
+----
+----
