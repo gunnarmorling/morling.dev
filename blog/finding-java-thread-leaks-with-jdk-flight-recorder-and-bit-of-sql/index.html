@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Finding Java Thread Leaks With JDK Flight Recorder and a Bit Of SQL - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Finding Java Thread Leaks With JDK Flight Recorder and a Bit Of SQL" />
+<meta property="og:description" content="
+The other day at work, we had a situation where we suspected a thread leak in one particular service,
+i.e. code which continuously starts new threads, without taking care of ever stopping them again.
+Each thread requires a bit of memory for its stack space,
+so starting an unbounded number of threads can be considered as a form of memory leak, causing your application to run out of memory eventually.
+In addition, the more threads there are, the more overhead the operating system incurs for scheduling them,
+until the scheduler itself will consume most of the available CPU resources.
+Thus it&#8217;s vital to detect and fix this kind of problem early on.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/finding-java-thread-leaks-with-jdk-flight-recorder-and-bit-of-sql/" />
+<meta property="article:published_time" content="2023-02-28T22:16:10+01:00" />
+<meta property="article:modified_time" content="2023-02-28T22:16:10+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Finding Java Thread Leaks With JDK Flight Recorder and a Bit Of SQL"/>
+<meta name="twitter:description" content="
+The other day at work, we had a situation where we suspected a thread leak in one particular service,
+i.e. code which continuously starts new threads, without taking care of ever stopping them again.
+Each thread requires a bit of memory for its stack space,
+so starting an unbounded number of threads can be considered as a form of memory leak, causing your application to run out of memory eventually.
+In addition, the more threads there are, the more overhead the operating system incurs for scheduling them,
+until the scheduler itself will consume most of the available CPU resources.
+Thus it&#8217;s vital to detect and fix this kind of problem early on.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling-2b44b7229/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling-2b44b7229/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Finding Java Thread Leaks With JDK Flight Recorder and a Bit Of SQL</h1>
+				<div class="meta">Posted at Feb 28, 2023</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>The other day at work, we had a situation where we suspected a thread leak in one particular service,
+i.e. code which continuously starts new threads, without taking care of ever stopping them again.
+Each thread requires a bit of memory for its stack space,
+so starting an unbounded number of threads can be considered as a form of memory leak, causing your application to run out of memory eventually.
+In addition, the more threads there are, the more overhead the operating system incurs for scheduling them,
+until the scheduler itself will consume most of the available CPU resources.
+Thus it&#8217;s vital to detect and fix this kind of problem early on.</p>
+</div>
+<div class="paragraph">
+<p>The usual starting point for analyzing a suspected thread leak is <a href="https://access.redhat.com/solutions/18178">taking a thread dump</a>,
+for instance using the <a href="https://docs.oracle.com/en/java/javase/17/docs/specs/man/jstack.html"><em>jstack</em></a> CLI tool or via <a href="https://jdk.java.net/jmc/">JDK Mission Control</a>;
+if there&#8217;s an unexpected large number of threads (oftentimes with similar or even identical names), then it&#8217;s very likely that something is wrong indeed.
+But a thread dump by itself is only a snapshot of the thread state at a given time,
+i.e. it doesn&#8217;t tell you how the thread count is changing over time (perhaps there are many threads which are started but also stopped again?),
+and it also doesn&#8217;t provide you with information about the cause, i.e. which part of your application is starting all those threads. Does it happen in your own code base, or within some 3rd party dependency? While the thread names and stacks in the dump can give you some idea, that information isn&#8217;t necessarily enough for a conclusive root cause analysis.</p>
+</div>
+<div class="paragraph">
+<p>Luckily, Java&#8217;s built-in event recorder and performance analysis tool, <a href="https://openjdk.org/jeps/328">JDK Flight Recorder</a>,
+exposes all the data you need to identify thread leaks and their cause.
+So let&#8217;s take a look at the details, bidding farewell to those pesky thread leaks once and forever!</p>
+</div>
+<div class="paragraph">
+<p>The first JFR event type to look at is <a href="https://bestsolution-at.github.io/jfr-doc/openjdk-17.html#jdk.JavaThreadStatistics"><code>jdk.JavaThreadStatistics</code></a>:
+recorded every second by default, it keeps track of active, accumulated, and peak thread counts.
+Here is a JFR recording from a simple thread leak demo application I&#8217;ve created
+(newest events at the top):</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/thread_leak_analysis.png" alt="`jdk.JavaThreadStatistics` Events in JDK Mission Control">
+</div>
+</div>
+<div class="paragraph">
+<p>The number of active threads is continuously increasing, never going back down again&#8201;&#8212;&#8201;pretty clearly that this a thread leak.
+Now let&#8217;s figure out where exactly all those threads are coming from.</p>
+</div>
+<div class="paragraph">
+<p>For this, two other JFR event types come in handy: <a href="https://bestsolution-at.github.io/jfr-doc/openjdk-17.html#jdk.ThreadStart"><code>jdk.ThreadStart</code></a> and <a href="https://bestsolution-at.github.io/jfr-doc/openjdk-17.html#jdk.ThreadEnd"><code>jdk.ThreadEnd</code></a>.
+The former captures all the relevant information when a thread is started:
+time stamp, name of the new thread and the parent thread, and the stack trace of the parent thread when starting the child thread.
+The latter event type will be recorded when a thread finishes.
+If we find many thread start events originating at the same code location without a corresponding end event
+(correlated via the thread id contained in the events), this is very likely a source of a thread leak.</p>
+</div>
+<div class="paragraph">
+<p>This sort of event analysis is a perfect use case for <a href="https://github.com/moditect/jfr-analytics">JFR Analytics</a>.
+This tool allows you to analyze JFR recordings using standard SQL (leveraging <a href="https://calcite.apache.org/">Apache Calcite</a> under the hood).
+In JFR Analytics, each event type is represented by its own "table".
+Finding thread start events without matching end events is as simple as running a <code>LEFT JOIN</code> on the two event types and keeping only those start events which don&#8217;t have a join partner.</p>
+</div>
+<div class="paragraph">
+<p>So let&#8217;s load the file into the SQLLine command line client
+(see the <a href="https://github.com/moditect/jfr-analytics#running-queries-using-sqlline">README</a> of JFR Analytics for <a href="https://github.com/moditect/jfr-analytics#running-queries-using-sqlline">instructions</a> on building and launching this tool):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="o">!</span><span class="k">connect</span> <span class="n">jdbc</span><span class="p">:</span><span class="n">calcite</span><span class="p">:</span><span class="n">schemaFactory</span><span class="o">=</span><span class="n">org</span><span class="p">.</span><span class="n">moditect</span><span class="p">.</span><span class="n">jfranalytics</span><span class="p">.</span><span class="n">JfrSchemaFactory</span><span class="p">;</span><span class="k">schema</span><span class="p">.</span><span class="n">file</span><span class="o">=</span><span class="n">thread_leak_recording</span><span class="p">.</span><span class="n">jfr</span> <span class="n">dummy</span> <span class="n">dummy</span>
+
+<span class="o">!</span><span class="n">outputformat</span> <span class="n">vertical</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Run the following SQL query for finding thread start events without corresponding thread join events:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre><span class="k">SELECT</span>
+  <span class="n">ts</span><span class="p">.</span><span class="nv">"startTime"</span><span class="p">,</span>
+  <span class="n">ts</span><span class="p">.</span><span class="nv">"parentThread"</span><span class="p">.</span><span class="nv">"javaName"</span> <span class="k">as</span> <span class="nv">"parentThread"</span><span class="p">,</span>
+  <span class="n">ts</span><span class="p">.</span><span class="nv">"eventThread"</span><span class="p">.</span><span class="nv">"javaName"</span> <span class="k">AS</span> <span class="nv">"newThread"</span><span class="p">,</span>
+  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="n">ts</span><span class="p">.</span><span class="nv">"stackTrace"</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">"stackTrace"</span>
+<span class="k">FROM</span> <span class="nv">"jdk.ThreadStart"</span> <span class="n">ts</span> <span class="k">LEFT</span> <span class="k">JOIN</span> <span class="nv">"jdk.ThreadEnd"</span> <span class="n">te</span>
+  <span class="k">ON</span> <span class="n">ts</span><span class="p">.</span><span class="nv">"eventThread"</span><span class="p">.</span><span class="nv">"javaThreadId"</span> <span class="o">=</span> <span class="n">te</span><span class="p">.</span><span class="nv">"eventThread"</span><span class="p">.</span><span class="nv">"javaThreadId"</span>
+<span class="k">WHERE</span> <span class="n">te</span><span class="p">.</span><span class="nv">"startTime"</span> <span class="k">IS</span> <span class="k">NULL</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note how the <code>parentThread</code> and <code>eventThread</code> columns are of a complex SQL type, allowing you to refer to thread properties such as <code>javaName</code> or <code>javaThreadId</code> using dot notation.
+In that simple example recording, there&#8217;s one stack trace which dominates the result set, so looking at any of the events reveals the culprit:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+</pre></td><td class="code"><pre>startTime   2023-02-26 11:36:04.284
+javaName    executor-thread-0
+javaName    pool-1060-thread-1
+stackTrace  java.lang.System<span class="nv">$2</span>.start<span class="o">(</span>Thread, ThreadContainer<span class="o">)</span>:2528
+jdk.internal.vm.SharedThreadContainer.start<span class="o">(</span>Thread<span class="o">)</span>:160
+java.util.concurrent.ThreadPoolExecutor.addWorker<span class="o">(</span>Runnable, boolean<span class="o">)</span>:953
+java.util.concurrent.ThreadPoolExecutor.execute<span class="o">(</span>Runnable<span class="o">)</span>:1364
+java.util.concurrent.AbstractExecutorService.submit<span class="o">(</span>Callable<span class="o">)</span>:145
+java.util.concurrent.Executors<span class="nv">$DelegatedExecutorService</span>.submit<span class="o">(</span>Callable<span class="o">)</span>:791
+org.acme.GreetingResource.hello<span class="o">()</span>:18
+null
+null
+null
+null
+jdk.internal.reflect.DirectMethodHandleAccessor.invoke<span class="o">(</span>Object, Object[]<span class="o">)</span>:104
+java.lang.reflect.Method.invoke<span class="o">(</span>Object, Object[]<span class="o">)</span>:578
+org.jboss.resteasy.core.MethodInjectorImpl.invoke<span class="o">(</span>HttpRequest, HttpResponse, Object, Object[]<span class="o">)</span>:170
+org.jboss.resteasy.core.MethodInjectorImpl.invoke<span class="o">(</span>HttpRequest, HttpResponse, Object<span class="o">)</span>:130
+org.jboss.resteasy.core.ResourceMethodInvoker.internalInvokeOnTarget<span class="o">(</span>HttpRequest, HttpResponse, Object<span class="o">)</span>:660
+org.jboss.resteasy.core.ResourceMethodInvoker.invokeOnTargetAfterFilter<span class="o">(</span>HttpRequest, HttpResponse, Object<span class="o">)</span>:524
+org.jboss.resteasy.core.ResourceMethodInvoker.lambda<span class="nv">$invokeOnTarget$2</span><span class="o">(</span>HttpRequest, HttpResponse, Object<span class="o">)</span>:474
+null
+org.jboss.resteasy.core.interception.jaxrs.PreMatchContainerRequestContext.filter<span class="o">()</span>:364
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The call for creating a new thread apparently is initiated by the <code>GreetingResource::hello()</code> method by submitting a <code>Callable</code> to an executor service.
+And surely enough, this is how it looks like:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+</pre></td><td class="code"><pre><span class="nd">@GET</span>
+<span class="nd">@Produces</span><span class="o">(</span><span class="nc">MediaType</span><span class="o">.</span><span class="na">TEXT_PLAIN</span><span class="o">)</span>
+<span class="kd">public</span> <span class="nc">String</span> <span class="nf">hello</span><span class="o">()</span> <span class="o">{</span>
+    <span class="nc">ExecutorService</span> <span class="n">executor</span> <span class="o">=</span> <span class="nc">Executors</span><span class="o">.</span><span class="na">newSingleThreadExecutor</span><span class="o">();</span>
+    <span class="n">executor</span><span class="o">.</span><span class="na">submit</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+        <span class="k">while</span> <span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">1000L</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">});</span>
+    <span class="k">return</span> <span class="s">"Hello World"</span><span class="o">;</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If things are not as clear-cut as in that contrived example, it can be useful to truncate stack traces to a reasonable line count
+(e.g. it should be save to assume that the user code starting a thread is never further away than ten frames from the actual thread start call) and group by that.
+JFR Analytics provides the built-in function <code>TRUNCATE_STACKTRACE</code> for this purpose:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="k">SELECT</span>
+  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="n">ts</span><span class="p">.</span><span class="nv">"stackTrace"</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">"stackTrace"</span><span class="p">,</span>
+  <span class="k">COUNT</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">"threadCount"</span>
+<span class="k">FROM</span> <span class="nv">"jdk.ThreadStart"</span> <span class="n">ts</span> <span class="k">LEFT</span> <span class="k">JOIN</span> <span class="nv">"jdk.ThreadEnd"</span> <span class="n">te</span>
+  <span class="k">ON</span> <span class="n">ts</span><span class="p">.</span><span class="nv">"eventThread"</span><span class="p">.</span><span class="nv">"javaThreadId"</span> <span class="o">=</span> <span class="n">te</span><span class="p">.</span><span class="nv">"eventThread"</span><span class="p">.</span><span class="nv">"javaThreadId"</span>
+<span class="k">WHERE</span> <span class="n">te</span><span class="p">.</span><span class="nv">"startTime"</span> <span class="k">IS</span> <span class="k">NULL</span>
+<span class="k">GROUP</span> <span class="k">BY</span>
+  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="n">ts</span><span class="p">.</span><span class="nv">"stackTrace"</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="nv">"threadCount"</span> <span class="k">DESC</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This points at the problematic stack traces and code locations in a very pronounced way (output slightly adjusted for better readability):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+</pre></td><td class="code"><pre>stackTrace   java.lang.System<span class="nv">$2</span>.start<span class="o">(</span>Thread, ThreadContainer<span class="o">)</span>:2528
+jdk.internal.vm.SharedThreadContainer.start<span class="o">(</span>Thread<span class="o">)</span>:160
+java.util.concurrent.ThreadPoolExecutor.addWorker<span class="o">(</span>Runnable, boolean<span class="o">)</span>:953
+java.util.concurrent.ThreadPoolExecutor.execute<span class="o">(</span>Runnable<span class="o">)</span>:1364
+java.util.concurrent.AbstractExecutorService.submit<span class="o">(</span>Callable<span class="o">)</span>:145
+java.util.concurrent.Executors<span class="nv">$DelegatedExecutorService</span>.submit<span class="o">(</span>Callable<span class="o">)</span>:791
+org.acme.GreetingResource.hello<span class="o">()</span>:18
+null
+null
+null
+
+threadCount  414
+<span class="nt">---</span>
+stackTrace   java.util.Timer.&lt;init&gt;<span class="o">(</span>String, boolean<span class="o">)</span>:188
+jdk.jfr.internal.PlatformRecorder.lambda<span class="nv">$createTimer$0</span><span class="o">(</span>List<span class="o">)</span>:101
+null
+java.lang.Thread.run<span class="o">()</span>:1589
+
+threadCount  1
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Sometimes you may encounter a situation where new threads are started from within other threads in a 3rd party dependency,
+rather than directly from threads within your own code base.
+In that case the stack traces of the thread start events may not tell you enough about the root cause of the problem,
+i.e. where those other "intermediary" threads are coming from, and how they relate to your own code.</p>
+</div>
+<div class="paragraph">
+<p>To dig into the details here, you can leverage the fact that each <code>jdk.ThreadStart</code> event contains information about the parent thread which started a new thread.
+So you can join the <code>jdk.ThreadStart</code> table to itself on the parent thread&#8217;s id,
+fetching also the stack traces of the code starting those parent threads:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+</pre></td><td class="code"><pre><span class="k">SELECT</span>
+  <span class="n">ts</span><span class="p">.</span><span class="nv">"startTime"</span><span class="p">,</span>
+  <span class="n">pts</span><span class="p">.</span><span class="nv">"parentThread"</span><span class="p">.</span><span class="nv">"javaName"</span> <span class="k">AS</span> <span class="nv">"grandParentThread"</span><span class="p">,</span>
+  <span class="n">ts</span><span class="p">.</span><span class="nv">"parentThread"</span><span class="p">.</span><span class="nv">"javaName"</span> <span class="k">AS</span> <span class="nv">"parentThread"</span><span class="p">,</span>
+  <span class="n">ts</span><span class="p">.</span><span class="nv">"eventThread"</span><span class="p">.</span><span class="nv">"javaName"</span> <span class="k">AS</span> <span class="nv">"newThread"</span><span class="p">,</span>
+  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="n">pts</span><span class="p">.</span><span class="nv">"stackTrace"</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">"parentStackTrace"</span><span class="p">,</span>
+  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="n">ts</span><span class="p">.</span><span class="nv">"stackTrace"</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">"stackTrace"</span>
+<span class="k">FROM</span> <span class="nv">"jdk.ThreadStart"</span> <span class="n">ts</span> <span class="k">LEFT</span> <span class="k">JOIN</span> <span class="nv">"jdk.ThreadEnd"</span> <span class="n">te</span>
+  <span class="k">ON</span> <span class="n">ts</span><span class="p">.</span><span class="nv">"startTime"</span> <span class="o">=</span> <span class="n">te</span><span class="p">.</span><span class="nv">"startTime"</span>
+  <span class="k">JOIN</span> <span class="nv">"jdk.ThreadStart"</span> <span class="n">pts</span>
+  <span class="k">ON</span> <span class="n">ts</span><span class="p">.</span><span class="nv">"parentThread"</span><span class="p">.</span><span class="nv">"javaThreadId"</span> <span class="o">=</span> <span class="n">pts</span><span class="p">.</span><span class="nv">"eventThread"</span><span class="p">.</span><span class="nv">"javaThreadId"</span>
+<span class="k">WHERE</span> <span class="n">te</span><span class="p">.</span><span class="nv">"startTime"</span> <span class="k">IS</span> <span class="k">NULL</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Here, <code>stackTrace</code> is the trace of a thread (named "pool-728-thread-1") of an external library, "greeting provider", which starts another (leaking) thread (named "pool-729-thread-1"),
+and <code>parentStackTrace</code> points to the code in our own application (thread name "executor-thread-0") which started that first thread:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+</pre></td><td class="code"><pre>startTime          2023-02-28 09:15:24.493
+grandParentThread  executor-thread-0
+parentThread       pool-728-thread-1
+newThread          pool-729-thread-1
+parentStackTrace   java.lang.System<span class="nv">$2</span>.start<span class="o">(</span>Thread, ThreadContainer<span class="o">)</span>:2528
+jdk.internal.vm.SharedThreadContainer.start<span class="o">(</span>Thread<span class="o">)</span>:160
+java.util.concurrent.ThreadPoolExecutor.addWorker<span class="o">(</span>Runnable, boolean<span class="o">)</span>:953
+java.util.concurrent.ThreadPoolExecutor.execute<span class="o">(</span>Runnable<span class="o">)</span>:1364
+java.util.concurrent.AbstractExecutorService.submit<span class="o">(</span>Runnable<span class="o">)</span>:123
+java.util.concurrent.Executors<span class="nv">$DelegatedExecutorService</span>.submit<span class="o">(</span>Runnable<span class="o">)</span>:786
+com.example.greeting.GreetingService.greet<span class="o">()</span>:20
+com.example.greeting.GreetingService_ClientProxy.greet<span class="o">()</span>
+org.acme.GreetingResource.hello<span class="o">()</span>:20
+null
+null
+null
+null
+jdk.internal.reflect.DirectMethodHandleAccessor.invoke<span class="o">(</span>Object, Object[]<span class="o">)</span>:104
+java.lang.reflect.Method.invoke<span class="o">(</span>Object, Object[]<span class="o">)</span>:578
+<span class="nt">---</span>
+stackTrace         java.lang.System<span class="nv">$2</span>.start<span class="o">(</span>Thread, ThreadContainer<span class="o">)</span>:2528
+jdk.internal.vm.SharedThreadContainer.start<span class="o">(</span>Thread<span class="o">)</span>:160
+java.util.concurrent.ThreadPoolExecutor.addWorker<span class="o">(</span>Runnable, boolean<span class="o">)</span>:953
+java.util.concurrent.ThreadPoolExecutor.execute<span class="o">(</span>Runnable<span class="o">)</span>:1364
+java.util.concurrent.AbstractExecutorService.submit<span class="o">(</span>Callable<span class="o">)</span>:145
+java.util.concurrent.Executors<span class="nv">$DelegatedExecutorService</span>.submit<span class="o">(</span>Callable<span class="o">)</span>:791
+com.example.greeting.GreetingProvider.createGreeting<span class="o">()</span>:13
+com.example.greeting.GreetingProvider_ClientProxy.createGreeting<span class="o">()</span>
+com.example.greeting.GreetingService.lambda<span class="nv">$greet$0</span><span class="o">(</span>AtomicReference<span class="o">)</span>:21
+null
+java.util.concurrent.Executors<span class="nv">$RunnableAdapter</span>.call<span class="o">()</span>:577
+java.util.concurrent.FutureTask.run<span class="o">()</span>:317
+java.util.concurrent.ThreadPoolExecutor.runWorker<span class="o">(</span>ThreadPoolExecutor<span class="nv">$Worker</span><span class="o">)</span>:1144
+java.util.concurrent.ThreadPoolExecutor<span class="nv">$Worker</span>.run<span class="o">()</span>:642
+java.lang.Thread.run<span class="o">()</span>:1589
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the thread hierarchy is even deeper, you could continue down that path and keep joining more and more parent threads until you&#8217;ve arrived at the application&#8217;s main thread.
+I was hoping to leverage recursive query support in Calcite for this purpose,
+but as it <a href="https://lists.apache.org/thread/f6zcfsdh5f9dhnknmn2rr4qbf7whycsp">turned out</a>, support for this only exists in the Calcite <code>RelBuilder</code> API at the moment,
+while the <code>RECURSIVE</code> keyword is not supported for SQL queries yet.</p>
+</div>
+<div class="paragraph">
+<p>Equipped with JDK Flight Recorder, JDK Mission Control, and JFR Analytics,
+identifying and fixing thread leaks in your Java application is becoming a relatively simple task.
+The <code>jdk.JavaThreadStatistics</code>, <code>jdk.ThreadStart</code>, and <code>jdk.ThreadEnd</code> event types are enabled in the default JFR profile,
+which is meant for permanent usage in production.
+I.e. you can keep a size-capped continuous recording running all the time,
+dump it into a file whenever needed, and then start the analysis process as described above.</p>
+</div>
+<div class="paragraph">
+<p>Taking things a step further, you could also set up monitoring and alerting on the number of active threads,
+e.g. by exposing the <code>jdk.JavaThreadStatistics</code> event via a <a href="https://egahlin.github.io/2021/05/17/remote-recording-stream.html">remote JFR event recording stream</a>,
+allowing you to react in real-time whenever the active thread count reaches an unexpected high level.</p>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2023 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
