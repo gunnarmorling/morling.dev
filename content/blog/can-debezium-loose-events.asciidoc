@@ -1,0 +1,65 @@
+---
+title: "Can Debezium Loose Events?"
+date: 2023-11-14T15:00:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+This question came up on the Data Engineering sub-reddit the other day:
+https://old.reddit.com/r/dataengineering/comments/17ttw5e/can_debezium_loose_updates/[Can Debezium loose any events]?
+I.e. can there be a situation where a record in a database get inserted, updated, or deleted, but Debezium fails to capture that event from the transaction log and propagate it to downstream consumers?
+
+<!--more-->
+
+I've already https://old.reddit.com/r/dataengineering/comments/17ttw5e/can_debezium_loose_updates/k91icwi/[replied] on Reddit itself, but I thought it'd warrant a slightly longer discussion here.
+To get the most important thing out of the way first: In general, Debezium by itself should _never_ miss any event.
+If it does, that's considered a blocker bug which the development team will address with highest priority.
+After all, Debezium's semantics are https://kafka.apache.org/36/documentation.html#semantics[_at-least-once_] (i.e. duplicate events may occur, specifically after an unclean connector shut-down),
+not _at-most-once_.
+
+That being said, it may happen that due to operational deficiencies portions of the database's transaction log get discarded before Debezium gets a chance to capture them.
+This can happen when a Debezium connector isn't running for a longer period of time,
+and the maximum transaction log retention time is reached.
+
+Most of the databases provide some sort of configuration parameter for controlling this behavior.
+In MySQL for instance, there is the https://dev.mysql.com/doc/refman/8.2/en/replication-options-binary-log.html#sysvar_binlog_expire_logs_seconds[`binlog_expire_logs_seconds`] parameter for this purpose
+(which defaults to 2,592,000 seconds, i.e. 30 days).
+For SQL Server, the retention time for CDC data can be configured using the stored procedure https://learn.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sys-sp-cdc-change-job-transact-sql?view=sql-server-ver16[`sys.sp_cdc_change_job()`].
+
+In contrast, Postgres approaches this matter a bit differently:
+https://www.postgresql.org/docs/16/warm-standby.html#STREAMING-REPLICATION-SLOTS[Replication slots] keeps track of how far consumers have consumed the write-ahead log (WAL).
+Consumers must actively acknowledge the latest WAL position
+(log sequence number, LSN) they have consumed.
+Only when an LSN has been acknowledged by all replication slots,
+the database will discard older WAL segments.
+This means that, by default, even an extended connector downtime will not lead to event loss.
+This comes at a price though: the database holds on to all the unconsumed WAL segments,
+consuming more and more disk space until the connector gets restarted again.
+
+[NOTE]
+.The Insatiable Replication Slot
+====
+Even when a replication slot is active, it can happen under specific circumstances that the slot's consumer cannot acknowledge any LSNs, causing the database machine to run out of disk space eventually.
+You can learn more about the reasons, and ways for mitigating this issue, in link:/blog/insatiable-postgres-replication-slot/[this blog post].
+Luckily, the issue has recently https://engineering.zalando.com/posts/2023/11/patching-pgjdbc.html[been resolved] in the Postgres JDBC driver, version 42.6.0.
+====
+
+Therefore, a new configuration option was introduced in Postgres 13, https://postgresqlco.nf/doc/en/param/max_slot_wal_keep_size/[`max_slot_wal_keep_size`],
+which defines the maximum WAL size in bytes which a replication slot may retain.
+If a slot causes retained WAL files to grow beyond the configured value,
+older segments will be removed.
+This means that, when configuring this option (the default value is -1, i.e. an indefinite WAL keep size),
+the behavior is the same as for instance with MySQL,
+and consumers will not be able to resume processing after falling off the log.
+By means of the https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-connector-snapshot-mode-options[`always` snapshot mode], you can start with a new complete initial snapshot in this case.
+
+In general though, you should avoid this situation to begin with, and have observability tools in place which will trigger an alert when a Debezium connector isn't running for a longer period of time,
+for instance by querying the Kafka Connect REST API.
+For Postgres, you also can track the retained WAL size of a replication slot using the `pg_current_wal_lsn()` and `pg_wal_lsn_diff()` functions, as I described in https://www.decodable.co/blog/the-wonders-of-postgres-logical-decoding-messages-for-cdc[this blog post] a while ago.
