@@ -1,0 +1,141 @@
+---
+title: "Native Memory Tracking With JDK Flight Recorder"
+date: 2023-12-17T19:29:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+As regular readers of this blog will now, https://openjdk.org/jeps/328[JDK Flight Recorder] (JFR) is one of my favorite tools of the Java platform.
+This low-overhead event recording engine built into the JVM is invaluable for observing the runtime characteristics of Java applications and identifying any potential performance issues.
+JFR continues to become better and better with every new release,
+with one recent addition being support for native memory tracking (NMT).
+
+<!--more-->
+
+https://docs.oracle.com/en/java/javase/21/vm/native-memory-tracking.html[NMT] by itself is not a new capability of the JVM:
+it provides you with detailed insight into the memory consumption of your application, 
+which goes way beyond the well-known Java heap space.
+NMT tells you how much memory the JVM uses for class metadata, thread stacks, the JIT compiler, garbage collection, memory-mapped files, and much more
+(the one thing which NMT does not report, despite what the name might suggest, is any memory allocated by native libraries, for instance invoked via JNI).
+To learn more about NMT, I highly recommend to read the excellent post https://blog.arkey.fr/2020/11/30/off-heap-reconnaissance/[Off-Heap memory reconnaissance] by Brice Dutheil.
+
+Until recently, in order to access NMT,
+you'd have to use the https://docs.oracle.com/en/java/javase/21/docs/specs/man/jcmd.html[_jcmd_] command line tool for capturing the values of a running JVM in an ad-hoc way.
+Whereas since Java 20,
+you can record NMT data continuously with JFR,
+thanks to two new JFR event types added for this purpose.
+This makes it much easier to collect that data over a longer period of time and analyze it in a systematic way.
+You could also expose a live stream of NMT data to remote clients via https://openjdk.org/jeps/349[JFR event streaming],
+for instance for integration with dashboards and monitoring solutions.
+
+[NOTE]
+====
+The list of JFR event types grows with every release.
+If you'd like to learn which event types are available in which Java version, take a look at the https://sap.github.io/SapMachine/jfrevents/[JFR Events] list compiled by https://twitter.com/parttimen3rd[Johannes Bechberger] from the Java team at SAP.
+It also shows you the events added in a particular version, for instance https://sap.github.io/SapMachine/jfrevents/21.html[here] for the new events in Java 21.
+====
+
+## An Example
+
+So let's see how NMT data is reported via JFR.
+Here's a simple example program which allocates some off heap memory,
+once using a good old https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/nio/ByteBuffer.html#direct-vs-non-direct-buffers-heading[direct byte buffer],
+and once using the new https://openjdk.org/jeps/454[Foreign Memory API],
+finalized in Java 22 with JEP 454
+(it feels _so_ nice to be able to allocate 4GB at once, something you couldn't do before):
+
+[source,java,linenums=true]
+----
+import java.nio.ByteBuffer;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+
+import static java.time.LocalDateTime.now;
+
+public void main() throws Exception {
+  System.out.println(STR."\{ now() } Started");
+  Thread.sleep(5000);
+
+  ByteBuffer buffer = ByteBuffer.allocateDirect(1024 * 1024 * 1024);
+  System.out.println(STR."\{ now() } Allocated (Direct)");
+  Thread.sleep(5000);
+
+  try (Arena arena = Arena.ofConfined()) {
+    MemorySegment segment = arena.allocate(4L * 1024L * 1024L * 1024L);
+    System.out.println(STR."\{ now() } Allocated (FMI)");
+    Thread.sleep(5000);
+  }
+
+  buffer = null;
+  System.out.println(STR."\{ now() } Deallocated");
+  Thread.sleep(5000);  
+}
+----
+
+JFR records NMT events every second by default,
+so I've sprinkled in some `sleep()` calls to make sure the program runs long enough and the different allocations are spread out a bit.
+Just for the fun of it, I'm also using a top-level main method—as supported by https://openjdk.org/jeps/463[JEP 463]—and string templates for the log messages (https://openjdk.org/jeps/459[JEP 459]).
+
+Let's run this and see how those off-heap allocations are tracked by JFR.
+Somewhat surprisingly, NMT in JFR is controlled via the `gc` setting, which must be set to a value of "normal", "detailed", "high", or "all" for recording NMT data.
+This is the case for the _default_ and _profile_ JFR configurations which ship with the SDK,
+so using either configuration will give you the NMT data.
+Note though that in addition, NMT itself must be enabled using the `-XX:NativeMemoryTracking` JVM option:
+
+[source,bash,linenums=true]
+----
+java --enable-preview --source 22 \
+  -XX:StartFlightRecording=name=Profiling,filename=nmt-recording.jfr,settings=profile \
+  -XX:NativeMemoryTracking=detail main.java
+[0.316s][info][jfr,startup] Started recording 1. No limit specified, using maxsize=250MB as default.
+[0.316s][info][jfr,startup]
+[0.316s][info][jfr,startup] Use jcmd 47194 JFR.dump name=Profiling to copy recording data to file.
+2023-12-17T18:31:00.475598 Started
+2023-12-17T18:31:05.609319 Allocated (Direct)
+2023-12-17T18:31:11.167484 Allocated (FMI)
+2023-12-17T18:31:16.253059 Deallocated
+----
+
+Let's open the recording in JDK Mission Control and see what we find.
+As of version 8.3, JMC doesn't have a bespoke view for displaying NMT data,
+but the NMT events show up in the generic event browser view.
+There are two event types, the first one being https://sap.github.io/SapMachine/jfrevents/#nativememoryusagetotal["Total Native Memory Usage"]:
+
+image::nmt_jfr_total.png[]
+
+The two off-heap allocations of 1 GB (direct byte buffer) and 4 GB (Foreign Memory API) show up as expected as increases to the reserved and committed memory of the program.
+We also see one of the advantages of the new Foreign Memory API:
+the memory is deallocated as soon as the `Arena` object is closed,
+whereas the JVM holds on to the memory of the byte buffer also after discarding the reference.
+There's no control over when this memory will be released exactly,
+it will be done via a https://stackoverflow.com/questions/36077641/java-when-does-direct-buffer-released[phantom-reference-based cleaner] some time after the GC has removed the associated buffer object.
+
+The second new event type, https://sap.github.io/SapMachine/jfrevents/#nativememoryusage["Native Memory Usage Per Type"], provides a more fine grained view (when setting `-XX:NativeMemoryTracking` to `detail` rather than `summary`).
+The off-heap allocations show up under the "Other" category there:
+
+image::nmt_jfr_per_type.png[]
+
+As per the docs, NMT will cause a performance overhead of 5% - 10%
+(how large the overhead actually is, https://stackoverflow.com/questions/73126185/what-is-overhead-of-java-native-memory-tracking-in-summary-mode/73167790[depends a lot] on the specific workload),
+so it's probably not something you'd want to do permanently in a production setting.
+Luckily, Java 21 adds another JFR event type, https://sap.github.io/SapMachine/jfrevents/#residentsetsize["Resident Set Size"] (RSS), which allows you to track the overall memory consumption of your application on an ongoing basis:
+
+image::nmt_jfr_rss.png[]
+
+Of course you can retrieve the RSS, i.e. the physical memory allocated by a process, also using other tools like `ps`,
+but recording it via JFR makes it really simple to analyze its development over time,
+and also allows you to correlate it with other relevant JFR events, for instance for class (un-)loading or garbage collection.
+
+With JFR event streaming, you could also expose a live feed of the value to remote monitoring clients,
+allowing you to keep track visually using a dashboard.
+But you also could apply some kind of pattern matching to this time series of values,
+triggering an alert when it continues to grow also after the application's warm-up phase.
+
+I am planning to explore how to do this with a bit of SQL using https://github.com/moditect/jfr-analytics[JFR Analytics] in a future blog post.
