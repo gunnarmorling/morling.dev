@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Native Memory Tracking With JDK Flight Recorder - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Native Memory Tracking With JDK Flight Recorder" />
+<meta property="og:description" content="
+As regular readers of this blog will now, JDK Flight Recorder (JFR) is one of my favorite tools of the Java platform.
+This low-overhead event recording engine built into the JVM is invaluable for observing the runtime characteristics of Java applications and identifying any potential performance issues.
+JFR continues to become better and better with every new release,
+with one recent addition being support for native memory tracking (NMT).
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/native-memory-tracking-with-jdk-flight-recorder/" />
+<meta property="article:published_time" content="2023-12-17T19:29:00+01:00" />
+<meta property="article:modified_time" content="2023-12-17T19:29:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Native Memory Tracking With JDK Flight Recorder"/>
+<meta name="twitter:description" content="
+As regular readers of this blog will now, JDK Flight Recorder (JFR) is one of my favorite tools of the Java platform.
+This low-overhead event recording engine built into the JVM is invaluable for observing the runtime characteristics of Java applications and identifying any potential performance issues.
+JFR continues to become better and better with every new release,
+with one recent addition being support for native memory tracking (NMT).
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling-2b44b7229/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling-2b44b7229/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Native Memory Tracking With JDK Flight Recorder</h1>
+				<div class="meta">Posted at Dec 17, 2023</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>As regular readers of this blog will now, <a href="https://openjdk.org/jeps/328">JDK Flight Recorder</a> (JFR) is one of my favorite tools of the Java platform.
+This low-overhead event recording engine built into the JVM is invaluable for observing the runtime characteristics of Java applications and identifying any potential performance issues.
+JFR continues to become better and better with every new release,
+with one recent addition being support for native memory tracking (NMT).</p>
+</div>
+<div class="paragraph">
+<p><a href="https://docs.oracle.com/en/java/javase/21/vm/native-memory-tracking.html">NMT</a> by itself is not a new capability of the JVM:
+it provides you with detailed insight into the memory consumption of your application,
+which goes way beyond the well-known Java heap space.
+NMT tells you how much memory the JVM uses for class metadata, thread stacks, the JIT compiler, garbage collection, memory-mapped files, and much more
+(the one thing which NMT does not report, despite what the name might suggest, is any memory allocated by native libraries, for instance invoked via JNI).
+To learn more about NMT, I highly recommend to read the excellent post <a href="https://blog.arkey.fr/2020/11/30/off-heap-reconnaissance/">Off-Heap memory reconnaissance</a> by Brice Dutheil.</p>
+</div>
+<div class="paragraph">
+<p>Until recently, in order to access NMT,
+you&#8217;d have to use the <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/jcmd.html"><em>jcmd</em></a> command line tool for capturing the values of a running JVM in an ad-hoc way.
+Whereas since Java 20,
+you can record NMT data continuously with JFR,
+thanks to two new JFR event types added for this purpose.
+This makes it much easier to collect that data over a longer period of time and analyze it in a systematic way.
+You could also expose a live stream of NMT data to remote clients via <a href="https://openjdk.org/jeps/349">JFR event streaming</a>,
+for instance for integration with dashboards and monitoring solutions.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The list of JFR event types grows with every release.
+If you&#8217;d like to learn which event types are available in which Java version, take a look at the <a href="https://sap.github.io/SapMachine/jfrevents/">JFR Events</a> list compiled by <a href="https://twitter.com/parttimen3rd">Johannes Bechberger</a> from the Java team at SAP.
+It also shows you the events added in a particular version, for instance <a href="https://sap.github.io/SapMachine/jfrevents/21.html">here</a> for the new events in Java 21.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect1">
+<h2 id="_an_example">An Example</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>So let&#8217;s see how NMT data is reported via JFR.
+Here&#8217;s a simple example program which allocates some off heap memory,
+once using a good old <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/nio/ByteBuffer.html#direct-vs-non-direct-buffers-heading">direct byte buffer</a>,
+and once using the new <a href="https://openjdk.org/jeps/454">Foreign Memory API</a>,
+finalized in Java 22 with JEP 454
+(it feels <em>so</em> nice to be able to allocate 4GB at once, something you couldn&#8217;t do before):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+</pre></td><td class="code"><pre><span class="kn">import</span> <span class="nn">java.nio.ByteBuffer</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.lang.foreign.Arena</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.lang.foreign.MemorySegment</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">static</span> <span class="n">java</span><span class="o">.</span><span class="na">time</span><span class="o">.</span><span class="na">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+  <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="no">STR</span><span class="o">.</span><span class="s">"\{ now() } Started"</span><span class="o">);</span>
+  <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">5000</span><span class="o">);</span>
+
+  <span class="nc">ByteBuffer</span> <span class="n">buffer</span> <span class="o">=</span> <span class="nc">ByteBuffer</span><span class="o">.</span><span class="na">allocateDirect</span><span class="o">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="o">);</span>
+  <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="no">STR</span><span class="o">.</span><span class="s">"\{ now() } Allocated (Direct)"</span><span class="o">);</span>
+  <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">5000</span><span class="o">);</span>
+
+  <span class="k">try</span> <span class="o">(</span><span class="nc">Arena</span> <span class="n">arena</span> <span class="o">=</span> <span class="nc">Arena</span><span class="o">.</span><span class="na">ofConfined</span><span class="o">())</span> <span class="o">{</span>
+    <span class="nc">MemorySegment</span> <span class="n">segment</span> <span class="o">=</span> <span class="n">arena</span><span class="o">.</span><span class="na">allocate</span><span class="o">(</span><span class="mi">4L</span> <span class="o">*</span> <span class="mi">1024L</span> <span class="o">*</span> <span class="mi">1024L</span> <span class="o">*</span> <span class="mi">1024L</span><span class="o">);</span>
+    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="no">STR</span><span class="o">.</span><span class="s">"\{ now() } Allocated (FMI)"</span><span class="o">);</span>
+    <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">5000</span><span class="o">);</span>
+  <span class="o">}</span>
+
+  <span class="n">buffer</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+  <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="no">STR</span><span class="o">.</span><span class="s">"\{ now() } Deallocated"</span><span class="o">);</span>
+  <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">5000</span><span class="o">);</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>JFR records NMT events every second by default,
+so I&#8217;ve sprinkled in some <code>sleep()</code> calls to make sure the program runs long enough and the different allocations are spread out a bit.
+Just for the fun of it, I&#8217;m also using a top-level main method—as supported by <a href="https://openjdk.org/jeps/463">JEP 463</a>—and string templates for the log messages (<a href="https://openjdk.org/jeps/459">JEP 459</a>).</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s run this and see how those off-heap allocations are tracked by JFR.
+Somewhat surprisingly, NMT in JFR is controlled via the <code>gc</code> setting, which must be set to a value of "normal", "detailed", "high", or "all" for recording NMT data.
+This is the case for the <em>default</em> and <em>profile</em> JFR configurations which ship with the SDK,
+so using either configuration will give you the NMT data.
+Note though that in addition, NMT itself must be enabled using the <code>-XX:NativeMemoryTracking</code> JVM option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre>java <span class="nt">--enable-preview</span> <span class="nt">--source</span> 22 <span class="se">\</span>
+  <span class="nt">-XX</span>:StartFlightRecording<span class="o">=</span><span class="nv">name</span><span class="o">=</span>Profiling,filename<span class="o">=</span>nmt-recording.jfr,settings<span class="o">=</span>profile <span class="se">\</span>
+  <span class="nt">-XX</span>:NativeMemoryTracking<span class="o">=</span>detail main.java
+<span class="o">[</span>0.316s][info][jfr,startup] Started recording 1. No limit specified, using <span class="nv">maxsize</span><span class="o">=</span>250MB as default.
+<span class="o">[</span>0.316s][info][jfr,startup]
+<span class="o">[</span>0.316s][info][jfr,startup] Use jcmd 47194 JFR.dump <span class="nv">name</span><span class="o">=</span>Profiling to copy recording data to file.
+2023-12-17T18:31:00.475598 Started
+2023-12-17T18:31:05.609319 Allocated <span class="o">(</span>Direct<span class="o">)</span>
+2023-12-17T18:31:11.167484 Allocated <span class="o">(</span>FMI<span class="o">)</span>
+2023-12-17T18:31:16.253059 Deallocated
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s open the recording in JDK Mission Control and see what we find.
+As of version 8.3, JMC doesn&#8217;t have a bespoke view for displaying NMT data,
+but the NMT events show up in the generic event browser view.
+There are two event types, the first one being <a href="https://sap.github.io/SapMachine/jfrevents/#nativememoryusagetotal">"Total Native Memory Usage"</a>:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/nmt_jfr_total.png" alt="nmt jfr total">
+</div>
+</div>
+<div class="paragraph">
+<p>The two off-heap allocations of 1 GB (direct byte buffer) and 4 GB (Foreign Memory API) show up as expected as increases to the reserved and committed memory of the program.
+We also see one of the advantages of the new Foreign Memory API:
+the memory is deallocated as soon as the <code>Arena</code> object is closed,
+whereas the JVM holds on to the memory of the byte buffer also after discarding the reference.
+There&#8217;s no control over when this memory will be released exactly,
+it will be done via a <a href="https://stackoverflow.com/questions/36077641/java-when-does-direct-buffer-released">phantom-reference-based cleaner</a> some time after the GC has removed the associated buffer object.</p>
+</div>
+<div class="paragraph">
+<p>The second new event type, <a href="https://sap.github.io/SapMachine/jfrevents/#nativememoryusage">"Native Memory Usage Per Type"</a>, provides a more fine grained view (when setting <code>-XX:NativeMemoryTracking</code> to <code>detail</code> rather than <code>summary</code>).
+The off-heap allocations show up under the "Other" category there:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/nmt_jfr_per_type.png" alt="nmt jfr per type">
+</div>
+</div>
+<div class="paragraph">
+<p>As per the docs, NMT will cause a performance overhead of 5% - 10%
+(how large the overhead actually is, <a href="https://stackoverflow.com/questions/73126185/what-is-overhead-of-java-native-memory-tracking-in-summary-mode/73167790">depends a lot</a> on the specific workload),
+so it&#8217;s probably not something you&#8217;d want to do permanently in a production setting.
+Luckily, Java 21 adds another JFR event type, <a href="https://sap.github.io/SapMachine/jfrevents/#residentsetsize">"Resident Set Size"</a> (RSS), which allows you to track the overall memory consumption of your application on an ongoing basis:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/nmt_jfr_rss.png" alt="nmt jfr rss">
+</div>
+</div>
+<div class="paragraph">
+<p>Of course you can retrieve the RSS, i.e. the physical memory allocated by a process, also using other tools like <code>ps</code>,
+but recording it via JFR makes it really simple to analyze its development over time,
+and also allows you to correlate it with other relevant JFR events, for instance for class (un-)loading or garbage collection.</p>
+</div>
+<div class="paragraph">
+<p>With JFR event streaming, you could also expose a live feed of the value to remote monitoring clients,
+allowing you to keep track visually using a dashboard.
+But you also could apply some kind of pattern matching to this time series of values,
+triggering an alert when it continues to grow also after the application&#8217;s warm-up phase.</p>
+</div>
+<div class="paragraph">
+<p>I am planning to explore how to do this with a bit of SQL using <a href="https://github.com/moditect/jfr-analytics">JFR Analytics</a> in a future blog post.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2023 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+var doNotTrack = (dnt == "1" || dnt == "yes");
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	if (window.sessionStorage) {
+		var GA_SESSION_STORAGE_KEY = 'ga:clientId';
+		ga('create', 'UA-156032495-1', {
+	    'storage': 'none',
+	    'clientId': sessionStorage.getItem(GA_SESSION_STORAGE_KEY)
+	   });
+	   ga(function(tracker) {
+	    sessionStorage.setItem(GA_SESSION_STORAGE_KEY, tracker.get('clientId'));
+	   });
+   }
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
