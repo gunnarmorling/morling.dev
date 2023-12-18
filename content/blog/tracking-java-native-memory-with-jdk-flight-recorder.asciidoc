@@ -12,6 +12,8 @@ ifdef::env-github[]
 :imagesdir: ../../static/images
 endif::[]
 
+_Update Dec 18: This post is https://news.ycombinator.com/item?id=38677628[discussed on Hacker News]_ 🍊
+
 As regular readers of this blog will now, https://openjdk.org/jeps/328[JDK Flight Recorder] (JFR) is one of my favorite tools of the Java platform.
 This low-overhead event recording engine built into the JVM is invaluable for observing the runtime characteristics of Java applications and identifying any potential performance issues.
 JFR continues to become better and better with every new release,
@@ -121,6 +123,49 @@ The second new event type, https://sap.github.io/SapMachine/jfrevents/#nativemem
 The off-heap allocations show up under the "Other" category there:
 
 image::nmt_jfr_per_type.png[]
+
+_Update Dec 18:_ As OpenJDK developer Eric Gahlin https://twitter.com/ErikGahlin/status/1736530559231201484[pointed out],
+you also can take a high-level view at the NMT events of a recording using the JDK's _jfr_ tool,
+which provides two https://egahlin.github.io/2023/05/30/views.html[built-in views] for committed and reserved memory:
+
+[source,bash,linenums=true]
+----
+$JAVA_HOME/bin/jfr view native-memory-committed recording.jfr
+
+                            Native Memory Committed
+
+Memory Type                    First Observed   Average Last Observed   Maximum
+------------------------------ -------------- --------- ------------- ---------
+Other                                  1,8 MB    1,7 GB        1,0 GB    5,0 GB
+Java Heap                            136,0 MB  136,0 MB      136,0 MB  136,0 MB
+GC                                    54,2 MB   54,2 MB       54,2 MB   54,2 MB
+Metaspace                             16,0 MB   16,0 MB       16,1 MB   16,1 MB
+Tracing                               15,6 MB   15,7 MB       15,7 MB   15,7 MB
+Code                                  12,6 MB   12,6 MB       12,6 MB   12,6 MB
+Shared class space                    12,4 MB   12,4 MB       12,4 MB   12,4 MB
+Arena Chunk                            8,5 MB    2,2 MB        2,0 kB    8,5 MB
+Symbol                                 5,8 MB    5,8 MB        5,8 MB    5,8 MB
+Class                                  2,7 MB    2,7 MB        2,7 MB    2,7 MB
+Native Memory Tracking                 1,7 MB    1,7 MB        1,7 MB    1,7 MB
+Synchronization                        1,2 MB    1,2 MB        1,2 MB    1,2 MB
+Internal                             563,4 kB  561,9 kB      561,7 kB  563,4 kB
+Compiler                             202,9 kB  206,4 kB      205,6 kB  238,5 kB
+Module                               174,1 kB  174,1 kB      174,1 kB  174,1 kB
+Thread                                86,0 kB   82,5 kB       81,4 kB   86,0 kB
+Safepoint                             32,0 kB   32,0 kB       32,0 kB   32,0 kB
+GCCardSet                             29,5 kB   29,5 kB       29,5 kB   29,5 kB
+Serviceability                        17,6 kB   17,6 kB       17,6 kB   17,6 kB
+Object Monitors                        1,0 kB    1,0 kB        1,0 kB    1,0 kB
+String Deduplication                608 bytes 608 bytes     608 bytes 608 bytes
+Arguments                           185 bytes 185 bytes     185 bytes 185 bytes
+Statistics                          128 bytes 128 bytes     128 bytes 128 bytes
+Logging                              32 bytes  32 bytes      32 bytes  32 bytes
+Test                                  0 bytes   0 bytes       0 bytes   0 bytes
+JVMCI                                 0 bytes   0 bytes       0 bytes   0 bytes
+Thread Stack                          0 bytes   0 bytes       0 bytes   0 bytes
+----
+
+== Tracking RSS
 
 As per the docs, NMT will cause a performance overhead of 5% - 10%
 (how large the overhead actually is, https://stackoverflow.com/questions/73126185/what-is-overhead-of-java-native-memory-tracking-in-summary-mode/73167790[depends a lot] on the specific workload),
