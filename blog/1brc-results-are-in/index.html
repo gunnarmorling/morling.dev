@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>1BRC—The Results Are In! - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="1BRC—The Results Are In!" />
+<meta property="og:description" content="
+Oh what a wild ride the last few weeks have been.
+The One Billion Row Challenge (1BRC for short),
+something I had expected to be interesting to a dozen folks or so at best,
+has gone kinda viral, with hundreds of people competing and engaging.
+In Java, as intended, but also beyond:
+folks implemented the challenge in languages such as Go, Rust, C/C&#43;&#43;, C#, Fortran, or Erlang, as well databases (Postgres, Oracle, Snowflake, etc.), and tools like awk.
+
+
+It&#8217;s really incredible how far people have pushed the limits here.
+Pull request by pull requests, the execution times for solving the problem layed out in the challenge&#8201;&#8212;&#8201;aggregating random temperature values from a file with 1,000,000,000 rows&#8201;&#8212;&#8201;improved by two orders of magnitudes in comparison to the initial baseline implementation.
+Today I am happy to share the final results, as the challenge closed for new entries after exactly one month on Jan 31
+and all submissions have been reviewed.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/1brc-results-are-in/" />
+<meta property="article:published_time" content="2024-02-04T16:34:00+01:00" />
+<meta property="article:modified_time" content="2024-02-04T16:34:00+01:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="1BRC—The Results Are In!"/>
+<meta name="twitter:description" content="
+Oh what a wild ride the last few weeks have been.
+The One Billion Row Challenge (1BRC for short),
+something I had expected to be interesting to a dozen folks or so at best,
+has gone kinda viral, with hundreds of people competing and engaging.
+In Java, as intended, but also beyond:
+folks implemented the challenge in languages such as Go, Rust, C/C&#43;&#43;, C#, Fortran, or Erlang, as well databases (Postgres, Oracle, Snowflake, etc.), and tools like awk.
+
+
+It&#8217;s really incredible how far people have pushed the limits here.
+Pull request by pull requests, the execution times for solving the problem layed out in the challenge&#8201;&#8212;&#8201;aggregating random temperature values from a file with 1,000,000,000 rows&#8201;&#8212;&#8201;improved by two orders of magnitudes in comparison to the initial baseline implementation.
+Today I am happy to share the final results, as the challenge closed for new entries after exactly one month on Jan 31
+and all submissions have been reviewed.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling-2b44b7229/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling-2b44b7229/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">1BRC—The Results Are In!</h1>
+				<div class="meta">Posted at Feb 4, 2024</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>Oh what a wild ride the last few weeks have been.
+The <a href="/blog/one-billion-row-challenge/">One Billion Row Challenge</a> (1BRC for short),
+something I had expected to be interesting to a dozen folks or so at best,
+has gone kinda viral, with hundreds of people competing and engaging.
+In Java, as intended, but also <a href="https://github.com/gunnarmorling/1brc/discussions/categories/show-and-tell">beyond</a>:
+folks implemented the challenge in languages such as Go, Rust, C/C++, C#, Fortran, or Erlang, as well databases (Postgres, Oracle, Snowflake, etc.), and tools like awk.</p>
+</div>
+<div class="paragraph">
+<p>It&#8217;s really incredible how far people have pushed the limits here.
+Pull request by pull requests, the execution times for solving the problem layed out in the challenge&#8201;&#8212;&#8201;aggregating random temperature values from a file with 1,000,000,000 rows&#8201;&#8212;&#8201;improved by two orders of magnitudes in comparison to the initial baseline implementation.
+Today I am happy to share the final results, as the challenge closed for new entries after exactly one month on Jan 31
+and all submissions have been reviewed.</p>
+</div>
+<div class="sect1">
+<h2 id="_results">Results</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>So without further ado, here are the top 10 entries for the official 1BRC competition.
+These results are from running on eight cores of a 32 core AMD EPYC™ 7502P (Zen2) machine:</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 3.4482%;">
+<col style="width: 20.6896%;">
+<col style="width: 20.6896%;">
+<col style="width: 20.6896%;">
+<col style="width: 34.483%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">#</th>
+<th class="tableblock halign-left valign-top">Result (m:s.ms)</th>
+<th class="tableblock halign-left valign-top">Implementation</th>
+<th class="tableblock halign-left valign-top">JDK</th>
+<th class="tableblock halign-left valign-top">Submitter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:01.535</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_thomaswue.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/thomaswue">Thomas Wuerthinger</a>, <a href="https://github.com/merykitty">Quan Anh Mai</a>, <a href="https://github.com/mukel">Alfonso² Peterssen</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:01.587</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_artsiomkorzun.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/artsiomkorzun">Artsiom Korzun</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:01.608</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jerrinot.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/jerrinot">Jaromir Hamala</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:01.880</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_serkan_ozal.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.1-open</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/serkan-ozal">Serkan Özal</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:01.921</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_abeobk.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/abeobk">Van Phu DO</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:02.018</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_stephenvonworley.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/stephenvonworley">Stephen Von Worley</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:02.157</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_royvanrijn.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/royvanrijn">Roy van Rijn</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:02.319</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_yavuztas.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/yavuztas">Yavuz Tas</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:02.332</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_mtopolnik.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/mtopolnik">Marko Topolnik</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:02.367</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_merykittyunsafe.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.1-open</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/merykitty">Quan Anh Mai</a></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>You can find the <a href="https://github.com/gunnarmorling/1brc?tab=readme-ov-file#results">complete result list</a> with all 164 submissions as well as the description of the <a href="https://github.com/gunnarmorling/1brc?tab=readme-ov-file#evaluating-results">evaluation process</a> in the 1BRC repository.</p>
+</div>
+<div class="paragraph">
+<p>Congratulations to the implementers of the top three entries (Thomas Wuerthinger/Quan Anh Mai/Alfonso² Peterssen, Artsiom Korzun, and Jaromir Hamala), as well as everyone else one the leaderboard for putting in the effort to participate in this challenge!
+For the fun of it, and as a small expression of my appreciation, I have created a personalized "certificate" PDF for each accepted submission, stating the author&#8217;s name and time.
+You can find it at your entry in the leaderboard table.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/1brc_certificate.png" alt="1brc certificate" width="50%">
+</div>
+</div>
+<div class="paragraph">
+<p>Initially I had meant to pay for a  1️⃣🐝🏎️ t-shirt for the winner out of my own pocket.
+But then I remembered I have a corporate credit card ;)
+So I will actually do t-shirts for the Top 3 and a 1BRC coffee mug for the Top 20.
+I will follow up with the winners on the details of getting these to you shortly.
+Thanks a lot to my employer <a href="https://www.decodable.co/">Decodable</a> (we build a SaaS for real-time ETL and stream processing, you should totally check us out!) for sponsoring not only these prizes,
+but also the evaluation machine.
+It means a lot to me!</p>
+</div>
+<div class="paragraph">
+<p>I am planning to dive into some of the implementation details in another blog post,
+there is so much to talk about: segmentation and parallelization, SIMD and SWAR, avoiding branch mispredictions and spilling, making sure the processor&#8217;s pipelines are always fully utilized, the "process forking" trick, and so much more.
+For now let me just touch on two things which stick out when looking at the results.
+One is that all the entries in the Top 10 are using Java&#8217;s notorious <code>Unsafe</code> class for faster yet unsafe memory access.
+Planned to be <a href="https://openjdk.org/jeps/8323072">removed in a future version</a>, it will be interesting to see which replacement APIs will be provided in the JDK for ensuring performance-sensitive applications like 1BRC don&#8217;t suffer.</p>
+</div>
+<div class="paragraph">
+<p>Another noteworthy aspect is that with two exceptions all entries in the Top 10 are using <a href="https://www.graalvm.org/">GraalVM</a> to produce a native binary.
+These are faster to start and reach peak performance very quickly (no JIT compilation).
+As the result times got down to less than two seconds, this makes the deciding difference.
+Note that other entries of the contest also use GraalVM as a JIT compiler for JVM-based entries,
+which also was beneficial for the problem at hand.
+This was exactly the sort of insight I was hoping to gain from 1BRC.
+A special shout-out to Serkan Özal for creating the fastest JVM-based solution, coming in on a great fourth place!</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_bonus_result_32_cores_64_threads">Bonus Result: 32 Cores, 64 Threads</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For officially evaluating entries into the challenge, each contender was run on eight cores of the evaluation machine.
+This was done primarily to keep results somewhat in the same ballpark as the figures of the originally used machine
+(I had to move to a different environment after a little while,
+re-evaluating all the previous entries).</p>
+</div>
+<div class="paragraph">
+<p>But it would be a pity to leave all the 24 other cores unused, right?
+So I ran the fastest 50 entries from the regular evaluation on all 32 cores / 64 threads (i.e. SMT is enabled) of the machine, with turbo boost enabled too, and here is the Top 10 from this evaluation
+(the complete result set for this evaluation can be found <a href="https://github.com/gunnarmorling/1brc?tab=readme-ov-file#32-cores&#8212;&#8203;64-threads">here</a>):</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 3.4482%;">
+<col style="width: 20.6896%;">
+<col style="width: 20.6896%;">
+<col style="width: 20.6896%;">
+<col style="width: 34.483%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">#</th>
+<th class="tableblock halign-left valign-top">Result (m:s.ms)</th>
+<th class="tableblock halign-left valign-top">Implementation</th>
+<th class="tableblock halign-left valign-top">JDK</th>
+<th class="tableblock halign-left valign-top">Submitter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:00.323</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jerrinot.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/jerrinot">Jaromir Hamala</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:00.326</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_thomaswue.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/thomaswue">Thomas Wuerthinger</a>, <a href="https://github.com/merykitty">Quan Anh Mai</a>, <a href="https://github.com/mukel">Alfonso² Peterssen</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:00.349</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_artsiomkorzun.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/artsiomkorzun">Artsiom Korzun</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:00.351</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_abeobk.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/abeobk">Van Phu DO</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:00.389</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_stephenvonworley.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/stephenvonworley">Stephen Von Worley</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:00.408</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_yavuztas.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/yavuztas">Yavuz Tas</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:00.415</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_royvanrijn.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/royvanrijn">Roy van Rijn</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:00.499</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_mtopolnik.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/mtopolnik">Marko Topolnik</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:00.602</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_roman_r_m.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.1-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/roman-r-m">Roman Musin</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:00.623</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_gonixunsafe.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.1-open</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gonixunsafe">gonix</a></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The fastest one coming in here is Jaromir Hamala,
+whose entry seems to take a tad more advantage of the increased level of parallelism.
+I&#8217;ve run this benchmark a handful of times, and the times and ordering remained stable, so I feel comfortable about publishing these results, albeit being very, very close.
+Congrats, Jaromir!</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_bonus_result_10k_key_set">Bonus Result: 10K Key Set</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>One thing which I didn&#8217;t expect to happen was that folks would optimize that much for the specific key set used by the example data generator I had provided.
+While the rules allow for 10,000 different weather station names with a length of up to 100 bytes,
+the key set used during evaluation contained only 413 distinct names, with most of them being shorter than 16 bytes.
+This fact heavily impacted implementation strategies, for instance when it comes to parsing rows of the file, or choosing hash functions which work particularly well for aggregating values for those 413 names.</p>
+</div>
+<div class="paragraph">
+<p>So some folks asked for another evaluation using a data set which contains a larger variety of station names (kudos to Marko Topolnik who made a strong push here).
+I didn&#8217;t want to change the nature of the original task after folks had already entered their submissions,
+but another bonus evaluation with 10K keys and longer names seemed like a great idea.
+Here are the top 10 results from running the fastest 40 entries of the regular evaluation against this data set
+(all results are <a href="https://github.com/gunnarmorling/1brc?tab=readme-ov-file#10k-key-set">here</a>):</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even stretch">
+<colgroup>
+<col style="width: 4%;">
+<col style="width: 24%;">
+<col style="width: 24%;">
+<col style="width: 24%;">
+<col style="width: 24%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">#</th>
+<th class="tableblock halign-left valign-top">Result (m:s.ms)</th>
+<th class="tableblock halign-left valign-top">Implementation</th>
+<th class="tableblock halign-left valign-top">JDK</th>
+<th class="tableblock halign-left valign-top">Submitter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:02.957</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_artsiomkorzun.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/artsiomkorzun">Artsiom Korzun</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:03.058</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_mtopolnik.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/mtopolnik">Marko Topolnik</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:03.186</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_stephenvonworley.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/stephenvonworley">Stephen Von Worley</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:03.998</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_royvanrijn.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/royvanrijn">Roy van Rijn</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:04.042</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jerrinot.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/jerrinot">Jaromir Hamala</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:04.289</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_gonixunsafe.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.1-open</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gonixunsafe">gonix</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:04.522</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_tivrfoa.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/tivrfoa">tivrfoa</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:04.653</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_JamalMulla.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.2-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/JamalMulla">Jamal Mulla</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:04.733</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_gonix.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.1-open</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gonix">gonix</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">00:04.836</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_vemanaNonIdiomatic.java">link</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21.0.1-graal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/vemanaNonIdiomatic">Subrahmanyam</a></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>This evaluation shows some interesting differences to the other ones.
+There are some new entries to this Top 10, while some entries from the original Top 10 do somewhat worse for the 10K key set,
+solely due to the fact that they have been so highly optimized for the 413 stations key set.
+Congrats to Artsiom Korzun, whose entry is not only the fastest one in this evaluation, but who also is the only contender to be in the Top 3 for all the different evaluations!</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_thank_you">Thank You!</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>I had hoped for 1BRC to be an opportunity to learn something new, inspire others to do the same, and have some fun along the way.
+This was certainly the case for me, and I think for participants too.
+It was just great to see how folks kept working on their submissions, trying out new approaches and techniques, helping each other to improve their implementations, and even teaming up to create joint entries.
+I feel the decision to allow participants to take inspiration from each other and adopt promising techniques explored by others was absolutely the right one,
+aiding with the "learning" theme of the challenge.</p>
+</div>
+<div class="paragraph">
+<p>I&#8217;d like to extend my gratitude to everyone who took part in the challenge:
+Running 1BRC over this month and getting to experience where the community would go with this has been nothing but absolutely amazing.
+This would not have been possible without all the folks who stepped up to help organize the challenge,
+be it by creating and extending a test suite for verifying correctness of challenge submissions,
+setting up and configuring the evaluation machine,
+or by building the infrastructure for running the benchmark and maintaining the leaderboard.
+A big shout-out to Alexander Yastrebov, Rene Schwietzke, Jason Nochlin, Marko Topolnik, and everyone else involved!</p>
+</div>
+<div class="paragraph">
+<p>A few people have asked for stats around the challenge, so here are some:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>587 integrated <a href="https://github.com/gunnarmorling/1brc/pulls?q=is%3Apr+is%3Aclosed">pull requests</a>, 164 submissions</p>
+</li>
+<li>
+<p><a href="https://github.com/gunnarmorling/1brc/discussions">61 discussions</a>, including an amazing <a href="https://github.com/gunnarmorling/1brc/discussions/categories/show-and-tell">"Show &amp; Tell"</a> section where folks show-case their non-Java based solutions</p>
+</li>
+<li>
+<p><a href="https://github.com/gunnarmorling/1brc/forks">1.1K forks</a> of the project</p>
+</li>
+<li>
+<p><a href="https://github.com/gunnarmorling/1brc/stargazers">3K star-gazers</a> of the project, with the fastest growth in the second week of January</p>
+<div class="imageblock">
+<div class="content">
+<img src="/images/1brc_stargazers.png" alt="1brc stargazers" width="50%">
+</div>
+</div>
+</li>
+<li>
+<p><a href="https://github.com/gunnarmorling/1brc/actions">1,909 workflow runs</a> on GitHub Actions (it would have been way more, had I set up an action for running the test suite against incoming pull requests earlier, doh)</p>
+</li>
+<li>
+<p>187 lines of comment in the <a href="https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_shipilev.java">entry of Aleksey Shipilëv</a></p>
+</li>
+<li>
+<p>~100 consumed cups of coffee while evaluating the entries</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Lastly, here are some more external resources on 1BRC, either on the challenge itself or folks sharing their insights from building a solution
+(see <a href="https://github.com/gunnarmorling/1brc/?tab=readme-ov-file#1brc-on-the-web">here</a> for a longer list of blog posts and videos):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.youtube.com/watch?v=NJNIbgV6j-Y">Cliff Click discussing his 1BRC solution on the Coffee Compiler Club</a> (video)</p>
+</li>
+<li>
+<p><a href="https://www.infoq.com/news/2024/01/1brc-fast-java-processing/">The One Billion Row Challenge Shows That Java Can Process a One Billion Rows File in Two Seconds</a> (interview by Olimpiu Pop)</p>
+</li>
+<li>
+<p><a href="https://curiouscoding.nl/posts/1brc/">One Billion Row Challenge</a> (blog post by Ragnar Groot Koerkamp)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_which_challenge_will_be_next">Which Challenge Will Be Next?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Java is alive and kicking!
+1BRC has shown that Java and its runtime are powerful and highly versatile tools, suitable also for tasks where performance is of uttermost importance.
+Apart from the tech itself, the most amazing thing about Java is its community though:
+it sparked a tremendous level of joy to witness how folks came together for solving this challenge, learning with and from each other, sharing tricks, and making this a great experience all-around.</p>
+</div>
+<div class="paragraph">
+<p>So I guess it&#8217;s just natural that some folks asked whether there&#8217;d be another challenge like this any time soon,
+when it is going to happen,
+what it will be about, etc.
+Someone even stated they&#8217;d take some time off January next year to fully focus on the challenge :)</p>
+</div>
+<div class="paragraph">
+<p>I think for now it&#8217;s a bit too early to tell what could be next and I&#8217;ll definitely need a break from running a challenge.
+But if a team came together to organize something like 1BRC next year,
+with a strong focus on running things in an automated way as much as possible,
+I could absolutely see this.
+The key challenge (sic!) will be to find a topic which is equally as approachable as this year&#8217;s task,
+while providing enough opportunity for exploration and optimization.
+I am sure the community will manage to come up with something here.</p>
+</div>
+<div class="paragraph">
+<p>For now, congrats again to everyone participating this time around, and a big thank you to everyone helping to make it a reality!</p>
+</div>
+<div class="literalblock text-center">
+<div class="content">
+<pre>1️⃣🐝🏎️</pre>
+</div>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2024 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
