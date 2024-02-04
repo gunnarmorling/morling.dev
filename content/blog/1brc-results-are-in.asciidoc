@@ -1,0 +1,246 @@
+---
+title: "1BRC—The Results Are In!"
+date: 2024-02-04T16:34:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+Oh what a wild ride the last few weeks have been.
+The link:/blog/one-billion-row-challenge/[One Billion Row Challenge] (1BRC for short),
+something I had expected to be interesting to a dozen folks or so at best,
+has gone kinda viral, with hundreds of people competing and engaging.
+In Java, as intended, but also https://github.com/gunnarmorling/1brc/discussions/categories/show-and-tell[beyond]:
+folks implemented the challenge in languages such as Go, Rust, C/C++, C#, Fortran, or Erlang, as well databases (Postgres, Oracle, Snowflake, etc.), and tools like awk.
+
+It's really incredible how far people have pushed the limits here.
+Pull request by pull requests, the execution times for solving the problem layed out in the challenge
+-- aggregating random temperature values from a file with 1,000,000,000 rows --
+improved by two orders of magnitudes in comparison to the initial baseline implementation.
+Today I am happy to share the final results, as the challenge closed for new entries after exactly one month on Jan 31
+and all submissions have been reviewed.
+
+<!--more-->
+
+== Results
+
+So without further ado, here are the top 10 entries for the official 1BRC competition.
+These results are from running on eight cores of a 32 core AMD EPYC™ 7502P (Zen2) machine:
+
+[cols="1,6,6,6,10",stripes=even]
+|===
+<| # | Result (m:s.ms) | Implementation     | JDK | Submitter
+
+| 1
+| 00:01.535
+| https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_thomaswue.java[link]| 21.0.2-graal
+| https://github.com/thomaswue[Thomas Wuerthinger], https://github.com/merykitty[Quan Anh Mai], https://github.com/mukel[Alfonso² Peterssen]
+
+| 2
+| 00:01.587
+| https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_artsiomkorzun.java[link]| 21.0.2-graal
+| https://github.com/artsiomkorzun[Artsiom Korzun]
+
+| 3
+| 00:01.608
+| https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jerrinot.java[link]| 21.0.2-graal
+| https://github.com/jerrinot[Jaromir Hamala]
+
+|  
+| 00:01.880
+| https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_serkan_ozal.java[link]| 21.0.1-open
+| https://github.com/serkan-ozal[Serkan Özal]
+
+|  
+| 00:01.921
+| https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_abeobk.java[link]| 21.0.2-graal
+| https://github.com/abeobk[Van Phu DO]
+
+|  
+| 00:02.018
+| https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_stephenvonworley.java[link]| 21.0.2-graal
+| https://github.com/stephenvonworley[Stephen Von Worley]
+
+|  
+| 00:02.157
+| https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_royvanrijn.java[link]| 21.0.2-graal
+| https://github.com/royvanrijn[Roy van Rijn]
+
+|  
+| 00:02.319
+| https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_yavuztas.java[link]| 21.0.2-graal
+| https://github.com/yavuztas[Yavuz Tas]
+
+|  
+| 00:02.332
+| https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_mtopolnik.java[link]| 21.0.2-graal
+| https://github.com/mtopolnik[Marko Topolnik]
+
+|  
+| 00:02.367
+| https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_merykittyunsafe.java[link]| 21.0.1-open
+| https://github.com/merykitty[Quan Anh Mai]
+|===
+
+You can find the https://github.com/gunnarmorling/1brc?tab=readme-ov-file#results[complete result list] with all 164 submissions as well as the description of the https://github.com/gunnarmorling/1brc?tab=readme-ov-file#evaluating-results[evaluation process] in the 1BRC repository.
+
+Congratulations to the implementers of the top three entries (Thomas Wuerthinger/Quan Anh Mai/Alfonso² Peterssen, Artsiom Korzun, and Jaromir Hamala), as well as everyone else one the leaderboard for putting in the effort to participate in this challenge!
+For the fun of it, and as a small expression of my appreciation, I have created a personalized "certificate" PDF for each accepted submission, stating the author's name and time.
+You can find it at your entry in the leaderboard table.
+
+image::1brc_certificate.png[width=50%]
+
+Initially I had meant to pay for a  1️⃣🐝🏎️ t-shirt for the winner out of my own pocket.
+But then I remembered I have a corporate credit card ;)
+So I will actually do t-shirts for the Top 3 and a 1BRC coffee mug for the Top 20.
+I will follow up with the winners on the details of getting these to you shortly.
+Thanks a lot to my employer https://www.decodable.co/[Decodable] (we build a SaaS for real-time ETL and stream processing, you should totally check us out!) for sponsoring not only these prizes,
+but also the evaluation machine.
+It means a lot to me!
+
+I am planning to dive into some of the implementation details in another blog post,
+there is so much to talk about: segmentation and parallelization, SIMD and SWAR, avoiding branch mispredictions and spilling, making sure the processor's pipelines are always fully utilized, the "process forking" trick, and so much more.
+For now let me just touch on two things which stick out when looking at the results.
+One is that all the entries in the Top 10 are using Java's notorious `Unsafe` class for faster yet unsafe memory access.
+Planned to be https://openjdk.org/jeps/8323072[removed in a future version], it will be interesting to see which replacement APIs will be provided in the JDK for ensuring performance-sensitive applications like 1BRC don't suffer.
+
+Another noteworthy aspect is that with two exceptions all entries in the Top 10 are using https://www.graalvm.org/[GraalVM] to produce a native binary.
+These are faster to start and reach peak performance very quickly (no JIT compilation).
+As the result times got down to less than two seconds, this makes the deciding difference.
+Note that other entries of the contest also use GraalVM as a JIT compiler for JVM-based entries,
+which also was beneficial for the problem at hand.
+This was exactly the sort of insight I was hoping to gain from 1BRC.
+A special shout-out to Serkan Özal for creating the fastest JVM-based solution, coming in on a great fourth place!
+
+== Bonus Result: 32 Cores, 64 Threads
+
+For officially evaluating entries into the challenge, each contender was run on eight cores of the evaluation machine.
+This was done primarily to keep results somewhat in the same ballpark as the figures of the originally used machine
+(I had to move to a different environment after a little while,
+re-evaluating all the previous entries).
+
+But it would be a pity to leave all the 24 other cores unused, right?
+So I ran the fastest 50 entries from the regular evaluation on all 32 cores / 64 threads (i.e. SMT is enabled) of the machine, with turbo boost enabled too, and here is the Top 10 from this evaluation
+(the complete result set for this evaluation can be found https://github.com/gunnarmorling/1brc?tab=readme-ov-file#32-cores--64-threads[here]):
+
+[cols="1,6,6,6,10",stripes=even]
+|===
+<| # | Result (m:s.ms) | Implementation     | JDK | Submitter
+
+| 1 | 00:00.323       | https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jerrinot.java[link]         | 21.0.2-graal | https://github.com/jerrinot[Jaromir Hamala]                                                                                                   
+| 2 | 00:00.326       | https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_thomaswue.java[link]        | 21.0.2-graal | https://github.com/thomaswue[Thomas Wuerthinger], https://github.com/merykitty[Quan Anh Mai], https://github.com/mukel[Alfonso² Peterssen]
+| 3 | 00:00.349       | https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_artsiomkorzun.java[link]    | 21.0.2-graal | https://github.com/artsiomkorzun[Artsiom Korzun]                                                                                              
+|   | 00:00.351       | https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_abeobk.java[link]           | 21.0.2-graal | https://github.com/abeobk[Van Phu DO]                                                                                                         
+|   | 00:00.389       | https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_stephenvonworley.java[link] | 21.0.2-graal | https://github.com/stephenvonworley[Stephen Von Worley]                                                                                       
+|   | 00:00.408       | https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_yavuztas.java[link]         | 21.0.2-graal | https://github.com/yavuztas[Yavuz Tas]                                                                                                        
+|   | 00:00.415       | https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_royvanrijn.java[link]       | 21.0.2-graal | https://github.com/royvanrijn[Roy van Rijn]                                                                                                   
+|   | 00:00.499       | https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_mtopolnik.java[link]        | 21.0.2-graal | https://github.com/mtopolnik[Marko Topolnik]                                                                                                  
+|   | 00:00.602       | https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_roman_r_m.java[link]        | 21.0.1-graal | https://github.com/roman-r-m[Roman Musin]                                                                                                     
+|   | 00:00.623       | https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_gonixunsafe.java[link]      | 21.0.1-open  | https://github.com/gonixunsafe[gonix]                                                                                                         
+|===
+
+The fastest one coming in here is Jaromir Hamala,
+whose entry seems to take a tad more advantage of the increased level of parallelism.
+I've run this benchmark a handful of times, and the times and ordering remained stable, so I feel comfortable about publishing these results, albeit being very, very close.
+Congrats, Jaromir!
+
+== Bonus Result: 10K Key Set
+
+One thing which I didn't expect to happen was that folks would optimize that much for the specific key set used by the example data generator I had provided.
+While the rules allow for 10,000 different weather station names with a length of up to 100 bytes,
+the key set used during evaluation contained only 413 distinct names, with most of them being shorter than 16 bytes.
+This fact heavily impacted implementation strategies, for instance when it comes to parsing rows of the file, or choosing hash functions which work particularly well for aggregating values for those 413 names.
+
+So some folks asked for another evaluation using a data set which contains a larger variety of station names (kudos to Marko Topolnik who made a strong push here).
+I didn't want to change the nature of the original task after folks had already entered their submissions,
+but another bonus evaluation with 10K keys and longer names seemed like a great idea.
+Here are the top 10 results from running the fastest 40 entries of the regular evaluation against this data set
+(all results are https://github.com/gunnarmorling/1brc?tab=readme-ov-file#10k-key-set[here]):
+
+[cols="1,6,6,6,6",stripes=even]
+|===
+<| # | Result (m:s.ms) | Implementation                                                                                                                    | JDK          | Submitter                                                
+
+| 1 | 00:02.957       |  https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_artsiomkorzun.java[link]      | 21.0.2-graal | https://github.com/artsiomkorzun[Artsiom Korzun]       
+| 2 | 00:03.058       |  https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_mtopolnik.java[link]          | 21.0.2-graal | https://github.com/mtopolnik[Marko Topolnik]           
+| 3 | 00:03.186       |  https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_stephenvonworley.java[link]   | 21.0.2-graal | https://github.com/stephenvonworley[Stephen Von Worley]
+|   | 00:03.998       |  https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_royvanrijn.java[link]         | 21.0.2-graal | https://github.com/royvanrijn[Roy van Rijn]            
+|   | 00:04.042       |  https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_jerrinot.java[link]           | 21.0.2-graal | https://github.com/jerrinot[Jaromir Hamala]            
+|   | 00:04.289       |  https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_gonixunsafe.java[link]        | 21.0.1-open  | https://github.com/gonixunsafe[gonix]                  
+|   | 00:04.522       |  https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_tivrfoa.java[link]            | 21.0.2-graal | https://github.com/tivrfoa[tivrfoa]                    
+|   | 00:04.653       |  https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_JamalMulla.java[link]         | 21.0.2-graal | https://github.com/JamalMulla[Jamal Mulla]             
+|   | 00:04.733       |  https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_gonix.java[link]              | 21.0.1-open  | https://github.com/gonix[gonix]                        
+|   | 00:04.836       |  https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_vemanaNonIdiomatic.java[link] | 21.0.1-graal | https://github.com/vemanaNonIdiomatic[Subrahmanyam]    
+|===
+
+This evaluation shows some interesting differences to the other ones.
+There are some new entries to this Top 10, while some entries from the original Top 10 do somewhat worse for the 10K key set,
+solely due to the fact that they have been so highly optimized for the 413 stations key set.
+Congrats to Artsiom Korzun, whose entry is not only the fastest one in this evaluation, but who also is the only contender to be in the Top 3 for all the different evaluations!
+
+== Thank You!
+
+I had hoped for 1BRC to be an opportunity to learn something new, inspire others to do the same, and have some fun along the way.
+This was certainly the case for me, and I think for participants too.
+It was just great to see how folks kept working on their submissions, trying out new approaches and techniques, helping each other to improve their implementations, and even teaming up to create joint entries.
+I feel the decision to allow participants to take inspiration from each other and adopt promising techniques explored by others was absolutely the right one,
+aiding with the "learning" theme of the challenge.
+
+I'd like to extend my gratitude to everyone who took part in the challenge:
+Running 1BRC over this month and getting to experience where the community would go with this has been nothing but absolutely amazing.
+This would not have been possible without all the folks who stepped up to help organize the challenge,
+be it by creating and extending a test suite for verifying correctness of challenge submissions,
+setting up and configuring the evaluation machine,
+or by building the infrastructure for running the benchmark and maintaining the leaderboard.
+A big shout-out to Alexander Yastrebov, Rene Schwietzke, Jason Nochlin, Marko Topolnik, and everyone else involved!
+
+A few people have asked for stats around the challenge, so here are some:
+
+* 587 integrated https://github.com/gunnarmorling/1brc/pulls?q=is%3Apr+is%3Aclosed[pull requests], 164 submissions
+* https://github.com/gunnarmorling/1brc/discussions[61 discussions], including an amazing https://github.com/gunnarmorling/1brc/discussions/categories/show-and-tell["Show & Tell"] section where folks show-case their non-Java based solutions
+* https://github.com/gunnarmorling/1brc/forks[1.1K forks] of the project
+* https://github.com/gunnarmorling/1brc/stargazers[3K star-gazers] of the project, with the fastest growth in the second week of January
++
+image::1brc_stargazers.png[width=50%]
++
+* https://github.com/gunnarmorling/1brc/actions[1,909 workflow runs] on GitHub Actions (it would have been way more, had I set up an action for running the test suite against incoming pull requests earlier, doh)
+* 187 lines of comment in the https://github.com/gunnarmorling/1brc/blob/main/src/main/java/dev/morling/onebrc/CalculateAverage_shipilev.java[entry of Aleksey Shipilëv]
+* ~100 consumed cups of coffee while evaluating the entries
+
+Lastly, here are some more external resources on 1BRC, either on the challenge itself or folks sharing their insights from building a solution
+(see https://github.com/gunnarmorling/1brc/?tab=readme-ov-file#1brc-on-the-web[here] for a longer list of blog posts and videos):
+
+* https://www.youtube.com/watch?v=NJNIbgV6j-Y[Cliff Click discussing his 1BRC solution on the Coffee Compiler Club] (video)
+* https://www.infoq.com/news/2024/01/1brc-fast-java-processing/[The One Billion Row Challenge Shows That Java Can Process a One Billion Rows File in Two Seconds] (interview by Olimpiu Pop)
+* https://curiouscoding.nl/posts/1brc/[One Billion Row Challenge] (blog post by Ragnar Groot Koerkamp)
+
+== Which Challenge Will Be Next?
+
+Java is alive and kicking!
+1BRC has shown that Java and its runtime are powerful and highly versatile tools, suitable also for tasks where performance is of uttermost importance.
+Apart from the tech itself, the most amazing thing about Java is its community though:
+it sparked a tremendous level of joy to witness how folks came together for solving this challenge, learning with and from each other, sharing tricks, and making this a great experience all-around.
+
+So I guess it's just natural that some folks asked whether there'd be another challenge like this any time soon,
+when it is going to happen,
+what it will be about, etc.
+Someone even stated they'd take some time off January next year to fully focus on the challenge :)
+
+I think for now it's a bit too early to tell what could be next and I'll definitely need a break from running a challenge.
+But if a team came together to organize something like 1BRC next year,
+with a strong focus on running things in an automated way as much as possible,
+I could absolutely see this.
+The key challenge (sic!) will be to find a topic which is equally as approachable as this year's task,
+while providing enough opportunity for exploration and optimization.
+I am sure the community will manage to come up with something here.
+
+For now, congrats again to everyone participating this time around, and a big thank you to everyone helping to make it a reality!
+
+[.text-center]
+ 1️⃣🐝🏎️
