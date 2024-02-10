@@ -19,7 +19,7 @@
 <meta property="og:description" content="" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://www.morling.dev/" />
-<meta property="og:updated_time" content="2024-02-04T16:34:00+01:00" />
+<meta property="og:updated_time" content="2024-02-10T11:11:00+01:00" />
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Gunnar Morling"/>
 <meta name="twitter:description" content=""/>
@@ -257,6 +257,19 @@
 					
 					
 					<div class="post">
+						<div class="meta">Nov 30, 2022</div>
+						<h4 class="summary">The Insatiable Postgres Replication Slot</h4>
+						<div>
+							<span class="description">While working on a demo for processing change events from Postgres with Apache Flink, I noticed an interesting phenomenon: A Postgres database which I had set up for that demo on Amazon RDS, ran out of disk space. The machine had a disk size of 200 GiB which was fully used up in the course of less than two weeks.
+ Now a common cause for this kind of issue are replication slots which are not advanced: in that case, Postgres will hold on to all WAL segments after the latest log sequence number (LSN) which was confirmed for that slot. Indeed I had set up a replication slot (via the Decodable CDC source connector for Postgres, which is based on Debezium). I then had stopped that connector, causing the slot to become inactive. The problem was though that I was really sure that there was no traffic in that database whatsoever! What could cause a WAL growth of ~18 GB/day then?
+</span>
+						</div>
+						<p>
+							<a href="/blog/insatiable-postgres-replication-slot/">Read More...</a>
+						</p>
+					</div>
+					
+					<div class="post">
 						<div class="meta">Nov 28, 2022</div>
 						<h4 class="summary">Running a Quarkus Native Application on Render</h4>
 						<div>
@@ -364,24 +377,6 @@
 						</div>
 						<p>
 							<a href="/blog/jdk-flight-recorder-file-format/">Read More...</a>
-						</p>
-					</div>
-					
-					<div class="post">
-						<div class="meta">Jan 12, 2022</div>
-						<h4 class="summary">What&#39;s in a Good Error Message?</h4>
-						<div>
-							<span class="description">Update Jan 13: This post is discussed on Reddit
- Update Feb 7: This post is discussed on Hacker News
- As software developers, we’ve all come across those annoying, not-so-useful error messages when using some library or framework: &#34;Couldn’t parse config file&#34;, &#34;Lacking permission for this operation&#34;, etc. Ok, ok, so something went wrong apparently; but what exactly? What config file? Which permissions? And what should you do about it? Error messages lacking this kind of information quickly create a feeling of frustration and helplessness.
- So what makes a good error message then? To me, it boils down to three pieces of information which should be conveyed by an error message:
-   Context: What led to the error? What was the code trying to do when it failed?
-  The error itself: What exactly failed?
-  Mitigation: What needs to be done in order to overcome the error?
-  </span>
-						</div>
-						<p>
-							<a href="/blog/whats-in-a-good-error-message/">Read More...</a>
 						</p>
 					</div>
 					
