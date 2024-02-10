@@ -15,7 +15,8 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Filtering Process Output With tee - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta property="og:title" content="Filtering Process Output With tee" />
 <meta property="og:description" content="
-Recently I ran into a situation where it was necessary to capture the output of a Java process on stdout and in a log file at the same time.
+Recently I ran into a situation where it was necessary to capture the output of a Java process on the stdout stream,
+and at the same time a filtered subset of the output in a log file.
 The former, so that the output gets picked up by the Kubernetes logging infrastructure.
 The letter for further processing on our end:
 we were looking to detect when the JVM stops due to an OutOfMemoryError, passing on that information to some error classifier.
@@ -27,7 +28,8 @@ we were looking to detect when the JVM stops due to an OutOfMemoryError, passing
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Filtering Process Output With tee"/>
 <meta name="twitter:description" content="
-Recently I ran into a situation where it was necessary to capture the output of a Java process on stdout and in a log file at the same time.
+Recently I ran into a situation where it was necessary to capture the output of a Java process on the stdout stream,
+and at the same time a filtered subset of the output in a log file.
 The former, so that the output gets picked up by the Kubernetes logging infrastructure.
 The letter for further processing on our end:
 we were looking to detect when the JVM stops due to an OutOfMemoryError, passing on that information to some error classifier.
@@ -264,7 +266,8 @@ we were looking to detect when the JVM stops due to an OutOfMemoryError, passing
 
 			<div class="markdown">
 				<div class="paragraph">
-<p>Recently I ran into a situation where it was necessary to capture the output of a Java process on <code>stdout</code> <em>and</em> in a log file at the same time.
+<p>Recently I ran into a situation where it was necessary to capture the output of a Java process on the <code>stdout</code> stream,
+and at the same time a filtered subset of the output in a log file.
 The former, so that the output gets picked up by the Kubernetes logging infrastructure.
 The letter for further processing on our end:
 we were looking to detect when the JVM stops due to an <code>OutOfMemoryError</code>, passing on that information to some error classifier.</p>
@@ -312,7 +315,9 @@ In a nutshell, it provides a bridge between the standard input and output stream
 </ul>
 </div>
 <div class="paragraph">
-<p>The former variant is exactly what we need:
+<p>Note that there must be no space between <code>&gt;</code>/<code>&lt;</code> and the left parenthesis.
+I.e. this is no <a href="https://www.gnu.org/software/bash/manual/html_node/Redirections.html">redirection</a>.
+The former variant is exactly what we need:
 instead of directly writing all the process output to the log file,
 we use <code>grep</code> to filter any written content, based on the string we&#8217;re looking for:</p>
 </div>
@@ -320,7 +325,7 @@ we use <code>grep</code> to filter any written content, based on the string we&#
 <div class="content">
 <pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
-</pre></td><td class="code"><pre><span class="nv">$ </span>java <span class="nt">-jar</span> my-app.jar <span class="nt">-XX</span>:+ExitOnOutOfMemoryError 2&gt;&amp;1 <span class="se">\</span>
+</pre></td><td class="code"><pre><span class="nv">$ </span>java <span class="nt">-jar</span> my-app.jar <span class="nt">-XX</span>:+ExitOnOutOfMemoryError <span class="se">\</span>
   | <span class="nb">tee</span> <span class="o">&gt;(</span><span class="nb">grep</span> <span class="s1">'OutOfMemoryError'</span> <span class="o">&gt;</span> my-app.log<span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
 </pre></td></tr></tbody></table></code></pre>
 </div>
