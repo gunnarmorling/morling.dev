@@ -12,7 +12,8 @@ ifdef::env-github[]
 :imagesdir: ../../static/images
 endif::[]
 
-Recently I ran into a situation where it was necessary to capture the output of a Java process on `stdout` _and_ in a log file at the same time.
+Recently I ran into a situation where it was necessary to capture the output of a Java process on the `stdout` stream,
+and at the same time a filtered subset of the output in a log file.
 The former, so that the output gets picked up by the Kubernetes logging infrastructure.
 The letter for further processing on our end:
 we were looking to detect when the JVM stops due to an `OutOfMemoryError`, passing on that information to some error classifier.
@@ -41,13 +42,15 @@ In a nutshell, it provides a bridge between the standard input and output stream
 * `>(commands)` substitutes a file a process writes to with another process which receives the written content on `stdin`
 * `<(commands)` substitutes a file a process reads from with another process which provides the content on `stdout`
 
+Note that there must be no space between ``>``/``<`` and the left parenthesis.
+I.e. this is no https://www.gnu.org/software/bash/manual/html_node/Redirections.html[redirection].
 The former variant is exactly what we need:
 instead of directly writing all the process output to the log file,
 we use `grep` to filter any written content, based on the string we're looking for:
 
 [source,bash,linenums=true]
 ----
-$ java -jar my-app.jar -XX:+ExitOnOutOfMemoryError 2>&1 \
+$ java -jar my-app.jar -XX:+ExitOnOutOfMemoryError \
   | tee >(grep 'OutOfMemoryError' > my-app.log) # <1>
 ----
 <1> Represent the `stdin` of `grep` as a file for `tee` to write to
