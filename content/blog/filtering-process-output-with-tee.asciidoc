@@ -1,0 +1,108 @@
+---
+title: "Filtering Process Output With tee"
+date: 2024-02-10T11:11:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+Recently I ran into a situation where it was necessary to capture the output of a Java process on `stdout` _and_ in a log file at the same time.
+The former, so that the output gets picked up by the Kubernetes logging infrastructure.
+The letter for further processing on our end:
+we were looking to detect when the JVM stops due to an `OutOfMemoryError`, passing on that information to some error classifier.
+
+<!--more-->
+
+Simply redirecting the standard output stream of the process to a file wouldn't satisfy the first requirement.
+Instead, the https://www.unix.com/man-page/posix/1p/tee/[`tee`] command offers a solution: it reads from `stdin` and writes everything to `stdout` as well as a file:
+
+[source,bash,linenums=true]
+----
+$ java -jar my-app.jar -XX:+ExitOnOutOfMemoryError \
+  | tee my-app.log # <1>
+----
+<1> Pipe `stdout` to `tee`, which writes it to both `stdout` and a log file
+
+This kinda gives us what we want, but we lack control over the size of that log file.
+As is, it can grow indefinitely, eventually causing the application's pod to run out of disk space.
+For the case at hand, we're just interested in specific lines anyways.
+So ideally the content written to the log file would be filtered accordingly,
+while exposing the _complete_ output to the Kubernetes log collector via `stdout`.
+
+To accommodate that requirement, https://www.gnu.org/software/bash/manual/html_node/Process-Substitution.html[process substitution] can be used.
+In a nutshell, it provides a bridge between the standard input and output streams and files:
+
+* `>(commands)` substitutes a file a process writes to with another process which receives the written content on `stdin`
+* `<(commands)` substitutes a file a process reads from with another process which provides the content on `stdout`
+
+The former variant is exactly what we need:
+instead of directly writing all the process output to the log file,
+we use `grep` to filter any written content, based on the string we're looking for:
+
+[source,bash,linenums=true]
+----
+$ java -jar my-app.jar -XX:+ExitOnOutOfMemoryError 2>&1 \
+  | tee >(grep 'OutOfMemoryError' > my-app.log) # <1>
+----
+<1> Represent the `stdin` of `grep` as a file for `tee` to write to
+
+That way, the complete `stdout` of our process gets exposed to Kubernetes' logging infrastructure,
+while only the filtered output get written to our log file:
+
+[source,bash,linenums=true]
+----
+$ cat my-app.log
+Terminating due to java.lang.OutOfMemoryError: Java heap space
+----
+
+To get a better intuition of what process substitution does under the hood,
+let's create a simple Java program which reads from a file specified as a program argument:
+
+[source,java,linenums=true]
+----
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+public void main(String... args) throws Exception {
+  var fileName = args[0];
+  System.out.println("File: " + fileName); // <1>
+
+  String content = Files.readString( // <2>
+      Paths.get(fileName), Charset.defaultCharset()
+  );
+  System.out.println("Content: " + content);
+}
+----
+<1> Print the passed file name
+<2> Print the content of the file
+
+Here's the program's output when using process substitution for exposing the `stdout` of `echo`:
+
+[source,bash,linenums=true]
+----
+$ java --enable-preview --source 21 read_file.java <(echo "hello")
+File: /dev/fd/11
+Content: hello
+----
+
+http://phala.isatty.net/~amber/hacks/devfd[_/dev/fd_] is a special directory which contains a file descriptor for each file opened by a process.
+So what is _/dev/fd/11_ then?
+Most implementations of process substitution represent ``stdin``/``stdout`` via anonymous pipes
+If we take a look at the list of files opened by the process, we can see that this is the case here too:
+
+[source,bash,linenums=true]
+----
+$ lsof -p 99657
+COMMAND   PID   USER   FD   TYPE             DEVICE  SIZE/OFF                NODE NAME
+...
+java    99657 gunnar   11   PIPE 0xc2e0b19eaf172929     16384
+----
+
+FD 11 is a pipe created through process substitution, and the standard Java file I/O APIs can be used to read its contents via that descriptor.
