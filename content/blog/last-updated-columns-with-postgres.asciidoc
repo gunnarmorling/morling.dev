@@ -1,0 +1,88 @@
+---
+title: "Last Updated Columns With Postgres"
+date: 2024-02-20T09:15:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+In many applications it's a requirement to keep track of when a record was created and updated the last time.
+Often, this is implemented by having columns such as `created_at` and `updated_at` within each table.
+To make things as simple as possible for application developers,
+the database itself should take care of maintaining these values automatically when a record gets inserted or updated.
+
+<!--more-->
+
+For the creation timestamp, that's as simple as specifying a column default value of `current_timestamp`.
+When omitting the value from an `INSERT` statement,
+the field will be populated automatically with the current timestamp.
+What about the update timestamp though?
+
+Solely relying on the default value won't cut it, as the field already has a value when a row gets updated.
+You also shouldn't set the value from within your application code.
+Otherwise, create and update timestamps would have different sources,
+potentially leading to anomalies if there are clock differences between application and database server,
+such as a row's `created_at` timestamp being younger than it's `updated_at` timestamp.
+
+For MySQL, the https://dev.mysql.com/doc/refman/8.0/en/timestamp-initialization.html[`ON UPDATE`] clause can be used to set the current timestamp when a row gets updated.
+Postgres does not support this feature, unfortunately.
+If you search for a solution,
+https://stackoverflow.com/questions/2362871/postgresql-current-timestamp-on-update[most] https://stackoverflow.com/questions/1035980/update-timestamp-when-row-is-updated-in-postgresql[folks] https://www.reddit.com/r/PostgreSQL/comments/10shxej/how_to_update_a_timestamp_automatically/[suggest] to define an `ON UPDATE` trigger for setting the update timestamp.
+This also is what I'd have done until recently;
+it works, but having to declare such a trigger for every table can quickly become a but cumbersome.
+
+But as I've just learned from a colleague, there's actually a much simpler solution:
+Postgres lets you explicitly set a field's value to its default value when https://www.postgresql.org/docs/current/sql-update.html[updating a row].
+So given this table and row:
+
+[source,sql,linenums=true]
+----
+CREATE TABLE movie (
+  id SERIAL NOT NULL,
+  title TEXT, 
+  viewer_rating NUMERIC(2, 1),
+  created_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
+  updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp
+);
+
+INSERT INTO movie (title, score) VALUES ('North by Northwest', 9.2);
+----
+
+Then auto-updating the `updated_at` field is as simple as this:
+
+[source,sql,linenums=true]
+----
+UPDATE
+  movie
+SET
+  viewer_rating = 9.6, updated_at = DEFAULT
+WHERE
+  id = 1;
+----
+
+The value will be retrieved by the database when executing the statement, so there is no potential for inconsistencies with the `created_at` value.
+It is not quite as elegant as MySQL's `ON UPDATE`,
+as you must make sure to set the value to `DEFAULT` in each `UPDATE` statement your application issues.
+But pretty handy nevertheless, and certainly more convinient than defining triggers for all tables.
+If you need to retrieve the value from within your application as well,
+you simply can expose it using the `RETURNING` clause:
+
+[source,sql,linenums=true]
+----
+UPDATE
+  movie
+SET
+  score = 9.6, updated_at = DEFAULT
+WHERE
+  id = 1
+RETURNING
+  updated_at;
+----
+
+If you want to play with this example by yourself, you can find it https://www.db-fiddle.com/f/4jyoMCicNSZpjMt4jFYoz5/12250[here] on DB Fiddle.
