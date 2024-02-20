@@ -33,9 +33,9 @@ such as a row's `created_at` timestamp being younger than it's `updated_at` time
 For MySQL, the https://dev.mysql.com/doc/refman/8.0/en/timestamp-initialization.html[`ON UPDATE`] clause can be used to set the current timestamp when a row gets updated.
 Postgres does not support this feature, unfortunately.
 If you search for a solution,
-https://stackoverflow.com/questions/2362871/postgresql-current-timestamp-on-update[most] https://stackoverflow.com/questions/1035980/update-timestamp-when-row-is-updated-in-postgresql[folks] https://www.reddit.com/r/PostgreSQL/comments/10shxej/how_to_update_a_timestamp_automatically/[suggest] to define an `ON UPDATE` trigger for setting the update timestamp.
+https://stackoverflow.com/questions/2362871/postgresql-current-timestamp-on-update[most] https://stackoverflow.com/questions/1035980/update-timestamp-when-row-is-updated-in-postgresql[folks] https://www.reddit.com/r/PostgreSQL/comments/10shxej/how_to_update_a_timestamp_automatically/[suggest] defining an `ON UPDATE` trigger for setting the update timestamp.
 This also is what I'd have done until recently;
-it works, but having to declare such a trigger for every table can quickly become a but cumbersome.
+it works, but having to declare such a trigger for every table can quickly become a bit cumbersome.
 
 But as I've just learned from a colleague, there's actually a much simpler solution:
 Postgres lets you explicitly set a field's value to its default value when https://www.postgresql.org/docs/current/sql-update.html[updating a row].
@@ -69,7 +69,7 @@ WHERE
 The value will be retrieved by the database when executing the statement, so there is no potential for inconsistencies with the `created_at` value.
 It is not quite as elegant as MySQL's `ON UPDATE`,
 as you must make sure to set the value to `DEFAULT` in each `UPDATE` statement your application issues.
-But pretty handy nevertheless, and certainly more convinient than defining triggers for all tables.
+But pretty handy nevertheless, and certainly more convenient than defining triggers for all tables.
 If you need to retrieve the value from within your application as well,
 you simply can expose it using the `RETURNING` clause:
 
