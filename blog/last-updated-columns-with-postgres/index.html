@@ -286,9 +286,9 @@ such as a row&#8217;s <code>created_at</code> timestamp being younger than it&#8
 <p>For MySQL, the <a href="https://dev.mysql.com/doc/refman/8.0/en/timestamp-initialization.html"><code>ON UPDATE</code></a> clause can be used to set the current timestamp when a row gets updated.
 Postgres does not support this feature, unfortunately.
 If you search for a solution,
-<a href="https://stackoverflow.com/questions/2362871/postgresql-current-timestamp-on-update">most</a> <a href="https://stackoverflow.com/questions/1035980/update-timestamp-when-row-is-updated-in-postgresql">folks</a> <a href="https://www.reddit.com/r/PostgreSQL/comments/10shxej/how_to_update_a_timestamp_automatically/">suggest</a> to define an <code>ON UPDATE</code> trigger for setting the update timestamp.
+<a href="https://stackoverflow.com/questions/2362871/postgresql-current-timestamp-on-update">most</a> <a href="https://stackoverflow.com/questions/1035980/update-timestamp-when-row-is-updated-in-postgresql">folks</a> <a href="https://www.reddit.com/r/PostgreSQL/comments/10shxej/how_to_update_a_timestamp_automatically/">suggest</a> defining an <code>ON UPDATE</code> trigger for setting the update timestamp.
 This also is what I&#8217;d have done until recently;
-it works, but having to declare such a trigger for every table can quickly become a but cumbersome.</p>
+it works, but having to declare such a trigger for every table can quickly become a bit cumbersome.</p>
 </div>
 <div class="paragraph">
 <p>But as I&#8217;ve just learned from a colleague, there&#8217;s actually a much simpler solution:
@@ -342,7 +342,7 @@ So given this table and row:</p>
 <p>The value will be retrieved by the database when executing the statement, so there is no potential for inconsistencies with the <code>created_at</code> value.
 It is not quite as elegant as MySQL&#8217;s <code>ON UPDATE</code>,
 as you must make sure to set the value to <code>DEFAULT</code> in each <code>UPDATE</code> statement your application issues.
-But pretty handy nevertheless, and certainly more convinient than defining triggers for all tables.
+But pretty handy nevertheless, and certainly more convenient than defining triggers for all tables.
 If you need to retrieve the value from within your application as well,
 you simply can expose it using the <code>RETURNING</code> clause:</p>
 </div>
