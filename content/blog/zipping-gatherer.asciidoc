@@ -37,34 +37,30 @@ So I spent some time studying the JEP and here's the basic implementation I came
 public record ObjToObjZipper<T1, T2, R>(
     Stream<T2> other,
     BiFunction<T1, T2, R> zipperFunction) // <1>
-    implements Gatherer<T1, ZipperState<T2>, R> { // <2>
+    implements Gatherer<T1, Iterator<T2>, R> { // <2>
 
   @Override
-  public Supplier<ZipperState<T2>> initializer() { // <3>
-    return () -> new ZipperState<>(other.spliterator());
+  public Supplier<Iterator<T2>> initializer() { // <3>
+    return () -> other.iterator();
   }
 
   @Override
-  public Integrator<ZipperState<T2>, T1, R> integrator() { // <4>
+  public Integrator<Iterator<T2>, T1, R> integrator() { // <4>
     return Gatherer.Integrator.ofGreedy((state, element, downstream) -> {
-      AtomicReference<T2> otherElement = new AtomicReference<>();
-      if(!state.other().tryAdvance(e -> otherElement.set(e))) {
-        return false;
+      if (state.hasNext()) {
+        return downstream.push(zipperFunction.apply(element, state.next()));
       }
-      return downstream.push(zipperFunction.apply(element, otherElement.get()));
-    });
-  }
 
-  static record ZipperState<T>(Spliterator<T> other) { // <5>
+      return false;
+    });
   }
 }
 ----
 <1> This gatherer takes the stream to zip with and a function,
 which is applied to pairs of elements of the two streams and returns the zipped result
-<2> https://download.java.net/java/early_access/jdk22/docs/api/java.base/java/util/stream/Gatherer.html[`Gatherer`] has three type parameters: the element type of the stream the gatherer is applied to, a type for keeping track of intermediary state, and the output type
+<2> https://download.java.net/java/early_access/jdk22/docs/api/java.base/java/util/stream/Gatherer.html[`Gatherer`] has three type parameters: the element type of the stream the gatherer is applied to, a type for keeping track of intermediary state (in our case, that's just the iterator of the second stream), and the output type
 <3> `initializer()` returns a supplier of the state tracking type, if needed
 <4> `integrator()` returns a function which "integrates provided elements, potentially using the provided intermediate state, optionally producing output to the provided ``Downstream``"
-<5> An intermediary state container, holds the spliterator of the zipped stream
 
 It's the first time I have been using this API,
 so I hope I haven't done anything too stupid :)
@@ -72,8 +68,6 @@ The key part of the gatherer is its `Integrator` implementation.
 This is where for each element of the stream the gatherer is applied to,
 we take the corresponding element of the given second stream,
 apply the given function, and emit the function's return value to the next stage in the stream pipeline.
-I am not a big fan of the `AtomicReference`,
-but I can't think of a better way given how the `Spliterator::tryAdvance()` API is designed.
 
 This particular implementation stops emitting elements as soon as one of the two streams has been exhausted,
 but of course you also could have an implementation with "left join" semantics, or similar.
