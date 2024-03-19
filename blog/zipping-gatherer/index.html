@@ -309,31 +309,25 @@ This sounds pretty much like what we need for a <code>zip()</code> method, doesn
 19
 20
 21
-22
-23
-24
 </pre></td><td class="code"><pre><span class="kd">public</span> <span class="n">record</span> <span class="nc">ObjToObjZipper</span><span class="o">&lt;</span><span class="no">T1</span><span class="o">,</span> <span class="no">T2</span><span class="o">,</span> <span class="no">R</span><span class="o">&gt;(</span>
     <span class="nc">Stream</span><span class="o">&lt;</span><span class="no">T2</span><span class="o">&gt;</span> <span class="n">other</span><span class="o">,</span>
     <span class="nc">BiFunction</span><span class="o">&lt;</span><span class="no">T1</span><span class="o">,</span> <span class="no">T2</span><span class="o">,</span> <span class="no">R</span><span class="o">&gt;</span> <span class="n">zipperFunction</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
-    <span class="kd">implements</span> <span class="nc">Gatherer</span><span class="o">&lt;</span><span class="no">T1</span><span class="o">,</span> <span class="nc">ZipperState</span><span class="o">&lt;</span><span class="no">T2</span><span class="o">&gt;,</span> <span class="no">R</span><span class="o">&gt;</span> <span class="o">{</span> <i class="conum" data-value="2"></i><b>(2)</b>
+    <span class="kd">implements</span> <span class="nc">Gatherer</span><span class="o">&lt;</span><span class="no">T1</span><span class="o">,</span> <span class="nc">Iterator</span><span class="o">&lt;</span><span class="no">T2</span><span class="o">&gt;,</span> <span class="no">R</span><span class="o">&gt;</span> <span class="o">{</span> <i class="conum" data-value="2"></i><b>(2)</b>
 
   <span class="nd">@Override</span>
-  <span class="kd">public</span> <span class="nc">Supplier</span><span class="o">&lt;</span><span class="nc">ZipperState</span><span class="o">&lt;</span><span class="no">T2</span><span class="o">&gt;&gt;</span> <span class="nf">initializer</span><span class="o">()</span> <span class="o">{</span> <i class="conum" data-value="3"></i><b>(3)</b>
-    <span class="k">return</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="k">new</span> <span class="nc">ZipperState</span><span class="o">&lt;&gt;(</span><span class="n">other</span><span class="o">.</span><span class="na">spliterator</span><span class="o">());</span>
+  <span class="kd">public</span> <span class="nc">Supplier</span><span class="o">&lt;</span><span class="nc">Iterator</span><span class="o">&lt;</span><span class="no">T2</span><span class="o">&gt;&gt;</span> <span class="nf">initializer</span><span class="o">()</span> <span class="o">{</span> <i class="conum" data-value="3"></i><b>(3)</b>
+    <span class="k">return</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="n">other</span><span class="o">.</span><span class="na">iterator</span><span class="o">();</span>
   <span class="o">}</span>
 
   <span class="nd">@Override</span>
-  <span class="kd">public</span> <span class="nc">Integrator</span><span class="o">&lt;</span><span class="nc">ZipperState</span><span class="o">&lt;</span><span class="no">T2</span><span class="o">&gt;,</span> <span class="no">T1</span><span class="o">,</span> <span class="no">R</span><span class="o">&gt;</span> <span class="nf">integrator</span><span class="o">()</span> <span class="o">{</span> <i class="conum" data-value="4"></i><b>(4)</b>
+  <span class="kd">public</span> <span class="nc">Integrator</span><span class="o">&lt;</span><span class="nc">Iterator</span><span class="o">&lt;</span><span class="no">T2</span><span class="o">&gt;,</span> <span class="no">T1</span><span class="o">,</span> <span class="no">R</span><span class="o">&gt;</span> <span class="nf">integrator</span><span class="o">()</span> <span class="o">{</span> <i class="conum" data-value="4"></i><b>(4)</b>
     <span class="k">return</span> <span class="nc">Gatherer</span><span class="o">.</span><span class="na">Integrator</span><span class="o">.</span><span class="na">ofGreedy</span><span class="o">((</span><span class="n">state</span><span class="o">,</span> <span class="n">element</span><span class="o">,</span> <span class="n">downstream</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="o">{</span>
-      <span class="nc">AtomicReference</span><span class="o">&lt;</span><span class="no">T2</span><span class="o">&gt;</span> <span class="n">otherElement</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">AtomicReference</span><span class="o">&lt;&gt;();</span>
-      <span class="k">if</span><span class="o">(!</span><span class="n">state</span><span class="o">.</span><span class="na">other</span><span class="o">().</span><span class="na">tryAdvance</span><span class="o">(</span><span class="n">e</span> <span class="o">-&gt;</span> <span class="n">otherElement</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">e</span><span class="o">)))</span> <span class="o">{</span>
-        <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">state</span><span class="o">.</span><span class="na">hasNext</span><span class="o">())</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="n">downstream</span><span class="o">.</span><span class="na">push</span><span class="o">(</span><span class="n">zipperFunction</span><span class="o">.</span><span class="na">apply</span><span class="o">(</span><span class="n">element</span><span class="o">,</span> <span class="n">state</span><span class="o">.</span><span class="na">next</span><span class="o">()));</span>
       <span class="o">}</span>
-      <span class="k">return</span> <span class="n">downstream</span><span class="o">.</span><span class="na">push</span><span class="o">(</span><span class="n">zipperFunction</span><span class="o">.</span><span class="na">apply</span><span class="o">(</span><span class="n">element</span><span class="o">,</span> <span class="n">otherElement</span><span class="o">.</span><span class="na">get</span><span class="o">()));</span>
-    <span class="o">});</span>
-  <span class="o">}</span>
 
-  <span class="kd">static</span> <span class="n">record</span> <span class="nc">ZipperState</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;(</span><span class="nc">Spliterator</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">other</span><span class="o">)</span> <span class="o">{</span> <i class="conum" data-value="5"></i><b>(5)</b>
+      <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+    <span class="o">});</span>
   <span class="o">}</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
@@ -348,7 +342,7 @@ which is applied to pairs of elements of the two streams and returns the zipped 
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td><a href="https://download.java.net/java/early_access/jdk22/docs/api/java.base/java/util/stream/Gatherer.html"><code>Gatherer</code></a> has three type parameters: the element type of the stream the gatherer is applied to, a type for keeping track of intermediary state, and the output type</td>
+<td><a href="https://download.java.net/java/early_access/jdk22/docs/api/java.base/java/util/stream/Gatherer.html"><code>Gatherer</code></a> has three type parameters: the element type of the stream the gatherer is applied to, a type for keeping track of intermediary state (in our case, that&#8217;s just the iterator of the second stream), and the output type</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
@@ -358,10 +352,6 @@ which is applied to pairs of elements of the two streams and returns the zipped 
 <td><i class="conum" data-value="4"></i><b>4</b></td>
 <td><code>integrator()</code> returns a function which "integrates provided elements, potentially using the provided intermediate state, optionally producing output to the provided <code>Downstream</code>"</td>
 </tr>
-<tr>
-<td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>An intermediary state container, holds the spliterator of the zipped stream</td>
-</tr>
 </table>
 </div>
 <div class="paragraph">
@@ -370,9 +360,7 @@ so I hope I haven&#8217;t done anything too stupid :)
 The key part of the gatherer is its <code>Integrator</code> implementation.
 This is where for each element of the stream the gatherer is applied to,
 we take the corresponding element of the given second stream,
-apply the given function, and emit the function&#8217;s return value to the next stage in the stream pipeline.
-I am not a big fan of the <code>AtomicReference</code>,
-but I can&#8217;t think of a better way given how the <code>Spliterator::tryAdvance()</code> API is designed.</p>
+apply the given function, and emit the function&#8217;s return value to the next stage in the stream pipeline.</p>
 </div>
 <div class="paragraph">
 <p>This particular implementation stops emitting elements as soon as one of the two streams has been exhausted,
