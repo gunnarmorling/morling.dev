@@ -17,18 +17,18 @@
 <meta property="og:description" content="
 JDK Mission Control (JMC) is invaluable for analysing performance data recording using JDK Flight Recorder (JFR).
 The other day, I ran into a problem when trying to run JMC on my Mac Mini M1.
-Mostly for my own reference, here&#8217;s what I did to overcome it.
+Mostly for my own reference, here’s what I did to overcome it.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/running-jmc-on-apple-m1/" />
+<meta property="og:url" content="https://www.morling.dev/blog/running-jmc-on-apple-m1/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2022-05-17T09:20:00+01:00" />
 <meta property="article:modified_time" content="2022-05-17T09:20:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Running JDK Mission Control on Apple M1"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Running JDK Mission Control on Apple M1"/>
 <meta name="twitter:description" content="
 JDK Mission Control (JMC) is invaluable for analysing performance data recording using JDK Flight Recorder (JFR).
 The other day, I ran into a problem when trying to run JMC on my Mac Mini M1.
-Mostly for my own reference, here&#8217;s what I did to overcome it.
+Mostly for my own reference, here’s what I did to overcome it.
 "/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
@@ -264,48 +264,48 @@ Mostly for my own reference, here&#8217;s what I did to overcome it.
 				<div class="paragraph">
 <p><a href="https://jdk.java.net/jmc/8/">JDK Mission Control</a> (JMC) is invaluable for analysing performance data recording using <a href="https://openjdk.java.net/jeps/328">JDK Flight Recorder</a> (JFR).
 The other day, I ran into a problem when trying to run JMC on my Mac Mini M1.
-Mostly for my own reference, here&#8217;s what I did to overcome it.</p>
+Mostly for my own reference, here’s what I did to overcome it.</p>
 </div>
 <div class="paragraph">
 <p>Upon launching a freshly downloaded JMC (I tried both the upstream build from OpenJDK and the one from the <a href="https://adoptium.net/de/jmc/">Eclipse Adoptium project</a>),
-I&#8217;d get the following error message:</p>
+I’d get the following error message:</p>
 </div>
 <div class="quoteblock">
 <blockquote>
 <div class="paragraph">
-<p>The JVM shared library "/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home/bin/../lib/server/libjvm.dylib"
+<p>The JVM shared library &#34;/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home/bin/../lib/server/libjvm.dylib&#34;
 does not contain the JNI_CreateJavaVM symbol.</p>
 </div>
 </blockquote>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/jmc_m1_error_message.png" alt="jmc m1 error message">
+<img src="/images/jmc_m1_error_message.png" alt="jmc m1 error message"/>
 </div>
 </div>
 <div class="paragraph">
-<p>"temurin-17.jdk" is my default JDK; it&#8217;s the Java 17 build provided by the <a href="https://projects.eclipse.org/projects/adoptium.temurin">Eclipse Temurin</a> project for macOS/AArch64, i.e. the right one for the ARM chip of the M1 ("Apple silicon").
-The error message isn&#8217;t overly helpful; after all, that referenced JDK works just fine for all my other applications.
+<p>&#34;temurin-17.jdk&#34; is my default JDK; it’s the Java 17 build provided by the <a href="https://projects.eclipse.org/projects/adoptium.temurin">Eclipse Temurin</a> project for macOS/AArch64, i.e. the right one for the ARM chip of the M1 (&#34;Apple silicon&#34;).
+The error message isn’t overly helpful; after all, that referenced JDK works just fine for all my other applications.
 The problem though is that JMC itself currently only is shipped as an x64 application:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
-</pre></td><td class="code"><pre>$ file "JDK Mission Control.app"/Contents/MacOS/jmc
+</pre></td><td class="code"><pre>$ file &#34;JDK Mission Control.app&#34;/Contents/MacOS/jmc
 .../JDK Mission Control.app/Contents/MacOS/jmc: Mach-O 64-bit executable x86_64
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
 <p>So I decided to try with an x64 JDK build instead;
-thanks to Apple&#8217;s <a href="https://support.apple.com/en-gb/HT211861">Rosetta</a> project, x64 binaries can be executed on the M1 via a rather efficient emulation.</p>
+thanks to Apple’s <a href="https://support.apple.com/en-gb/HT211861">Rosetta</a> project, x64 binaries can be executed on the M1 via a rather efficient emulation.</p>
 </div>
 <div class="paragraph">
 <p>After downloading the macOS/x64 Temurin build,
 it needs to be configured as the JDK to use for JMC.
 For that, open the file <em>JDK Mission Control.app/Contents/Info.plist</em> in an editor and look for the <code>Eclipse</code> key.
-Add the <code>-vm</code> parameter with the path to the x64 JDK to the key&#8217;s value.
+Add the <code>-vm</code> parameter with the path to the x64 JDK to the key’s value.
 Altogether, it should look like so:</p>
 </div>
 <div class="listingblock">
@@ -337,14 +337,14 @@ Resetting the permissions helped in that case:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
-</pre></td><td class="code"><pre>$ sudo chmod -R 755 "JDK Mission Control.app"
+</pre></td><td class="code"><pre>$ sudo chmod -R 755 &#34;JDK Mission Control.app&#34;
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>With the x64 JDK around, it&#8217;s a good idea to make sure it&#8217;s only used for JMC,
+<p>With the x64 JDK around, it’s a good idea to make sure it’s only used for JMC,
 while sticking to the AArch64 build for all other usages for the sake of performance.
-Unfortunately, it&#8217;s not quite obvious to see flavour you are running, as the target architecture isn&#8217;t displayed in the output of <em>java --version</em>:</p>
+Unfortunately, it’s not quite obvious to see flavour you are running, as the target architecture isn’t displayed in the output of <em>java --version</em>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -374,7 +374,7 @@ OpenJDK 64-Bit Server VM Temurin-17.0.3+7 (build 17.0.3+7, mixed mode, sharing)
 </div>
 </div>
 <div class="paragraph">
-<p>Not sure what "sharing" exactly means in the x64 output, perhaps it&#8217;s a hint?
+<p>Not sure what &#34;sharing&#34; exactly means in the x64 output, perhaps it’s a hint?
 In any case, printing the contents of the <code>os.arch</code> system property will tell the truth, e.g. in <em>jshell</em>:</p>
 </div>
 <div class="listingblock">
@@ -391,7 +391,7 @@ $ jdks jshell
 |  Welcome to JShell -- Version 17.0.3
 |  For an introduction type: /help intro
 
-jshell&gt; System.out.println(System.getProperty("os.arch"))
+jshell&gt; System.out.println(System.getProperty(&#34;os.arch&#34;))
 aarch64
 </pre></td></tr></tbody></table></code></pre>
 </div>
@@ -410,14 +410,14 @@ $ jshell
 |  Welcome to JShell -- Version 17.0.3
 |  For an introduction type: /help intro
 
-jshell&gt; System.out.println(System.getProperty("os.arch"))
+jshell&gt; System.out.println(System.getProperty(&#34;os.arch&#34;))
 x86_64
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>If you are aware of a quicker way for identifying the current JDK&#8217;s target platform,
-I&#8217;d love to learn about it in the comments below.
+<p>If you are aware of a quicker way for identifying the current JDK’s target platform,
+I’d love to learn about it in the comments below.
 Thanks!</p>
 </div>
 			</div>

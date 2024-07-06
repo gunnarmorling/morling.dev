@@ -23,16 +23,16 @@ and the compiler of current JDKs can produce byte code, that is executable with 
 For instance, JDK 16 supports byte code levels going back as far as to Java 1.7;
 But: hic sunt dracones.
 The emitted byte code level is just one part of the story.
-It&#8217;s equally important to consider which APIs of the JDK are used by the compiled code,
+It’s equally important to consider which APIs of the JDK are used by the compiled code,
 and whether they are available in the targeted Java runtime version.
-As an example, let&#8217;s consider this simple &#34;Hello World&#34; program:
+As an example, let’s consider this simple &#34;Hello World&#34; program:
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/the-anatomy-of-ct-sym-how-javac-ensures-backwards-compatibility/" />
+<meta property="og:url" content="https://www.morling.dev/blog/the-anatomy-of-ct-sym-how-javac-ensures-backwards-compatibility/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2021-04-26T18:45:00+01:00" />
 <meta property="article:modified_time" content="2021-04-26T18:45:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="The Anatomy of ct.sym — How javac Ensures Backwards Compatibility"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="The Anatomy of ct.sym — How javac Ensures Backwards Compatibility"/>
 <meta name="twitter:description" content="
 One of the ultimate strengths of Java is its strong notion of backwards compatibility:
 Java applications and libraries built many years ago oftentimes run without problems on current JVMs,
@@ -42,9 +42,9 @@ and the compiler of current JDKs can produce byte code, that is executable with 
 For instance, JDK 16 supports byte code levels going back as far as to Java 1.7;
 But: hic sunt dracones.
 The emitted byte code level is just one part of the story.
-It&#8217;s equally important to consider which APIs of the JDK are used by the compiled code,
+It’s equally important to consider which APIs of the JDK are used by the compiled code,
 and whether they are available in the targeted Java runtime version.
-As an example, let&#8217;s consider this simple &#34;Hello World&#34; program:
+As an example, let’s consider this simple &#34;Hello World&#34; program:
 "/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
@@ -286,25 +286,25 @@ and the compiler of current JDKs can produce byte code, that is executable with 
 <p>For instance, JDK 16 supports byte code levels going back as far as to Java 1.7;
 But: <em>hic sunt dracones</em>.
 The emitted byte code level is just one part of the story.
-It&#8217;s equally important to consider which APIs of the JDK are used by the compiled code,
+It’s equally important to consider which APIs of the JDK are used by the compiled code,
 and whether they are available in the targeted Java runtime version.
-As an example, let&#8217;s consider this simple "Hello World" program:</p>
+As an example, let’s consider this simple &#34;Hello World&#34; program:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">example</span><span class="o">;</span>
+<pre class="rouge highlight"><code data-lang="java"><span class="kn">package</span> <span class="nn">com.example</span><span class="o">;</span>
 
 <span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
 
 <span class="kd">public</span> <span class="kd">class</span> <span class="nc">HelloWorld</span> <span class="o">{</span>
   <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">...</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
-    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="nc">List</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">,</span> <span class="s">"World!"</span><span class="o">));</span>
+    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="nc">List</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">&#34;Hello&#34;</span><span class="o">,</span> <span class="s">&#34;World!&#34;</span><span class="o">));</span>
   <span class="o">}</span>
 <span class="o">}</span></code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Let&#8217;s assume we&#8217;re using Java 16 for compiling this code,
+<p>Let’s assume we’re using Java 16 for compiling this code,
 aiming for compatibility with Java 1.8.
 Historically, the Java compiler has provided the <em>--source</em> and <em>--target</em> options for this purpose, which are well known to most Java developers:</p>
 </div>
@@ -316,13 +316,13 @@ warning: <span class="o">[</span>options] bootstrap class path not <span class="
 </div>
 </div>
 <div class="paragraph">
-<p>This compiles successfully (we&#8217;ll come back on that warning in a bit).
-But if you actually try to run that class on Java 8, you&#8217;re in for a bad suprise:</p>
+<p>This compiles successfully (we’ll come back on that warning in a bit).
+But if you actually try to run that class on Java 8, you’re in for a bad suprise:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>java <span class="nt">-classpath</span> classes com.example.HelloWorld
-Exception <span class="k">in </span>thread <span class="s2">"main"</span> java.lang.NoSuchMethodError: ↩
+Exception <span class="k">in </span>thread <span class="s2">&#34;main&#34;</span> java.lang.NoSuchMethodError: ↩
   java.util.List.of<span class="o">(</span>Ljava/lang/Object<span class="p">;</span>Ljava/lang/Object<span class="p">;</span><span class="o">)</span>Ljava/util/List<span class="p">;</span>
   at com.example.HelloWorld.main<span class="o">(</span>HelloWorld.java:7<span class="o">)</span></code></pre>
 </div>
@@ -330,8 +330,8 @@ Exception <span class="k">in </span>thread <span class="s2">"main"</span> java.l
 <div class="paragraph">
 <p>This makes sense: the <a href="https://docs.oracle.com/javase/9/docs/api/java/util/List.html#of--"><code>List.of()</code></a> methods were only introduced in Java 9,
 so they are not present in the Java 8 API.
-Shouldn&#8217;t the compiler have let us know us about this?
-Absolutely, and that&#8217;s where this warning about the bootstrap class path is coming in:
+Shouldn’t the compiler have let us know us about this?
+Absolutely, and that’s where this warning about the bootstrap class path is coming in:
 the compiler recognized our potentially dangerous endavour and essentially suggested to compile against the class library matching the targeted Java version instead of that one of the JDK used for compilation.
 This is done using the <em>-Xbootclasspath</em> option:</p>
 </div>
@@ -342,7 +342,7 @@ This is done using the <em>-Xbootclasspath</em> option:</p>
   <span class="nt">-Xbootclasspath</span>:<span class="k">${</span><span class="nv">JAVA_8_HOME</span><span class="k">}</span>/jre/lib/rt.jar <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
   HelloWorld.java
 HelloWorld.java:7: error: cannot find symbol
-        System.out.println<span class="o">(</span>List.of<span class="o">(</span><span class="s2">"Hello"</span>, <span class="s2">"World!"</span><span class="o">))</span><span class="p">;</span>
+        System.out.println<span class="o">(</span>List.of<span class="o">(</span><span class="s2">&#34;Hello&#34;</span>, <span class="s2">&#34;World!&#34;</span><span class="o">))</span><span class="p">;</span>
                                ^
   symbol:   method of<span class="o">(</span>String,String<span class="o">)</span>
   location: interface List
@@ -351,32 +351,32 @@ HelloWorld.java:7: error: cannot find symbol
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Path to the <em>rt.jar</em> of Java 8</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>That&#8217;s much better: now the invocation of the <code>List.of()</code> method causes compilation to fail, instead of finding out about this problem only during testing, or worse, in production.</p>
+<p>That’s much better: now the invocation of the <code>List.of()</code> method causes compilation to fail, instead of finding out about this problem only during testing, or worse, in production.</p>
 </div>
 <div class="paragraph">
-<p>While this approach works, it&#8217;s not without issues:
-requiring the target Java version&#8217;s class library complicates things quite a bit;
+<p>While this approach works, it’s not without issues:
+requiring the target Java version’s class library complicates things quite a bit;
 multiple Java versions need to be installed,
-and the targeted JDK&#8217;s location must be known,
+and the targeted JDK’s location must be known,
 which for instance tends to make build processes not portable between different machines and platforms.</p>
 </div>
 <div class="paragraph">
 <p>Luckily, Java 9 improved things significantly here;
 by means of the new <em>--release</em> option, code can be compiled for older Java versions in a fully safe and portable way.
-Let&#8217;s give this a try:</p>
+Let’s give this a try:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javac <span class="nt">--release</span> 8 <span class="nt">-d</span> classes HelloWorld.java
 HelloWorld.java:7: error: cannot find symbol
-        System.out.println<span class="o">(</span>List.of<span class="o">(</span><span class="s2">"Hello"</span>, <span class="s2">"World!"</span><span class="o">))</span><span class="p">;</span>
+        System.out.println<span class="o">(</span>List.of<span class="o">(</span><span class="s2">&#34;Hello&#34;</span>, <span class="s2">&#34;World!&#34;</span><span class="o">))</span><span class="p">;</span>
                                ^
   symbol:   method of<span class="o">(</span>String,String<span class="o">)</span>
   location: interface List
@@ -389,17 +389,17 @@ So how does this work?
 Does the JDK come with full class libraries of all the earlier Java versions which it supports?
 Considering that the <em>modules</em> file of Java 16 has a size of more than one hundred megabytes
 (to be precise, 118 MB on macOS),
-that&#8217;d clearly be not a good idea;
-We&#8217;d end up with a JDK size of nearly one gigabyte.</p>
+that’d clearly be not a good idea;
+We’d end up with a JDK size of nearly one gigabyte.</p>
 </div>
 <div class="paragraph">
-<p>What&#8217;s happening instead is that the JDK ships "stripped-down class files corresponding to class files from the target platform versions",
+<p>What’s happening instead is that the JDK ships &#34;stripped-down class files corresponding to class files from the target platform versions&#34;,
 as we can read in <a href="https://openjdk.java.net/jeps/247">JEP 247</a>
-("Compile for Older Platform Versions"),
+(&#34;Compile for Older Platform Versions&#34;),
 which introduced the <em>--release</em> option.
 Details about the implementation are sparse, though.
 The JEP only mentions a ZIP file named <em>ct.sym</em> which contains those signature files.
-So I started by taking a look at what&#8217;s in there:</p>
+So I started by taking a look at what’s in there:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -422,12 +422,12 @@ Archive:  /Library/Java/JavaVirtualMachines/jdk-16.sdk/Contents/Home/lib/ct.sym
 </div>
 </div>
 <div class="paragraph">
-<p>That&#8217;s interesting, lots of <em>*.sig</em> files, organized in some at first odd-looking directory structure.
-So let&#8217;s see what&#8217;s there for the <code>java.util.List</code> class:</p>
+<p>That’s interesting, lots of <em>*.sig</em> files, organized in some at first odd-looking directory structure.
+So let’s see what’s there for the <code>java.util.List</code> class:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>unzip <span class="nt">-l</span> <span class="nv">$JAVA_HOME</span>/lib/ct.sym | <span class="nb">grep</span> <span class="s2">"java/util/List.sig"</span>
+<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>unzip <span class="nt">-l</span> <span class="nv">$JAVA_HOME</span>/lib/ct.sym | <span class="nb">grep</span> <span class="s2">&#34;java/util/List.sig&#34;</span>
      1481  03-26-2021 18:11   7/java.base/java/util/List.sig
      1771  03-26-2021 18:11   8/java.base/java/util/List.sig
      4040  03-26-2021 18:11   9/java.base/java/util/List.sig
@@ -439,13 +439,13 @@ So let&#8217;s see what&#8217;s there for the <code>java.util.List</code> class:
 <p>Five different versions altogether, under the directories <em>7</em>, <em>8</em>, <em>9</em>, <em>A</em>, and <em>BCDEF</em>.
 It took a few moments until the structure began to make sense to me:
 the top-level directory names encode Java version(s),
-and there&#8217;s a new version of the signature file whenever its API changed.
+and there’s a new version of the signature file whenever its API changed.
 I.e. <code>java.util.List</code> changed in Java 7, 8, 9, 10 (<em>A</em>), and 11 (<em>B</em>),
 and has remained stable since then, i.e. from version 11 to 16,
 there have been no changes to the public <code>List</code> API.</p>
 </div>
 <div class="paragraph">
-<p>So let&#8217;s dive in a bit further and compare the signature files of Java 8 and 9.
+<p>So let’s dive in a bit further and compare the signature files of Java 8 and 9.
 As JEP 247 states that these files are (stripped-down) class files,
 we should be able to examine them using <em>javap</em>.
 In order to so, I had to change the file extensions from <em>*.sig</em> to <em>*.class</em>, though.
@@ -487,7 +487,7 @@ as such exactly the reason why the Hello World example from the beginning cannot
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -509,19 +509,19 @@ which must be prepended with <em>-J</em> in this case:</p>
 </div>
 <div class="paragraph">
 <p>Make sure to download the right version of the OpenJDK <a href="https://github.com/openjdk/jdk">source code</a> and set it up in your IDE,
-so that you also can step through internal classes whose source code isn&#8217;t distributed with binary builds.
+so that you also can step through internal classes whose source code isn’t distributed with binary builds.
 An interesting starting point for your explorations could be the
 <a href="https://github.com/openjdk/jdk/blob/master/src/jdk.compiler/share/classes/com/sun/tools/javac/platform/JDKPlatformProvider.java"><code>JDKPlatformProvider</code></a> class.</p>
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>To double-check, you could also confirm with the API diffs provided by the <a href="https://javaalmanac.io/jdk/9/apidiff/8/">Java Version Almanac</a> or the Adopt OpenJDK <a href="https://github.com/AdoptOpenJDK/jdk-api-diff">JDK API diff generator</a>.
-While doing so, one more thing piqued my curiosity: these reports don&#8217;t show any changes to <code>java.util.List</code> in Java 11,
+While doing so, one more thing piqued my curiosity: these reports don’t show any changes to <code>java.util.List</code> in Java 11,
 whereas <em>ct.sym</em> contains a new version of the corresponding signature file;
-To find out what&#8217;s going on, again <em>javap</em>&#8201;&#8212;&#8201;this time with a bit more detail level&#8201;&#8212;&#8201;came in handy:</p>
+To find out what’s going on, again <em>javap</em> — this time with a bit more detail level — came in handy:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -550,16 +550,16 @@ To find out what&#8217;s going on, again <em>javap</em>&#8201;&#8212;&#8201;this
 </div>
 <div class="paragraph">
 <p>An annotation with the interesting name <code>@jdk.Profile+Annotion(1)</code> got removed.
-Now, if you look at the <a href="https://github.com/openjdk/jdk/blob/jdk-10%2B46/src/java.base/share/classes/java/util/List.java"><em>List.java</a></em> source file in Java 10,
-you won&#8217;t find this annotation anywhere.
-In fact, this annotation type doesn&#8217;t exist at all.
+Now, if you look at the <a href="https://github.com/openjdk/jdk/blob/jdk-10%2B46/src/java.base/share/classes/java/util/List.java"><em>List.java</em></a> source file in Java 10,
+you won’t find this annotation anywhere.
+In fact, this annotation type doesn’t exist at all.
 <a href="https://github.com/openjdk/jdk/blob/master/make/langtools/src/classes/build/tools/symbolgenerator/CreateSymbols.java">By grepping</a> through the OpenJDK source code for <em>ct.sym</em>,
 I learned that it is a synthetic annotation which gets added during the process of creating the signature files,
 denoting which <em>compact profile</em> a class belongs to.</p>
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -575,18 +575,18 @@ compact profiles became pretty much obsolete.</p>
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>So that&#8217;s another purpose of the <em>ct.sym</em> file: it allows the compiler to ensure compatibility with a chosen compact profile.
+<p>So that’s another purpose of the <em>ct.sym</em> file: it allows the compiler to ensure compatibility with a chosen compact profile.
 In current JDKs, <em>javac</em> still supports the <em>-profile</em> option, but only when compiling for Java 8.
-In that light, it&#8217;s not quite clear why that annotation only was removed from the signature file with Java 11.</p>
+In that light, it’s not quite clear why that annotation only was removed from the signature file with Java 11.</p>
 </div>
 <div class="paragraph">
 <p>Summing up, since Java 9 the <em>javac</em> compiler provides powerful means of ensuring API compatibility with earlier Java versions.
 With a size of 7.2 MB for Java 16, the <em>ct.sym</em> file contains the JDK API signature versions all the way back to Java 7.
 Using the <em>--release</em> compiler option, backwards-compatible builds, fully portable, and without the need for actually installing earlier JDKs, are straight foward.
-With that tool in your box, there&#8217;s really no need any longer for using the <em>-source</em> and <em>-target</em> options.
+With that tool in your box, there’s really no need any longer for using the <em>-source</em> and <em>-target</em> options.
 Not only that, <em>--release</em> will also help to spot subtle compatibility issues related to overriding methods with co-variant return types,
 <a href="/blog/bytebuffer-and-the-dreaded-nosuchmethoderror/">such as ByteBuffer.position()</a>.</p>
 </div>

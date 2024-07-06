@@ -19,7 +19,7 @@ Do you remember Angus &#34;Mac&#34; MacGyver?
 The always creative protagonist of the popular 80ies/90ies TV show, who could solve about any problem with nothing more than a Swiss Army knife, duct tape, shoe strings and a paper clip?
 
 
-The single message transformations (SMTs) of Kafka Connect are almost as versatile as MacGyver&#8217;s Swiss Army knife:
+The single message transformations (SMTs) of Kafka Connect are almost as versatile as MacGyver’s Swiss Army knife:
 
 
 
@@ -40,17 +40,17 @@ Applied to source or sink connectors,
 SMTs allow to modify Kafka records before they are sent to Kafka, or after they are consumed from a topic, respectively.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/single-message-transforms-swiss-army-knife-of-kafka-connect/" />
+<meta property="og:url" content="https://www.morling.dev/blog/single-message-transforms-swiss-army-knife-of-kafka-connect/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-05-14T15:30:00+02:00" />
 <meta property="article:modified_time" content="2020-05-14T15:30:00+02:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Single Message Transformations - The Swiss Army Knife of Kafka Connect"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Single Message Transformations - The Swiss Army Knife of Kafka Connect"/>
 <meta name="twitter:description" content="
 Do you remember Angus &#34;Mac&#34; MacGyver?
 The always creative protagonist of the popular 80ies/90ies TV show, who could solve about any problem with nothing more than a Swiss Army knife, duct tape, shoe strings and a paper clip?
 
 
-The single message transformations (SMTs) of Kafka Connect are almost as versatile as MacGyver&#8217;s Swiss Army knife:
+The single message transformations (SMTs) of Kafka Connect are almost as versatile as MacGyver’s Swiss Army knife:
 
 
 
@@ -302,11 +302,11 @@ SMTs allow to modify Kafka records before they are sent to Kafka, or after they 
 
 			<div class="markdown">
 				<div class="paragraph">
-<p>Do you remember Angus "Mac" MacGyver?
+<p>Do you remember Angus &#34;Mac&#34; MacGyver?
 The always creative protagonist of the popular 80ies/90ies TV show, who could solve about any problem with nothing more than a Swiss Army knife, duct tape, shoe strings and a paper clip?</p>
 </div>
 <div class="paragraph">
-<p>The single message transformations (SMTs) of Kafka Connect are almost as versatile as MacGyver&#8217;s Swiss Army knife:</p>
+<p>The single message transformations (SMTs) of Kafka Connect are almost as versatile as MacGyver’s Swiss Army knife:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -327,13 +327,13 @@ Applied to source or sink connectors,
 SMTs allow to modify Kafka records before they are sent to Kafka, or after they are consumed from a topic, respectively.</p>
 </div>
 <div class="paragraph">
-<p>In this post I&#8217;d like to focus on some interesting (hopefully anyways) usages of SMTs.
+<p>In this post I’d like to focus on some interesting (hopefully anyways) usages of SMTs.
 Those use cases are mostly based on my experiences from using Kafka Connect with <a href="https://debezium.io/">Debezium</a>, an open-source platform for change data capture (CDC).
 I also got some great pointers on interesting SMT usages when <a href="https://twitter.com/gunnarmorling/status/1253005581071405056">asking the community</a> about this on Twitter some time ago:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<a class="image" href="https://twitter.com/gunnarmorling/status/1253005581071405056"><img src="/images/kafka_connect_smt_tweet.png" alt="kafka connect smt tweet" width="500"></a>
+<a class="image" href="https://twitter.com/gunnarmorling/status/1253005581071405056"><img src="/images/kafka_connect_smt_tweet.png" alt="kafka connect smt tweet" width="500"/></a>
 </div>
 </div>
 <div class="paragraph">
@@ -341,7 +341,7 @@ I also got some great pointers on interesting SMT usages when <a href="https://t
 In order to learn more about SMTs in general, how to configure them etc., refer to the resources given towards the end of this post.</p>
 </div>
 <div class="paragraph">
-<p>For each category of use cases, I&#8217;ve also asked our sympathetic TV hero for his opinion on the usefulness of SMTs for the task at hand.
+<p>For each category of use cases, I’ve also asked our sympathetic TV hero for his opinion on the usefulness of SMTs for the task at hand.
 You can find his rating at the end of each section,
 ranging from 📎 (poor fit) to 📎📎📎📎📎 (perfect fit).</p>
 </div>
@@ -352,20 +352,20 @@ ranging from 📎 (poor fit) to 📎📎📎📎📎 (perfect fit).</p>
 <p>Probably the most common application of SMTs is format conversion,
 i.e. adjustments to type, format and representation of data.
 This may apply to entire messages, or to specific message attributes.
-Let&#8217;s first look at a few examples for converting individual message attribute formats:</p>
+Let’s first look at a few examples for converting individual message attribute formats:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
 <p><strong>Timestamps:</strong> Different systems tend to have different assumptions of how timestamps should be typed and formatted.
 Debezium for instance represents most temporal column types as milli-seconds since epoch.
-Change event consumers on the other hand might expect such date and time values using Kafka Connect&#8217;s <code>Date</code> type, or as an ISO-8601 formatted string, potentially using a specific timezone</p>
+Change event consumers on the other hand might expect such date and time values using Kafka Connect’s <code>Date</code> type, or as an ISO-8601 formatted string, potentially using a specific timezone</p>
 </li>
 <li>
 <p><strong>Value masking:</strong> Sensitive data might have be to masked or truncated, or specific fields should even be removed altogether; the <code>org.apache.kafka.connect.transforms.MaskField</code> and <code>ReplaceField</code> SMTs <a href="https://kafka.apache.org/documentation/#connect_transforms">shipping with Kafka Connect</a> out of the box come in handy for that</p>
 </li>
 <li>
-<p><strong>Numeric types:</strong> Similar to timestamps, requirements around the representation of (decimal) numbers may differ between systems; e.g. Kafka Connect&#8217;s <code>Decimal</code> type allows to convey arbitrary-precision decimals, but its binary representation of numbers might not be supported by all sink connectors and consumers</p>
+<p><strong>Numeric types:</strong> Similar to timestamps, requirements around the representation of (decimal) numbers may differ between systems; e.g. Kafka Connect’s <code>Decimal</code> type allows to convey arbitrary-precision decimals, but its binary representation of numbers might not be supported by all sink connectors and consumers</p>
 </li>
 <li>
 <p><strong>Name adjustments:</strong> Depending on the chosen serialization formats, specific field names might be unsupported; when working with <a href="https://avro.apache.org/">Apache Avro</a> for instance, field names must not start with a number</p>
@@ -376,12 +376,12 @@ Change event consumers on the other hand might expect such date and time values 
 <p>In all these cases, either existing, ready-made SMTs or bespoke implementations can be used to apply the required attribute type and/or format conversions.</p>
 </div>
 <div class="paragraph">
-<p>When using Kafka Connect for integrating legacy services and databases with newly built microservices, such format conversions can play an important role for creating an <em>anti-corruption layer</em>: by using better field names, choosing more suitable data types or by removing unneeded fields, SMTs can help to shield a new service&#8217;s model from the oddities and quirks of the legacy world.</p>
+<p>When using Kafka Connect for integrating legacy services and databases with newly built microservices, such format conversions can play an important role for creating an <em>anti-corruption layer</em>: by using better field names, choosing more suitable data types or by removing unneeded fields, SMTs can help to shield a new service’s model from the oddities and quirks of the legacy world.</p>
 </div>
 <div class="paragraph">
 <p>But SMTs cannot only modify the representation of single fields, also the format and structure of entire messages can be adjusted.
-E.g. Kafka Connect&#8217;s <code>ExtractField</code> transformation allows to extract a single field from a message and propagate that one.
-A related SMT is Debezium&#8217;s SMT for <a href="https://debezium.io/documentation/reference/configuration/event-flattening.html">change event flattening</a>.
+E.g. Kafka Connect’s <code>ExtractField</code> transformation allows to extract a single field from a message and propagate that one.
+A related SMT is Debezium’s SMT for <a href="https://debezium.io/documentation/reference/configuration/event-flattening.html">change event flattening</a>.
 It can be used to convert the complex Debezium change event structure with old and new row state, metadata and more, into a flat row representation, which can be consumed by many existing sink connectors.</p>
 </div>
 <div class="paragraph">
@@ -391,12 +391,12 @@ based on a given XML schema or JSON schema, respectively.</p>
 </div>
 <div class="paragraph">
 <p>Lastly, as a special kind of format conversion, SMTs can be used to modify or set the key of Kafka records.
-This may be desirable if a source connector doesn&#8217;t produce any meaningful key, but one can be extracted from the record value.
+This may be desirable if a source connector doesn’t produce any meaningful key, but one can be extracted from the record value.
 Also <em>changing</em> the message key can be useful, when considering subsequent stream processing.
 Choosing matching keys right at the source side e.g. allows for joining multiple topics via Kafka Streams, without the need for re-keying records.</p>
 </div>
 <div class="paragraph">
-<p><em>Mac&#8217;s rating:</em> &nbsp;&nbsp; 📎📎📎📎📎&nbsp;&nbsp; <em>SMTs are the perfect tool for format conversions of Kafka Connect records</em></p>
+<p><em>Mac’s rating:</em>    📎📎📎📎📎   <em>SMTs are the perfect tool for format conversions of Kafka Connect records</em></p>
 </div>
 </div>
 </div>
@@ -413,7 +413,7 @@ In case a field gets dropped altogether, consumers must not expect this field an
 <p>Message transformations can help with such transition from one schema version to the next,
 thus reducing the coupling of the lifecycles of message producers and consumers.
 In case of a renamed field, an SMT could add the field another time, using the original name.
-That&#8217;ll allow consumers to continue reading the field using the old name and to be upgraded to use the new name at their own pace.
+That’ll allow consumers to continue reading the field using the old name and to be upgraded to use the new name at their own pace.
 After some time, once all consumers have been adjusted, the SMT can be removed again,
 only exposing the new field name going forward.
 Similarly, a field that got removed from a message schema could be re-added,
@@ -426,7 +426,7 @@ Again consumers could then be updated at their own pace to not expect and access
 One option could be a multi-step approach where at first a separate field with the new type is added, before renaming it again as described above.</p>
 </div>
 <div class="paragraph">
-<p><em>Mac&#8217;s rating:</em> &nbsp;&nbsp; 📎📎📎&nbsp;&nbsp; <em>SMTs can primarily help to address basic compatibility concerns around schema evolution</em></p>
+<p><em>Mac’s rating:</em>    📎📎📎   <em>SMTs can primarily help to address basic compatibility concerns around schema evolution</em></p>
 </div>
 </div>
 </div>
@@ -437,7 +437,7 @@ One option could be a multi-step approach where at first a separate field with t
 <p>When applied on the source side,
 SMTs allow to filter out specific records produced by the connector.
 They also can be used for controlling the Kafka topic a record gets sent to.
-That&#8217;s in particular interesting when filtering and routing is based on the actual record contents.
+That’s in particular interesting when filtering and routing is based on the actual record contents.
 In an IoT scenario for instance where Kafka Connect is used to ingest data from some kind of sensors,
 an SMT might be used to filter out all sensor measurements <em>below</em> a certain threshold, or route measurement events <em>above</em> a threshold to a special topic.</p>
 </div>
@@ -452,7 +452,7 @@ which can be useful when working with partition tables in Postgres, or with data
 </li>
 <li>
 <p>The <a href="https://debezium.io/documentation/reference/1.2/configuration/filtering.html"><code>Filter</code></a> and <a href="https://debezium.io/documentation/reference/1.2/configuration/content-based-routing.html"><code>ContentBasedRouter</code></a> SMTs let you use script expressions in languages such as Groovy or JavaScript for filtering and routing change events based on their contents;
-such script-based approach can be an interesting middleground between ease-of-use (no Java code must be compiled and deployed to Kafka Connect) and expressiveness; e.g. here is how the routing SMT could be used with <a href="https://github.com/graalvm/graaljs">GraalVM&#8217;s JavaScript engine</a> for routing change events from a table with purchase orders to different topics in Kafka, based on the order type:</p>
+such script-based approach can be an interesting middleground between ease-of-use (no Java code must be compiled and deployed to Kafka Connect) and expressiveness; e.g. here is how the routing SMT could be used with <a href="https://github.com/graalvm/graaljs">GraalVM’s JavaScript engine</a> for routing change events from a table with purchase orders to different topics in Kafka, based on the order type:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code>...
@@ -461,7 +461,7 @@ transforms.route.type=io.debezium.transforms.ContentBasedRouter
 transforms.route.topic.regex=.*purchaseorders
 transforms.route.language=jsr223.graal.js
 transforms.route.topic.expression=
-    value.after.ordertype == 'B2B' ? 'b2b_orders' : 'b2c_orders'
+    value.after.ordertype == &#39;B2B&#39; ? &#39;b2b_orders&#39; : &#39;b2c_orders&#39;
 ...</code></pre>
 </div>
 </div>
@@ -472,16 +472,16 @@ transforms.route.topic.expression=
 </ul>
 </div>
 <div class="paragraph">
-<p>There are also two SMTs for routing purposes in Kafka Connect <a href="https://kafka.apache.org/documentation/#connect_transforms">itself</a>: <code>RegexRouter</code> which allows to re-route records two different topics based on regular expressions, and <code>TimestampRouter</code> for determining topic names based on the record&#8217;s timestamp.</p>
+<p>There are also two SMTs for routing purposes in Kafka Connect <a href="https://kafka.apache.org/documentation/#connect_transforms">itself</a>: <code>RegexRouter</code> which allows to re-route records two different topics based on regular expressions, and <code>TimestampRouter</code> for determining topic names based on the record’s timestamp.</p>
 </div>
 <div class="paragraph">
 <p>While routing SMTs usually are applied to source connectors
 (defining the Kafka topic a record gets sent to),
 it can also make sense to use them with sink connectors.
-That&#8217;s the case when a sink connector derives the name of downstream table names, index names or similar from the topic name.</p>
+That’s the case when a sink connector derives the name of downstream table names, index names or similar from the topic name.</p>
 </div>
 <div class="paragraph">
-<p><em>Mac&#8217;s rating:</em> &nbsp;&nbsp; 📎📎📎📎📎&nbsp;&nbsp; <em>Message filtering and topic routing&#8201;&#8212;&#8201;no problem for SMTs</em></p>
+<p><em>Mac’s rating:</em>    📎📎📎📎📎   <em>Message filtering and topic routing — no problem for SMTs</em></p>
 </div>
 </div>
 </div>
@@ -501,13 +501,13 @@ typically resulting in <code>NullPointerException</code>s and similar.
 A filtering SMT such as the one above can be used to drop tombstone records in such case.</p>
 </div>
 <div class="paragraph">
-<p>But also the exact opposite&#8201;&#8212;&#8201;producing tombstone records&#8201;&#8212;&#8201;can be useful:
+<p>But also the exact opposite — producing tombstone records — can be useful:
 some sink connectors use tombstone records as the indicator to delete corresponding rows from a downstream datastore.
-Now when using a CDC connector like Debezium to capture changes from a database where "soft deletes" are used (i.e. records are not physically deleted, but a logically deleted flag is set to <code>true</code> when deleting a record), those change events will be exported as update events (which they technically are).
+Now when using a CDC connector like Debezium to capture changes from a database where &#34;soft deletes&#34; are used (i.e. records are not physically deleted, but a logically deleted flag is set to <code>true</code> when deleting a record), those change events will be exported as update events (which they technically are).
 A bespoke SMT can be used to translate these update events into tombstone records, triggering the deletion of corresponding records in downstream datastores.</p>
 </div>
 <div class="paragraph">
-<p><em>Mac&#8217;s rating:</em> &nbsp;&nbsp; 📎📎📎📎&nbsp;&nbsp; <em>SMTs work well to discard tombstones or convert soft delete events into tombstones. What&#8217;s not possible though is to keep the original event and produce an additional tombstone record at the same time</em></p>
+<p><em>Mac’s rating:</em>    📎📎📎📎   <em>SMTs work well to discard tombstones or convert soft delete events into tombstones. What’s not possible though is to keep the original event and produce an additional tombstone record at the same time</em></p>
 </div>
 </div>
 </div>
@@ -524,36 +524,36 @@ This pattern comes in handy in situations like this:</p>
 <p>A message may contain a set of data items that may be needed later in the message flow, but that are not necessary for all intermediate processing steps. We may not want to carry all this information through each processing step because it may cause performance degradation and makes debugging harder because we carry so much extra data.</p>
 </div>
 <div class="paragraph">
-<p>&#8201;&#8212;&#8201;Gregor Hohpe, Bobby Woolf; Enterprise Application Patterns</p>
+<p> — Gregor Hohpe, Bobby Woolf; Enterprise Application Patterns</p>
 </div>
 </blockquote>
 </div>
 <div class="paragraph">
-<p>A specific example could again be a CDC connector that captures changes from a database table <code>Users</code>, with a BLOB column that contains the user&#8217;s profile picture
-(surely not a best practice, still not that uncommon in reality&#8230;&#8203;).</p>
+<p>A specific example could again be a CDC connector that captures changes from a database table <code>Users</code>, with a BLOB column that contains the user’s profile picture
+(surely not a best practice, still not that uncommon in reality…​).</p>
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
 <div class="title">Apache Kafka and Large Messages</div>
 <div class="paragraph">
-<p>Apache Kafka isn&#8217;t meant for large messages.
+<p>Apache Kafka isn’t meant for large messages.
 The maximum message size is 1 MB by default, and while this can be increased,
 benchmarks are showing best throughput for much smaller messages.
 Strategies like <a href="https://medium.com/workday-engineering/large-message-handling-with-kafka-chunking-vs-external-store-33b0fc4ccf14">chunking and externalizing</a> large payloads can thus be vital in order to ensure a satisfying performance.</p>
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>When propagating change data events from that table to Apache Kafka,
 adding the picture data to each event poses a significant overhead.
-In particular, if the picture BLOB hasn&#8217;t changed between two events at all.</p>
+In particular, if the picture BLOB hasn’t changed between two events at all.</p>
 </div>
 <div class="paragraph">
 <p>Using an SMT, the BLOB data could be externalized to some other storage.
@@ -562,7 +562,7 @@ The corresponding field in the record would be updated so it just contains the u
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/kafka_connect_smt_claimcheck_pattern.png" alt="kafka connect smt claimcheck pattern">
+<img src="/images/kafka_connect_smt_claimcheck_pattern.png" alt="kafka connect smt claimcheck pattern"/>
 </div>
 </div>
 <div class="paragraph">
@@ -572,7 +572,7 @@ The corresponding field in the record would be updated so it just contains the u
 <p>A corresponding SMT instance applied to sink connectors would retrieve the identifier of the externalized files from the incoming record, obtain the contents from the external storage and put it back into the record before passing it on to the connector.</p>
 </div>
 <div class="paragraph">
-<p><em>Mac&#8217;s rating:</em> &nbsp;&nbsp; 📎📎📎📎&nbsp;&nbsp; <em>SMTs can help to externalize payloads, avoiding large Kafka records. Relying on another service increases overall complexity, though</em></p>
+<p><em>Mac’s rating:</em>    📎📎📎📎   <em>SMTs can help to externalize payloads, avoiding large Kafka records. Relying on another service increases overall complexity, though</em></p>
 </div>
 </div>
 </div>
@@ -580,9 +580,9 @@ The corresponding field in the record would be updated so it just contains the u
 <h2 id="_limitations">Limitations</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>As we&#8217;ve seen, single message transformations can help to address quite a few requirements that commonly come up for users of Kafka Connect.
+<p>As we’ve seen, single message transformations can help to address quite a few requirements that commonly come up for users of Kafka Connect.
 But there are limitations, too;
-Like MacGyver, who sometimes has to reach for some other tool than his beloved Swiss Army knife, you shouldn&#8217;t think of SMTs as the perfect solution all the time.</p>
+Like MacGyver, who sometimes has to reach for some other tool than his beloved Swiss Army knife, you shouldn’t think of SMTs as the perfect solution all the time.</p>
 </div>
 <div class="paragraph">
 <p>The biggest shortcoming is already hinted at in their name:
@@ -593,12 +593,12 @@ For such use cases, you should be looking at stream processing technologies like
 </div>
 <div class="paragraph">
 <p>One thing to be aware of when working with SMTs is configuration complexity;
-when using generic, highly configurable SMTs, you might end up with lengthy configuration that&#8217;s hard to grasp and debug.
+when using generic, highly configurable SMTs, you might end up with lengthy configuration that’s hard to grasp and debug.
 You might be better off implementing a bespoke SMT which is focussing on one particular task, leveraging the full capabilities of the Java programming language.</p>
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -611,20 +611,20 @@ testing your work is essential.</p>
 <div class="paragraph">
 <p>While unit tests are a viable option for basic testing of bespoke SMT implementations,
 integration tests running against Kafka Connect connectors are recommended for testing SMT configurations.
-That way you&#8217;ll be sure that the SMT can process actual messages and it has been configured the way you intended to.</p>
+That way you’ll be sure that the SMT can process actual messages and it has been configured the way you intended to.</p>
 </div>
 <div class="paragraph">
 <p>Testcontainers and the Debezium <a href="https://debezium.io/documentation/reference/integrations/testcontainers.html">support for Testcontainers</a> are a great foundation for setting up all the required components such as Apache Kafka, Kafka Connect, connectors and the SMTs to test.</p>
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>A specific feature I wished for every now and then is the ability to apply SMTs only to a specific sub-set of the topics created or consumed by a connector.
 In particular if connectors create different kinds of topics (like an actual data topic and another one with with metadata),
 it can be desirable to apply SMTs only to the topics of one group but not the other.
-This requirement is captured in <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-585%3A+Filter+and+Conditional+SMTs">KIP-585</a> ("Filter and Conditional SMTs"),
+This requirement is captured in <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-585%3A+Filter+and+Conditional+SMTs">KIP-585</a> (&#34;Filter and Conditional SMTs&#34;),
 please join the discussion on that one if you got requirements or feedback related to that.</p>
 </div>
 </div>
@@ -646,10 +646,10 @@ how they are configured etc.</p>
 <p><a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-66%3A+Single+Message+Transforms+for+Kafka+Connect">KIP-66</a>: The original KIP (Kafka Improvement Proposal) that introduced SMTs</p>
 </li>
 <li>
-<p><a href="https://www.slideshare.net/ConfluentInc/kafka-summit-nyc-2017-singe-message-transforms-are-not-the-transformations-youre-looking-for">Singe Message Transforms are not the Transformations You&#8217;re Looking For</a>: A great overview on SMTs, their capabilities as well as limitations, by Ewen Cheslack-Postava</p>
+<p><a href="https://www.slideshare.net/ConfluentInc/kafka-summit-nyc-2017-singe-message-transforms-are-not-the-transformations-youre-looking-for">Singe Message Transforms are not the Transformations You’re Looking For</a>: A great overview on SMTs, their capabilities as well as limitations, by Ewen Cheslack-Postava</p>
 </li>
 <li>
-<p><a href="https://medium.com/credimi-tech-blog/an-on-the-field-experience-with-kafka-connect-smts-45b170cbb5fa">A hands-on experience with Kafka Connect SMTs</a>: In-depth blog post on SMT use cases, things to be aware of and more, by Gian D&#8217;Uia</p>
+<p><a href="https://medium.com/credimi-tech-blog/an-on-the-field-experience-with-kafka-connect-smts-45b170cbb5fa">A hands-on experience with Kafka Connect SMTs</a>: In-depth blog post on SMT use cases, things to be aware of and more, by Gian D’Uia</p>
 </li>
 </ul>
 </div>

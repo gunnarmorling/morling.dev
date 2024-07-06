@@ -23,16 +23,16 @@ Render is a cloud platform for running websites and applications.
 Like most other comparable services such as fly.io,
 it offers a decent free tier, which lets you try out the service without any financial commitment.
 Unlike most other services,
-with Render, you don&#8217;t need to provide a credit card in order to use the free tier.
-Which means there&#8217;s no risk of surprise bills, as often is the case with pay-per-use models,
+with Render, you don’t need to provide a credit card in order to use the free tier.
+Which means there’s no risk of surprise bills, as often is the case with pay-per-use models,
 where a malicious actor could DDOS your service and drive up cost for consumed CPU resources or egress bandwidth indefinitely.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/running-quarkus-native-app-on-render/" />
+<meta property="og:url" content="https://www.morling.dev/blog/running-quarkus-native-app-on-render/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2022-11-28T11:45:00+01:00" />
 <meta property="article:modified_time" content="2022-11-28T11:45:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Running a Quarkus Native Application on Render"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Running a Quarkus Native Application on Render"/>
 <meta name="twitter:description" content="
 This is a quick run down of the steps required for running JVM applications,
 built using Quarkus and GraalVM, on Render.
@@ -42,8 +42,8 @@ Render is a cloud platform for running websites and applications.
 Like most other comparable services such as fly.io,
 it offers a decent free tier, which lets you try out the service without any financial commitment.
 Unlike most other services,
-with Render, you don&#8217;t need to provide a credit card in order to use the free tier.
-Which means there&#8217;s no risk of surprise bills, as often is the case with pay-per-use models,
+with Render, you don’t need to provide a credit card in order to use the free tier.
+Which means there’s no risk of surprise bills, as often is the case with pay-per-use models,
 where a malicious actor could DDOS your service and drive up cost for consumed CPU resources or egress bandwidth indefinitely.
 "/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
@@ -286,14 +286,14 @@ built using Quarkus and GraalVM, on Render.</p>
 Like most other comparable services such as <a href="https://fly.io/">fly.io</a>,
 it offers a decent free tier, which lets you try out the service without any financial commitment.
 <em>Unlike</em> most other services,
-with Render, you don&#8217;t need to provide a credit card in order to use the free tier.
-Which means there&#8217;s no risk of surprise bills, as often is the case with pay-per-use models,
+with Render, you don’t need to provide a credit card in order to use the free tier.
+Which means there’s no risk of surprise bills, as often is the case with pay-per-use models,
 where a malicious actor could DDOS your service and drive up cost for consumed CPU resources or egress bandwidth indefinitely.</p>
 </div>
 <div class="paragraph">
 <p>If the free tier limits are reached (see <a href="https://render.com/docs/free#free-web-services">Free Plans</a> for details), your services are shut down, until you either upgrade to a paid plan or the next month has started.
 This makes Render particularly interesting for personal projects and hobbyist use cases,
-for which you typically don&#8217;t have ops staff around who are looking 24/7 at dashboards and budget alerts and could take down the service in case of a DDOS attack.</p>
+for which you typically don’t have ops staff around who are looking 24/7 at dashboards and budget alerts and could take down the service in case of a DDOS attack.</p>
 </div>
 <div class="sect1">
 <h2 id="_java_applications_on_render">Java Applications on Render</h2>
@@ -304,7 +304,7 @@ when configuring an application,
 you point Render to a Git repository with your source code,
 and the platform will build and deploy it after each push to that repo.
 Unfortunately, Java is not amongst the <a href="https://render.com/docs/web-services#get-started">supported languages</a> right now.
-But Render also allows you to deploy applications via Docker, so that&#8217;s what we&#8217;ll use.</p>
+But Render also allows you to deploy applications via Docker, so that’s what we’ll use.</p>
 </div>
 <div class="paragraph">
 <p>As an example project, I have created a very basic <a href="https://github.com/gunnarmorling/quarkus-on-render">Quarkus-based web service</a>.
@@ -323,7 +323,7 @@ but I have decided against that for two reasons:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>It&#8217;s quite slow: the free tier allocates a rather limited CPU quota to build jobs,
+<p>It’s quite slow: the free tier allocates a rather limited CPU quota to build jobs,
 so building the container image for that simple Quarkus application takes more than ten minutes</p>
 </li>
 <li>
@@ -334,7 +334,7 @@ which for instance allows me to run exactly the same bits locally for debugging 
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -347,19 +347,19 @@ which is what you need to do in the absence of bespoke support for Java on Rende
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>So I ended up with the following flow for deploying that Quarkus application on Render:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/render_deployment_pipeline.png" alt="render deployment pipeline">
+<img src="/images/render_deployment_pipeline.png" alt="render deployment pipeline"/>
 </div>
 </div>
 <div class="paragraph">
 <p>When a commit is pushed to the source repository (1),
-then a <a href="https://docs.github.com/en/actions">GitHub Action</a> is triggered (2), which builds the application as a native binary, using GraalVM&#8217;s <em>native-image</em> tool. The resulting binary is packaged up as a container image, which is deployed to the Docker Hub registry (3).
+then a <a href="https://docs.github.com/en/actions">GitHub Action</a> is triggered (2), which builds the application as a native binary, using GraalVM’s <em>native-image</em> tool. The resulting binary is packaged up as a container image, which is deployed to the Docker Hub registry (3).
 Once the image has been uploaded, a new deployment is triggered on Render (4).
 The deploy job fetches the container image from Docker Hub and builds the actual image for deployment (5),
 and finally the service is published to the outside world (6).</p>
@@ -370,23 +370,23 @@ and finally the service is published to the outside world (6).</p>
 <h2 id="_configuration_details">Configuration Details</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Now let&#8217;s dive into some specifics of the configuration on Render and GitHub.
+<p>Now let’s dive into some specifics of the configuration on Render and GitHub.
 Once you have signed up for your Render account,
-go to the main dashboard and click the "New +" button for creating a new "Web Service".</p>
+go to the main dashboard and click the &#34;New +&#34; button for creating a new &#34;Web Service&#34;.</p>
 </div>
 <div class="paragraph">
 <p>You then have two options:
-"Connect a repository" and "Public Git repository".
+&#34;Connect a repository&#34; and &#34;Public Git repository&#34;.
 The former makes things a bit simpler to use, for instance by configuring all the webhook magic required for a tight integration between GitHub (or GitLab) and Render.
-It requires more permissions than I&#8217;m comfortable with though,
-one of them being "Act on your behalf".
+It requires more permissions than I’m comfortable with though,
+one of them being &#34;Act on your behalf&#34;.
 So my recommendation is to go with the second option;
 it requires some more manual configuration, but it feels a bit safer to me.
-Specify the URL of your repository and click "Continue":</p>
+Specify the URL of your repository and click &#34;Continue&#34;:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/render_new_web_service.png" alt="render new web service">
+<img src="/images/render_new_web_service.png" alt="render new web service"/>
 </div>
 </div>
 <div class="paragraph">
@@ -401,14 +401,14 @@ Specify the URL of your repository and click "Continue":</p>
 <p><em>Region:</em> Choose where your application should be deployed</p>
 </li>
 <li>
-<p><em>Environment:</em> Choose Docker here, then "Free" plan</p>
+<p><em>Environment:</em> Choose Docker here, then &#34;Free&#34; plan</p>
 </li>
 <li>
-<p><em>Dockerfile Path (under "Advanced"):</em> Specify <em>./src/main/docker/Dockerfile.render</em>; this is a very <a href="https://github.com/gunnarmorling/quarkus-on-render/blob/main/src/main/docker/Dockerfile.render">simple Dockerfile</a> which has the sole purpose of letting Render build an image for deployment; it simply is derived from the actual image with the application which is deployed to Docker Hub:</p>
+<p><em>Dockerfile Path (under &#34;Advanced&#34;):</em> Specify <em>./src/main/docker/Dockerfile.render</em>; this is a very <a href="https://github.com/gunnarmorling/quarkus-on-render/blob/main/src/main/docker/Dockerfile.render">simple Dockerfile</a> which has the sole purpose of letting Render build an image for deployment; it simply is derived from the actual image with the application which is deployed to Docker Hub:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="Dockerfile"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
-</pre></td><td class="code"><pre>FROM gunnarmorling/quarkus-on-render:latest
+</pre></td><td class="code"><pre><span class="k">FROM</span><span class="s"> gunnarmorling/quarkus-on-render:latest</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -426,16 +426,16 @@ Specify the URL of your repository and click "Continue":</p>
 <div class="paragraph">
 <p>Next, create an access token for Docker Hub.
 This will be used for authenticating the GitHub Action when pushing an image to Docker Hub.
-Log into your Docker Hub account, click on your name at the upper right corner and choose "Account Settings".
-Go to "Security" and click on "New Access Token".</p>
+Log into your Docker Hub account, click on your name at the upper right corner and choose &#34;Account Settings&#34;.
+Go to &#34;Security&#34; and click on &#34;New Access Token&#34;.</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/render_docker_hub_new_token.png" alt="render docker hub new token">
+<img src="/images/render_docker_hub_new_token.png" alt="render docker hub new token"/>
 </div>
 </div>
 <div class="paragraph">
-<p>Specify a description for the token and choose "Read &amp; Write" for its access permissions.
+<p>Specify a description for the token and choose &#34;Read &amp; Write&#34; for its access permissions.
 On the next screen, make sure to copy the generated token,
 as it will be the only opportunity where you can see it.</p>
 </div>
@@ -448,11 +448,11 @@ as it will be the only opportunity where you can see it.</p>
 <p>The last part of the puzzle is setting up a GitHub Action which builds the application,
 pushes the container image with the application to Docker Hub and triggers a new deployment on Render.
 Navigate to your repository,
-click on the "Settings" tab and choose "Security" &#8594; "Secrets" &#8594; "Actions".</p>
+click on the &#34;Settings&#34; tab and choose &#34;Security&#34; → &#34;Secrets&#34; → &#34;Actions&#34;.</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/render_github_secrets.png" alt="render github secrets">
+<img src="/images/render_github_secrets.png" alt="render github secrets"/>
 </div>
 </div>
 <div class="paragraph">
@@ -539,27 +539,27 @@ but most of the things should be fairly self-descriptive:</p>
 <span class="na">on</span><span class="pi">:</span>
   <span class="na">push</span><span class="pi">:</span>
     <span class="na">branches</span><span class="pi">:</span>
-      <span class="pi">-</span> <span class="s1">'</span><span class="s">main'</span>
+      <span class="pi">-</span> <span class="s1">&#39;</span><span class="s">main&#39;</span>
 
 <span class="na">jobs</span><span class="pi">:</span>
   <span class="na">docker</span><span class="pi">:</span>
     <span class="na">runs-on</span><span class="pi">:</span> <span class="s">ubuntu-latest</span>
     <span class="na">steps</span><span class="pi">:</span>
-      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s1">'</span><span class="s">Check</span><span class="nv"> </span><span class="s">out</span><span class="nv"> </span><span class="s">repository'</span> <i class="conum" data-value="1"></i><b>(1)</b>
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s1">&#39;</span><span class="s">Check</span><span class="nv"> </span><span class="s">out</span><span class="nv"> </span><span class="s">repository&#39;</span> <i class="conum" data-value="1"></i><b>(1)</b>
         <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/checkout@v3</span>
       <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">graalvm/setup-graalvm@v1</span> <i class="conum" data-value="2"></i><b>(2)</b>
         <span class="na">with</span><span class="pi">:</span>
-          <span class="na">version</span><span class="pi">:</span> <span class="s1">'</span><span class="s">latest'</span>
-          <span class="na">java-version</span><span class="pi">:</span> <span class="s1">'</span><span class="s">17'</span>
-          <span class="na">components</span><span class="pi">:</span> <span class="s1">'</span><span class="s">native-image'</span>
+          <span class="na">version</span><span class="pi">:</span> <span class="s1">&#39;</span><span class="s">latest&#39;</span>
+          <span class="na">java-version</span><span class="pi">:</span> <span class="s1">&#39;</span><span class="s">17&#39;</span>
+          <span class="na">components</span><span class="pi">:</span> <span class="s1">&#39;</span><span class="s">native-image&#39;</span>
           <span class="na">github-token</span><span class="pi">:</span> <span class="s">${{ secrets.GITHUB_TOKEN }}</span>
-      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s1">'</span><span class="s">Cache</span><span class="nv"> </span><span class="s">Maven</span><span class="nv"> </span><span class="s">packages'</span>
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s1">&#39;</span><span class="s">Cache</span><span class="nv"> </span><span class="s">Maven</span><span class="nv"> </span><span class="s">packages&#39;</span>
         <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/cache@v3.0.11</span>
         <span class="na">with</span><span class="pi">:</span>
           <span class="na">path</span><span class="pi">:</span> <span class="s">~/.m2</span>
-          <span class="na">key</span><span class="pi">:</span> <span class="s">${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}</span>
+          <span class="na">key</span><span class="pi">:</span> <span class="s">${{ runner.os }}-m2-${{ hashFiles(&#39;**/pom.xml&#39;) }}</span>
           <span class="na">restore-keys</span><span class="pi">:</span> <span class="s">${{ runner.os }}-m2</span>
-      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s1">'</span><span class="s">Build'</span>  <i class="conum" data-value="3"></i><b>(3)</b>
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s1">&#39;</span><span class="s">Build&#39;</span>  <i class="conum" data-value="3"></i><b>(3)</b>
         <span class="na">run</span><span class="pi">:</span> <span class="pi">&gt;</span>
           <span class="s">./mvnw -B --file pom.xml verify -Pnative</span>
           <span class="s">-Dquarkus.native.additional-build-args=-H:-UseContainerSupport</span>
@@ -581,7 +581,7 @@ but most of the things should be fairly self-descriptive:</p>
         <span class="na">uses</span><span class="pi">:</span> <span class="s">docker/build-push-action@v3</span>
         <span class="na">with</span><span class="pi">:</span>
           <span class="na">context</span><span class="pi">:</span> <span class="s">.</span>
-          <span class="na">push</span><span class="pi">:</span> <span class="no">true</span>
+          <span class="na">push</span><span class="pi">:</span> <span class="kc">true</span>
           <span class="na">file</span><span class="pi">:</span> <span class="s">src/main/docker/Dockerfile.native</span>
           <span class="na">tags</span><span class="pi">:</span> <span class="s">gunnarmorling/quarkus-on-render:latest</span>
 
@@ -589,13 +589,13 @@ but most of the things should be fairly self-descriptive:</p>
         <span class="na">uses</span><span class="pi">:</span> <span class="s">fjogeleit/http-request-action@v1</span>
         <span class="na">with</span><span class="pi">:</span>
           <span class="na">url</span><span class="pi">:</span> <span class="s">${{ secrets.RENDER_DEPLOY_HOOK }}</span>
-          <span class="na">method</span><span class="pi">:</span> <span class="s1">'</span><span class="s">POST'</span>
+          <span class="na">method</span><span class="pi">:</span> <span class="s1">&#39;</span><span class="s">POST&#39;</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Retrieve the source code of the application</td>
 </tr>
@@ -629,18 +629,18 @@ more on the need for the <code>-H:-UseContainerSupport</code> option further bel
 10
 11
 12
-</pre></td><td class="code"><pre>FROM registry.access.redhat.com/ubi8/ubi-minimal:8.6
+</pre></td><td class="code"><pre><span class="k">FROM</span><span class="s"> registry.access.redhat.com/ubi8/ubi-minimal:8.6</span>
 
-WORKDIR /work/
-RUN chown 1001 /work \
-    &amp;&amp; chmod "g+rwX" /work \
-    &amp;&amp; chown 1001:root /work
-COPY --chown=1001:root target/*-runner /work/application
+<span class="k">WORKDIR</span><span class="s"> /work/</span>
+<span class="k">RUN </span><span class="nb">chown </span>1001 /work <span class="se">\
+</span>    <span class="o">&amp;&amp;</span> <span class="nb">chmod</span> <span class="s2">&#34;g+rwX&#34;</span> /work <span class="se">\
+</span>    <span class="o">&amp;&amp;</span> <span class="nb">chown </span>1001:root /work
+<span class="k">COPY</span><span class="s"> --chown=1001:root target/*-runner /work/application</span>
 
-EXPOSE 8080
-USER 1001
+<span class="k">EXPOSE</span><span class="s"> 8080</span>
+<span class="k">USER</span><span class="s"> 1001</span>
 
-CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+<span class="k">CMD</span><span class="s"> [&#34;./application&#34;, &#34;-Dquarkus.http.host=0.0.0.0&#34;]</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -652,7 +652,7 @@ CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 <td><i class="conum" data-value="6"></i><b>6</b></td>
 <td>Trigger a new deployment of the application on Render by invoking the deploy hook</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>You can find the original YAML file here in my example repository.
@@ -676,18 +676,18 @@ but rather the number of cores from the host system will be returned
 (8 in the case of Render as per a quick test I did).
 This causes thread pools in the application, like the common fork-join pool, to be sized superfluously large,
 potentially resulting in performance degredations at runtime.
-So let&#8217;s hope that issue in GraalVM will be fixed soon.</p>
+So let’s hope that issue in GraalVM will be fixed soon.</p>
 </div>
 <div class="paragraph">
-<p>And that&#8217;s all there is to it:
-at this point, you should have all the configuration in place for running a Java application&#8201;&#8212;&#8201;compiled into a native binary using Quarkus and GraalVM&#8201;&#8212;&#8201;on the Render cloud platform.
+<p>And that’s all there is to it:
+at this point, you should have all the configuration in place for running a Java application — compiled into a native binary using Quarkus and GraalVM — on the Render cloud platform.
 Whenever you push a commit to the source repository,
 a new version of the application will be built, pushed as a container image to Docker Hub, and deployed on Render.
 The end-to-end execution time for that flow is ca. five minutes, about twice as fast as when building everything on Render itself.
 To further improve build times,
-you&#8217;d have to invest in beefier build machines;
+you’d have to invest in beefier build machines;
 while compilation times with GraalVM have improved quite a bit over the last few years,
-it&#8217;s still a rather time-consuming experience.</p>
+it’s still a rather time-consuming experience.</p>
 </div>
 <div class="paragraph">
 <p>Check out my <a href="https://github.com/gunnarmorling/quarkus-on-render">repository</a> on GitHub for the complete source code of the example application, with GitHub Actions definition, Maven POM file, etc.</p>

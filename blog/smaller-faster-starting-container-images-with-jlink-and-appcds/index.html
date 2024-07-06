@@ -15,12 +15,12 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Smaller, Faster-starting Container Images With jlink and AppCDS - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta property="og:title" content="Smaller, Faster-starting Container Images With jlink and AppCDS" />
 <meta property="og:description" content="
-A few months ago I wrote about how you could speed up your Java application&#8217;s start-up times using application class data sharing (AppCDS),
+A few months ago I wrote about how you could speed up your Java application’s start-up times using application class data sharing (AppCDS),
 based on the example of a simple Quarkus application.
 Since then, quite some progress has been made in this area:
 Quarkus 1.6 brought built-in support for AppCDS,
 so that now you just need to provide the -Dquarkus.package.create-appcds=true option when building your project,
-and you&#8217;ll find an AppCDS file in the target folder.
+and you’ll find an AppCDS file in the target folder.
 
 
 Things get more challenging though when combining AppCDS with custom Java runtime images,
@@ -30,21 +30,21 @@ in particular when looking at the deployment of Java applications via Linux cont
 Instead of putting the full Java runtime into the container image, you only add those JDK modules which your application actually requires.
 (Parts of) what you save in image size by doing so,
 can be used for adding an AppCDS archive to your container image.
-The result will be a container image which still is smaller than before&#8201;&#8212;&#8201;and thus is faster to push to a container registry, distribute to worker nodes in a Kubernetes cluster, etc.&#8201;&#8212;&#8201;and which starts up significantly faster.
+The result will be a container image which still is smaller than before — and thus is faster to push to a container registry, distribute to worker nodes in a Kubernetes cluster, etc. — and which starts up significantly faster.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/smaller-faster-starting-container-images-with-jlink-and-appcds/" />
+<meta property="og:url" content="https://www.morling.dev/blog/smaller-faster-starting-container-images-with-jlink-and-appcds/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-12-13T20:30:00+01:00" />
 <meta property="article:modified_time" content="2020-12-13T20:30:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Smaller, Faster-starting Container Images With jlink and AppCDS"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Smaller, Faster-starting Container Images With jlink and AppCDS"/>
 <meta name="twitter:description" content="
-A few months ago I wrote about how you could speed up your Java application&#8217;s start-up times using application class data sharing (AppCDS),
+A few months ago I wrote about how you could speed up your Java application’s start-up times using application class data sharing (AppCDS),
 based on the example of a simple Quarkus application.
 Since then, quite some progress has been made in this area:
 Quarkus 1.6 brought built-in support for AppCDS,
 so that now you just need to provide the -Dquarkus.package.create-appcds=true option when building your project,
-and you&#8217;ll find an AppCDS file in the target folder.
+and you’ll find an AppCDS file in the target folder.
 
 
 Things get more challenging though when combining AppCDS with custom Java runtime images,
@@ -54,7 +54,7 @@ in particular when looking at the deployment of Java applications via Linux cont
 Instead of putting the full Java runtime into the container image, you only add those JDK modules which your application actually requires.
 (Parts of) what you save in image size by doing so,
 can be used for adding an AppCDS archive to your container image.
-The result will be a container image which still is smaller than before&#8201;&#8212;&#8201;and thus is faster to push to a container registry, distribute to worker nodes in a Kubernetes cluster, etc.&#8201;&#8212;&#8201;and which starts up significantly faster.
+The result will be a container image which still is smaller than before — and thus is faster to push to a container registry, distribute to worker nodes in a Kubernetes cluster, etc. — and which starts up significantly faster.
 "/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
@@ -288,12 +288,12 @@ The result will be a container image which still is smaller than before&#8201;&#
 
 			<div class="markdown">
 				<div class="paragraph">
-<p>A few months ago I <a href="/blog/building-class-data-sharing-archives-with-apache-maven/">wrote about</a> how you could speed up your Java application&#8217;s start-up times using application class data sharing (<a href="http://openjdk.java.net/jeps/350">AppCDS</a>),
+<p>A few months ago I <a href="/blog/building-class-data-sharing-archives-with-apache-maven/">wrote about</a> how you could speed up your Java application’s start-up times using application class data sharing (<a href="http://openjdk.java.net/jeps/350">AppCDS</a>),
 based on the example of a simple <a href="https://quarkus.io/">Quarkus</a> application.
 Since then, quite some progress has been made in this area:
 Quarkus 1.6 brought <a href="https://quarkus.io/guides/maven-tooling#quarkus-package-pkg-package-config_quarkus.package.create-appcds">built-in support for AppCDS</a>,
 so that now you just need to provide the <em>-Dquarkus.package.create-appcds=true</em> option when building your project,
-and you&#8217;ll find an AppCDS file in the <em>target</em> folder.</p>
+and you’ll find an AppCDS file in the <em>target</em> folder.</p>
 </div>
 <div class="paragraph">
 <p>Things get more challenging though when combining AppCDS with custom Java runtime images,
@@ -303,7 +303,7 @@ in particular when looking at the deployment of Java applications via Linux cont
 Instead of putting the full Java runtime into the container image, you only add those JDK modules which your application actually requires.
 (Parts of) what you save in image size by doing so,
 can be used for adding an AppCDS archive to your container image.
-The result will be a container image which still is smaller than before&#8201;&#8212;&#8201;and thus is faster to push to a container registry, distribute to worker nodes in a Kubernetes cluster, etc.&#8201;&#8212;&#8201;and which starts up significantly faster.</p>
+The result will be a container image which still is smaller than before — and thus is faster to push to a container registry, distribute to worker nodes in a Kubernetes cluster, etc. — and which starts up significantly faster.</p>
 </div>
 <div class="paragraph">
 <p>A challenge though is that AppCDS archives must be created with exactly same Java runtime which later on is used to run the application.
@@ -328,13 +328,13 @@ The goal for this post is to explore</p>
 <h2 id="_creating_a_modular_runtime_image_for_a_quarkus_application">Creating a Modular Runtime Image for a Quarkus Application</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>It&#8217;s a common misbelief that only Java applications which have been fully ported to the Java module system (JPMS) would be able to benefit from jlink.
-But as explained by Simon Ritter in this <a href="https://medium.com/azulsystems/using-jlink-to-build-java-runtimes-for-non-modular-applications-9568c5e70ef4">blog post</a>, this is not true actually; you don&#8217;t need to fully modularize an application in order to run it via a custom runtime image.</p>
+<p>It’s a common misbelief that only Java applications which have been fully ported to the Java module system (JPMS) would be able to benefit from jlink.
+But as explained by Simon Ritter in this <a href="https://medium.com/azulsystems/using-jlink-to-build-java-runtimes-for-non-modular-applications-9568c5e70ef4">blog post</a>, this is not true actually; you don’t need to fully modularize an application in order to run it via a custom runtime image.</p>
 </div>
 <div class="paragraph">
 <p>While indeed the creation of a runtime image is a bit easier when it only is comprised of proper Java modules,
 it also is possible to create a runtime image by explicitly stating which JDK (or other) modules it should contain.
-The application can then be run via the traditional classpath, just as you&#8217;d do it with a full Java runtime.
+The application can then be run via the traditional classpath, just as you’d do it with a full Java runtime.
 Which JDK modules to add though?
 To answer this question, the <a href="https://docs.oracle.com/en/java/javase/15/docs/specs/man/jdeps.html">jdeps</a> tool comes in handy.
 Via its <em>--print-module-deps</em> option it can determine for a given set of JARs which (JDK) modules they depend on,
@@ -342,7 +342,7 @@ and which thus are the ones that need to go into the custom runtime image.</p>
 </div>
 <div class="paragraph">
 <p>Having built the example application from the previous blog post via <em>mvn clean verify</em>,
-let&#8217;s try and invoke jdeps like so:</p>
+let’s try and invoke jdeps like so:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -376,7 +376,7 @@ no problem:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">Exception <span class="k">in </span>thread <span class="s2">"main"</span> java.lang.module.FindException: Module java.xml.bind not found, required by java.ws.rs</code></pre>
+<pre class="rouge highlight"><code data-lang="shell">Exception <span class="k">in </span>thread <span class="s2">&#34;main&#34;</span> java.lang.module.FindException: Module java.xml.bind not found, required by java.ws.rs</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -384,8 +384,8 @@ no problem:</p>
 the file <em>org.jboss.spec.javax.ws.rs.jboss-jaxrs-api_2.1_spec-2.0.1.Final.jar</em> is an explicit module with a module-info.class descriptor,
 which references the module <code>java.xml.bind</code>,
 and this one is not found on the module path.
-It&#8217;s not quite clear to me why this is flagged here, given that the JAX-RS API JAR is part of the class path and not the module path.
-But it&#8217;s not a big problem, we simply can add the JAXB API (which also is provided on the class path) on the module path, too.</p>
+It’s not quite clear to me why this is flagged here, given that the JAX-RS API JAR is part of the class path and not the module path.
+But it’s not a big problem, we simply can add the JAXB API (which also is provided on the class path) on the module path, too.</p>
 </div>
 <div class="paragraph">
 <p>The same issue arises for some other dependencies which are explicit modules already,
@@ -443,7 +443,7 @@ Building a custom runtime image containing only these modules should result in q
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -465,14 +465,14 @@ org.jboss.narayana.jta.narayana-jta-5.10.6.Final.jar -&gt; jdk.jconsole
 </div>
 </div>
 <div class="paragraph">
-<p>In this case, there&#8217;s a single dependency to jconsole, from the Narayana transaction manager.
+<p>In this case, there’s a single dependency to jconsole, from the Narayana transaction manager.
 Depending on the details, it might be an opportunity to reach out to the maintainers of such library and discuss,
 whether this dependency really is needed or whether it could be avoided (e.g. by moving the code in question to a separate module),
 resulting in a further decreased size of custom runtime images.</p>
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>With the list of required modules,
@@ -488,7 +488,7 @@ creating the actual runtime image is rather simple:</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Compressing the runtime image as well as omitting header files and man pages helps to further reduce the size of the runtime image</td>
 </tr>
@@ -496,7 +496,7 @@ creating the actual runtime image is rather simple:</p>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
 <td>Output location for creating the runtime image</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>In order to create a dynamic AppCDS archive for our application classes later on,
@@ -510,7 +510,7 @@ DynamicDumpSharedSpaces is unsupported when base CDS archive is not loaded</code
 </div>
 </div>
 <div class="paragraph">
-<p>This step isn&#8217;t very well documented, and at this point I was somewhat stuck.
+<p>This step isn’t very well documented, and at this point I was somewhat stuck.
 But you always can count on the OpenJDK community: after asking about this on Twitter,
 Claes Redestad <a href="https://twitter.com/cl4es/status/1337797258058862597">pointed me</a>  into the right direction:</p>
 </div>
@@ -531,7 +531,7 @@ not too bad.</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Having created the custom Java runtime image,
-let&#8217;s now add the AppCDS archive to it.
+let’s now add the AppCDS archive to it.
 Since the introduction of dynamic AppCDS archives in JDK 13,
 this is one simple step which only requires to run the application with the <em>-XX:ArchiveClassesAtExit</em> option:</p>
 </div>
@@ -551,7 +551,7 @@ runtime-image/bin/java <span class="se">\</span>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>The class path used when running the application later on must be the same as (or rather a prefix of, to be precise) the class path used for building the AppCDS archive; hence changing to the <em>target</em> directory,
 so to run with <em>-jar *-runner.jar</em>, instead of with <em>-jar target/*-runner.jar</em></td>
@@ -564,7 +564,7 @@ so to run with <em>-jar *-runner.jar</em>, instead of with <em>-jar target/*-run
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>Using the <em>java</em> binary of the runtime image to launch the application and create the AppCDS archive when exiting</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>This will create the CDS archive under <em>target/runtime-image/cds/app-cds.jsa</em>.
@@ -572,7 +572,7 @@ In the next step this can be added to a Linux container image,
 built e.g. using Docker or <a href="https://podman.io/">podman</a>.
 Note that while jlink supports cross-platform builds
 (so for instance you could build a custom runtime image for a Linux container on macOS),
-the same isn&#8217;t the case for AppCDS.
+the same isn’t the case for AppCDS.
 This means an AppCDS archive to be used by a containerized application needs to be built on Linux.
 When not running on Linux yourself, but on Windows or macOS,
 you could put the entire build process into a container for this purpose.</p>
@@ -585,32 +585,32 @@ you could put the entire build process into a container for this purpose.</p>
 <div class="paragraph">
 <p>At this point we have built our actual application,
 a custom Java runtime image with the required JDK modules,
-and an AppCDS archive for the application&#8217;s classes.
+and an AppCDS archive for the application’s classes.
 The final step is to put everything into a Linux container image,
 which is quickly done via a small Dockerfile:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="Dockerfile">FROM registry.fedoraproject.org/fedora-minimal:33
+<pre class="rouge highlight"><code data-lang="Dockerfile"><span class="k">FROM</span><span class="s"> registry.fedoraproject.org/fedora-minimal:33</span>
 
-COPY target/runtime-image /opt/todo-manager/jdk
-COPY target/lib/* /opt/todo-manager/lib/
-COPY target/todo-manager-1.0.0-SNAPSHOT-runner.jar /opt/todo-manager
-COPY todo-manager.sh /opt/todo-manager
+<span class="k">COPY</span><span class="s"> target/runtime-image /opt/todo-manager/jdk</span>
+<span class="k">COPY</span><span class="s"> target/lib/* /opt/todo-manager/lib/</span>
+<span class="k">COPY</span><span class="s"> target/todo-manager-1.0.0-SNAPSHOT-runner.jar /opt/todo-manager</span>
+<span class="k">COPY</span><span class="s"> todo-manager.sh /opt/todo-manager</span>
 
-ENTRYPOINT [ "/opt/todo-manager/todo-manager.sh" ]</code></pre>
+<span class="k">ENTRYPOINT</span><span class="s"> [ &#34;/opt/todo-manager/todo-manager.sh&#34; ]</span></code></pre>
 </div>
 </div>
 <div class="paragraph">
 <p>This uses the <a href="https://registry.fedoraproject.org/repo/fedora-minimal/tags/">Fedora minimal base image</a>,
 which is a great foundation for container images.
-With a size of ~120 MB, it&#8217;s small enough to be distributed efficiently,
+With a size of ~120 MB, it’s small enough to be distributed efficiently,
 while still providing the flexibility of a complete Linux distribution,
 e.g. allowing for the installation of additional tools if needed.</p>
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -628,26 +628,26 @@ For JDK 16, an <a href="https://jdk.java.net/16/">early access build</a> of the 
 <div class="paragraph">
 <p>Another option for smaller images is to use <a href="https://github.com/GoogleContainerTools/jib">jib</a>,
 which also is supported by Quarkus <a href="https://quarkus.io/guides/container-image#jib">out of the box</a>.
-I haven&#8217;t tried out yet though whether/how jib would work with custom runtime images and AppCDS.</p>
+I haven’t tried out yet though whether/how jib would work with custom runtime images and AppCDS.</p>
 </div>
 <div class="paragraph">
-<p>It&#8217;s also worth pointing out that the size of base images doesn&#8217;t matter too much in practice,
+<p>It’s also worth pointing out that the size of base images doesn’t matter too much in practice,
 as container images use a layered file system,
-which means that typically rather stable base image layers don&#8217;t need to be redistributed too often when pushing or pulling a container image.</p>
+which means that typically rather stable base image layers don’t need to be redistributed too often when pushing or pulling a container image.</p>
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>The container&#8217;s entry point, <em>todo-manager.sh</em>, is a basic shell script,
+<p>The container’s entry point, <em>todo-manager.sh</em>, is a basic shell script,
 which starts the actual Java application via the Java runtime image:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="sh"><span class="c">#!/bin/bash</span>
 
-<span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="s2">"/opt/todo-manager/jdk/bin:</span><span class="k">${</span><span class="nv">PATH</span><span class="k">}</span><span class="s2">"</span>
+<span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="s2">&#34;/opt/todo-manager/jdk/bin:</span><span class="k">${</span><span class="nv">PATH</span><span class="k">}</span><span class="s2">&#34;</span>
 
 <span class="nb">cd</span> /opt/todo-manager <span class="o">&amp;&amp;</span> <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
   <span class="nb">exec </span>java <span class="nt">-Xshare</span>:on <span class="nt">-XX</span>:SharedArchiveFile<span class="o">=</span>jdk/cds/app-cds.jsa <span class="nt">-jar</span> <span class="se">\ </span><i class="conum" data-value="2"></i><b>(2)</b>
@@ -656,24 +656,24 @@ which starts the actual Java application via the Java runtime image:</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Changing into the <em>todo-manager</em> directory, so to make sure the same JAR path is passed as when creating the CDS archive</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Specifying the archive name; the <em>-Xshare:on</em> isn&#8217;t strictly needed, it&#8217;s used here though to ensure the process will fail if something is wrong with the CDS archive, instead of silently not using it</td>
+<td>Specifying the archive name; the <em>-Xshare:on</em> isn’t strictly needed, it’s used here though to ensure the process will fail if something is wrong with the CDS archive, instead of silently not using it</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_lets_see_some_numbers">Let&#8217;s See Some Numbers!</h2>
+<h2 id="_lets_see_some_numbers">Let’s See Some Numbers!</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Finally, let&#8217;s compare some numbers: container image size, and start-up time for different ways of containerizing the todo manager application.
-I&#8217;ve tried out four different aproaches:</p>
+<p>Finally, let’s compare some numbers: container image size, and start-up time for different ways of containerizing the todo manager application.
+I’ve tried out four different aproaches:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -681,7 +681,7 @@ I&#8217;ve tried out four different aproaches:</p>
 <p>OpenJDK 11 on the <a href="https://developers.redhat.com/products/rhel/ubi">RHEL UBI 8.3 image</a> (universal base image), as per the default Dockerfile created for new Quarkus applications</p>
 </li>
 <li>
-<p>A full OpenJDK 15 on Fedora 33 (as there&#8217;s no OpenJDK 15 package for the RHEL base image yet)</p>
+<p>A full OpenJDK 15 on Fedora 33 (as there’s no OpenJDK 15 package for the RHEL base image yet)</p>
 </li>
 <li>
 <p>A custom runtime image for OpenJDK 15 on Fedora 33</p>
@@ -697,7 +697,7 @@ using Fedora 33 as the host OS:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/jlink_app_cds_image_size_and_startup_times.png" alt="Container Image Sizes and Startup Times">
+<img src="/images/jlink_app_cds_image_size_and_startup_times.png" alt="Container Image Sizes and Startup Times"/>
 </div>
 </div>
 <div class="paragraph">
@@ -707,34 +707,34 @@ In particular when comparing to the OpenJDK package of Fedora 33 which is a fair
 <div class="paragraph">
 <p>The start-up times are as displayed by Quarkus, averaged over five runs.
 Numbers have improved by about 10% by going from OpenJDK 11 to 15,
-which is explained by multiple improvements in this area, most notably the introduction of default CDS archives for the JDK&#8217;s own classes in JDK 12 (<a href="http://openjdk.java.net/jeps/341">JEP 341</a>).
-Using a custom runtime image by itself doesn&#8217;t have any measurable impact on start-up time.
+which is explained by multiple improvements in this area, most notably the introduction of default CDS archives for the JDK’s own classes in JDK 12 (<a href="http://openjdk.java.net/jeps/341">JEP 341</a>).
+Using a custom runtime image by itself doesn’t have any measurable impact on start-up time.
 The AppCDS archive improves the start-up time by a whopping 54%.
 Unless pure image size is the key factor for you
-(in which case you should look for alternative approaches anyways, see note "Even Smaller Container Images" above),
+(in which case you should look for alternative approaches anyways, see note &#34;Even Smaller Container Images&#34; above),
 I would say that the additional 40 MB for the AppCDS archive are more than worth it.
 In particular as the resulting container image still is way smaller than when adding the full JDK,
 be it with the Fedora base image or the RHEL UBI one.</p>
 </div>
 <div class="paragraph">
 <p>Based on those numbers,
-I think it&#8217;s fair to say that custom Java runtime images created via jlink,
+I think it’s fair to say that custom Java runtime images created via jlink,
 combined with AppCDS archives are a great foundation for containerized Java applications.
 Adding a custom runtime image containing only those JDK modules actually needed by an application help to cut down image size signficantly.
 Parts of that saved space can be invested into adding an AppCDS archive,
-so you end up with a container image that&#8217;s smaller <em>and</em> starts up faster.
+so you end up with a container image that’s smaller <em>and</em> starts up faster.
 I.e. you can have this cake, and eat it, too!</p>
 </div>
 <div class="paragraph">
 <p>The one downside is the increased complexity of the build process for producing the runtime image as well as the AppCDS archive.
 This should be manageable though by means of scripting and automation;
-also I&#8217;d expect tooling like the Quarkus Maven plug-in and others to further improve on this front.
+also I’d expect tooling like the Quarkus Maven plug-in and others to further improve on this front.
 One tricky aspect is that you must not forget to rebuild the custom runtime image,
 in case you have added dependencies to your application which affect the set of required JDK modules.
 Automated tests of the application running via the runtime image should help to identify this situation.</p>
 </div>
 <div class="paragraph">
-<p>If you&#8217;d like to give it a try yourself, or obtain numbers for the different deployment approaches on your own hardware,
+<p>If you’d like to give it a try yourself, or obtain numbers for the different deployment approaches on your own hardware,
 you can find all the required code and information in this <a href="https://github.com/gunnarmorling/quarkus-cds">GitHub repository</a>.</p>
 </div>
 </div>

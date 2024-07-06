@@ -15,13 +15,13 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>jlink&#39;s Missing Link: API Signature Validation - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta property="og:title" content="jlink&#39;s Missing Link: API Signature Validation" />
 <meta property="og:description" content="
-Discussions around Java&#8217;s jlink tool typically center around savings in terms of (disk) space.
+Discussions around Java’s jlink tool typically center around savings in terms of (disk) space.
 Instead of shipping an entire JDK,
 a custom runtime image created with jlink contains only those JDK modules which an application actually requires,
 resulting in smaller distributables and container images.
 
 
-But the contribution of jlink&#8201;&#8212;&#8201;as a part of the Java module system at large&#8201;&#8212;&#8201;to the development of Java application&#8217;s is bigger than that:
+But the contribution of jlink — as a part of the Java module system at large — to the development of Java application’s is bigger than that:
 with the notion of link time it defines an optional complement to the well known phases compile time and application run-time:
 
 
@@ -32,19 +32,19 @@ Link time is an opportunity to do whole-world optimizations that are otherwise d
 
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/jlinks-missing-link-api-signature-validation/" />
+<meta property="og:url" content="https://www.morling.dev/blog/jlinks-missing-link-api-signature-validation/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-12-28T12:20:00+01:00" />
 <meta property="article:modified_time" content="2020-12-28T12:20:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="jlink&#39;s Missing Link: API Signature Validation"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="jlink&#39;s Missing Link: API Signature Validation"/>
 <meta name="twitter:description" content="
-Discussions around Java&#8217;s jlink tool typically center around savings in terms of (disk) space.
+Discussions around Java’s jlink tool typically center around savings in terms of (disk) space.
 Instead of shipping an entire JDK,
 a custom runtime image created with jlink contains only those JDK modules which an application actually requires,
 resulting in smaller distributables and container images.
 
 
-But the contribution of jlink&#8201;&#8212;&#8201;as a part of the Java module system at large&#8201;&#8212;&#8201;to the development of Java application&#8217;s is bigger than that:
+But the contribution of jlink — as a part of the Java module system at large — to the development of Java application’s is bigger than that:
 with the notion of link time it defines an optional complement to the well known phases compile time and application run-time:
 
 
@@ -286,13 +286,13 @@ Link time is an opportunity to do whole-world optimizations that are otherwise d
 
 			<div class="markdown">
 				<div class="paragraph">
-<p>Discussions around Java&#8217;s <a href="https://openjdk.java.net/jeps/282">jlink</a> tool typically center around savings in terms of (disk) space.
+<p>Discussions around Java’s <a href="https://openjdk.java.net/jeps/282">jlink</a> tool typically center around savings in terms of (disk) space.
 Instead of shipping an entire JDK,
 a custom runtime image created with jlink contains only those JDK modules which an application actually requires,
 resulting in smaller distributables and <a href="blog/smaller-faster-starting-container-images-with-jlink-and-appcds/">container images</a>.</p>
 </div>
 <div class="paragraph">
-<p>But the contribution of jlink&#8201;&#8212;&#8201;as a part of the Java module system at large&#8201;&#8212;&#8201;to the development of Java application&#8217;s is bigger than that:
+<p>But the contribution of jlink — as a part of the Java module system at large — to the development of Java application’s is bigger than that:
 with the notion of <em>link time</em> it defines an optional complement to the well known phases <em>compile time</em> and application <em>run-time</em>:</p>
 </div>
 <div class="quoteblock">
@@ -313,7 +313,7 @@ resulting in faster application start-up, without any further manual configurati
 <div class="paragraph">
 <p>While these use cases mostly relate to <em>optimization</em> of the runtime image in one way or another,
 the link time phase also is beneficial for the <em>validation</em> of applications.
-In the remainder of this post, I&#8217;d like to discuss how link time validation can be employed to ensure the consistency of API signatures within a modularized Java application.
+In the remainder of this post, I’d like to discuss how link time validation can be employed to ensure the consistency of API signatures within a modularized Java application.
 This helps to avoid potential <code>NoSuchMethodError</code>s and related errors which would otherwise be raised by the JVM at application run-time,
 stemming from the usage of incompatible module versions,
 different from the ones used at compile time.</p>
@@ -322,7 +322,7 @@ different from the ones used at compile time.</p>
 <h2 id="_the_example">The Example</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>To make things more tangible, let&#8217;s look at an application made up of two modules, <em>customer</em> and <em>order</em>.
+<p>To make things more tangible, let’s look at an application made up of two modules, <em>customer</em> and <em>order</em>.
 As always, the full source code is <a href="https://github.com/gunnarmorling/signature-check-jlink-plugin">available online</a>, for you to play with.
 The <em>customer</em> module defines a service interface with the following signature:</p>
 </div>
@@ -338,7 +338,7 @@ The <em>customer</em> module defines a service interface with the following sign
 </div>
 </div>
 <div class="paragraph">
-<p>The <code>CustomerService</code> interface is part of the <em>customer</em> module&#8217;s public API and is invoked from within the <em>order</em> module like so:</p>
+<p>The <code>CustomerService</code> interface is part of the <em>customer</em> module’s public API and is invoked from within the <em>order</em> module like so:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -360,7 +360,7 @@ The <em>customer</em> module defines a service interface with the following sign
 </div>
 </div>
 <div class="paragraph">
-<p>Now let&#8217;s assume there&#8217;s a new version of the <em>customer</em> module;
+<p>Now let’s assume there’s a new version of the <em>customer</em> module;
 the signature of the <code>incrementLoyaltyPoints()</code> method got slightly changed for the sake of a more expressive and type-safe API:</p>
 </div>
 <div class="listingblock">
@@ -380,7 +380,7 @@ the signature of the <code>incrementLoyaltyPoints()</code> method got slightly c
 </div>
 <div class="paragraph">
 <p>We now create a custom runtime image for the application.
-But we&#8217;re at the end of a tough week, so accidentally we add version 2 of the <em>customer</em> module and the unchanged <em>order</em> module:</p>
+But we’re at the end of a tough week, so accidentally we add version 2 of the <em>customer</em> module and the unchanged <em>order</em> module:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -396,8 +396,8 @@ But we&#8217;re at the end of a tough week, so accidentally we add version 2 of 
 </div>
 </div>
 <div class="paragraph">
-<p>Note that jlink won&#8217;t complain about this and create the runtime image.
-When executing the application via the image we&#8217;re in for a bad surprise, though
+<p>Note that jlink won’t complain about this and create the runtime image.
+When executing the application via the image we’re in for a bad surprise, though
 (slightly modified for the sake of readability):</p>
 </div>
 <div class="listingblock">
@@ -409,8 +409,8 @@ When executing the application via the image we&#8217;re in for a bad surprise, 
 5
 </pre></td><td class="code"><pre><span class="nv">$ </span>./target/runtime-image/bin/java com.example.order.OrderService
 
-Exception <span class="k">in </span>thread <span class="s2">"main"</span> java.lang.NoSuchMethodError:
-  <span class="s1">'void c.e.customer.CustomerService.incrementLoyaltyPoints(long, long)'</span>
+Exception <span class="k">in </span>thread <span class="s2">&#34;main&#34;</span> java.lang.NoSuchMethodError:
+  <span class="s1">&#39;void c.e.customer.CustomerService.incrementLoyaltyPoints(long, long)&#39;</span>
   at com.example.order@1.0.0/c.e.order.OrderService.main<span class="o">(</span>OrderService.java:5<span class="o">)</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
@@ -424,11 +424,11 @@ it turned out that more than 40% of participants were not aware of this pitfall:
 </div>
 <div class="imageblock">
 <div class="content">
-<a class="image" href="https://twitter.com/gunnarmorling/status/1343160176946376707"><img src="/images/jlink_api_signature_verification_poll.png" alt="jlink api signature verification poll" width="500"></a>
+<a class="image" href="https://twitter.com/gunnarmorling/status/1343160176946376707"><img src="/images/jlink_api_signature_verification_poll.png" alt="jlink api signature verification poll" width="500"/></a>
 </div>
 </div>
 <div class="paragraph">
-<p>Needless to say that it&#8217;d be much more desirable to spot this error already early on at link time,
+<p>Needless to say that it’d be much more desirable to spot this error already early on at link time,
 before shipping the affected application to production, and suffering from all the negative consequences associated to that.</p>
 </div>
 </div>
@@ -437,18 +437,18 @@ before shipping the affected application to production, and suffering from all t
 <h2 id="_the_api_signature_check_jlink_plug_in">The API Signature Check jlink Plug-in</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>While jlink doesn&#8217;t detect this kind of API signature mismatch by itself,
+<p>While jlink doesn’t detect this kind of API signature mismatch by itself,
 it comes with a plug-in API, which allows to hook into and enrich the linking process.
 By creating a custom jlink plug-in, we can implement the API signature check and fail the image creation process when detecting any invalid method references like the one above.</p>
 </div>
 <div class="paragraph">
-<p>Unfortunately though, the plug-in mechanism isn&#8217;t an official, supported API at this point.
-As a matter of fact, it is not even exported within jlink&#8217;s own <a href="https://docs.oracle.com/en/java/javase/15/docs/api/jdk.jlink/module-summary.html">module definition</a>.
+<p>Unfortunately though, the plug-in mechanism isn’t an official, supported API at this point.
+As a matter of fact, it is not even exported within jlink’s own <a href="https://docs.oracle.com/en/java/javase/15/docs/api/jdk.jlink/module-summary.html">module definition</a>.
 With the right set of javac/java flags and the help of a small Java agent, it is possible though to compile custom plug-ins and have them picked up by jlink.
 To learn more about the required sorcery, check out <a href="https://in.relation.to/2017/12/12/exploring-jlink-plugin-api-in-java-9/#trick-2-the-java-agent">this blog post</a> which I wrote a while ago over on the Hibernate team blog.</p>
 </div>
 <div class="paragraph">
-<p>Let&#8217;s start with creating the basic structure of the plug-in implementation class:</p>
+<p>Let’s start with creating the basic structure of the plug-in implementation class:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -478,7 +478,7 @@ To learn more about the required sorcery, check out <a href="https://in.relation
 
   <span class="nd">@Override</span>
   <span class="kd">public</span> <span class="nc">String</span> <span class="nf">getName</span><span class="o">()</span> <span class="o">{</span> <i class="conum" data-value="1"></i><b>(1)</b>
-    <span class="k">return</span> <span class="s">"check-signatures"</span><span class="o">;</span>
+    <span class="k">return</span> <span class="s">&#34;check-signatures&#34;</span><span class="o">;</span>
   <span class="o">}</span>
 
   <span class="nd">@Override</span>
@@ -488,8 +488,8 @@ To learn more about the required sorcery, check out <a href="https://in.relation
 
   <span class="nd">@Override</span>
   <span class="kd">public</span> <span class="nc">String</span> <span class="nf">getDescription</span><span class="o">()</span> <span class="o">{</span> <i class="conum" data-value="3"></i><b>(3)</b>
-    <span class="k">return</span> <span class="s">"Checks the API references amongst the modules of "</span> <span class="o">+</span>
-        <span class="s">"an application for consistency"</span><span class="o">;</span>
+    <span class="k">return</span> <span class="s">&#34;Checks the API references amongst the modules of &#34;</span> <span class="o">+</span>
+        <span class="s">&#34;an application for consistency&#34;</span><span class="o">;</span>
   <span class="o">}</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
@@ -497,7 +497,7 @@ To learn more about the required sorcery, check out <a href="https://in.relation
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Returns the name for the option to enable this plug-in when running the jlink command</td>
 </tr>
@@ -510,25 +510,25 @@ To learn more about the required sorcery, check out <a href="https://in.relation
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>A description which will be shown when listing all plug-ins</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>There are a few more optional methods which we could implement, e.g. if the plug-in had any parameters for controlling its behaviors,
 or if we wanted it to be enabled by default.
-But as that&#8217;s not the case for the plug-in at hand,
-the only method that&#8217;s missing is <code>transform()</code>, which does the actual heavy-lifting of the plug-in&#8217;s work.</p>
+But as that’s not the case for the plug-in at hand,
+the only method that’s missing is <code>transform()</code>, which does the actual heavy-lifting of the plug-in’s work.</p>
 </div>
 <div class="paragraph">
 <p>Now implementing the complete rule set of the JVM applied when loading and linking classes at run-time would be a somewhat daunting task.
 As I am lazy and this is just meant to be a basic PoC,
-I&#8217;m going to limit myself to the detection of mismatching signatures of invoked methods,
+I’m going to limit myself to the detection of mismatching signatures of invoked methods,
 as shown in the <em>customer</em>/<em>order</em> example above.
 The reason being that this task can be elegantly delegated to an existing tool
-(I told you, I&#8217;m lazy): <a href="https://www.mojohaus.org/animal-sniffer/">Animal Sniffer</a>.</p>
+(I told you, I’m lazy): <a href="https://www.mojohaus.org/animal-sniffer/">Animal Sniffer</a>.</p>
 </div>
 <div class="paragraph">
 <p>While typically used as build tool plug-in for verifying that classes built on a newer JDK version can also be executed with older Java versions
-(and as such mostly obsoleted by the <a href="blog/bytebuffer-and-the-dreaded-nosuchmethoderror/">JDK&#8217;s --release option</a>),
+(and as such mostly obsoleted by the <a href="blog/bytebuffer-and-the-dreaded-nosuchmethoderror/">JDK’s --release option</a>),
 Animal Sniffer also provides an API for creating and verifying custom signatures.
 This comes in handy for our jlink plug-in implementation.</p>
 </div>
@@ -622,8 +622,8 @@ but of course it could also contain less or newly generated resources, or modifi
     <span class="kt">boolean</span> <span class="n">broken</span> <span class="o">=</span> <span class="n">checkSignature</span><span class="o">(</span><span class="n">in</span><span class="o">,</span> <span class="n">signature</span><span class="o">);</span> <i class="conum" data-value="2"></i><b>(2)</b>
 
     <span class="k">if</span> <span class="o">(</span><span class="n">broken</span><span class="o">)</span> <span class="o">{</span> <i class="conum" data-value="3"></i><b>(3)</b>
-      <span class="k">throw</span> <span class="k">new</span> <span class="nf">PluginException</span><span class="o">(</span><span class="s">"There are API signature "</span> <span class="o">+</span>
-          <span class="s">"inconsistencies, please check the logs"</span><span class="o">);</span>
+      <span class="k">throw</span> <span class="k">new</span> <span class="nf">PluginException</span><span class="o">(</span><span class="s">&#34;There are API signature &#34;</span> <span class="o">+</span>
+          <span class="s">&#34;inconsistencies, please check the logs&#34;</span><span class="o">);</span>
     <span class="o">}</span>
   <span class="o">}</span>
   <span class="k">catch</span><span class="o">(</span><span class="nc">PluginException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
@@ -678,24 +678,24 @@ but of course it could also contain less or newly generated resources, or modifi
 <span class="o">}</span>
 
 <span class="kd">private</span> <span class="kt">boolean</span> <span class="nf">isJdkClass</span><span class="o">(</span><span class="nc">ResourcePoolEntry</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
-  <span class="k">return</span> <span class="n">e</span><span class="o">.</span><span class="na">path</span><span class="o">().</span><span class="na">startsWith</span><span class="o">(</span><span class="s">"/java."</span><span class="o">)</span> <span class="o">||</span>
-      <span class="n">e</span><span class="o">.</span><span class="na">path</span><span class="o">().</span><span class="na">startsWith</span><span class="o">(</span><span class="s">"/javax."</span><span class="o">)</span> <span class="o">||</span>
-      <span class="n">e</span><span class="o">.</span><span class="na">path</span><span class="o">().</span><span class="na">startsWith</span><span class="o">(</span><span class="s">"/jdk."</span><span class="o">);</span>
+  <span class="k">return</span> <span class="n">e</span><span class="o">.</span><span class="na">path</span><span class="o">().</span><span class="na">startsWith</span><span class="o">(</span><span class="s">&#34;/java.&#34;</span><span class="o">)</span> <span class="o">||</span>
+      <span class="n">e</span><span class="o">.</span><span class="na">path</span><span class="o">().</span><span class="na">startsWith</span><span class="o">(</span><span class="s">&#34;/javax.&#34;</span><span class="o">)</span> <span class="o">||</span>
+      <span class="n">e</span><span class="o">.</span><span class="na">path</span><span class="o">().</span><span class="na">startsWith</span><span class="o">(</span><span class="s">&#34;/jdk.&#34;</span><span class="o">);</span>
 <span class="o">}</span>
 
 <span class="kd">private</span> <span class="kt">boolean</span> <span class="nf">isModuleInfo</span><span class="o">(</span><span class="nc">ResourcePoolEntry</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
-  <span class="k">return</span> <span class="n">e</span><span class="o">.</span><span class="na">path</span><span class="o">().</span><span class="na">endsWith</span><span class="o">(</span><span class="s">"module-info.class"</span><span class="o">);</span>
+  <span class="k">return</span> <span class="n">e</span><span class="o">.</span><span class="na">path</span><span class="o">().</span><span class="na">endsWith</span><span class="o">(</span><span class="s">&#34;module-info.class&#34;</span><span class="o">);</span>
 <span class="o">}</span>
 
 <span class="kd">private</span> <span class="kt">boolean</span> <span class="nf">isClassFile</span><span class="o">(</span><span class="nc">ResourcePoolEntry</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
-  <span class="k">return</span> <span class="n">e</span><span class="o">.</span><span class="na">path</span><span class="o">().</span><span class="na">endsWith</span><span class="o">(</span><span class="s">"class"</span><span class="o">);</span>
+  <span class="k">return</span> <span class="n">e</span><span class="o">.</span><span class="na">path</span><span class="o">().</span><span class="na">endsWith</span><span class="o">(</span><span class="s">&#34;class&#34;</span><span class="o">);</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Create an Animal Sniffer signature for all the APIs in modules added to the runtime image</td>
 </tr>
@@ -705,7 +705,7 @@ but of course it could also contain less or newly generated resources, or modifi
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>If there&#8217;s a signature violation, fail the jlink execution by raising a <code>PluginException</code></td>
+<td>If there’s a signature violation, fail the jlink execution by raising a <code>PluginException</code></td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
@@ -713,19 +713,19 @@ but of course it could also contain less or newly generated resources, or modifi
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>Feed each class to Animal Sniffer&#8217;s signature builder for creating the signature;
+<td>Feed each class to Animal Sniffer’s signature builder for creating the signature;
 non-class resources and module descriptors are ignored</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>Verify each class against the signature; JDK classes can be skipped here, we assume there&#8217;s no inconsistencies amongst the JDK&#8217;s own modules</td>
+<td>Verify each class against the signature; JDK classes can be skipped here, we assume there’s no inconsistencies amongst the JDK’s own modules</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>The input resource pool is traversed twice:
 first to create an Animal Sniffer signature of all the APIs,
-then a second time to validate the image&#8217;s classes against that signature.</p>
+then a second time to validate the image’s classes against that signature.</p>
 </div>
 <div class="paragraph">
 <p>Let me re-iterate that this a very basic, PoC-level implementation of link time API signature validation.
@@ -736,16 +736,16 @@ Still, this implementation is good enough to demonstrate the general principle a
 </div>
 <div class="paragraph">
 <p>With the implementation in place
-(see the <a href="https://github.com/gunnarmorling/signature-check-jlink-plugin#build">README</a> in the PoC&#8217;s GitHub repository for details on building the project),
-it&#8217;s time to invoke jlink again, this time activating the new plug-in.
-Now, as mentioned before, the jlink plug-in API isn&#8217;t publicly exposed as of Java 15
+(see the <a href="https://github.com/gunnarmorling/signature-check-jlink-plugin#build">README</a> in the PoC’s GitHub repository for details on building the project),
+it’s time to invoke jlink again, this time activating the new plug-in.
+Now, as mentioned before, the jlink plug-in API isn’t publicly exposed as of Java 15
 (the current Java version at the point of writing),
 which means we need to jump some hoops in order to enable the plug-in and expose it to the jlink tool itself.</p>
 </div>
 <div class="paragraph">
 <p>In a nutshell, a Java agent can be used to bend the module configurations as needed.
 Details can be found in <a href="https://in.relation.to/2017/12/12/exploring-jlink-plugin-api-in-java-9/#trick-2-the-java-agent">aforementioned post</a> on the Hibernate blog
-(the agent&#8217;s source code is <a href="https://github.com/gunnarmorling/signature-check-jlink-plugin/blob/main/agent/src/main/java/dev/morling/jlink/plugins/sigcheck/agent/JLinkPluginRegistrationAgent.java">here</a>).
+(the agent’s source code is <a href="https://github.com/gunnarmorling/signature-check-jlink-plugin/blob/main/agent/src/main/java/dev/morling/jlink/plugins/sigcheck/agent/JLinkPluginRegistrationAgent.java">here</a>).
 The required boiler plate can be nicely encapsulated within a shell function:</p>
 </div>
 <div class="listingblock">
@@ -760,17 +760,17 @@ The required boiler plate can be nicely encapsulated within a shell function:</p
   <span class="nv">$JAVA_HOME</span>/bin/jlink <span class="se">\</span>
     <span class="nt">-J-javaagent</span>:signature-check-jlink-plugin-registration-agent-1.0-SNAPSHOT.jar <span class="se">\</span>
     <span class="nt">-J--module-path</span><span class="o">=</span>signature-check-jlink-plugin-1.0-SNAPSHOT.jar:path/to/animal-sniffer-1.19.jar:path/to/asm-9.0.jar <span class="se">\</span>
-    <span class="nt">-J--add-modules</span><span class="o">=</span>dev.morling.jlink.plugins.sigcheck <span class="s2">"</span><span class="nv">$@</span><span class="s2">"</span> <span class="se">\</span>
+    <span class="nt">-J--add-modules</span><span class="o">=</span>dev.morling.jlink.plugins.sigcheck <span class="s2">&#34;</span><span class="nv">$@</span><span class="s2">&#34;</span> <span class="se">\</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
 <p>All the <code>-J</code> options are VM options passed through to the jlink tool,
-in order to register the required Java agent and add the plug-in module to jlink&#8217;s module path.
+in order to register the required Java agent and add the plug-in module to jlink’s module path.
 Instead of directly calling jlink binary itself,
 this wrapper function can now be used to invoke jlink with the custom plug-in.
-Let&#8217;s first take a look at the description in the plug-in list:</p>
+Let’s first take a look at the description in the plug-in list:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -800,7 +800,7 @@ Description: Checks the API references amongst the modules of an application <sp
 </div>
 </div>
 <div class="paragraph">
-<p>Now let&#8217;s try and create the runtime image with the mismatching <em>customer</em> and <em>order</em> modules again:</p>
+<p>Now let’s try and create the runtime image with the mismatching <em>customer</em> and <em>order</em> modules again:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -837,13 +837,13 @@ Now we could take action, examine our module path and make sure to feed correctl
 <h2 id="_summary">Summary</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The <em>link time</em> phase&#8201;&#8212;&#8201;added to the Java platform as part of the module system in version 9, and positioned between the well-known <em>compile time</em> and <em>run-time</em> phases&#8201;&#8212;&#8201;opens up very interesting opportunities to apply whole-world optimizations and validations to Java applications.
+<p>The <em>link time</em> phase — added to the Java platform as part of the module system in version 9, and positioned between the well-known <em>compile time</em> and <em>run-time</em> phases — opens up very interesting opportunities to apply whole-world optimizations and validations to Java applications.
 One example is the checking the API definitions and usages across the different modules of a Java application for consistency.
 By means of a custom plug-in for the jlink tool, this validation can happen at link time, allowing to detect any mismatches when assembling an application, so that this kind of error can be fixed early on, before it hits an integration test or even production environment.</p>
 </div>
 <div class="paragraph">
 <p>This is particularly interesting when using the Java module system for building large, modular monolithic applications.
-Unless you&#8217;re working with custom module layers&#8201;&#8212;&#8201;e.g. via the <a href="https://github.com/moditect/layrry">Layrry launcher</a>&#8201;&#8212;&#8201;only one version of a given module may be present on the module path.
+Unless you’re working with custom module layers — e.g. via the <a href="https://github.com/moditect/layrry">Layrry launcher</a> — only one version of a given module may be present on the module path.
 If multiple modules of an application depend on different versions of a transitive dependency,
 link time API signature validation can help to identify inconsistencies caused by converging to a single version of that dependency.</p>
 </div>
@@ -854,7 +854,7 @@ Then, when re-creating the runtime image using this module and the other existin
 you would be sure that all module API signature definitions and usages still match.</p>
 </div>
 <div class="paragraph">
-<p>The one caveat is the fact that the jlink plug-in API isn&#8217;t a public, supported API of the JDK yet.
+<p>The one caveat is the fact that the jlink plug-in API isn’t a public, supported API of the JDK yet.
 I hope this is going to change some time soon, though.
 E.g. the next planned LTS release, Java 17, would be a great opportunity for officially adding the ability to build and use custom jlink plug-ins.
 This would open the road towards more wide-spread use of link time optimizations and validations,

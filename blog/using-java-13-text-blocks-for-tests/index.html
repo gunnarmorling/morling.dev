@@ -18,24 +18,24 @@
 When Java 9 was introduced in 2017,
 it was the last major version published under the old release scheme.
 Since then, a six month release cadence has been adopted.
-This means developers don&#8217;t have to wait years for new APIs and language features,
+This means developers don’t have to wait years for new APIs and language features,
 but they can get their hands onto the latest additions twice a year.
-In this post I&#8217;d like to describe how you can try out new language features such as Java 13 text blocks in the test code of your project,
+In this post I’d like to describe how you can try out new language features such as Java 13 text blocks in the test code of your project,
 while keeping your main code still compatible with older Java versions.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/using-java-13-text-blocks-for-tests/" />
+<meta property="og:url" content="https://www.morling.dev/blog/using-java-13-text-blocks-for-tests/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-01-13T17:30:00+01:00" />
 <meta property="article:modified_time" content="2020-01-13T17:30:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Using Java 13 Text Blocks (Only) for Your Tests"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Using Java 13 Text Blocks (Only) for Your Tests"/>
 <meta name="twitter:description" content="
 When Java 9 was introduced in 2017,
 it was the last major version published under the old release scheme.
 Since then, a six month release cadence has been adopted.
-This means developers don&#8217;t have to wait years for new APIs and language features,
+This means developers don’t have to wait years for new APIs and language features,
 but they can get their hands onto the latest additions twice a year.
-In this post I&#8217;d like to describe how you can try out new language features such as Java 13 text blocks in the test code of your project,
+In this post I’d like to describe how you can try out new language features such as Java 13 text blocks in the test code of your project,
 while keeping your main code still compatible with older Java versions.
 "/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
@@ -273,9 +273,9 @@ while keeping your main code still compatible with older Java versions.
 <p>When Java 9 was introduced in 2017,
 it was the last major version published under the old release scheme.
 Since then, a <a href="https://www.infoq.com/news/2017/09/Java6Month/">six month release cadence</a> has been adopted.
-This means developers don&#8217;t have to wait years for new APIs and language features,
+This means developers don’t have to wait years for new APIs and language features,
 but they can get their hands onto the latest additions twice a year.
-In this post I&#8217;d like to describe how you can try out new language features such as <a href="http://openjdk.java.net/jeps/355">Java 13 text blocks</a> in the test code of your project,
+In this post I’d like to describe how you can try out new language features such as <a href="http://openjdk.java.net/jeps/355">Java 13 text blocks</a> in the test code of your project,
 while keeping your main code still compatible with older Java versions.</p>
 </div>
 <div class="paragraph">
@@ -310,14 +310,14 @@ but depending on your specific situation and requirements, you may no be able to
 <p>In particular when working on libraries, compatibility with older Java versions is a high priority in order to not cut off a large number of potential users.
 E.g. in the JetBrains <a href="https://www.jetbrains.com/lp/devecosystem-2019/java/">Developer Ecosystem Survey</a> from early 2019,
 83% of participants said that Java 8 is a version they regularly use.
-This matches with what I&#8217;ve observed myself during conversations e.g. at conferences.
+This matches with what I’ve observed myself during conversations e.g. at conferences.
 Now this share may have reduced a bit since then
-(I couldn&#8217;t find any newer numbers),
+(I couldn’t find any newer numbers),
 but at this point in time it still seems save to say that libraries should support Java 8 to not limit their audience in a signficant way.</p>
 </div>
 <div class="paragraph">
 <p>So while <em>building</em> on Java 13 is fine,
-requiring it at <em>runtime</em> for libraries isn&#8217;t.
+requiring it at <em>runtime</em> for libraries isn’t.
 Does this mean as a library author you cannot use text blocks then for many years to come?
 For your main code (i.e. the one shipped to users) it indeed does mean that,
 but things look different when it comes to test code.</p>
@@ -328,7 +328,7 @@ but things look different when it comes to test code.</p>
 <div class="paragraph">
 <p>One case where text blocks come in extremely handy is testing of REST APIs,
 where JSON requests need to created and responses may have to be compared to a JSON string with the expected value.
-Here&#8217;s an example of using text blocks in a test of a <a href="https://quarkus.io/">Quarkus-based</a> REST service,
+Here’s an example of using text blocks in a test of a <a href="https://quarkus.io/">Quarkus-based</a> REST service,
 implemented using <a href="http://rest-assured.io/">RESTAssured</a> and <a href="https://github.com/skyscreamer/JSONassert">JSONAssert</a>:</p>
 </div>
 <div class="listingblock">
@@ -368,24 +368,24 @@ implemented using <a href="http://rest-assured.io/">RESTAssured</a> and <a href=
   <span class="kd">public</span> <span class="kt">void</span> <span class="nf">canPostNewTodoAndReceiveId</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
     <span class="n">given</span><span class="o">()</span>
       <span class="o">.</span><span class="na">when</span><span class="o">()</span>
-        <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="s">"""                                          <i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="sh">&#34;&#34;&#34;                                          <i class="conum" data-value="1"></i><b>(1)</b>
               {
-                "</span><span class="n">title</span><span class="s">" : "</span><span class="nc">Learn</span> <span class="nc">Java</span><span class="s">",
-                "</span><span class="n">completed</span><span class="s">" : false
+                &#34;title&#34; : &#34;Learn Java&#34;,
+                &#34;completed&#34; : false
               }
-              """</span>
+              &#34;&#34;&#34;</span>
         <span class="o">)</span>
         <span class="o">.</span><span class="na">contentType</span><span class="o">(</span><span class="nc">ContentType</span><span class="o">.</span><span class="na">JSON</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">post</span><span class="o">(</span><span class="s">"/hello"</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">post</span><span class="o">(</span><span class="s">&#34;/hello&#34;</span><span class="o">)</span>
       <span class="o">.</span><span class="na">then</span><span class="o">()</span>
         <span class="o">.</span><span class="na">statusCode</span><span class="o">(</span><span class="mi">201</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="n">matchesJson</span><span class="o">(</span><span class="s">"""                              <i class="conum" data-value="2"></i><b>(2)</b>
+        <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="n">matchesJson</span><span class="o">(</span><span class="sh">&#34;&#34;&#34;                              <i class="conum" data-value="2"></i><b>(2)</b>
                           {
-                            "</span><span class="n">id</span><span class="s">" : 1,
-                            "</span><span class="n">title</span><span class="s">" : "</span><span class="nc">Learn</span> <span class="nc">Java</span><span class="s">",
-                            "</span><span class="n">completed</span><span class="s">" : false
+                            &#34;id&#34; : 1,
+                            &#34;title&#34; : &#34;Learn Java&#34;,
+                            &#34;completed&#34; : false
                           }
-                          """</span><span class="o">)</span>
+                          &#34;&#34;&#34;</span><span class="o">)</span>
         <span class="o">);</span>
   <span class="o">}</span>
 <span class="o">}</span>
@@ -394,7 +394,7 @@ implemented using <a href="http://rest-assured.io/">RESTAssured</a> and <a href=
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Text block with the JSON request to send</td>
 </tr>
@@ -402,10 +402,10 @@ implemented using <a href="http://rest-assured.io/">RESTAssured</a> and <a href=
 <td><i class="conum" data-value="2"></i><b>2</b></td>
 <td>Text block with the expected JSON response</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>Indeed that&#8217;s much nicer to read, e.g. when comparing the request JSON to the code you&#8217;d typically write without text blocks.
+<p>Indeed that’s much nicer to read, e.g. when comparing the request JSON to the code you’d typically write without text blocks.
 Concatenating multiple lines, escaping quotes and explicitly specifying line breaks make this quite cumbersome:</p>
 </div>
 <div class="listingblock">
@@ -417,16 +417,16 @@ Concatenating multiple lines, escaping quotes and explicitly specifying line bre
 5
 6
 </pre></td><td class="code"><pre><span class="o">.</span><span class="na">body</span><span class="o">(</span>
-      <span class="s">"{\n"</span> <span class="o">+</span>
-      <span class="s">"  \"title\" : \"Learn Java 13\",\n"</span> <span class="o">+</span>
-      <span class="s">"  \"completed\" : false\n"</span> <span class="o">+</span>
-      <span class="s">"}"</span>
+      <span class="s">&#34;{\n&#34;</span> <span class="o">+</span>
+      <span class="s">&#34;  \&#34;title\&#34; : \&#34;Learn Java 13\&#34;,\n&#34;</span> <span class="o">+</span>
+      <span class="s">&#34;  \&#34;completed\&#34; : false\n&#34;</span> <span class="o">+</span>
+      <span class="s">&#34;}&#34;</span>
 <span class="o">)</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Now let&#8217;s see what&#8217;s needed in terms of configuration to enable usage of Java 13 text blocks for tests,
+<p>Now let’s see what’s needed in terms of configuration to enable usage of Java 13 text blocks for tests,
 while keeping the main code of a project compatible with Java 8.</p>
 </div>
 </div>
@@ -443,13 +443,13 @@ while keeping the main code of a project compatible with Java 8.</p>
 <p><code>--release</code>: specifies the Java version to compile for</p>
 </li>
 <li>
-<p><code>--enable-preview</code>: allows to use language features currently in "preview" status such as text blocks as of Java 13/14</p>
+<p><code>--enable-preview</code>: allows to use language features currently in &#34;preview&#34; status such as text blocks as of Java 13/14</p>
 </li>
 </ul>
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -459,18 +459,18 @@ while keeping the main code of a project compatible with Java 8.</p>
 The reason being that <code>--release</code> will prevent any accidental usage of APIs only introduced in later versions.</p>
 </div>
 <div class="paragraph">
-<p>E.g. say you were to write code such as <code>List.of("Foo", "Bar")</code>;
+<p>E.g. say you were to write code such as <code>List.of(&#34;Foo&#34;, &#34;Bar&#34;)</code>;
 the <code>of()</code> methods on <code>java.util.List</code> were only introduced in Java 9, so compiling with <code>--release 8</code> will raise a compilation error in this case.
-When using the older options, this situation wouldn&#8217;t be detected at compile time,
+When using the older options, this situation wouldn’t be detected at compile time,
 making the problem only apparent when actually running the application on the older Java version.</p>
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Build tools typically allow to use different configurations for the compilation of main and test code.
-E.g. here is what you&#8217;d use for Maven
+E.g. here is what you’d use for Maven
 (you can find the complete source code of the example in <a href="https://github.com/gunnarmorling/jdk13-text-blocks">this GitHub repo</a>):</p>
 </div>
 <div class="listingblock">
@@ -534,7 +534,7 @@ E.g. here is what you&#8217;d use for Maven
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Compile for release 8 by default, i.e. the main code</td>
 </tr>
@@ -546,7 +546,7 @@ E.g. here is what you&#8217;d use for Maven
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>Also pass the <code>--enable-preview</code> option when compiling the test code</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Also at runtime preview features must be explicitly enabled.
@@ -589,7 +589,7 @@ But running the build on the command line via Maven or on your CI server will de
 </div>
 <div class="paragraph">
 <p>As Java 13 now is required to <em>build</em> this code base,
-it&#8217;s a good idea to make this prerequisite explicit in the build process itself.
+it’s a good idea to make this prerequisite explicit in the build process itself.
 The Maven <a href="https://maven.apache.org/enforcer/index.html">enforcer plug-in</a> comes in handy for that,
 allowing to express this requirement using its <a href="https://maven.apache.org/enforcer/enforcer-rules/requireJavaVersion.html">Java version rule</a>:</p>
 </div>
@@ -665,29 +665,29 @@ should the JDK team arrive at the conclusion that it is fundamentally flawed.</p
 As of Java 13, the oldest supported release is 7;
 i.e. using JDK 13, you can produce byte code that can be run with Java versions as old as Java 7.
 In order to keep the Java compiler maintainable, support for older versions is dropped every now and then.
-Right now, there&#8217;s no formal process in place which would describe when support for a specific version is going to be removed
+Right now, there’s no formal process in place which would describe when support for a specific version is going to be removed
 (defining such policy is the goal of <a href="https://openjdk.java.net/jeps/182">JEP 182</a>).</p>
 </div>
 <div class="paragraph">
-<p>As per JDK developer Joe Darcy, "<a href="https://mail.openjdk.java.net/pipermail/compiler-dev/2020-January/014206.html">there are no plans to remove support for --release 7 in JDK 15</a>".
+<p>As per JDK developer Joe Darcy, &#34;<a href="https://mail.openjdk.java.net/pipermail/compiler-dev/2020-January/014206.html">there are no plans to remove support for --release 7 in JDK 15</a>&#34;.
 Conversely, this means that support for release 7 theoretically <em>could</em> be removed in JDK 16 and support for release 8 <em>could</em> be removed in JDK 17.
-In that case you&#8217;d be caught between a rock and a hard place:
-Once you&#8217;re on a non-LTS ("long-term support") release like JDK 13, you&#8217;ll need to upgrade to JDK 14, 15 etc. as soon as they are out,
+In that case you’d be caught between a rock and a hard place:
+Once you’re on a non-LTS (&#34;long-term support&#34;) release like JDK 13, you’ll need to upgrade to JDK 14, 15 etc. as soon as they are out,
 in order to not be cut off from bug fixes and security patches.
-Now while doing so, you&#8217;d be forced to increase the release level of your main code, once support for release 8 gets dropped, which may not desirable.
-Or you&#8217;d have to apply some nice awk/sed magic to replace all those shiny text blocks with traditional concatenated and escaped strings,
+Now while doing so, you’d be forced to increase the release level of your main code, once support for release 8 gets dropped, which may not desirable.
+Or you’d have to apply some nice awk/sed magic to replace all those shiny text blocks with traditional concatenated and escaped strings,
 so you can go back to the current LTS release, Java 11.
 Not nice, but surely doable.</p>
 </div>
 <div class="paragraph">
-<p>That being said, this all doesn&#8217;t seem like a likely scenario to me.
-JEP 182 expresses a desire "that source code 10 or more years old should still be able to be compiled";
-hence I think it&#8217;s save to assume that JDK 17 (the next release planned to receive long-term support) will still support release 8,
+<p>That being said, this all doesn’t seem like a likely scenario to me.
+JEP 182 expresses a desire &#34;that source code 10 or more years old should still be able to be compiled&#34;;
+hence I think it’s save to assume that JDK 17 (the next release planned to receive long-term support) will still support release 8,
 which will be seven years old when 17 gets released as planned in September 2021.
-In that case you&#8217;d be on the safe side, receiving update releases and being able to keep your main code Java 8 compatible for quite a few years to come.</p>
+In that case you’d be on the safe side, receiving update releases and being able to keep your main code Java 8 compatible for quite a few years to come.</p>
 </div>
 <div class="paragraph">
-<p>Needless to say, it&#8217;s a call that you need to make, deciding for yourself wether the benefits of using new language features such as text blocks is worth it in your specific situation or not.</p>
+<p>Needless to say, it’s a call that you need to make, deciding for yourself wether the benefits of using new language features such as text blocks is worth it in your specific situation or not.</p>
 </div>
 </div>
 </div>

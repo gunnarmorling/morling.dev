@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Shell Spell: Extracting and Propagating Multiple Values With jq - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Shell Spell: Extracting and Propagating Multiple Values With jq" />
+<meta property="og:description" content="
+In my day job at Decodable,
+I am currently in the process of terraforming some cloud infrastructure for an upcoming hands-on lab.
+Part of this set-up is a Postgres database on Amazon RDS,
+which I am creating using the Terraform AWS modules.
+Now, once my database was up and running,
+I wanted to extract two dynamically generated values from Terraform:
+the random password created for the root user, and the database host URL.
+On my way down the rabbit hole for finding a CLI command for doing this efficiently,
+I learned a few interesting shell details which I’d like to share.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/extracting-and-propagating-multiple-values-with-jq/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2024-07-06T11:20:00+02:00" />
+<meta property="article:modified_time" content="2024-07-06T11:20:00+02:00" />
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Shell Spell: Extracting and Propagating Multiple Values With jq"/>
+<meta name="twitter:description" content="
+In my day job at Decodable,
+I am currently in the process of terraforming some cloud infrastructure for an upcoming hands-on lab.
+Part of this set-up is a Postgres database on Amazon RDS,
+which I am creating using the Terraform AWS modules.
+Now, once my database was up and running,
+I wanted to extract two dynamically generated values from Terraform:
+the random password created for the root user, and the database host URL.
+On my way down the rabbit hole for finding a CLI command for doing this efficiently,
+I learned a few interesting shell details which I’d like to share.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling-2b44b7229/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling-2b44b7229/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Shell Spell: Extracting and Propagating Multiple Values With jq</h1>
+				<div class="meta">Posted at Jul 6, 2024</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>In my day job at <a href="https://www.decodable.co/">Decodable</a>,
+I am currently in the process of terraforming some cloud infrastructure for an upcoming hands-on lab.
+Part of this set-up is a Postgres database on Amazon RDS,
+which I am creating using the <a href="https://developer.hashicorp.com/terraform/tutorials/aws/aws-rds">Terraform AWS modules</a>.
+Now, once my database was up and running,
+I wanted to extract two dynamically generated values from Terraform:
+the random password created for the root user, and the database host URL.
+On my way down the rabbit hole for finding a CLI command for doing this efficiently,
+I learned a few interesting shell details which I’d like to share.</p>
+</div>
+<div class="paragraph">
+<p>The basic idea is to fetch the current Terraform state via <code>terraform show -json</code> and then extract the two values we’re after from there.
+The JSON output of Terraform looks like this
+(shortened for readability, and no, those aren’t the actual values from my database instance 😉):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+</pre></td><td class="code"><pre><span class="p">{</span><span class="w">
+  </span><span class="nl">&#34;format_version&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;1.0&#34;</span><span class="p">,</span><span class="w">
+  </span><span class="nl">&#34;terraform_version&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;1.5.4&#34;</span><span class="p">,</span><span class="w">
+  </span><span class="nl">&#34;values&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">&#34;root_module&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="nl">&#34;resources&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="err">...</span><span class="w">
+      </span><span class="p">],</span><span class="w">
+      </span><span class="nl">&#34;child_modules&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+          </span><span class="nl">&#34;resources&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+            </span><span class="p">{</span><span class="w">
+              </span><span class="nl">&#34;address&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;module.lab-001.aws_db_instance.lab_001_db&#34;</span><span class="p">,</span><span class="w">
+              </span><span class="nl">&#34;mode&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;managed&#34;</span><span class="p">,</span><span class="w">
+              </span><span class="nl">&#34;type&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;aws_db_instance&#34;</span><span class="p">,</span><span class="w">
+              </span><span class="nl">&#34;name&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;lab_001_db&#34;</span><span class="p">,</span><span class="w">
+              </span><span class="nl">&#34;provider_name&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;registry.terraform.io/hashicorp/aws&#34;</span><span class="p">,</span><span class="w">
+              </span><span class="nl">&#34;schema_version&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">
+              </span><span class="nl">&#34;values&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+                </span><span class="nl">&#34;address&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;lab-001-db.a4dadf981fgh.us-east-1.rds.amazonaws.com&#34;</span><span class="p">,</span><span class="w">
+                </span><span class="err">...</span><span class="w">
+              </span><span class="p">},</span><span class="w">
+              </span><span class="nl">&#34;sensitive_values&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+                </span><span class="err">...</span><span class="w">
+              </span><span class="p">},</span><span class="w">
+              </span><span class="nl">&#34;depends_on&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+                </span><span class="s2">&#34;module.lab-001.random_password.this&#34;</span><span class="p">,</span><span class="w">
+                </span><span class="err">...</span><span class="w">
+              </span><span class="p">]</span><span class="w">
+            </span><span class="p">},</span><span class="w">
+
+            </span><span class="p">{</span><span class="w">
+              </span><span class="nl">&#34;address&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;module.lab-001.random_password.this&#34;</span><span class="p">,</span><span class="w">
+              </span><span class="nl">&#34;mode&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;managed&#34;</span><span class="p">,</span><span class="w">
+              </span><span class="nl">&#34;type&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;random_password&#34;</span><span class="p">,</span><span class="w">
+              </span><span class="nl">&#34;name&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;this&#34;</span><span class="p">,</span><span class="w">
+              </span><span class="nl">&#34;provider_name&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;registry.terraform.io/hashicorp/random&#34;</span><span class="p">,</span><span class="w">
+              </span><span class="nl">&#34;schema_version&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w">
+              </span><span class="nl">&#34;values&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+                </span><span class="nl">&#34;result&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;5adCpQc]$s3pQ=a&#34;</span><span class="p">,</span><span class="w">
+                </span><span class="err">...</span><span class="w">
+              </span><span class="p">},</span><span class="w">
+              </span><span class="nl">&#34;sensitive_values&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+                </span><span class="err">...</span><span class="w">
+              </span><span class="p">}</span><span class="w">
+            </span><span class="p">}</span><span class="w">
+          </span><span class="p">],</span><span class="w">
+          </span><span class="nl">&#34;address&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;module.lab-001&#34;</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+      </span><span class="p">]</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Extracting the two values is relatively simple using jq.
+But I wanted to get both values at once, with a single Terraform call—​which is a remote and thus slow operation—​so I could pass them on to psql and get a database session.
+All that without storing the Terraform output in a file (which would taint my workspace), and as a copy/paste friendly snippet which I can add to the README of the project for documentation purposes.</p>
+</div>
+<div class="paragraph">
+<p>After fiddling around for a little while, I asked for help in our internal Slack,
+where my fellow Decoder Jared Breeden came up with this really cool solution
+(thanks again, mate!):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre><span class="o">({</span>
+  <span class="nb">read</span> <span class="nt">-r</span> host
+  <span class="nb">read</span> <span class="nt">-r</span> password
+<span class="o">}</span> &lt; &lt;<span class="o">(</span>terraform show <span class="nt">-json</span> | jq <span class="nt">-r</span> <span class="s1">&#39;
+  .values.root_module.child_modules[]
+  | select(.address==&#34;module.lab-001&#34;)
+  | .resources[]
+  | (select(.address==&#34;module.lab-001.random_password.this&#34;) | .values.result),
+    (select(.address==&#34;module.lab-001.aws_db_instance.lab_001_db&#34;) | .values.address)&#39;</span><span class="o">)</span>
+psql <span class="s2">&#34;postgresql://root:</span><span class="k">${</span><span class="nv">password</span><span class="k">}</span><span class="s2">@</span><span class="k">${</span><span class="nv">host</span><span class="k">}</span><span class="s2">:5432/labdb&#34;</span><span class="o">)</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This does exactly what I want:
+retrieving the password and database host from the current Terraform state and using them to open a session with the database via psql.</p>
+</div>
+<div class="paragraph">
+<p>So let’s dissect this little gem to understand how it works.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>terraform show <span class="nt">-json</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>terraform show -json</code> retrieves the full JSON description of the Terraform state shown above.
+The resulting JSON is piped to <a href="https://jqlang.github.io/jq/">jq</a> for extracting the values of password and host:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>jq <span class="nt">-r</span> <span class="s1">&#39;
+  .values.root_module.child_modules[]
+  | select(.address==&#34;module.lab-001&#34;)
+  | .resources[]
+  | (select(.address==&#34;module.lab-001.random_password.this&#34;) | .values.result),
+    (select(.address==&#34;module.lab-001.aws_db_instance.lab_001_db&#34;) | .values.address)&#39;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>jq is invaluable for handling JSON and I highly recommend spending some time with its reference documentation to learn about it.
+In the case at hand, the <a href="https://jqlang.github.io/jq/manual/#select"><code>select()</code></a> function is used within a <a href="https://jqlang.github.io/jq/manual/#pipe">pipeline</a> for finding the right elements within the array of Terraform child modules and extracting the required values.
+Putting the two inner <code>select()</code> calls into parenthesis makes them two separate expressions whose output will go onto separate lines.</p>
+</div>
+<div class="paragraph">
+<p>At this point, the value of host and password are passed to stdout
+(the order is determined by the order of resource definitions in the input <em>main.tf</em> file and thus stable):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre>lab-001-db.a4dadf981fgh.us-east-1.rds.amazonaws.com
+5adCpQc]<span class="nv">$s3pQ</span><span class="o">=</span>a
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>How to pass on the two values to <code>psql</code>?
+This is where the <a href="https://www.gnu.org/software/bash/manual/html_node/Command-Grouping.html">grouping command</a> in curly braces comes in:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="o">{</span>
+  <span class="nb">read</span> <span class="nt">-r</span> host
+  <span class="nb">read</span> <span class="nt">-r</span> password
+<span class="o">}</span> &lt; &lt;<span class="o">(</span>...<span class="o">)</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The list of commands between curly braces will be executed in the current shell context as one unit;
+in particular any <a href="https://www.gnu.org/software/bash/manual/html_node/Redirections.html">input/output redirections</a> will be applied to all the commands.
+Here we redirect the input (using the <code>&lt;</code> operator, the counterpart to the more commonly used <code>&gt;</code> operator for redirecting a command’s output) of the grouping command to the output of the jq invocation with the help of <a href="https://www.gnu.org/software/bash/manual/html_node/Process-Substitution.html">process substitution</a> (<code>&lt;(...)</code>),
+about which I <a href="/blog/filtering-process-output-with-tee/">wrote recently</a>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You might wonder why input redirection and process substitution are used here,
+instead of simply piping the output of jq to the grouping command.
+Indeed this would work when using zsh as a shell.
+Other shells such as bash execute each command of a pipeline in <a href="https://relentlesscoding.com/posts/bash-commands-in-pipelines-subshells/">its own subshell</a>, though.
+This means that the two variables wouldn’t be available any longer once the grouping command has completed.
+The input redirection approach thus increases portability of the solution across shells.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>Within the grouping command, the two lines on stdin are <a href="https://www.gnu.org/software/bash/manual/html_node/Bash-Builtins.html#index-read">read</a> and stored under the names <code>host</code> and <code>password</code> in the shell context, respectively.</p>
+</div>
+<div class="paragraph">
+<p>That way, they can be referenced in the subsequent command for opening our database session:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>psql <span class="s2">&#34;postgresql://root:</span><span class="k">${</span><span class="nv">password</span><span class="k">}</span><span class="s2">@</span><span class="k">${</span><span class="nv">host</span><span class="k">}</span><span class="s2">:5432/labdb&#34;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>There’s one remaining problem,
+and that is that the <code>host</code> and <code>password</code> variables are still around after closing the database session,
+which may pose a security issue.
+We could call <code>unset</code> to remove them,
+but it’s even easier to make everything another grouping command,
+using <code>(...)</code> this time.
+This ensures a sub-shell is created for the commands which will be destroyed after closing the database session.</p>
+</div>
+<div class="paragraph">
+<p>Learning some new shell tricks will never be boring to me.
+Do you have another solution for solving this little problem?
+Let me know in the comments below!</p>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2024 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>

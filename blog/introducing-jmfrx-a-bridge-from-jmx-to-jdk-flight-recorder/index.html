@@ -15,28 +15,28 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Introducing JmFrX: A Bridge From JMX to JDK Flight Recorder - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta property="og:title" content="Introducing JmFrX: A Bridge From JMX to JDK Flight Recorder" />
 <meta property="og:description" content="
-I&#8217;m excited to share the news about an open-source utility I&#8217;ve been working on lately:
+I’m excited to share the news about an open-source utility I’ve been working on lately:
 JmFrX,
 a tool for capturing JMX data with JDK Flight Recorder.
 
 
-When using JMX (Java Management Extensions), The Java platform&#8217;s standard for monitoring and managing applications,
+When using JMX (Java Management Extensions), The Java platform’s standard for monitoring and managing applications,
 JmFrX allows you to periodically record the attributes from any JMX MBean into JDK Flight Recorder (JFR) files,
 which you then can analyse using JDK Mission Control (JMC).
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/introducing-jmfrx-a-bridge-from-jmx-to-jdk-flight-recorder/" />
+<meta property="og:url" content="https://www.morling.dev/blog/introducing-jmfrx-a-bridge-from-jmx-to-jdk-flight-recorder/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-08-18T17:30:00+02:00" />
 <meta property="article:modified_time" content="2020-08-18T17:30:00+02:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Introducing JmFrX: A Bridge From JMX to JDK Flight Recorder"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Introducing JmFrX: A Bridge From JMX to JDK Flight Recorder"/>
 <meta name="twitter:description" content="
-I&#8217;m excited to share the news about an open-source utility I&#8217;ve been working on lately:
+I’m excited to share the news about an open-source utility I’ve been working on lately:
 JmFrX,
 a tool for capturing JMX data with JDK Flight Recorder.
 
 
-When using JMX (Java Management Extensions), The Java platform&#8217;s standard for monitoring and managing applications,
+When using JMX (Java Management Extensions), The Java platform’s standard for monitoring and managing applications,
 JmFrX allows you to periodically record the attributes from any JMX MBean into JDK Flight Recorder (JFR) files,
 which you then can analyse using JDK Mission Control (JMC).
 "/>
@@ -272,12 +272,12 @@ which you then can analyse using JDK Mission Control (JMC).
 
 			<div class="markdown">
 				<div class="paragraph">
-<p>I&#8217;m excited to share the news about an open-source utility I&#8217;ve been working on lately:
+<p>I’m excited to share the news about an open-source utility I’ve been working on lately:
 <a href="https://github.com/gunnarmorling/jmfrx">JmFrX</a>,
 a tool for capturing JMX data with JDK Flight Recorder.</p>
 </div>
 <div class="paragraph">
-<p>When using JMX (<a href="https://en.wikipedia.org/wiki/Java_Management_Extensions">Java Management Extensions</a>), The Java platform&#8217;s standard for monitoring and managing applications,
+<p>When using JMX (<a href="https://en.wikipedia.org/wiki/Java_Management_Extensions">Java Management Extensions</a>), The Java platform’s standard for monitoring and managing applications,
 JmFrX allows you to periodically record the attributes from any JMX MBean into <a href="https://openjdk.java.net/jeps/328">JDK Flight Recorder</a> (JFR) files,
 which you then can analyse using <a href="https://openjdk.java.net/projects/jmc/">JDK Mission Control</a> (JMC).</p>
 </div>
@@ -298,14 +298,14 @@ which you then can analyse using <a href="https://openjdk.java.net/projects/jmc/
 </ul>
 </div>
 <div class="paragraph">
-<p>In this blog post I&#8217;m going to explain how to use JmFrX for recording JMX data in your applications,
+<p>In this blog post I’m going to explain how to use JmFrX for recording JMX data in your applications,
 point out some interesting JmFrX implemention details, and lastly will discuss some potential steps for future development of the tool.</p>
 </div>
 <div class="sect1">
 <h2 id="_why_jmfrx">Why JmFrX?</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><a href="https://openjdk.java.net/jeps/328">JDK Flight Recorder</a> is a "low-overhead data collection framework for troubleshooting Java applications and the HotSpot JVM".
+<p><a href="https://openjdk.java.net/jeps/328">JDK Flight Recorder</a> is a &#34;low-overhead data collection framework for troubleshooting Java applications and the HotSpot JVM&#34;.
 In combination with the JDK Mission Control client application it allows to gain deep insights into the performance characteristics of Java applications.</p>
 </div>
 <div class="paragraph">
@@ -325,7 +325,7 @@ by periodically capturing the attribute values from a given set of JMX MBeans,
 it allows to capture this information in JFR recordings.</p>
 </div>
 <div class="paragraph">
-<p>JmFrX isn&#8217;t the first effort that seeks to bridge JMX and JFR;
+<p>JmFrX isn’t the first effort that seeks to bridge JMX and JFR;
 JDK Mission Control project lead <a href="https://twitter.com/hirt/">Marcus Hirt</a> discusses a similar project in a <a href="http://hirt.se/blog/?p=689">blog post</a> in 2016.
 But unlike the implementation described by Marcus in this post,
 JmFrX is based on the public and supported APIs for defining, configuring and emitting JFR events, as available since OpenJDK 11.</p>
@@ -338,7 +338,7 @@ JmFrX is based on the public and supported APIs for defining, configuring and em
 <div class="paragraph">
 <p>In order to use JmFrX, make sure to run OpenJDK 11 or newer.
 OpenJDK 8 also contains the open-sourced Flight Recorder bits as of release 8u262 (<a href="https://blog.adoptopenjdk.net/2020/07/adoptopenjdk-8u262-1108-and-1402-available/">from July this year</a>);
-so this should work, too, but I haven&#8217;t tested it yet.</p>
+so this should work, too, but I haven’t tested it yet.</p>
 </div>
 <div class="paragraph">
 <p>Until a stable release will be provided, you can obtain JmFrX snapshot builds via <a href="https://jitpack.io/">JitPack</a>.
@@ -402,7 +402,7 @@ Then perform these steps:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>Right-click the target JVM &#8594; Select <em>Start Flight Recording&#8230;&#8203;</em></p>
+<p>Right-click the target JVM → Select <em>Start Flight Recording…​</em></p>
 </li>
 <li>
 <p>Click on <em>Template Manager</em></p>
@@ -414,13 +414,13 @@ Then perform these steps:</p>
 <p>Expand the <em>JMX</em> and <em>JMX Dump</em> nodes</p>
 </li>
 <li>
-<p>Make sure the <em>JMX Dump</em> event type is <em>Enabled</em>; choose a period for dumping the chosen JMX MBeans (by default 60 s) and specify the MBeans whose data should be captured; that&#8217;s done by means of a regular expression, which matches one or more JMX object names, for instance <code>.*OperatingSystem.*</code>:</p>
+<p>Make sure the <em>JMX Dump</em> event type is <em>Enabled</em>; choose a period for dumping the chosen JMX MBeans (by default 60 s) and specify the MBeans whose data should be captured; that’s done by means of a regular expression, which matches one or more JMX object names, for instance <code>.*OperatingSystem.*</code>:</p>
 </li>
 </ul>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/jmfrx_mission_control_configuration.png" alt="Configuring JmFrX in JMC">
+<img src="/images/jmfrx_mission_control_configuration.png" alt="Configuring JmFrX in JMC"/>
 </div>
 </div>
 <div class="ulist">
@@ -442,7 +442,7 @@ You should see periodic events corresponding to the selected MBeans under the <e
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/jmfrx_events.png" alt="JmFrX Events in JDK Mission Control">
+<img src="/images/jmfrx_events.png" alt="JmFrX Events in JDK Mission Control"/>
 </div>
 </div>
 <div class="paragraph">
@@ -451,13 +451,13 @@ also follow the same steps as above for creating a configuration as described ab
 But then, instead of starting the recording, export the configuration file from the template manager and specify its name to <em>jcmd</em> via the <em>settings=/path/to/settings.jfc</em> parameter.</p>
 </div>
 <div class="paragraph">
-<p>Now using JmFrX to observe JMX data from for the <code>java.lang</code> MBeans like <code>Runtime</code> and <code>OperatingSystem</code> in JFR isn&#8217;t too exciting yet,
-as there&#8217;s dedicated JFR event types which contain most of that information.
+<p>Now using JmFrX to observe JMX data from for the <code>java.lang</code> MBeans like <code>Runtime</code> and <code>OperatingSystem</code> in JFR isn’t too exciting yet,
+as there’s dedicated JFR event types which contain most of that information.
 But things get more interesting when capturing data from custom MBean types, as e.g. here for the stream threads metrics from a <a href="https://kafka.apache.org/26/documentation/streams/">Kafka Streams</a> application:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/jmfrx_kafka_streams.png" alt="JmFrX Events for Kafka Streams in JDK Mission Control">
+<img src="/images/jmfrx_kafka_streams.png" alt="JmFrX Events for Kafka Streams in JDK Mission Control"/>
 </div>
 </div>
 </div>
@@ -478,7 +478,7 @@ This information then is used by JMC for instance when displaying events in the 
 which describe the data format of one MBean type and its attributes.
 When creating an event for a given JMX MBean, JmFrX will look for a corresponding event profile and apply its settings.
 Event profiles are defined by implementing the <a href="https://github.com/gunnarmorling/jmfrx/blob/master/src/main/java/dev/morling/jmfrx/spi/EventProfileContributor.java"><code>EventProfileContributor</code></a> SPI.
-As an example here&#8217;s a subset of the the built-in profile definition for the <code>OperatingSystem</code> MBean:</p>
+As an example here’s a subset of the the built-in profile definition for the <code>OperatingSystem</code> MBean:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -487,21 +487,21 @@ As an example here&#8217;s a subset of the the built-in profile definition for t
 
   <span class="nd">@Override</span>
   <span class="kd">public</span> <span class="kt">void</span> <span class="nf">contributeProfiles</span><span class="o">(</span><span class="nc">EventProfileBuilder</span> <span class="n">builder</span><span class="o">)</span> <span class="o">{</span>
-    <span class="n">builder</span><span class="o">.</span><span class="na">addEventProfile</span><span class="o">(</span><span class="s">"java.lang:type=OperatingSystem"</span><span class="o">)</span>          <i class="conum" data-value="1"></i><b>(1)</b>
-        <span class="o">.</span><span class="na">addAttributeProfile</span><span class="o">(</span><span class="s">"TotalSwapSpaceSize"</span><span class="o">,</span> <span class="kt">long</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
+    <span class="n">builder</span><span class="o">.</span><span class="na">addEventProfile</span><span class="o">(</span><span class="s">&#34;java.lang:type=OperatingSystem&#34;</span><span class="o">)</span>          <i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="o">.</span><span class="na">addAttributeProfile</span><span class="o">(</span><span class="s">&#34;TotalSwapSpaceSize&#34;</span><span class="o">,</span> <span class="kt">long</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
             <span class="k">new</span> <span class="nf">AnnotationElement</span><span class="o">(</span><span class="nc">DataAmount</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nc">DataAmount</span><span class="o">.</span><span class="na">BYTES</span><span class="o">),</span> <i class="conum" data-value="2"></i><b>(2)</b>
             <span class="n">v</span> <span class="o">-&gt;</span> <span class="n">v</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">addAttributeProfile</span><span class="o">(</span><span class="s">"FreeSwapSpaceSize"</span><span class="o">,</span> <span class="kt">long</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
+        <span class="o">.</span><span class="na">addAttributeProfile</span><span class="o">(</span><span class="s">&#34;FreeSwapSpaceSize&#34;</span><span class="o">,</span> <span class="kt">long</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
             <span class="k">new</span> <span class="nf">AnnotationElement</span><span class="o">(</span><span class="nc">DataAmount</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nc">DataAmount</span><span class="o">.</span><span class="na">BYTES</span><span class="o">),</span>
             <span class="n">v</span> <span class="o">-&gt;</span> <span class="n">v</span><span class="o">)</span>                                                    <i class="conum" data-value="3"></i><b>(3)</b>
-        <span class="o">.</span><span class="na">addAttributeProfile</span><span class="o">(</span><span class="s">"CpuLoad"</span><span class="o">,</span> <span class="kt">double</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
+        <span class="o">.</span><span class="na">addAttributeProfile</span><span class="o">(</span><span class="s">&#34;CpuLoad&#34;</span><span class="o">,</span> <span class="kt">double</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
             <span class="k">new</span> <span class="nf">AnnotationElement</span><span class="o">(</span><span class="nc">Percentage</span><span class="o">.</span><span class="na">class</span><span class="o">),</span>
             <span class="n">v</span> <span class="o">-&gt;</span> <span class="n">v</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">addAttributeProfile</span><span class="o">(</span><span class="s">"ProcessCpuLoad"</span><span class="o">,</span> <span class="kt">double</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
+        <span class="o">.</span><span class="na">addAttributeProfile</span><span class="o">(</span><span class="s">&#34;ProcessCpuLoad&#34;</span><span class="o">,</span> <span class="kt">double</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
             <span class="k">new</span> <span class="nf">AnnotationElement</span><span class="o">(</span><span class="nc">Percentage</span><span class="o">.</span><span class="na">class</span><span class="o">),</span> <span class="n">v</span> <span class="o">-&gt;</span> <span class="n">v</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">addAttributeProfile</span><span class="o">(</span><span class="s">"SystemCpuLoad"</span><span class="o">,</span> <span class="kt">double</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
+        <span class="o">.</span><span class="na">addAttributeProfile</span><span class="o">(</span><span class="s">&#34;SystemCpuLoad&#34;</span><span class="o">,</span> <span class="kt">double</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
             <span class="k">new</span> <span class="nf">AnnotationElement</span><span class="o">(</span><span class="nc">Percentage</span><span class="o">.</span><span class="na">class</span><span class="o">),</span> <span class="n">v</span> <span class="o">-&gt;</span> <span class="n">v</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">addAttributeProfile</span><span class="o">(</span><span class="s">"ProcessCpuTime"</span><span class="o">,</span> <span class="kt">long</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
+        <span class="o">.</span><span class="na">addAttributeProfile</span><span class="o">(</span><span class="s">&#34;ProcessCpuTime&#34;</span><span class="o">,</span> <span class="kt">long</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
             <span class="k">new</span> <span class="nf">AnnotationElement</span><span class="o">(</span><span class="nc">Timespan</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nc">Timespan</span><span class="o">.</span><span class="na">NANOSECONDS</span><span class="o">),</span>
             <span class="n">v</span> <span class="o">-&gt;</span> <span class="n">v</span> <span class="o">);</span>
     <span class="o">}</span>
@@ -510,7 +510,7 @@ As an example here&#8217;s a subset of the the built-in profile definition for t
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Profiles are linked via the MBean name</td>
 </tr>
@@ -522,10 +522,10 @@ As an example here&#8217;s a subset of the the built-in profile definition for t
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>If needed, the actual value can be modified too, e.g. to convert it into another data type, or to shift its value into an expected range (for instance 0 to 1 for percentage values)</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>Once you&#8217;ve defined the event profiles for your MBean type(s), don&#8217;t forget to register the contributor type either as a service implementation in your <em>module-info.java</em> descriptor (when building a modular Java application):</p>
+<p>Once you’ve defined the event profiles for your MBean type(s), don’t forget to register the contributor type either as a service implementation in your <em>module-info.java</em> descriptor (when building a modular Java application):</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -541,7 +541,7 @@ As an example here&#8217;s a subset of the the built-in profile definition for t
 <p>When building an application using the traditional classpath, register the names of all profile contributors in the <em>META-INF/services/dev.morling.jmfrx.spi.EventProfileContributor</em> file.</p>
 </div>
 <div class="paragraph">
-<p>There&#8217;s a small (yet hopefully growing) set of event profiles built into JmFrX.
+<p>There’s a small (yet hopefully growing) set of event profiles built into JmFrX.
 But as event profile contributors are discovered using the Java <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ServiceLoader.html">service loader</a> mechanism,
 you can also easily plug in event profiles for other MBean types,
 e.g. for the JMX MBeans of <a href="https://kafka.apache.org/documentation/#monitoring">Apache Kafka</a> or Kafka Connect, or application servers like <a href="https://docs.wildfly.org/20/Admin_Guide.html#JMX">WildFly</a>.</p>
@@ -556,7 +556,7 @@ e.g. for the JMX MBeans of <a href="https://kafka.apache.org/documentation/#moni
 <div class="sectionbody">
 <div class="paragraph">
 <p>If you solely want to use JmFrX, you can pretty much stop reading this post at this point.
-But if you&#8217;re curious about how it is working internally, stay with me for a bit longer:
+But if you’re curious about how it is working internally, stay with me for a bit longer:
 JmFrX uses two lesser known JFR features which also might be interesting for your own application-specific event types,
 <em>periodic JFR events</em> and <em>dynamic event types</em>.</p>
 </div>
@@ -568,14 +568,14 @@ The default interval (which can be overridden by the user) is specified using th
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="java"><span class="nd">@Name</span><span class="o">(</span><span class="nc">JmxDumpEvent</span><span class="o">.</span><span class="na">NAME</span><span class="o">)</span>
-<span class="nd">@Label</span><span class="o">(</span><span class="s">"JMX Dump"</span><span class="o">)</span>
-<span class="nd">@Category</span><span class="o">(</span><span class="s">"JMX"</span><span class="o">)</span>
-<span class="nd">@Description</span><span class="o">(</span><span class="s">"Periodically dumps specific JMX MBeans"</span><span class="o">)</span>
+<span class="nd">@Label</span><span class="o">(</span><span class="s">&#34;JMX Dump&#34;</span><span class="o">)</span>
+<span class="nd">@Category</span><span class="o">(</span><span class="s">&#34;JMX&#34;</span><span class="o">)</span>
+<span class="nd">@Description</span><span class="o">(</span><span class="s">&#34;Periodically dumps specific JMX MBeans&#34;</span><span class="o">)</span>
 <span class="nd">@StackTrace</span><span class="o">(</span><span class="kc">false</span><span class="o">)</span>
-<span class="nd">@Period</span><span class="o">(</span><span class="s">"60 s"</span><span class="o">)</span>
+<span class="nd">@Period</span><span class="o">(</span><span class="s">&#34;60 s&#34;</span><span class="o">)</span>
 <span class="kd">public</span> <span class="kd">class</span> <span class="nc">JmxDumpEvent</span> <span class="kd">extends</span> <span class="nc">Event</span> <span class="o">{</span>
 
-  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">String</span> <span class="no">NAME</span> <span class="o">=</span> <span class="s">"dev.morling.jmfrx.JmxDumpEvent"</span><span class="o">;</span>
+  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">String</span> <span class="no">NAME</span> <span class="o">=</span> <span class="s">&#34;dev.morling.jmfrx.JmxDumpEvent&#34;</span><span class="o">;</span>
 
   <span class="c1">// event implementation ...</span>
 <span class="o">}</span></code></pre>
@@ -615,7 +615,7 @@ The default interval (which can be overridden by the user) is specified using th
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>The event hook implementation</td>
 </tr>
@@ -627,7 +627,7 @@ The default interval (which can be overridden by the user) is specified using th
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>Unregister the periodic event</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>The regular expression for specifying the MBean name(s) is passed to the event type as a <code>SettingControl</code>.
@@ -635,14 +635,14 @@ You can learn more about event settings in my post on <a href="/blog/rest-api-mo
 </div>
 <div class="paragraph">
 <p>When the periodic event hook runs, it must create one event for each captured MBean.
-As JmFrX cannot know which MBean(s) you&#8217;re interested in,
-it&#8217;s not an option to pre-define these event types and their structure.</p>
+As JmFrX cannot know which MBean(s) you’re interested in,
+it’s not an option to pre-define these event types and their structure.</p>
 </div>
 <div class="paragraph">
 <p>This is where dynamic JFR event types come in:
 Using the <a href="https://docs.oracle.com/en/java/javase/11/docs/api/jdk.jfr/jdk/jfr/EventFactory.html"><code>EventFactory</code></a> class, event types can be defined at runtime.
 Under the covers, JFR will create a corresponding <code>Event</code> sub-class dynamically using the ASM API.
-Here&#8217;s the relevant JmFrX code which defines the event type for a given MBean:</p>
+Here’s the relevant JmFrX code which defines the event type for a given MBean:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -680,7 +680,7 @@ Here&#8217;s the relevant JmFrX code which defines the event type for a given MB
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Define event metadata like name, label, category etc. via the JFR metadata annotations</td>
 </tr>
@@ -688,7 +688,7 @@ Here&#8217;s the relevant JmFrX code which defines the event type for a given MB
 <td><i class="conum" data-value="2"></i><b>2</b></td>
 <td>For each MBean attribute, an attribute is added to the event type; its definition is based on the information in the corresponding event profile, if present</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>The actual implemention is slightly more complex, as it deals with integrating metadata from JmFrX event profiles and more.
@@ -701,7 +701,7 @@ You can find the complete code in the <a href="https://github.com/gunnarmorling/
 <div class="sectionbody">
 <div class="paragraph">
 <p>JmFrX is a small utility which allows you to capture JMX data with JDK Flight Recorder.
-It&#8217;s open-source (Apache License, version 2), you can find the <a href="https://github.com/gunnarmorling/jmfrx/">source code</a> on GitHub.
+It’s open-source (Apache License, version 2), you can find the <a href="https://github.com/gunnarmorling/jmfrx/">source code</a> on GitHub.
 With the wide usage of JMX for application monitoring in the Java world, JmFrX can help to bring that information into JFR recordings,
 making it available for offline investigations and analyses.</p>
 </div>
@@ -710,7 +710,7 @@ making it available for offline investigations and analyses.</p>
 adding a Java agent for registering the event type,
 providing some more built-in event profiles and publishing a stable release on Maven Central.
 Eventually, the JmFrX project might move over to the <a href="https://github.com/rh-jmc-team">rh-jmc-team</a> GitHub organization,
-which is is managed by Red Hat&#8217;s OpenJDK team and contains many other very useful projects around JDK Flight Recorder and Mission Control.</p>
+which is is managed by Red Hat’s OpenJDK team and contains many other very useful projects around JDK Flight Recorder and Mission Control.</p>
 </div>
 <div class="paragraph">
 <p>Your feedback on and contributions to JmFrX will be very welcomed!</p>

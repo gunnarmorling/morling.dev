@@ -19,11 +19,11 @@ It has been just a few weeks since the release of Java 17, but the first changes
 One feature in particular that excites me as a maintainer of different Java libraries is JEP 413 (&#34;Code Snippets in Java API Documentation&#34;).
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/executable-javadoc-code-snippets/" />
+<meta property="og:url" content="https://www.morling.dev/blog/executable-javadoc-code-snippets/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2021-10-18T08:30:00+02:00" />
 <meta property="article:modified_time" content="2021-10-18T08:30:00+02:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Executable JavaDoc Code Snippets"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Executable JavaDoc Code Snippets"/>
 <meta name="twitter:description" content="
 It has been just a few weeks since the release of Java 17, but the first changes scheduled for Java 18 begin to show up in early access builds.
 One feature in particular that excites me as a maintainer of different Java libraries is JEP 413 (&#34;Code Snippets in Java API Documentation&#34;).
@@ -261,22 +261,22 @@ One feature in particular that excites me as a maintainer of different Java libr
 			<div class="markdown">
 				<div class="paragraph">
 <p>It has been just a few weeks since the <a href="https://www.infoq.com/news/2021/09/java17-released/">release of Java 17</a>, but the first changes scheduled for Java 18 begin to show up in early access builds.
-One feature in particular that excites me as a maintainer of different Java libraries is <a href="https://openjdk.java.net/jeps/413">JEP 413</a> ("Code Snippets in Java API Documentation").</p>
+One feature in particular that excites me as a maintainer of different Java libraries is <a href="https://openjdk.java.net/jeps/413">JEP 413</a> (&#34;Code Snippets in Java API Documentation&#34;).</p>
 </div>
 <div class="paragraph">
 <p>So far, JavaDoc has not made it exactly comfortable to include example code which shows how to use an API:
-you had to escape special characters like "&lt;", "&gt;", and "&amp;", indentation handling was cumbersome.
+you had to escape special characters like &#34;&lt;&#34;, &#34;&gt;&#34;, and &#34;&amp;&#34;, indentation handling was cumbersome.
 But the biggest problem was that any such code snippet would have to be specified within the actual JavaDoc comment itself,
 i.e. you did not have proper editor support when creating it, and worse, it was not validated that the shown code actually is correct.
-This often led to code snippets which wouldn&#8217;t compile if you were to copy them into a Java source file,
+This often led to code snippets which wouldn’t compile if you were to copy them into a Java source file,
 be it due to an oversight by the author, or simply because APIs changed over time and no one was thinking of updating the corresponding snippets in JavaDoc comments.</p>
 </div>
 <div class="paragraph">
 <p>All this is going to change with JEP 413:
 it does not only improve ergonomics of inline snippets, but it also allows you to include code snippets from external source files.
-This means that you&#8217;ll be able to edit and refactor any example code using your regular Java toolchain;
+This means that you’ll be able to edit and refactor any example code using your regular Java toolchain;
 better yet: you can also compile and test it as part of your build.
-Welcome to 2021&#8201;&#8212;&#8201;no more wrong or outdated code snippets in JavaDoc!</p>
+Welcome to 2021 — no more wrong or outdated code snippets in JavaDoc!</p>
 </div>
 <div class="sect1">
 <h2 id="_including_snippets_from_your_test_directory">Including Snippets From Your Test Directory</h2>
@@ -285,13 +285,13 @@ Welcome to 2021&#8201;&#8212;&#8201;no more wrong or outdated code snippets in J
 <p>You could think of different ways for organizing your snippet files with JEP 413,
 but one particularly intriguing option is to source them straight from the tests of your project,
 e.g. the <em>src/test/java</em> directory in case of a Maven project.
-That way, any incorrect snippet code&#8201;&#8212;&#8201;be it due to compilation failures or due to failing test assertions&#8201;&#8212;&#8201;will be directly flagged within your build.</p>
+That way, any incorrect snippet code — be it due to compilation failures or due to failing test assertions — will be directly flagged within your build.</p>
 </div>
 <div class="paragraph">
-<p>So let&#8217;s see how to set this up,
+<p>So let’s see how to set this up,
 using the Jakarta <a href="https://beanvalidation.org/">Bean Validation API</a> project as an example.
 The required configuration is refreshingly simple;
-all we need to do is to specify <em>src/test/java</em> as our "snippet path".
+all we need to do is to specify <em>src/test/java</em> as our &#34;snippet path&#34;.
 While the Maven JavaDoc plug-in does not yet provide a bespoke configuration option for this,
 we can simply pass it using the <code>&lt;additionalOptions&gt;</code> property
 (make sure to use version 3.0.0 or later):</p>
@@ -343,16 +343,16 @@ we can simply pass it using the <code>&lt;additionalOptions&gt;</code> property
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Obtain snippets from <em>src/test/java</em></td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>And that&#8217;s all there is to it really,
+<p>And that’s all there is to it really,
 you now can start to work with example code as actual source code.
-Here&#8217;s an example for a snippet to be included into the API documentation of <code>jakarta.validation.Validation</code>,
+Here’s an example for a snippet to be included into the API documentation of <code>jakarta.validation.Validation</code>,
 the entry point into the Bean Validation API:</p>
 </div>
 <div class="listingblock">
@@ -374,7 +374,7 @@ the entry point into the Bean Validation API:</p>
 15
 16
 17
-</pre></td><td class="code"><pre><span class="kn">package</span> <span class="n">snippets</span><span class="o">;</span> <i class="conum" data-value="1"></i><b>(1)</b>
+</pre></td><td class="code"><pre><span class="kn">package</span> <span class="nn">snippets</span><span class="o">;</span> <i class="conum" data-value="1"></i><b>(1)</b>
 
 <span class="kn">import</span> <span class="nn">jakarta.validation.Validation</span><span class="o">;</span>
 <span class="kn">import</span> <span class="nn">jakarta.validation.ValidatorFactory</span><span class="o">;</span>
@@ -382,7 +382,7 @@ the entry point into the Bean Validation API:</p>
 <span class="kd">public</span> <span class="kd">class</span> <span class="nc">CustomProviderSnippet</span> <span class="o">{</span>
 
   <span class="kd">public</span> <span class="kt">void</span> <span class="nf">customProvider</span><span class="o">()</span> <span class="o">{</span>
-    <span class="c1">// @start region="provider" </span><i class="conum" data-value="2"></i><b>(2)</b>
+    <span class="c1">// @start region=&#34;provider&#34; </span><i class="conum" data-value="2"></i><b>(2)</b>
     <span class="nc">ACMEConfiguration</span> <span class="n">configuration</span> <span class="o">=</span> <span class="nc">Validation</span>
         <span class="o">.</span><span class="na">byProvider</span><span class="o">(</span><span class="nc">ACMEProvider</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
         <span class="o">.</span><span class="na">providerResolver</span><span class="o">(</span> <span class="k">new</span> <span class="nc">MyResolverStrategy</span><span class="o">()</span> <span class="o">)</span>
@@ -396,21 +396,21 @@ the entry point into the Bean Validation API:</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>There&#8217;s no specific requirements on the package to be used; I like using a descriptive name <code>snippets</code>,
+<td>There’s no specific requirements on the package to be used; I like using a descriptive name <code>snippets</code>,
 so to easily tell apart snippets from functional tests</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>If you don&#8217;t want to include the entire file, regions allow to specify the exact section(s) to include</td>
+<td>If you don’t want to include the entire file, regions allow to specify the exact section(s) to include</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>While a plain method is shown here,
 this could of course also be an JUnit test with assertions for making sure that the snippet code does what it is supposed to do
-(being an API specification, the Bean Validation project itself doesn&#8217;t provide an implementation we could test against).
+(being an API specification, the Bean Validation project itself doesn’t provide an implementation we could test against).
 Including the snippet into the JavaDoc in the source file is straight-forward:</p>
 </div>
 <div class="listingblock">
@@ -433,7 +433,7 @@ Including the snippet into the JavaDoc in the source file is straight-forward:</
  * a type safe fashion the expected provider.
  * &lt;p&gt;
  * Optionally you can choose a custom {@code ValidationProviderResolver}.
- * {@snippet class="snippets.CustomProviderSnippet" region="provider"} <i class="conum" data-value="1"></i><b>(1)</b>
+ * {@snippet class=&#34;snippets.CustomProviderSnippet&#34; region=&#34;provider&#34;} <i class="conum" data-value="1"></i><b>(1)</b>
  * &lt;/li&gt;
  * ...
  */</span>
@@ -442,25 +442,25 @@ Including the snippet into the JavaDoc in the source file is straight-forward:</
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Specify the snippet either using the <code>class</code> or the <code>file</code> attribute; optionally define a specific snippet region to be included</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>If needed, you also can customize appearance of the rendered snippet,
 so to add links, highlight key parts (using custom CSS styles if needed), or replace specific parts of the snippet.
-The latter comes in handy for instance to replace non-critical parts with a placeholder such as "&#8230;&#8203;".
+The latter comes in handy for instance to replace non-critical parts with a placeholder such as &#34;…​&#34;.
 This is one of the details I really like about this JEP:
 Even if you did manage example code in separate source files in the past, then manually copying them into JavaDoc,
 such placeholders made things cumbersome.
-Naturally, they&#8217;d fail compilation,
+Naturally, they’d fail compilation,
 e.e. you always had to do some manual editing when copying over the snippet into JavaDoc.
-Getting all this "for free" is a very nice improvement.</p>
+Getting all this &#34;for free&#34; is a very nice improvement.</p>
 </div>
 <div class="paragraph">
-<p>Here&#8217;s an example showing these adjustments in source form
+<p>Here’s an example showing these adjustments in source form
 (scroll to the right to see all the snippet tag attributes, as these lines can become fairly long):</p>
 </div>
 <div class="listingblock">
@@ -475,12 +475,12 @@ Getting all this "for free" is a very nice improvement.</p>
 8
 9
 </pre></td><td class="code"><pre><span class="kd">public</span> <span class="kt">void</span> <span class="nf">customProvider</span><span class="o">()</span> <span class="o">{</span>
-  <span class="c1">// @start region="provider"</span>
+  <span class="c1">// @start region=&#34;provider&#34;</span>
   <span class="nc">ACMEConfiguration</span> <span class="n">configuration</span> <span class="o">=</span> <span class="nc">Validation</span>
-      <span class="o">.</span><span class="na">byProvider</span><span class="o">(</span><span class="nc">ACMEProvider</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="c1">// @highlight substring="byProvider" </span><i class="conum" data-value="1"></i><b>(1)</b>
-      <span class="o">.</span><span class="na">providerResolver</span><span class="o">(</span> <span class="k">new</span> <span class="nc">MyResolverStrategy</span><span class="o">()</span> <span class="o">)</span> <span class="c1">// @replace regex=" new MyResolverStrategy\(\) " replacement="..." </span><i class="conum" data-value="2"></i><b>(2)</b>
+      <span class="o">.</span><span class="na">byProvider</span><span class="o">(</span><span class="nc">ACMEProvider</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="c1">// @highlight substring=&#34;byProvider&#34; </span><i class="conum" data-value="1"></i><b>(1)</b>
+      <span class="o">.</span><span class="na">providerResolver</span><span class="o">(</span> <span class="k">new</span> <span class="nc">MyResolverStrategy</span><span class="o">()</span> <span class="o">)</span> <span class="c1">// @replace regex=&#34; new MyResolverStrategy\(\) &#34; replacement=&#34;...&#34; </span><i class="conum" data-value="2"></i><b>(2)</b>
       <span class="o">.</span><span class="na">configure</span><span class="o">();</span>
-  <span class="nc">ValidatorFactory</span> <span class="n">factory</span> <span class="o">=</span> <span class="n">configuration</span><span class="o">.</span><span class="na">buildValidatorFactory</span><span class="o">();</span> <span class="c1">// @link regex="^.*?ValidatorFactory" target="jakarta.validation.ValidatorFactory" </span><i class="conum" data-value="3"></i><b>(3)</b>
+  <span class="nc">ValidatorFactory</span> <span class="n">factory</span> <span class="o">=</span> <span class="n">configuration</span><span class="o">.</span><span class="na">buildValidatorFactory</span><span class="o">();</span> <span class="c1">// @link regex=&#34;^.*?ValidatorFactory&#34; target=&#34;jakarta.validation.ValidatorFactory&#34; </span><i class="conum" data-value="3"></i><b>(3)</b>
   <span class="c1">// @end</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
@@ -488,36 +488,36 @@ Getting all this "for free" is a very nice improvement.</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Highlight the <code>byProvider()</code> method</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Replace the parameter value of the method call with "&#8230;&#8203;"</td>
+<td>Replace the parameter value of the method call with &#34;…​&#34;</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>Make the <code>ValidatorFactory</code> class name a link to its own JavaDoc</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>And this is how the snippet will looks like in the rendered documention:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/executable_javadoc_code_snippets.png" alt="Code snippet in rendered JavaDoc">
+<img src="/images/executable_javadoc_code_snippets.png" alt="Code snippet in rendered JavaDoc"/>
 </div>
 </div>
 <div class="paragraph">
 <p>Some folks may argue that it might be nice to have proper colored syntax highlighting support.
-I&#8217;m not sure whether I agree though:
+I’m not sure whether I agree though:
 your typical code snippets in API docs should be rather short,
 and simply highlighting key parts like shown above may be more useful than colorizing the entire thing.
-Note the extra new line at the beginning of the snippet shouldn&#8217;t really be there,
-it&#8217;s not quite clear to me where it&#8217;s coming from.
-I&#8217;ll try and get this clarified on the <a href="https://mail.openjdk.java.net/mailman/listinfo/javadoc-dev">javadoc-dev</a> mailing list.</p>
+Note the extra new line at the beginning of the snippet shouldn’t really be there,
+it’s not quite clear to me where it’s coming from.
+I’ll try and get this clarified on the <a href="https://mail.openjdk.java.net/mailman/listinfo/javadoc-dev">javadoc-dev</a> mailing list.</p>
 </div>
 </div>
 </div>
@@ -526,17 +526,17 @@ I&#8217;ll try and get this clarified on the <a href="https://mail.openjdk.java.
 <div class="sectionbody">
 <div class="paragraph">
 <p>Being able to include code snippets from actual source files into API documentation is a highly welcomed improvement for Java API docs authors and users alike.
-It&#8217;s great to see Java catching up here with other language eco-systems like Rust,
+It’s great to see Java catching up here with other language eco-systems like Rust,
 which already support <a href="https://doc.rust-lang.org/rustdoc/documentation-tests.html">executable documentation examples</a>.
-I&#8217;m expecting this feature to be used very quickly,
-with first folks <a href="https://twitter.com/JonathanGiles/status/1449913540299476992">already announcing</a> to build their API docs with Java 18 as soon as it&#8217;s out.
+I’m expecting this feature to be used very quickly,
+with first folks <a href="https://twitter.com/JonathanGiles/status/1449913540299476992">already announcing</a> to build their API docs with Java 18 as soon as it’s out.
 Of course you can still ensure compatibility of your code with earlier Java versions also when doing so.</p>
 </div>
 <div class="paragraph">
-<p>If you&#8217;d like get your hands on executable JavaDoc code snippets yourself,
+<p>If you’d like get your hands on executable JavaDoc code snippets yourself,
 you can start with <a href="https://github.com/gunnarmorling/beanvalidation-api/commit/cb1c88b5115c1e363007afbca9bdc36e29d08ee0">this commit</a> showing the required changes for the Bean Validation API.
 Run <code>mvn clean verify</code>,
-and you&#8217;ll find the rendered JavaDoc under <em>target/apidocs</em>.
+and you’ll find the rendered JavaDoc under <em>target/apidocs</em>.
 Just make sure to build this project using a current <a href="https://jdk.java.net/18/">Java 18 early access build</a>.
 Happy snippeting!</p>
 </div>

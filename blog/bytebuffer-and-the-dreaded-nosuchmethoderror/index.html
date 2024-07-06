@@ -19,11 +19,11 @@ The other day, a user in the Debezium community reported an interesting issue;
 They were using Debezium with Java 1.8 and got an odd NoSuchMethodError:
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/bytebuffer-and-the-dreaded-nosuchmethoderror/" />
+<meta property="og:url" content="https://www.morling.dev/blog/bytebuffer-and-the-dreaded-nosuchmethoderror/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-12-21T17:45:00+01:00" />
 <meta property="article:modified_time" content="2020-12-21T17:45:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="ByteBuffer and the Dreaded NoSuchMethodError"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="ByteBuffer and the Dreaded NoSuchMethodError"/>
 <meta name="twitter:description" content="
 The other day, a user in the Debezium community reported an interesting issue;
 They were using Debezium with Java 1.8 and got an odd NoSuchMethodError:
@@ -274,7 +274,7 @@ They were using Debezium with Java 1.8 and got an odd <code>NoSuchMethodError</c
 </div>
 <div class="paragraph">
 <p>A <code>NoSuchMethodError</code> typically is an indication for a mismatch of the Java version used to compile some code, and the Java version used for running it:
-some method existed at compile time, but it&#8217;s not available at runtime.</p>
+some method existed at compile time, but it’s not available at runtime.</p>
 </div>
 <div class="paragraph">
 <p>Now indeed we use JDK 11 for building the Debezium code base, while targeting Java 1.8 as the minimal required version at runtime.
@@ -284,7 +284,7 @@ And as a matter of fact, the Debezium code compiles just fine with that version,
 So why would the user run into this error then?</p>
 </div>
 <div class="paragraph">
-<p>To understand what&#8217;s going on, let&#8217;s create a very simple class for reproducing the issue:</p>
+<p>To understand what’s going on, let’s create a very simple class for reproducing the issue:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -311,11 +311,11 @@ So why would the user run into this error then?</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Why does this not work with Java 1.8 when compiled with JDK 9 or newer?</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Compile this with a current JDK:</p>
@@ -332,14 +332,14 @@ So why would the user run into this error then?</p>
 <div class="content">
 <pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>java ByteBufferTest
 
-Exception <span class="k">in </span>thread <span class="s2">"main"</span> java.lang.NoSuchMethodError: java.nio.ByteBuffer.position<span class="o">(</span>I<span class="o">)</span>Ljava/nio/ByteBuffer<span class="p">;</span>
+Exception <span class="k">in </span>thread <span class="s2">&#34;main&#34;</span> java.lang.NoSuchMethodError: java.nio.ByteBuffer.position<span class="o">(</span>I<span class="o">)</span>Ljava/nio/ByteBuffer<span class="p">;</span>
 	at ByteBufferTest.main<span class="o">(</span>ByteBufferTest.java:6<span class="o">)</span></code></pre>
 </div>
 </div>
 <div class="paragraph">
 <p>Whereas, when using 1.8 to compile <em>and</em> run this code, it just works fine.
 Now, if we take a closer look at the error message again, the missing method is defined as <code>ByteBuffer position(int)</code>.
-I.e. for an invoked method like <code>position()</code>, not only its name, parameter type(s), and the name of the declaring class are part of the byte code for that invocation, but also the method&#8217;s return type.
+I.e. for an invoked method like <code>position()</code>, not only its name, parameter type(s), and the name of the declaring class are part of the byte code for that invocation, but also the method’s return type.
 A look at the byte code of the class using <em>javap</em> confirms that:</p>
 </div>
 <div class="listingblock">
@@ -363,12 +363,12 @@ public static void main<span class="o">(</span>java.lang.String...<span class="o
 <p>And this points us to the right direction;
 In Java 1.8, indeed there is no such method, only the <code>position()</code> method on <code>Buffer</code>,
 which, of course, returns <code>Buffer</code> and not <code>ByteBuffer</code>.
-Whereas since Java 9, this method (and several others) <a href="https://docs.oracle.com/javase/9/docs/api/java/nio/ByteBuffer.html#position-int-">is overridden</a> in <code>ByteBuffer</code>&#8201;&#8212;&#8201;leveraging Java&#8217;s support for co-variant return types&#8201;&#8212;&#8201;to return <code>ByteBuffer</code>.
+Whereas since Java 9, this method (and several others) <a href="https://docs.oracle.com/javase/9/docs/api/java/nio/ByteBuffer.html#position-int-">is overridden</a> in <code>ByteBuffer</code> — leveraging Java’s support for co-variant return types — to return <code>ByteBuffer</code>.
 The Java compiler will now select that method, <code>ByteBuffer position(int)</code>, and record that as the invoked method signature in the byte code of the caller class.</p>
 </div>
 <div class="paragraph">
 <p>This is per-se a nice usability improvement, as it allows to invoke further <code>ByteBuffer</code> methods on the return value, instead of just those methods declared by <code>Buffer</code>.
-But as we&#8217;ve seen, it comes with this little surprise when compiling code on JDK 9 or newer,
+But as we’ve seen, it comes with this little surprise when compiling code on JDK 9 or newer,
 while trying to keep compatibility with older Java versions.
 And as it turns out, we were not the first or only ones to encounter this issue.
 Quite a few open-source projects ran into this, e.g. <a href="https://github.com/eclipse/jetty.project/issues/3244">Eclipse Jetty</a>, <a href="https://github.com/streamnative/pulsar/issues/1645">Apache Pulsar</a>, <a href="https://github.com/eclipse-vertx/vertx-sql-client/issues/736">Eclipse Vert.x</a>, <a href="https://github.com/apache/thrift/pull/2231">Apache Thrift</a>, the <a href="https://github.com/yugabyte/yugabyte-db/issues/6712">Yugabyte DB client</a>, and a few others.</p>
@@ -389,13 +389,13 @@ One first idea could be to enforce selection of the right method by casting to <
 </div>
 <div class="paragraph">
 <p>But while this produces the desired byte code indeed,
-it isn&#8217;t exactly the best way for doing so.
-You&#8217;d have to remember to do so for every invocation of any of the affected <code>ByteBuffer</code> methods,
-and the seemling unneeded cast might be an easy target for some "clean-up" by unsuspecting co-workers on our team.</p>
+it isn’t exactly the best way for doing so.
+You’d have to remember to do so for every invocation of any of the affected <code>ByteBuffer</code> methods,
+and the seemling unneeded cast might be an easy target for some &#34;clean-up&#34; by unsuspecting co-workers on our team.</p>
 </div>
 <div class="paragraph">
-<p>Luckily, there&#8217;s a much better way, and this is to rely on the Java compiler&#8217;s <code>--release</code> parameter,
-which was introduced via <a href="http://openjdk.java.net/jeps/247">JEP 247</a> ("Compile for Older Platform Versions"),
+<p>Luckily, there’s a much better way, and this is to rely on the Java compiler’s <code>--release</code> parameter,
+which was introduced via <a href="http://openjdk.java.net/jeps/247">JEP 247</a> (&#34;Compile for Older Platform Versions&#34;),
 added to the platform also in JDK 9.
 In contrast to the more widely known pair of <code>--source</code> and <code>--target</code>,
 the <code>--release</code> switch will ensure that only byte code is produced which actually will be useable with the specified Java version.
@@ -403,7 +403,7 @@ For this purpose, the JDK contains the signature data for all supported Java ver
 (stored in the <em>$JAVA_HOME/lib/ct.sym</em> file).</p>
 </div>
 <div class="paragraph">
-<p>So all that&#8217;s needed really is compiling the code with <code>--release=8</code>:</p>
+<p>So all that’s needed really is compiling the code with <code>--release=8</code>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -420,10 +420,10 @@ For this purpose, the JDK contains the signature data for all supported Java ver
 </div>
 <div class="paragraph">
 <p>When run on Java 1.8, this virtual method call will be resolved to <code>Buffer#position(int)</code> at runtime,
-whereas on Java 9 and later, it&#8217;d resolve to the <a href="https://www.artima.com/weblogs/viewpost.jsp?thread=354443">bridge method</a> inserted by the compiler into the class file of <code>ByteBuffer</code> due to the co-variant return type, which itself calls the overriding <code>ByteBuffer#position(int)</code> method.</p>
+whereas on Java 9 and later, it’d resolve to the <a href="https://www.artima.com/weblogs/viewpost.jsp?thread=354443">bridge method</a> inserted by the compiler into the class file of <code>ByteBuffer</code> due to the co-variant return type, which itself calls the overriding <code>ByteBuffer#position(int)</code> method.</p>
 </div>
 <div class="paragraph">
-<p>Now let&#8217;s see what happens if we actually try to make use of the overriding method version in <code>ByteBuffer</code> by re-assigning the result:</p>
+<p>Now let’s see what happens if we actually try to make use of the overriding method version in <code>ByteBuffer</code> by re-assigning the result:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -451,7 +451,7 @@ ByteBufferTest.java:6: error: incompatible types: Buffer cannot be converted to 
 </div>
 </div>
 <div class="paragraph">
-<p>To cut a long story short, we&#8201;&#8212;&#8201;and many other projects&#8201;&#8212;&#8201;should have used the <code>--release</code> switch instead of <code>--source</code>/<code>--target</code>, and the user would not have had that issue.
+<p>To cut a long story short, we — and many other projects — should have used the <code>--release</code> switch instead of <code>--source</code>/<code>--target</code>, and the user would not have had that issue.
 In order to achieve the same in your Maven-based build,
 just specify the following property in your <em>pom.xml</em>:</p>
 </div>
@@ -473,7 +473,7 @@ just specify the following property in your <em>pom.xml</em>:</p>
 <div class="paragraph">
 <p>Note that theoretically you could achieve the same effect also when using <code>--source</code> and <code>--target</code>;
 by means of the <code>--boot-class-path</code> option, you could advise the compiler to use a specific set of bootstrap class files instead of those from the JDK used for compilation.
-But that&#8217;d be quite a bit more cumbersome as it requires you to actually provide the classes of the targeted Java version,
+But that’d be quite a bit more cumbersome as it requires you to actually provide the classes of the targeted Java version,
 whereas <code>--release</code> will make use of the signature data coming with the currently used JDK itself.</p>
 </div>
 </div>

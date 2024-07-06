@@ -17,7 +17,7 @@
 <meta property="og:description" content="
 Functional unit and integration tests are a standard tool of any software development organization,
 helping not only to ensure correctness of newly implemented code,
-but also to identify regressions&#8201;&#8212;&#8201;bugs in existing functionality introduced by a code change.
+but also to identify regressions — bugs in existing functionality introduced by a code change.
 The situation looks different though when it comes to regressions related to non-functional requirements, in particular performance-related ones:
 How to detect increased response times in a web application?
 How to identify decreased throughput?
@@ -32,20 +32,20 @@ When run in a virtualized or containerized CI environment, such tests are prone 
 
 
 This post introduces the JfrUnit open-source project, which offers a fresh angle to this topic by supporting assertions not on metrics like latency/throughput themselves, but on indirect metrics which may impact those.
-JfrUnit allows you define expected values for metrics such as memory allocation, database I/O, or number of executed SQL statements, for a given workload and asserts the actual metrics values&#8201;&#8212;&#8201;which are obtained from JDK Flight Recorder events&#8201;&#8212;&#8201;against these expected values.
+JfrUnit allows you define expected values for metrics such as memory allocation, database I/O, or number of executed SQL statements, for a given workload and asserts the actual metrics values — which are obtained from JDK Flight Recorder events — against these expected values.
 Starting off from a defined base line, future failures of such assertions are an indicator for potential performance regressions in an application, as a code change may have introduced higher GC pressure,
 the retrieval of unneccessary data from the database, or SQL problems commonly induced by ORM tools, like N&#43;1 SELECT statements.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/towards-continuous-performance-regression-testing/" />
+<meta property="og:url" content="https://www.morling.dev/blog/towards-continuous-performance-regression-testing/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-12-16T17:45:00+01:00" />
 <meta property="article:modified_time" content="2020-12-16T17:45:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Towards Continuous Performance Regression Testing"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Towards Continuous Performance Regression Testing"/>
 <meta name="twitter:description" content="
 Functional unit and integration tests are a standard tool of any software development organization,
 helping not only to ensure correctness of newly implemented code,
-but also to identify regressions&#8201;&#8212;&#8201;bugs in existing functionality introduced by a code change.
+but also to identify regressions — bugs in existing functionality introduced by a code change.
 The situation looks different though when it comes to regressions related to non-functional requirements, in particular performance-related ones:
 How to detect increased response times in a web application?
 How to identify decreased throughput?
@@ -60,7 +60,7 @@ When run in a virtualized or containerized CI environment, such tests are prone 
 
 
 This post introduces the JfrUnit open-source project, which offers a fresh angle to this topic by supporting assertions not on metrics like latency/throughput themselves, but on indirect metrics which may impact those.
-JfrUnit allows you define expected values for metrics such as memory allocation, database I/O, or number of executed SQL statements, for a given workload and asserts the actual metrics values&#8201;&#8212;&#8201;which are obtained from JDK Flight Recorder events&#8201;&#8212;&#8201;against these expected values.
+JfrUnit allows you define expected values for metrics such as memory allocation, database I/O, or number of executed SQL statements, for a given workload and asserts the actual metrics values — which are obtained from JDK Flight Recorder events — against these expected values.
 Starting off from a defined base line, future failures of such assertions are an indicator for potential performance regressions in an application, as a code change may have introduced higher GC pressure,
 the retrieval of unneccessary data from the database, or SQL problems commonly induced by ORM tools, like N&#43;1 SELECT statements.
 "/>
@@ -298,7 +298,7 @@ the retrieval of unneccessary data from the database, or SQL problems commonly i
 				<div class="paragraph">
 <p>Functional unit and integration tests are a standard tool of any software development organization,
 helping not only to ensure correctness of newly implemented code,
-but also to identify regressions&#8201;&#8212;&#8201;bugs in existing functionality introduced by a code change.
+but also to identify regressions — bugs in existing functionality introduced by a code change.
 The situation looks different though when it comes to regressions related to non-functional requirements, in particular performance-related ones:
 How to detect increased response times in a web application?
 How to identify decreased throughput?</p>
@@ -313,7 +313,7 @@ When run in a virtualized or containerized CI environment, such tests are prone 
 </div>
 <div class="paragraph">
 <p>This post introduces the <a href="https://github.com/gunnarmorling/jfrunit">JfrUnit</a> open-source project, which offers a fresh angle to this topic by supporting assertions not on metrics like latency/throughput themselves, but on <em>indirect metrics</em> which may impact those.
-JfrUnit allows you define expected values for metrics such as memory allocation, database I/O, or number of executed SQL statements, for a given workload and asserts the actual metrics values&#8201;&#8212;&#8201;which are obtained from <a href="https://openjdk.java.net/jeps/328">JDK Flight Recorder</a> events&#8201;&#8212;&#8201;against these expected values.
+JfrUnit allows you define expected values for metrics such as memory allocation, database I/O, or number of executed SQL statements, for a given workload and asserts the actual metrics values — which are obtained from <a href="https://openjdk.java.net/jeps/328">JDK Flight Recorder</a> events — against these expected values.
 Starting off from a defined base line, future failures of such assertions are an indicator for potential performance regressions in an application, as a code change may have introduced higher GC pressure,
 the retrieval of unneccessary data from the database, or SQL problems commonly induced by ORM tools, like N+1 SELECT statements.</p>
 </div>
@@ -323,7 +323,7 @@ before they manifest as actual performance regressions in production.
 Test results are independent from wall clock time and thus provide actionable information, also when not testing with production-like hardware and data volumes.</p>
 </div>
 <div class="paragraph">
-<p>This post is a bit longer than usual (I didn&#8217;t have the time to write shorter ;), but it&#8217;s broken down into several sections,
+<p>This post is a bit longer than usual (I didn’t have the time to write shorter ;), but it’s broken down into several sections,
 so you can pause and continue later on with fresh energy:</p>
 </div>
 <div class="ulist">
@@ -364,33 +364,33 @@ execute some test routine, and then assert the JFR events which should have been
   <span class="kd">public</span> <span class="nc">JfrEvents</span> <span class="n">jfrEvents</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">JfrEvents</span><span class="o">();</span>
 
   <span class="nd">@Test</span>
-  <span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">"jdk.GarbageCollection"</span><span class="o">)</span> <i class="conum" data-value="2"></i><b>(2)</b>
-  <span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">"jdk.ThreadSleep"</span><span class="o">)</span>
+  <span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">&#34;jdk.GarbageCollection&#34;</span><span class="o">)</span> <i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">&#34;jdk.ThreadSleep&#34;</span><span class="o">)</span>
   <span class="kd">public</span> <span class="kt">void</span> <span class="nf">shouldHaveGcAndSleepEvents</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
     <span class="nc">System</span><span class="o">.</span><span class="na">gc</span><span class="o">();</span>
     <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">1000</span><span class="o">);</span>
 
     <span class="n">jfrEvents</span><span class="o">.</span><span class="na">awaitEvents</span><span class="o">();</span> <i class="conum" data-value="3"></i><b>(3)</b>
 
-    <span class="nc">ExpectedEvent</span> <span class="n">event</span> <span class="o">=</span> <span class="n">event</span><span class="o">(</span><span class="s">"jdk.GarbageCollection"</span><span class="o">);</span> <i class="conum" data-value="4"></i><b>(4)</b>
+    <span class="nc">ExpectedEvent</span> <span class="n">event</span> <span class="o">=</span> <span class="n">event</span><span class="o">(</span><span class="s">&#34;jdk.GarbageCollection&#34;</span><span class="o">);</span> <i class="conum" data-value="4"></i><b>(4)</b>
     <span class="n">assertThat</span><span class="o">(</span><span class="n">jfrEvents</span><span class="o">).</span><span class="na">contains</span><span class="o">(</span><span class="n">event</span><span class="o">);</span>
 
-    <span class="n">event</span> <span class="o">=</span> <span class="n">event</span><span class="o">(</span><span class="s">"jdk.GarbageCollection"</span><span class="o">)</span> <i class="conum" data-value="4"></i><b>(4)</b>
-        <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="s">"cause"</span><span class="o">,</span> <span class="s">"System.gc()"</span><span class="o">));</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">event</span><span class="o">(</span><span class="s">&#34;jdk.GarbageCollection&#34;</span><span class="o">)</span> <i class="conum" data-value="4"></i><b>(4)</b>
+        <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="s">&#34;cause&#34;</span><span class="o">,</span> <span class="s">&#34;System.gc()&#34;</span><span class="o">));</span>
     <span class="n">assertThat</span><span class="o">(</span><span class="n">jfrEvents</span><span class="o">).</span><span class="na">contains</span><span class="o">(</span><span class="n">event</span><span class="o">);</span>
 
-    <span class="n">event</span> <span class="o">=</span> <span class="n">event</span><span class="o">(</span><span class="s">"jdk.ThreadSleep"</span><span class="o">).</span>
-        <span class="n">with</span><span class="o">(</span><span class="s">"time"</span><span class="o">,</span> <span class="nc">Duration</span><span class="o">.</span><span class="na">ofSeconds</span><span class="o">(</span><span class="mi">1</span><span class="o">)));</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">event</span><span class="o">(</span><span class="s">&#34;jdk.ThreadSleep&#34;</span><span class="o">).</span>
+        <span class="n">with</span><span class="o">(</span><span class="s">&#34;time&#34;</span><span class="o">,</span> <span class="nc">Duration</span><span class="o">.</span><span class="na">ofSeconds</span><span class="o">(</span><span class="mi">1</span><span class="o">)));</span>
     <span class="n">assertThat</span><span class="o">(</span><span class="n">jfrEvents</span><span class="o">).</span><span class="na">contains</span><span class="o">(</span><span class="n">event</span><span class="o">);</span>
 
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">jfrEvents</span><span class="o">.</span><span class="na">ofType</span><span class="o">(</span><span class="s">"jdk.GarbageCollection"</span><span class="o">)).</span><span class="na">hasSize</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span> <i class="conum" data-value="5"></i><b>(5)</b>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">jfrEvents</span><span class="o">.</span><span class="na">ofType</span><span class="o">(</span><span class="s">&#34;jdk.GarbageCollection&#34;</span><span class="o">)).</span><span class="na">hasSize</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span> <i class="conum" data-value="5"></i><b>(5)</b>
   <span class="o">}</span>
 <span class="o">}</span></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td><code>@JfrEventTest</code> marks this as a JfrUnit test, activating its extension</td>
 </tr>
@@ -405,33 +405,33 @@ making sure all previously produced events have been received</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Using the <code>JfrEventsAssert#event()</code> method, an <code>ExpectedEvent</code> instance can be created&#8201;&#8212;&#8201;optionally specifying one or more expected attribute values&#8201;&#8212;&#8201;which then is asserted via <code>JfrEventsAssert#assertThat()</code></td>
+<td>Using the <code>JfrEventsAssert#event()</code> method, an <code>ExpectedEvent</code> instance can be created — optionally specifying one or more expected attribute values — which then is asserted via <code>JfrEventsAssert#assertThat()</code></td>
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
 <td><code>JfrEvents#ofType()</code> allows to filter on specific event types, enabling arbitrary assertions against the returned stream of <code>RecordedEvent</code>s</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>By means of a custom <code>assertThat()</code> matcher method for <a href="https://joel-costigliola.github.io/assertj/">AssertJ</a>,
 JfrUnit allows to validate that specific JFR events are raised during at test.
 Events to be matched are described via their event type name, and optionally one more event attribute vaues.
-As we&#8217;ll see in a bit, JfrUnit also integrates nicely with the Java Stream API,
+As we’ll see in a bit, JfrUnit also integrates nicely with the Java Stream API,
 allowing you to filter and aggregate recorded event atribute values and match them against expected values.</p>
 </div>
 <div class="paragraph">
 <p>JfrUnit persists a JFR recording file for each test method,
 which you can examine after a test failure,
 for instance using <a href="https://openjdk.java.net/projects/jmc/">JDK Mission Control</a>.
-To learn more about JfrUnit and its capabilities, take a look at the project&#8217;s <a href="https://github.com/gunnarmorling/jfrunit">README</a>.
+To learn more about JfrUnit and its capabilities, take a look at the project’s <a href="https://github.com/gunnarmorling/jfrunit">README</a>.
 The project is in an early proof-of-concept stage at the moment,
 so changes to its APIs and semantics are likely.</p>
 </div>
 <div class="paragraph">
-<p>Now that you&#8217;ve taken the JfrUnit quick tour, let&#8217;s put that knowledge into practice.
+<p>Now that you’ve taken the JfrUnit quick tour, let’s put that knowledge into practice.
 Our example project will be the <a href="https://github.com/gunnarmorling/jfr-custom-events">Todo Manager</a> Quarkus application you may already be familiar with from my <a href="/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/">earlier post</a> about custom JFR events.
-We&#8217;re going to discuss two examples for using JfrUnit to identify potential performance regressions.</p>
+We’re going to discuss two examples for using JfrUnit to identify potential performance regressions.</p>
 </div>
 </div>
 </div>
@@ -439,14 +439,14 @@ We&#8217;re going to discuss two examples for using JfrUnit to identify potentia
 <h2 id="_case_study_1_spotting_increased_memory_allocation">Case Study 1: Spotting Increased Memory Allocation</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>At first, let&#8217;s explore how to identify increased memory allocation rates.
-Typically, it&#8217;s mostly library and middleware authors who are interested in this.
+<p>At first, let’s explore how to identify increased memory allocation rates.
+Typically, it’s mostly library and middleware authors who are interested in this.
 For a library such as Hibernate ORM it can make a huge difference whether a method that is invoked many times on a hot code path allocates a few objects more or less.
 Less object allocations mean less work for the garbage collector,
 which in turn means those precious CPU cores of your machine can spend more cycles processing your actual business logic.</p>
 </div>
 <div class="paragraph">
-<p>But also for application developers it can be beneficial to keep an eye on&#8201;&#8212;&#8201;and systematically track&#8201;&#8212;&#8201;object allocations,
+<p>But also for application developers it can be beneficial to keep an eye on — and systematically track — object allocations,
 as regressions there lead to increased GC pressure,
 and in turn eventually to higher latencies and reduced throughput.</p>
 </div>
@@ -460,13 +460,13 @@ which are emitted when</p>
 <p>an object allocation triggered the creation of a new thread-local allocation buffer (TLAB)</p>
 </li>
 <li>
-<p>an object got allocated outside of the thread&#8217;s TLAB</p>
+<p>an object got allocated outside of the thread’s TLAB</p>
 </li>
 </ul>
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -475,30 +475,30 @@ which are emitted when</p>
 <div class="paragraph">
 <p>When creating new object instances on the heap,
 this primarily happens via <em>thread-local allocation buffers</em>.
-A TLAB is a pre-allocated memory block that&#8217;s exclusively used by a single thread.
+A TLAB is a pre-allocated memory block that’s exclusively used by a single thread.
 Since this space is exclusively owned by the thread, creating new objects within a TLAB can happen without costly synchronization with other threads.
-Once a thread&#8217;s current TLAB capacity is about to be exceeded by a new object allocation,
+Once a thread’s current TLAB capacity is about to be exceeded by a new object allocation,
 a new TLAB will be allocated for that thread.
 In addition, large objects will typically need to be directly allocated outside of the more efficient TLAB space.</p>
 </div>
 <div class="paragraph">
-<p>To learn more about TLAB allocation, refer to  <a href="https://shipilev.net/jvm/anatomy-quarks/4-tlab-allocation/">part #4</a> of Aleksey Shipilёv&#8217;s "JVM Anatomy Quark" blog series.</p>
+<p>To learn more about TLAB allocation, refer to  <a href="https://shipilev.net/jvm/anatomy-quarks/4-tlab-allocation/">part #4</a> of Aleksey Shipilёv’s &#34;JVM Anatomy Quark&#34; blog series.</p>
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>Note these events don&#8217;t allow for tracking of each individual object allocation,
+<p>Note these events don’t allow for tracking of each individual object allocation,
 as multiple objects will be allocated within a TLAB before a new one is required, and thus the <code>jdk.ObjectAllocationInNewTLAB</code> event will be emitted.
-But as that event exposes the size of the new TLAB, we can keep track of the overall amount of memory that&#8217;s allocated while the application is running.</p>
+But as that event exposes the size of the new TLAB, we can keep track of the overall amount of memory that’s allocated while the application is running.</p>
 </div>
 <div class="paragraph">
 <p>In that sense, <code>jdk.ObjectAllocationInNewTLAB</code> represents a sampling of object allocations,
 which means we need to collect a reasonable number of events to identify those locations in the program which are the sources of high object allocation and thus frequently trigger new TLAB creations.</p>
 </div>
 <div class="paragraph">
-<p>So let&#8217;s start and work on a test for spotting regressions in terms of object allocations of one of the Todo Manager app&#8217;s API methods, <code>GET /todo/{id}</code>.
+<p>So let’s start and work on a test for spotting regressions in terms of object allocations of one of the Todo Manager app’s API methods, <code>GET /todo/{id}</code>.
 To identify a baseline of the allocation to be expected,
 we first invoke that method in a loop and print out the actual allocation values.
 This should happen in intervals, e.g. every 10,000 invocations,
@@ -507,8 +507,8 @@ so to average out numbers from individual API calls.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="java"><span class="nd">@Test</span>
-<span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">"jdk.ObjectAllocationInNewTLAB"</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
-<span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">"jdk.ObjectAllocationOutsideTLAB"</span><span class="o">)</span>
+<span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">&#34;jdk.ObjectAllocationInNewTLAB&#34;</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
+<span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">&#34;jdk.ObjectAllocationOutsideTLAB&#34;</span><span class="o">)</span>
 <span class="kd">public</span> <span class="kt">void</span> <span class="nf">retrieveTodoBaseline</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
   <span class="nc">Random</span> <span class="n">r</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Random</span><span class="o">();</span>
 
@@ -528,7 +528,7 @@ so to average out numbers from individual API calls.</p>
 
       <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">printf</span><span class="o">(</span>
           <span class="nc">Locale</span><span class="o">.</span><span class="na">ENGLISH</span><span class="o">,</span>
-          <span class="s">"Requests executed: %s, memory allocated: (%,d bytes/request)%n"</span><span class="o">,</span>
+          <span class="s">&#34;Requests executed: %s, memory allocated: (%,d bytes/request)%n&#34;</span><span class="o">,</span>
           <span class="n">i</span><span class="o">,</span> <span class="n">sum</span><span class="o">/</span><span class="mi">10_000</span>
       <span class="o">);</span>
 
@@ -540,8 +540,8 @@ so to average out numbers from individual API calls.</p>
     <span class="kt">int</span> <span class="n">id</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">nextInt</span><span class="o">(</span><span class="mi">20</span><span class="o">)</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span>
 
     <span class="nc">HttpRequest</span> <span class="n">request</span> <span class="o">=</span> <span class="nc">HttpRequest</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">()</span>
-        <span class="o">.</span><span class="na">uri</span><span class="o">(</span><span class="k">new</span> <span class="no">URI</span><span class="o">(</span><span class="s">"http://localhost:8081/todo/"</span> <span class="o">+</span> <span class="n">id</span><span class="o">))</span>
-        <span class="o">.</span><span class="na">headers</span><span class="o">(</span><span class="s">"Content-Type"</span><span class="o">,</span> <span class="s">"application/json"</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">uri</span><span class="o">(</span><span class="k">new</span> <span class="no">URI</span><span class="o">(</span><span class="s">&#34;http://localhost:8081/todo/&#34;</span> <span class="o">+</span> <span class="n">id</span><span class="o">))</span>
+        <span class="o">.</span><span class="na">headers</span><span class="o">(</span><span class="s">&#34;Content-Type&#34;</span><span class="o">,</span> <span class="s">&#34;application/json&#34;</span><span class="o">)</span>
         <span class="o">.</span><span class="na">GET</span><span class="o">()</span>
         <span class="o">.</span><span class="na">build</span><span class="o">();</span>
 
@@ -553,27 +553,27 @@ so to average out numbers from individual API calls.</p>
 
   <span class="kd">private</span> <span class="kt">boolean</span> <span class="nf">isObjectAllocationEvent</span><span class="o">(</span><span class="nc">RecordedEvent</span> <span class="n">re</span><span class="o">)</span> <span class="o">{</span> <i class="conum" data-value="5"></i><b>(5)</b>
     <span class="nc">String</span> <span class="n">name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="na">getEventType</span><span class="o">().</span><span class="na">getName</span><span class="o">();</span>
-    <span class="k">return</span> <span class="n">name</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"jdk.ObjectAllocationInNewTLAB"</span><span class="o">)</span> <span class="o">||</span>
-        <span class="n">name</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"jdk.ObjectAllocationOutsideTLAB"</span><span class="o">);</span>
+    <span class="k">return</span> <span class="n">name</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">&#34;jdk.ObjectAllocationInNewTLAB&#34;</span><span class="o">)</span> <span class="o">||</span>
+        <span class="n">name</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">&#34;jdk.ObjectAllocationOutsideTLAB&#34;</span><span class="o">);</span>
   <span class="o">}</span>
 
   <span class="kd">private</span> <span class="kt">long</span> <span class="nf">getAllocationSize</span><span class="o">(</span><span class="nc">RecordedEvent</span> <span class="n">re</span><span class="o">)</span> <span class="o">{</span> <i class="conum" data-value="6"></i><b>(6)</b>
     <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="na">getEventType</span><span class="o">().</span><span class="na">getName</span><span class="o">()</span>
-        <span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"jdk.ObjectAllocationInNewTLAB"</span><span class="o">)</span> <span class="o">?</span>
-            <span class="n">re</span><span class="o">.</span><span class="na">getLong</span><span class="o">(</span><span class="s">"tlabSize"</span><span class="o">)</span> <span class="o">:</span>
-            <span class="n">re</span><span class="o">.</span><span class="na">getLong</span><span class="o">(</span><span class="s">"allocationSize"</span><span class="o">);</span>
+        <span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">&#34;jdk.ObjectAllocationInNewTLAB&#34;</span><span class="o">)</span> <span class="o">?</span>
+            <span class="n">re</span><span class="o">.</span><span class="na">getLong</span><span class="o">(</span><span class="s">&#34;tlabSize&#34;</span><span class="o">)</span> <span class="o">:</span>
+            <span class="n">re</span><span class="o">.</span><span class="na">getLong</span><span class="o">(</span><span class="s">&#34;allocationSize&#34;</span><span class="o">);</span>
   <span class="o">}</span>
 
   <span class="kd">private</span> <span class="kt">boolean</span> <span class="nf">isRelevantThread</span><span class="o">(</span><span class="nc">RecordedEvent</span> <span class="n">re</span><span class="o">)</span> <span class="o">{</span> <i class="conum" data-value="7"></i><b>(7)</b>
-    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="na">getThread</span><span class="o">().</span><span class="na">getJavaName</span><span class="o">().</span><span class="na">startsWith</span><span class="o">(</span><span class="s">"vert.x-eventloop"</span><span class="o">)</span> <span class="o">||</span>
-        <span class="n">re</span><span class="o">.</span><span class="na">getThread</span><span class="o">().</span><span class="na">getJavaName</span><span class="o">().</span><span class="na">startsWith</span><span class="o">(</span><span class="s">"executor-thread"</span><span class="o">);</span>
+    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="na">getThread</span><span class="o">().</span><span class="na">getJavaName</span><span class="o">().</span><span class="na">startsWith</span><span class="o">(</span><span class="s">&#34;vert.x-eventloop&#34;</span><span class="o">)</span> <span class="o">||</span>
+        <span class="n">re</span><span class="o">.</span><span class="na">getThread</span><span class="o">().</span><span class="na">getJavaName</span><span class="o">().</span><span class="na">startsWith</span><span class="o">(</span><span class="s">&#34;executor-thread&#34;</span><span class="o">);</span>
   <span class="o">}</span>
 <span class="o">}</span></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Enable the <code>jdk.ObjectAllocationInNewTLAB</code> and <code>jdk.ObjectAllocationOutsideTLAB</code> JFR events</td>
 </tr>
@@ -599,14 +599,14 @@ so to average out numbers from individual API calls.</p>
 </tr>
 <tr>
 <td><i class="conum" data-value="7"></i><b>7</b></td>
-<td>We&#8217;re only interested in the web application&#8217;s own threads, in particular ignoring the main thread which runs the HTTP client of the test</td>
+<td>We’re only interested in the web application’s own threads, in particular ignoring the main thread which runs the HTTP client of the test</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Note that unlike in the initial example showing the usage of JfrUnit,
-here we&#8217;re not using the simple <code>contains()</code> AssertJ matcher,
-but rather calculate some custom value&#8201;&#8212;&#8201;the overall object allocation in bytes&#8201;&#8212;&#8201;by means of filtering and aggregating the relevant JFR events.</p>
+here we’re not using the simple <code>contains()</code> AssertJ matcher,
+but rather calculate some custom value — the overall object allocation in bytes — by means of filtering and aggregating the relevant JFR events.</p>
 </div>
 <div class="paragraph">
 <p>Here are the numbers I got from running 100,000 invocations:</p>
@@ -626,7 +626,7 @@ Requests executed: 100000, memory allocated: 31682 bytes/request</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>As we see, there&#8217;s some warm-up phase during which allocation rates still go down,
+<p>As we see, there’s some warm-up phase during which allocation rates still go down,
 but after ~20 K requests, the allocation per request is fairly stable,
 with a volatility of ~1% when averaged out over 10K requests.
 This means that this initial phase should be excluded during the actual test.</p>
@@ -638,7 +638,7 @@ nor is it subject to volatility induced by other workloads running concurrently.
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -646,13 +646,13 @@ nor is it subject to volatility induced by other workloads running concurrently.
 <div class="title">Tracking Object Allocations in Java 16</div>
 <div class="paragraph">
 <p>The two TLAB allocation events provide all the information required for analysing object allocations in Java applications,
-but often it&#8217;s not practical to enable them on a continuous basis when running in production.
+but often it’s not practical to enable them on a continuous basis when running in production.
 Due to the high amount of events produced, enabling them adds some overhead in terms of latency,
 also the size of JFR recording files can be hard to predict.</p>
 </div>
 <div class="paragraph">
-<p>Both issues are addressed by a JFR improvement that&#8217;s proposed for inclusion into Java 16,
-<a href="https://bugs.openjdk.java.net/browse/JDK-8257602">"JFR Event Throttling"</a>.
+<p>Both issues are addressed by a JFR improvement that’s proposed for inclusion into Java 16,
+<a href="https://bugs.openjdk.java.net/browse/JDK-8257602">&#34;JFR Event Throttling&#34;</a>.
 This will provide control over the emission rate of events, e.g. allowing to sample object allocations with a defined rate of 100 events per second,
 which addresses both the overhead as well as the recording size issue.
 A new event type, <code>jdk.ObjectAllocationSample</code> will be added, too, which will be enabled in the JFR default configuration.</p>
@@ -663,7 +663,7 @@ as a higher sampling rate may lead to stable results more quickly, in turn resul
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Based on that, the actual test could look like so:</p>
@@ -671,8 +671,8 @@ as a higher sampling rate may lead to stable results more quickly, in turn resul
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="java"><span class="nd">@Test</span>
-<span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">"jdk.ObjectAllocationInNewTLAB"</span><span class="o">)</span>
-<span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">"jdk.ObjectAllocationOutsideTLAB"</span><span class="o">)</span>
+<span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">&#34;jdk.ObjectAllocationInNewTLAB&#34;</span><span class="o">)</span>
+<span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">&#34;jdk.ObjectAllocationOutsideTLAB&#34;</span><span class="o">)</span>
 <span class="kd">public</span> <span class="kt">void</span> <span class="nf">retrieveTodo</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
   <span class="nc">Random</span> <span class="n">r</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Random</span><span class="o">();</span>
   <span class="nc">HttpClient</span> <span class="n">client</span> <span class="o">=</span> <span class="nc">HttpClient</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">().</span><span class="na">build</span><span class="o">();</span>
@@ -701,7 +701,7 @@ as a higher sampling rate may lead to stable results more quickly, in turn resul
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Warm-up phase</td>
 </tr>
@@ -715,10 +715,10 @@ as a higher sampling rate may lead to stable results more quickly, in turn resul
 so to make sure we notice any future improvements (e.g. caused by upgrading to new efficient versions of a library),
 which otherwise may hide subsequent regressions</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>Now let&#8217;s assume we&#8217;ve wrapped up the initial round of work on this application, and its tests have been passing on CI for a while.
+<p>Now let’s assume we’ve wrapped up the initial round of work on this application, and its tests have been passing on CI for a while.
 One day, the <code>retrieveTodo()</code> performance test method fails though:</p>
 </div>
 <div class="listingblock">
@@ -731,9 +731,9 @@ to be less than:
 </div>
 </div>
 <div class="paragraph">
-<p>Ugh, it&#8217;s suddenly allocating about ten times more memory per request than before!
+<p>Ugh, it’s suddenly allocating about ten times more memory per request than before!
 What has happened?
-To find the answer, we can take a look at the test&#8217;s JFR recording, which JfrUnit persists under <em>target/jfrunit</em>:</p>
+To find the answer, we can take a look at the test’s JFR recording, which JfrUnit persists under <em>target/jfrunit</em>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -744,27 +744,27 @@ dev.morling.demos.quarkus.TodoResourcePerformanceTest-retrieveTodo.jfr</code></p
 </div>
 </div>
 <div class="paragraph">
-<p>Let&#8217;s open the *.jfr file for the failing test in JDK Mission Control (JMC) in order to analyse all the recorded events
+<p>Let’s open the *.jfr file for the failing test in JDK Mission Control (JMC) in order to analyse all the recorded events
 (note that the recording will always contain some JfrUnit-internal events which are needed for synchronizing the recording stream and the events exposed to the test).</p>
 </div>
 <div class="paragraph">
-<p>When taking a look at the TLAB events of the application&#8217;s executor thread,
+<p>When taking a look at the TLAB events of the application’s executor thread,
 the culprit is identified quickly;
 a lot of the sampled TLAB allocations contain this stack trace
 (click on the image to enlarge):</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/continuous_perf_testing_tlab_in_jmc.png" alt="TLAB allocations in JDK Mission Control">
+<img src="/images/continuous_perf_testing_tlab_in_jmc.png" alt="TLAB allocations in JDK Mission Control"/>
 </div>
 </div>
 <div class="paragraph">
-<p>Interesting, REST Assured loading a Jackson object mapper, what&#8217;s going on there?
-Here&#8217;s the full stacktrace:</p>
+<p>Interesting, REST Assured loading a Jackson object mapper, what’s going on there?
+Here’s the full stacktrace:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/continuous_perf_testing_tlab_stacktrace.png" alt="Complete stacktrace of the TLAB allocation">
+<img src="/images/continuous_perf_testing_tlab_stacktrace.png" alt="Complete stacktrace of the TLAB allocation"/>
 </div>
 </div>
 <div class="paragraph">
@@ -776,13 +776,13 @@ At this point we know where to look into the source code of the application:</p>
 <pre class="rouge highlight"><code data-lang="java"><span class="nd">@GET</span>
 <span class="nd">@Transactional</span>
 <span class="nd">@Produces</span><span class="o">(</span><span class="nc">MediaType</span><span class="o">.</span><span class="na">APPLICATION_JSON</span><span class="o">)</span>
-<span class="nd">@Path</span><span class="o">(</span><span class="s">"/{id}"</span><span class="o">)</span>
-<span class="kd">public</span> <span class="nc">Response</span> <span class="nf">get</span><span class="o">(</span><span class="nd">@PathParam</span><span class="o">(</span><span class="s">"id"</span><span class="o">)</span> <span class="kt">long</span> <span class="n">id</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+<span class="nd">@Path</span><span class="o">(</span><span class="s">&#34;/{id}&#34;</span><span class="o">)</span>
+<span class="kd">public</span> <span class="nc">Response</span> <span class="nf">get</span><span class="o">(</span><span class="nd">@PathParam</span><span class="o">(</span><span class="s">&#34;id&#34;</span><span class="o">)</span> <span class="kt">long</span> <span class="n">id</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
   <span class="nc">Todo</span> <span class="n">res</span> <span class="o">=</span> <span class="nc">Todo</span><span class="o">.</span><span class="na">findById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
 
   <span class="nc">User</span> <span class="n">user</span> <span class="o">=</span> <span class="nc">RestAssured</span><span class="o">.</span><span class="na">given</span><span class="o">().</span><span class="na">port</span><span class="o">(</span><span class="mi">8082</span><span class="o">)</span>
       <span class="o">.</span><span class="na">when</span><span class="o">()</span>
-          <span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"/users/"</span> <span class="o">+</span> <span class="n">res</span><span class="o">.</span><span class="na">userId</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;/users/&#34;</span> <span class="o">+</span> <span class="n">res</span><span class="o">.</span><span class="na">userId</span><span class="o">)</span>
           <span class="o">.</span><span class="na">as</span><span class="o">(</span><span class="nc">User</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
 
   <span class="n">res</span><span class="o">.</span><span class="na">userName</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="na">name</span><span class="o">;</span>
@@ -797,18 +797,18 @@ At this point we know where to look into the source code of the application:</p>
 <p>Gasp, it looks like a developer on the team has been taking the microservices mantra a bit too far, and has changed the code so it invokes another service in order to obtain some additional data associated to the user who created the retrieved todo.</p>
 </div>
 <div class="paragraph">
-<p>While that&#8217;s problematic in its own right due to the inherent coupling between the two services
-(how should the Todo Manager service react if the user service isn&#8217;t available?),
+<p>While that’s problematic in its own right due to the inherent coupling between the two services
+(how should the Todo Manager service react if the user service isn’t available?),
 they made matters worse by using the <a href="https://rest-assured.io/">REST Assured API</a> as a REST client,
 in a less than ideal way.
-The API&#8217;s simplicity and elegance makes it a great solution for testing (and indeed that&#8217;s its primary use case),
+The API’s simplicity and elegance makes it a great solution for testing (and indeed that’s its primary use case),
 but this particular usage seems to be not such a good choice for production code.</p>
 </div>
 <div class="paragraph">
 <p>At this point you should ask yourself whether the increased allocation per request actually is a problem for your application or not.
-To determine if that&#8217;s the case, you could run some tests on actual request latency and throughput in a production-like environment.
-If there&#8217;s no impact based on the workload you have to process,
-you might very well decide that additional allocations are well spent for your application&#8217;s purposes.</p>
+To determine if that’s the case, you could run some tests on actual request latency and throughput in a production-like environment.
+If there’s no impact based on the workload you have to process,
+you might very well decide that additional allocations are well spent for your application’s purposes.</p>
 </div>
 <div class="paragraph">
 <p>Increasing the allocation per request by a factor of ten in the described way quite likely does not fall into this category, though.
@@ -818,7 +818,7 @@ Of course the external API call just by itself adds to the request latency,
 which is something we might want to avoid.</p>
 </div>
 <div class="paragraph">
-<p>It&#8217;s also worth examining the application&#8217;s garbage collection behavior.
+<p>It’s also worth examining the application’s garbage collection behavior.
 In order to so, you can run the performance test method again,
 either enabling all the GC-related JFR event types, or by enabling a pre-existing JFR configuration
 (the JDK comes with two built-in JFR configurations, <em>default</em> and <em>profile</em>, but you can also create and export them via JMC):</p>
@@ -826,7 +826,7 @@ either enabling all the GC-related JFR event types, or by enabling a pre-existin
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="java"><span class="nd">@Test</span>
-<span class="nd">@EnableConfiguration</span><span class="o">(</span><span class="s">"profile"</span><span class="o">)</span>
+<span class="nd">@EnableConfiguration</span><span class="o">(</span><span class="s">&#34;profile&#34;</span><span class="o">)</span>
 <span class="kd">public</span> <span class="kt">void</span> <span class="nf">retrieveTodo</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
   <span class="c1">// ...</span>
 <span class="o">}</span></code></pre>
@@ -838,11 +838,11 @@ e.g. the I/O events discussed in the next section will only be recorded if they 
 Depending on your testing requirements, you may have to adjust and tweak the configuration to be used.</p>
 </div>
 <div class="paragraph">
-<p>Open the recording in JMC, and you&#8217;ll see there&#8217;s a substantial amount of GC activity happening:</p>
+<p>Open the recording in JMC, and you’ll see there’s a substantial amount of GC activity happening:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/continuous_perf_testing_gc_regression.png" alt="Garbage collections after the performance regression">
+<img src="/images/continuous_perf_testing_gc_regression.png" alt="Garbage collections after the performance regression"/>
 </div>
 </div>
 <div class="paragraph">
@@ -850,16 +850,16 @@ Depending on your testing requirements, you may have to adjust and tweak the con
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/continuous_perf_testing_gc_original.png" alt="Garbage collections before the performance regression">
+<img src="/images/continuous_perf_testing_gc_original.png" alt="Garbage collections before the performance regression"/>
 </div>
 </div>
 <div class="paragraph">
-<p>Pause times are worse, directly impacting the application&#8217;s latency, and the largely increased GC volume means the production environment will be able to serve less concurrent requests when reaching its capacity limits,
-meaning you&#8217;d have to provision another machine earlier on as your load increases.</p>
+<p>Pause times are worse, directly impacting the application’s latency, and the largely increased GC volume means the production environment will be able to serve less concurrent requests when reaching its capacity limits,
+meaning you’d have to provision another machine earlier on as your load increases.</p>
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -872,7 +872,7 @@ After some exploration <a href="https://mail.openjdk.java.net/pipermail/hotspot-
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Now such drastic increase of object allocation and thus potential impact on performance should hopefully be an exception rather than a regular situation.
@@ -886,19 +886,19 @@ Being able to identify this kind of issue by running tests locally on a develope
 <h2 id="_case_study_2_identifying_increased_io_with_the_database">Case Study 2: Identifying Increased I/O With the Database</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Once you&#8217;ve started to look at performance regression tests through the lense of JfrUnit,
+<p>Once you’ve started to look at performance regression tests through the lense of JfrUnit,
 more and more possibilities pop up.
 Asserting a maximum number of garbage collections? Not a problem.
 Avoiding an unexpected amount of file system IO? The <code>jdk.FileRead</code> and <code>jdk.FileWrite</code> events are our friend.
 Examining and asserting the I/O done with the database? Easily doable.
-Assertions on application-specific <a href="/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/">JFR event types</a> you&#8217;ve defined yourself? Sure thing!</p>
+Assertions on application-specific <a href="/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/">JFR event types</a> you’ve defined yourself? Sure thing!</p>
 </div>
 <div class="paragraph">
 <p>You can find a complete list of all JFR event types by JDK version in this <a href="https://bestsolution-at.github.io/jfr-doc/">nice matrix</a> created by <a href="https://twitter.com/tomsontom">Tom Schindl</a>.
 The number of JFR event types is growing constantly; as of JDK 15, there are 157 different ones of them.</p>
 </div>
 <div class="paragraph">
-<p>Now let&#8217;s take a look at assertions on database I/O, as the amount of data fetched from or written to the database often is a very impactful factor of an enterprise application&#8217;s behavior.
+<p>Now let’s take a look at assertions on database I/O, as the amount of data fetched from or written to the database often is a very impactful factor of an enterprise application’s behavior.
 A regression here, e.g. fetching more data from the database than anticipated, may indicate that data is unnecessarily loaded.
 For instance it might be the case that a set of data is loaded only in order to filter it in the application subsequently, instead of doing so via SQL in the database itself,
 resulting in increased request durations.</p>
@@ -907,13 +907,13 @@ resulting in increased request durations.</p>
 <p>So how could such test look like for our <code>GET /todo/{id}</code> API call?
 The general approach is the same as before with memory allocations:
 first define a baseline of the bytes read and written by invoking the API under test for a given number of executions.
-Once that&#8217;s done, you can implement the actual test, including an assertion on the expected number of bytes read or written:</p>
+Once that’s done, you can implement the actual test, including an assertion on the expected number of bytes read or written:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="java"><span class="nd">@Test</span>
-<span class="nd">@EnableEvent</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">"jdk.SocketRead"</span><span class="o">,</span> <span class="n">stackTrace</span><span class="o">=</span><span class="no">INCLUDED</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
-<span class="nd">@EnableEvent</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">"jdk.SocketWrite"</span><span class="o">,</span> <span class="n">stackTrace</span><span class="o">=</span><span class="no">INCLUDED</span><span class="o">)</span>
+<span class="nd">@EnableEvent</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&#34;jdk.SocketRead&#34;</span><span class="o">,</span> <span class="n">stackTrace</span><span class="o">=</span><span class="no">INCLUDED</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
+<span class="nd">@EnableEvent</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&#34;jdk.SocketWrite&#34;</span><span class="o">,</span> <span class="n">stackTrace</span><span class="o">=</span><span class="no">INCLUDED</span><span class="o">)</span>
 <span class="kd">public</span> <span class="kt">void</span> <span class="nf">retrieveTodo</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
   <span class="nc">Random</span> <span class="n">r</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Random</span><span class="o">();</span>
   <span class="nc">HttpClient</span> <span class="n">client</span> <span class="o">=</span> <span class="nc">HttpClient</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">()</span>
@@ -927,7 +927,7 @@ Once that&#8217;s done, you can implement the actual test, including an assertio
 
   <span class="kt">long</span> <span class="n">count</span> <span class="o">=</span> <span class="n">jfrEvents</span><span class="o">.</span><span class="na">filter</span><span class="o">(</span><span class="k">this</span><span class="o">::</span><span class="n">isDatabaseIoEvent</span><span class="o">).</span><span class="na">count</span><span class="o">();</span> <i class="conum" data-value="2"></i><b>(2)</b>
   <span class="n">assertThat</span><span class="o">(</span><span class="n">count</span> <span class="o">/</span> <span class="no">ITERATIONS</span><span class="o">).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="mi">4</span><span class="o">)</span>
-      <span class="o">.</span><span class="na">describedAs</span><span class="o">(</span><span class="s">"write + read per statement, write + read per commit"</span><span class="o">);</span>
+      <span class="o">.</span><span class="na">describedAs</span><span class="o">(</span><span class="s">&#34;write + read per statement, write + read per commit&#34;</span><span class="o">);</span>
 
   <span class="kt">long</span> <span class="n">bytesReadOrWritten</span> <span class="o">=</span> <span class="n">jfrEvents</span><span class="o">.</span><span class="na">filter</span><span class="o">(</span><span class="k">this</span><span class="o">::</span><span class="n">isDatabaseIoEvent</span><span class="o">)</span>
       <span class="o">.</span><span class="na">mapToLong</span><span class="o">(</span><span class="k">this</span><span class="o">::</span><span class="n">getBytesReadOrWritten</span><span class="o">)</span>
@@ -937,23 +937,23 @@ Once that&#8217;s done, you can implement the actual test, including an assertio
 <span class="o">}</span>
 
 <span class="kd">private</span> <span class="kt">boolean</span> <span class="nf">isDatabaseIoEvent</span><span class="o">(</span><span class="nc">RecordedEvent</span> <span class="n">re</span><span class="o">)</span> <span class="o">{</span> <i class="conum" data-value="4"></i><b>(4)</b>
-  <span class="k">return</span> <span class="o">((</span><span class="n">re</span><span class="o">.</span><span class="na">getEventType</span><span class="o">().</span><span class="na">getName</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="s">"jdk.SocketRead"</span><span class="o">)</span> <span class="o">||</span>
-      <span class="n">re</span><span class="o">.</span><span class="na">getEventType</span><span class="o">().</span><span class="na">getName</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="s">"jdk.SocketWrite"</span><span class="o">))</span> <span class="o">&amp;&amp;</span>
-      <span class="n">re</span><span class="o">.</span><span class="na">getInt</span><span class="o">(</span><span class="s">"port"</span><span class="o">)</span> <span class="o">==</span> <span class="n">databasePort</span><span class="o">);</span>
+  <span class="k">return</span> <span class="o">((</span><span class="n">re</span><span class="o">.</span><span class="na">getEventType</span><span class="o">().</span><span class="na">getName</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="s">&#34;jdk.SocketRead&#34;</span><span class="o">)</span> <span class="o">||</span>
+      <span class="n">re</span><span class="o">.</span><span class="na">getEventType</span><span class="o">().</span><span class="na">getName</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="s">&#34;jdk.SocketWrite&#34;</span><span class="o">))</span> <span class="o">&amp;&amp;</span>
+      <span class="n">re</span><span class="o">.</span><span class="na">getInt</span><span class="o">(</span><span class="s">&#34;port&#34;</span><span class="o">)</span> <span class="o">==</span> <span class="n">databasePort</span><span class="o">);</span>
 <span class="o">}</span>
 
 <span class="kd">private</span> <span class="kt">long</span> <span class="nf">getBytesReadOrWritten</span><span class="o">(</span><span class="nc">RecordedEvent</span> <span class="n">re</span><span class="o">)</span> <span class="o">{</span> <i class="conum" data-value="5"></i><b>(5)</b>
-  <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="na">getEventType</span><span class="o">().</span><span class="na">getName</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="s">"jdk.SocketRead"</span><span class="o">)</span> <span class="o">?</span>
-      <span class="n">re</span><span class="o">.</span><span class="na">getLong</span><span class="o">(</span><span class="s">"bytesRead"</span><span class="o">)</span> <span class="o">:</span>
-      <span class="n">re</span><span class="o">.</span><span class="na">getLong</span><span class="o">(</span><span class="s">"bytesWritten"</span><span class="o">);</span>
+  <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="na">getEventType</span><span class="o">().</span><span class="na">getName</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="s">&#34;jdk.SocketRead&#34;</span><span class="o">)</span> <span class="o">?</span>
+      <span class="n">re</span><span class="o">.</span><span class="na">getLong</span><span class="o">(</span><span class="s">&#34;bytesRead&#34;</span><span class="o">)</span> <span class="o">:</span>
+      <span class="n">re</span><span class="o">.</span><span class="na">getLong</span><span class="o">(</span><span class="s">&#34;bytesWritten&#34;</span><span class="o">);</span>
 <span class="o">}</span></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Enable the <code>jdk.SocketRead</code> and <code>jdk.SocketWrite</code> event types; by default, those don&#8217;t contain the stacktrace for the events, so that needs to be enabled explicitly</td>
+<td>Enable the <code>jdk.SocketRead</code> and <code>jdk.SocketWrite</code> event types; by default, those don’t contain the stacktrace for the events, so that needs to be enabled explicitly</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
@@ -969,13 +969,13 @@ Once that&#8217;s done, you can implement the actual test, including an assertio
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>Retrieve the value of the event&#8217;s <code>bytesRead</code> or <code>bytesWritten</code> field, depending on the event type</td>
+<td>Retrieve the value of the event’s <code>bytesRead</code> or <code>bytesWritten</code> field, depending on the event type</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>Now let&#8217;s again assume that after some time the test begins to fail.
-This time it&#8217;s the assertion on the number of executed reads and writes:</p>
+<p>Now let’s again assume that after some time the test begins to fail.
+This time it’s the assertion on the number of executed reads and writes:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1000,23 +1000,23 @@ to be less than:
 </div>
 </div>
 <div class="paragraph">
-<p>That&#8217;s definitely something to look into.
-So let&#8217;s open the recording of the failed test in Flight Recorder and take a look at the socket read and write events.
+<p>That’s definitely something to look into.
+So let’s open the recording of the failed test in Flight Recorder and take a look at the socket read and write events.
 Thanks to enabling stacktraces for the two JFR event types we can quite quickly identify the events asssociated to an invocation of the <code>GET /todo/{id}</code> API:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/continuous_perf_testing_socket_regression.png" alt="Socket read and write events after the performance regression">
+<img src="/images/continuous_perf_testing_socket_regression.png" alt="Socket read and write events after the performance regression"/>
 </div>
 </div>
 <div class="paragraph">
 <p>At this point, some familiarity with the application in question will come in handy to identify suspicous events.
 But even without that, we could compare previous recordings of successful test runs with the recording from the failing one in order to see where differences are.
-In the case at hand, the <code>BlobInputStream</code> and Hibernate&#8217;s <code>BlobTypeDescriptor</code> in the call stack seem pretty unexpected,
-as our <code>User</code> entity didn&#8217;t have any <code>BLOB</code> attribute before.</p>
+In the case at hand, the <code>BlobInputStream</code> and Hibernate’s <code>BlobTypeDescriptor</code> in the call stack seem pretty unexpected,
+as our <code>User</code> entity didn’t have any <code>BLOB</code> attribute before.</p>
 </div>
 <div class="paragraph">
-<p>In reality, comparing with the latest version and a look into the git history of that class could confirm that there&#8217;s a new attribute storing an image
+<p>In reality, comparing with the latest version and a look into the git history of that class could confirm that there’s a new attribute storing an image
 (perhaps not a best practice to do so ;):</p>
 </div>
 <div class="listingblock">
@@ -1035,24 +1035,24 @@ as our <code>User</code> entity didn&#8217;t have any <code>BLOB</code> attribut
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>This looks suspicious!</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>We now would have to decide whether this image attribute actually should be loaded for this particular use case,
-(if so, we&#8217;d have to adjust the test accordingly),
+(if so, we’d have to adjust the test accordingly),
 or whether it would for instance make more sense to mark this property as a lazily loaded one and only retrieve it when actually required.</p>
 </div>
 <div class="paragraph">
 <p>Solely working with the raw socket read and write events can be a bit cumbersome, though.
-Wouldn&#8217;t it be nice if we also had the actual SQL statement which caused this I/O?
+Wouldn’t it be nice if we also had the actual SQL statement which caused this I/O?
 Glad you asked!
 Neither Hibernate nor the Postgres JDBC driver emit any JFR events at the moment
 (although well-informed sources are telling me that the Hibernate team wants to look into this).
-Therefore, in part two of this blog post series, we&#8217;ll discuss how to instrument an existing library to emit events like this,
+Therefore, in part two of this blog post series, we’ll discuss how to instrument an existing library to emit events like this,
 using a Java agent, without modifying the library in question.</p>
 </div>
 </div>
@@ -1062,7 +1062,7 @@ using a Java agent, without modifying the library in question.</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>JfrUnit in conjunction with JDK Flight Recorder opens up a very interesting approach for identifying potential performance regressions in Java applications.
-Instead of directly measuring an application&#8217;s performance metrics,
+Instead of directly measuring an application’s performance metrics,
 most notably latency and throughput,
 the idea is to measure and assert metrics that <em>impact</em> the performance characteristics.
 This allows you to implement stable and reliable automated performance regression tests,
@@ -1071,7 +1071,7 @@ or other influential factors like concurrently running programs.</p>
 </div>
 <div class="paragraph">
 <p>Regressions in such impacting metrics, e.g. the amount of allocated memory, or bytes read from a database,
-are indicators that the application&#8217;s performance may have degraded.
+are indicators that the application’s performance may have degraded.
 This approach offers some interesting advantages over performance tests on actual latency and throughput themselves:</p>
 </div>
 <div class="ulist">
@@ -1086,7 +1086,7 @@ This approach offers some interesting advantages over performance tests on actua
 <p><strong>Robustness:</strong> Tests are robust and not prone to factors such as the load induced by parallel jobs of a CI server or a virtualized/containerized environment</p>
 </li>
 <li>
-<p><strong>Pro-active identification of performance issues:</strong> Asserting a metric like memory allocation can help to identify future performance problems before they actual materialize; while the additional allocation rate may make no difference with the system&#8217;s load as of today, it may negatively impact latency and throughput as the system reaches its limits with increased load; being able to identify the increased allocation rate early on allows for a more efficient handling of the situation while working on the code, compared to when finding out about such regression only later on</p>
+<p><strong>Pro-active identification of performance issues:</strong> Asserting a metric like memory allocation can help to identify future performance problems before they actual materialize; while the additional allocation rate may make no difference with the system’s load as of today, it may negatively impact latency and throughput as the system reaches its limits with increased load; being able to identify the increased allocation rate early on allows for a more efficient handling of the situation while working on the code, compared to when finding out about such regression only later on</p>
 </li>
 <li>
 <p><strong>Reduced need for warm-up:</strong> For traditional performance tests of Java-based applications, a thorough warm-up is mandatory,
@@ -1100,22 +1100,22 @@ e.g. to ensure proper optimization of the JIT-compiled code. In comparison, metr
 <div class="ulist">
 <ul>
 <li>
-<p><strong>No statement on user-visible performance metrics:</strong> Measuring and asserting performance-impacting factors doesn&#8217;t tell you anything in terms of the user-visible performance characteristics themselves.
-While we can reason about guarantees like "The system can handle 10K concurrent requests while the 99.9 percentile of requests has a latency of less than 250 ms", that&#8217;s not the case for metrics like memory allocation or I/O. What does it mean if an application allocates 100 KB of RAM for a particular use case? Is it a lot? Too much? Just fine?</p>
+<p><strong>No statement on user-visible performance metrics:</strong> Measuring and asserting performance-impacting factors doesn’t tell you anything in terms of the user-visible performance characteristics themselves.
+While we can reason about guarantees like &#34;The system can handle 10K concurrent requests while the 99.9 percentile of requests has a latency of less than 250 ms&#34;, that’s not the case for metrics like memory allocation or I/O. What does it mean if an application allocates 100 KB of RAM for a particular use case? Is it a lot? Too much? Just fine?</p>
 </li>
 <li>
-<p><strong>Focused on identifying regressions:</strong> Somewhat related to the first point, this approach of testing is focused not on specific absolute values, but rather on identifying performance regressions. It&#8217;s hard to tell whether 100 KB database I/O is good or bad for a particular web request, but a change from 100 KB to 200 KB might indicate that something is wrong</p>
+<p><strong>Focused on identifying regressions:</strong> Somewhat related to the first point, this approach of testing is focused not on specific absolute values, but rather on identifying performance regressions. It’s hard to tell whether 100 KB database I/O is good or bad for a particular web request, but a change from 100 KB to 200 KB might indicate that something is wrong</p>
 </li>
 <li>
 <p><strong>Focused on identifying <em>potential</em> regressions:</strong> A change in performance-impacting metrics does not necessarily imply an actual user-visible performance regression. For instance it might be acceptable for a specific request to allocate more RAM than it did before,
-if the production system generally isn&#8217;t under high load and the additional GC effort doesn&#8217;t matter in practice</p>
+if the production system generally isn’t under high load and the additional GC effort doesn’t matter in practice</p>
 </li>
 <li>
 <p><strong>Does not work for all performance-impacting metrics:</strong> Some performance metrics cannot be meaningfully asserted in plain unit tests;
 e.g. degraded throughput due to lock contention can typically only be identified with a reasonable number of concurrent requests</p>
 </li>
 <li>
-<p><strong>Only identifies regressions in the application itself:</strong> A traditional integrative performance test of an enterprise application will also capture issues in related components, such as the application&#8217;s database. A query run with a sub-optimal execution plan won&#8217;t be noticed with this testing approach</p>
+<p><strong>Only identifies regressions in the application itself:</strong> A traditional integrative performance test of an enterprise application will also capture issues in related components, such as the application’s database. A query run with a sub-optimal execution plan won’t be noticed with this testing approach</p>
 </li>
 <li>
 <p><strong>Volatile results for timer-based tasks</strong>: While metrics like object allocations should be stable e.g. for a specific web request,
@@ -1138,7 +1138,7 @@ you should consider them as <em>complement</em> for classic performance tests ru
 <div class="paragraph">
 <p>The approach may feel a bit unfamiliar initially,
 and it may take some time to learn about the different metrics which can be measured with JFR and asserted via JfrUnit,
-as well as their implications on an application&#8217;s performance characteristics.
+as well as their implications on an application’s performance characteristics.
 But once this hurdle is passed, continuous performance regression tests can be a valuable tool in the box of every software and performance engineer.</p>
 </div>
 <div class="paragraph">
@@ -1148,7 +1148,7 @@ Ideas for future development include:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>A more powerful "built-in" API which e.g. provides the functionality for calculating the total TLAB allocations of a given set of threads as a ready-to-use method</p>
+<p>A more powerful &#34;built-in&#34; API which e.g. provides the functionality for calculating the total TLAB allocations of a given set of threads as a ready-to-use method</p>
 </li>
 <li>
 <p>It could also be very interesting to run assertions against externally collected JFR recording files.
@@ -1159,15 +1159,15 @@ or even from continuous recordings taken in production</p>
 <p>The JFR event streaming API could be leveraged for streaming queries on live events streamed from a remote system</p>
 </li>
 <li>
-<p>Another use case we haven&#8217;t explored yet is the validation of resource consumption before and after a defined workload.
-E.g. after logging in and out a user 100 times, the system should roughly consume&#8201;&#8212;&#8201;ignoring any initial growth after starting up&#8201;&#8212;&#8201;the same amount of memory.
+<p>Another use case we haven’t explored yet is the validation of resource consumption before and after a defined workload.
+E.g. after logging in and out a user 100 times, the system should roughly consume — ignoring any initial growth after starting up — the same amount of memory.
 A failure of such assertion would indicate a potential memory leak in the application</p>
 </li>
 <li>
 <p>JfrUnit might automatically detect that certain metrics like object allocations are still undergoing some kind of warm-up phase and thus are not stable, and mark such tests as potentially incorrect or flaky</p>
 </li>
 <li>
-<p>Keeping track of historical measurement data, e.g. allowing to identify regressions which got introduced step by step over a longer period of time, with one comparatively small change being the straw finally breaking the camel&#8217;s back</p>
+<p>Keeping track of historical measurement data, e.g. allowing to identify regressions which got introduced step by step over a longer period of time, with one comparatively small change being the straw finally breaking the camel’s back</p>
 </li>
 </ul>
 </div>
@@ -1175,11 +1175,11 @@ A failure of such assertion would indicate a potential memory leak in the applic
 <p>Your feedback, feature requests, or even contributions to <a href="https://github.com/gunnarmorling/jfrunit">the project</a> will be highly welcomed!</p>
 </div>
 <div class="paragraph">
-<p>Stay tuned for part two of this blog post, where we&#8217;ll explore how to trace the SQL statements executed by an application using the <a href="https://wiki.openjdk.java.net/display/jmc/The+JMC+Agent">JMC Agent</a> and assert these query events using JfrUnit.
+<p>Stay tuned for part two of this blog post, where we’ll explore how to trace the SQL statements executed by an application using the <a href="https://wiki.openjdk.java.net/display/jmc/The+JMC+Agent">JMC Agent</a> and assert these query events using JfrUnit.
 This will come in very handy for instance for identifying common performance problems like N+1 SELECT statements.</p>
 </div>
 <div class="paragraph">
-<p><em>Many thanks to <a href="https://twitter.com/hpgrahsl">Hans-Peter Grahsl</a>, <a href="https://twitter.com/JohnnyDoItAll">John O&#8217;Hara</a>, <a href="https://twitter.com/nitsanw">Nitsan Wakart</a>, and <a href="https://twitter.com/SanneGrinovero/">Sanne Grinovero</a> for their extensive feedback while writing this blog post!</em></p>
+<p><em>Many thanks to <a href="https://twitter.com/hpgrahsl">Hans-Peter Grahsl</a>, <a href="https://twitter.com/JohnnyDoItAll">John O’Hara</a>, <a href="https://twitter.com/nitsanw">Nitsan Wakart</a>, and <a href="https://twitter.com/SanneGrinovero/">Sanne Grinovero</a> for their extensive feedback while writing this blog post!</em></p>
 </div>
 </div>
 </div>

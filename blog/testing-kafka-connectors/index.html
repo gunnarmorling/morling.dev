@@ -19,7 +19,7 @@ Kafka Connect is a key factor for the wide-spread adoption of Apache Kafka:
 a framework and runtime environment for connectors,
 it makes the task of getting data either into Kafka or out of Kafka solely a matter of configuration,
 rather than a bespoke programming job.
-There&#8217;s dozens, if not hundreds, of readymade source and sink connectors,
+There’s dozens, if not hundreds, of readymade source and sink connectors,
 allowing you to create no-code data pipelines between all kinds of databases, APIs, and other systems.
 
 
@@ -27,22 +27,22 @@ There may be situations though where there is no existing connector matching you
 in which case you can implement your own custom connector using the Kafka Connect framework.
 Naturally, this raises the question of how to test such a Kafka connector,
 making sure it propagates the data between the connected external system and Kafka correctly and completely.
-In this blog post I&#8217;d like to focus on testing approaches for Kafka Connect source connectors,
+In this blog post I’d like to focus on testing approaches for Kafka Connect source connectors,
 i.e. connectors like Debezium, which ingest data from an external system into Kafka.
 Very similar strategies can be employed for testing sink connectors, though.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/testing-kafka-connectors/" />
+<meta property="og:url" content="https://www.morling.dev/blog/testing-kafka-connectors/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2022-08-25T09:20:00+01:00" />
 <meta property="article:modified_time" content="2022-08-25T09:20:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Testing Kafka Connectors"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Testing Kafka Connectors"/>
 <meta name="twitter:description" content="
 Kafka Connect is a key factor for the wide-spread adoption of Apache Kafka:
 a framework and runtime environment for connectors,
 it makes the task of getting data either into Kafka or out of Kafka solely a matter of configuration,
 rather than a bespoke programming job.
-There&#8217;s dozens, if not hundreds, of readymade source and sink connectors,
+There’s dozens, if not hundreds, of readymade source and sink connectors,
 allowing you to create no-code data pipelines between all kinds of databases, APIs, and other systems.
 
 
@@ -50,7 +50,7 @@ There may be situations though where there is no existing connector matching you
 in which case you can implement your own custom connector using the Kafka Connect framework.
 Naturally, this raises the question of how to test such a Kafka connector,
 making sure it propagates the data between the connected external system and Kafka correctly and completely.
-In this blog post I&#8217;d like to focus on testing approaches for Kafka Connect source connectors,
+In this blog post I’d like to focus on testing approaches for Kafka Connect source connectors,
 i.e. connectors like Debezium, which ingest data from an external system into Kafka.
 Very similar strategies can be employed for testing sink connectors, though.
 "/>
@@ -290,7 +290,7 @@ Very similar strategies can be employed for testing sink connectors, though.
 a framework and runtime environment for connectors,
 it makes the task of getting data either into Kafka or out of Kafka solely a matter of configuration,
 rather than a bespoke programming job.
-There&#8217;s dozens, if not hundreds, of readymade source and sink connectors,
+There’s dozens, if not hundreds, of readymade source and sink connectors,
 allowing you to create no-code data pipelines between all kinds of databases, APIs, and other systems.</p>
 </div>
 <div class="paragraph">
@@ -298,7 +298,7 @@ allowing you to create no-code data pipelines between all kinds of databases, AP
 in which case you can <a href="https://kafka.apache.org/documentation/#connect_development">implement your own</a> custom connector using the Kafka Connect framework.
 Naturally, this raises the question of how to test such a Kafka connector,
 making sure it propagates the data between the connected external system and Kafka correctly and completely.
-In this blog post I&#8217;d like to focus on testing approaches for Kafka Connect <em>source</em> connectors,
+In this blog post I’d like to focus on testing approaches for Kafka Connect <em>source</em> connectors,
 i.e. connectors like <a href="https://debezium.io/">Debezium</a>, which ingest data from an external system into Kafka.
 Very similar strategies can be employed for testing sink connectors, though.</p>
 </div>
@@ -313,10 +313,10 @@ invoke its methods
 and assert the return values.</p>
 </div>
 <div class="paragraph">
-<p>Here&#8217;s an example for such a test from <a href="https://github.com/gunnarmorling/kcetcd">kc-etcd</a>, a simple source connector for <a href="https://etcd.io/">etcd</a>,
+<p>Here’s an example for such a test from <a href="https://github.com/gunnarmorling/kcetcd">kc-etcd</a>, a simple source connector for <a href="https://etcd.io/">etcd</a>,
 which is a distributed key/value store,
 most prominently used by Kubernetes as its metadata storage.
-Note that kc-etcd isn&#8217;t meant to be a production-ready connector;
+Note that kc-etcd isn’t meant to be a production-ready connector;
 I have written it primarily for learning and teaching purposes.</p>
 </div>
 <div class="paragraph">
@@ -358,8 +358,8 @@ based on a given number of maximum tasks of two:</p>
     <span class="nc">EtcdSourceConnector</span> <span class="n">connector</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">EtcdSourceConnector</span><span class="o">();</span>
     <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">config</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
     <span class="n">config</span><span class="o">.</span><span class="na">put</span><span class="o">(</span>
-      <span class="s">"clusters"</span><span class="o">,</span>
-      <span class="s">"etcd-a=http://etcd-a-1:2379,http://etcd-a-2:2379,http://etcd-a-3:2379;etcd-b=http://etcd-b-1:2379;etcd-c=http://etcd-c-1:2379"</span>
+      <span class="s">&#34;clusters&#34;</span><span class="o">,</span>
+      <span class="s">&#34;etcd-a=http://etcd-a-1:2379,http://etcd-a-2:2379,http://etcd-a-3:2379;etcd-b=http://etcd-b-1:2379;etcd-c=http://etcd-c-1:2379&#34;</span>
     <span class="o">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
     <span class="n">connector</span><span class="o">.</span><span class="na">start</span><span class="o">(</span><span class="n">config</span><span class="o">);</span>
 
@@ -368,13 +368,13 @@ based on a given number of maximum tasks of two:</p>
 
     <i class="conum" data-value="3"></i><b>(3)</b>
     <span class="n">taskConfig</span> <span class="o">=</span> <span class="n">taskConfigs</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">taskConfig</span><span class="o">).</span><span class="na">containsEntry</span><span class="o">(</span><span class="s">"clusters"</span><span class="o">,</span>
-        <span class="s">"etcd-a=http://etcd-a-1:2379,http://etcd-a-2:2379,http://etcd-a-3:2379;etcd-b=http://etcd-b-1:2379"</span><span class="o">);</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">taskConfig</span><span class="o">).</span><span class="na">containsEntry</span><span class="o">(</span><span class="s">&#34;clusters&#34;</span><span class="o">,</span>
+        <span class="s">&#34;etcd-a=http://etcd-a-1:2379,http://etcd-a-2:2379,http://etcd-a-3:2379;etcd-b=http://etcd-b-1:2379&#34;</span><span class="o">);</span>
 
     <i class="conum" data-value="4"></i><b>(4)</b>
     <span class="n">taskConfig</span> <span class="o">=</span> <span class="n">taskConfigs</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">taskConfig</span><span class="o">).</span><span class="na">containsEntry</span><span class="o">(</span><span class="s">"clusters"</span><span class="o">,</span>
-        <span class="s">"etcd-c=http://etcd-c-1:2379"</span><span class="o">);</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">taskConfig</span><span class="o">).</span><span class="na">containsEntry</span><span class="o">(</span><span class="s">&#34;clusters&#34;</span><span class="o">,</span>
+        <span class="s">&#34;etcd-c=http://etcd-c-1:2379&#34;</span><span class="o">);</span>
   <span class="o">}</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
@@ -382,7 +382,7 @@ based on a given number of maximum tasks of two:</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Configure the connector with three etcd clusters</td>
 </tr>
@@ -398,16 +398,16 @@ based on a given number of maximum tasks of two:</p>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>The second task should handle the remaining third cluster</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>Things look similar when testing the actual polling loop of the connector&#8217;s task class.
+<p>Things look similar when testing the actual polling loop of the connector’s task class.
 As this is about testing a source connector,
 we first need to do some data changes in the configured etcd cluster(s),
 before we can assert the corresponding <code>SourceRecord</code>s that are emitted by the task.
-As part of kc-etcd, I&#8217;ve implemented a <em>very</em> basic testing harness named <a href="https://github.com/gunnarmorling/kcetcd/tree/main/src/test/java/dev/morling/kcute">kcute</a>
-("Kafka Connect Unit Testing") which simplifies that process a bit.
-Here&#8217;s an example test from kc-etcd, based on kcute:</p>
+As part of kc-etcd, I’ve implemented a <em>very</em> basic testing harness named <a href="https://github.com/gunnarmorling/kcetcd/tree/main/src/test/java/dev/morling/kcute">kcute</a>
+(&#34;Kafka Connect Unit Testing&#34;) which simplifies that process a bit.
+Here’s an example test from kc-etcd, based on kcute:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -482,7 +482,7 @@ Here&#8217;s an example test from kc-etcd, based on kcute:</p>
 
   <span class="nd">@RegisterExtension</span> <i class="conum" data-value="2"></i><b>(2)</b>
   <span class="kd">public</span> <span class="nc">TaskRunner</span> <span class="n">taskRunner</span> <span class="o">=</span> <span class="nc">TaskRunner</span><span class="o">.</span><span class="na">forSourceTask</span><span class="o">(</span><span class="nc">EtcdSourceConnectorTask</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
-      <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="s">"clusters"</span><span class="o">,</span> <span class="s">"test-etcd="</span> <span class="o">+</span> <span class="n">etcd</span><span class="o">.</span><span class="na">clientEndpoints</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="mi">0</span><span class="o">))</span>
+      <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="s">&#34;clusters&#34;</span><span class="o">,</span> <span class="s">&#34;test-etcd=&#34;</span> <span class="o">+</span> <span class="n">etcd</span><span class="o">.</span><span class="na">clientEndpoints</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="mi">0</span><span class="o">))</span>
       <span class="o">.</span><span class="na">build</span><span class="o">();</span>
 
   <span class="nd">@Test</span>
@@ -496,42 +496,42 @@ Here&#8217;s an example test from kc-etcd, based on kcute:</p>
     <span class="kt">long</span> <span class="n">currentRevision</span> <span class="o">=</span> <span class="n">getCurrentRevision</span><span class="o">(</span><span class="n">kvClient</span><span class="o">);</span>
 
     <span class="c1">// insert</span>
-    <span class="nc">ByteSequence</span> <span class="n">key</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">"key-1"</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
-    <span class="nc">ByteSequence</span> <span class="n">value</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">"value-1"</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+    <span class="nc">ByteSequence</span> <span class="n">key</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">&#34;key-1&#34;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+    <span class="nc">ByteSequence</span> <span class="n">value</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">&#34;value-1&#34;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
     <span class="n">kvClient</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">value</span><span class="o">).</span><span class="na">get</span><span class="o">();</span>
 
     <span class="c1">// update</span>
-    <span class="n">key</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">"key-1"</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
-    <span class="n">value</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">"value-1a"</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">&#34;key-1&#34;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">&#34;value-1a&#34;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
     <span class="n">kvClient</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">value</span><span class="o">).</span><span class="na">get</span><span class="o">();</span>
 
     <span class="c1">// delete</span>
-    <span class="n">key</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">"key-1"</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">&#34;key-1&#34;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
     <span class="n">kvClient</span><span class="o">.</span><span class="na">delete</span><span class="o">(</span><span class="n">key</span><span class="o">).</span><span class="na">get</span><span class="o">();</span>
 
     <i class="conum" data-value="4"></i><b>(4)</b>
-    <span class="nc">List</span><span class="o">&lt;</span><span class="nc">SourceRecord</span><span class="o">&gt;</span> <span class="n">records</span> <span class="o">=</span> <span class="n">taskRunner</span><span class="o">.</span><span class="na">take</span><span class="o">(</span><span class="s">"test-etcd"</span><span class="o">,</span> <span class="mi">3</span><span class="o">);</span>
+    <span class="nc">List</span><span class="o">&lt;</span><span class="nc">SourceRecord</span><span class="o">&gt;</span> <span class="n">records</span> <span class="o">=</span> <span class="n">taskRunner</span><span class="o">.</span><span class="na">take</span><span class="o">(</span><span class="s">&#34;test-etcd&#34;</span><span class="o">,</span> <span class="mi">3</span><span class="o">);</span>
 
     <i class="conum" data-value="5"></i><b>(5)</b>
     <span class="c1">// insert</span>
     <span class="nc">SourceRecord</span> <span class="n">record</span> <span class="o">=</span> <span class="n">records</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">sourcePartition</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="nc">Collections</span><span class="o">.</span><span class="na">singletonMap</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"test-etcd"</span><span class="o">));</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">sourceOffset</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="nc">Collections</span><span class="o">.</span><span class="na">singletonMap</span><span class="o">(</span><span class="s">"revision"</span><span class="o">,</span> <span class="o">++</span><span class="n">currentRevision</span><span class="o">));</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">sourcePartition</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="nc">Collections</span><span class="o">.</span><span class="na">singletonMap</span><span class="o">(</span><span class="s">&#34;name&#34;</span><span class="o">,</span> <span class="s">&#34;test-etcd&#34;</span><span class="o">));</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">sourceOffset</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="nc">Collections</span><span class="o">.</span><span class="na">singletonMap</span><span class="o">(</span><span class="s">&#34;revision&#34;</span><span class="o">,</span> <span class="o">++</span><span class="n">currentRevision</span><span class="o">));</span>
     <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">keySchema</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="nc">Schema</span><span class="o">.</span><span class="na">STRING_SCHEMA</span><span class="o">);</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">key</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">"key-1"</span><span class="o">);</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">key</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">&#34;key-1&#34;</span><span class="o">);</span>
     <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">valueSchema</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="nc">Schema</span><span class="o">.</span><span class="na">STRING_SCHEMA</span><span class="o">);</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">value</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">"value-1"</span><span class="o">);</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">value</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">&#34;value-1&#34;</span><span class="o">);</span>
 
     <span class="c1">// update</span>
     <span class="n">record</span> <span class="o">=</span> <span class="n">records</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">sourceOffset</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="nc">Collections</span><span class="o">.</span><span class="na">singletonMap</span><span class="o">(</span><span class="s">"revision"</span><span class="o">,</span> <span class="o">++</span><span class="n">currentRevision</span><span class="o">));</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">key</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">"key-1"</span><span class="o">);</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">value</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">"value-1a"</span><span class="o">);</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">sourceOffset</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="nc">Collections</span><span class="o">.</span><span class="na">singletonMap</span><span class="o">(</span><span class="s">&#34;revision&#34;</span><span class="o">,</span> <span class="o">++</span><span class="n">currentRevision</span><span class="o">));</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">key</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">&#34;key-1&#34;</span><span class="o">);</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">value</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">&#34;value-1a&#34;</span><span class="o">);</span>
 
     <span class="c1">// delete</span>
     <span class="n">record</span> <span class="o">=</span> <span class="n">records</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="mi">2</span><span class="o">);</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">sourceOffset</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="nc">Collections</span><span class="o">.</span><span class="na">singletonMap</span><span class="o">(</span><span class="s">"revision"</span><span class="o">,</span> <span class="o">++</span><span class="n">currentRevision</span><span class="o">));</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">key</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">"key-1"</span><span class="o">);</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">sourceOffset</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="nc">Collections</span><span class="o">.</span><span class="na">singletonMap</span><span class="o">(</span><span class="s">&#34;revision&#34;</span><span class="o">,</span> <span class="o">++</span><span class="n">currentRevision</span><span class="o">));</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">key</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">&#34;key-1&#34;</span><span class="o">);</span>
     <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">value</span><span class="o">()).</span><span class="na">isNull</span><span class="o">();</span>
   <span class="o">}</span>
 <span class="o">}</span>
@@ -540,7 +540,7 @@ Here&#8217;s an example test from kc-etcd, based on kcute:</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Set up an etcd cluster using the JUnit extension provided by the <a href="https://github.com/etcd-io/jetcd">jetcd</a> client project</td>
 </tr>
@@ -560,18 +560,18 @@ Here&#8217;s an example test from kc-etcd, based on kcute:</p>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
 <td>Assert the emitted <code>SourceRecord</code>s corresponding to the data changes done before in etcd</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Now one could argue about whether this test is a true unit test or not,
 given it launches and relies on an instance of an external system in the form of etcd.
 My personal take on these matters is to be pragmatic here,
-as a) there&#8217;s a difference to true end-to-end integration tests as discussed in the next section,
+as a) there’s a difference to true end-to-end integration tests as discussed in the next section,
 and b) approaches to mock external systems usually are not worth the effort or, worse, result in poor tests, due to incorrect assumptions when implemening the mocked behavior.</p>
 </div>
 <div class="paragraph">
 <p>This testing approach works very well in general;
-in particular it doesn&#8217;t require you to start Apache Kafka (and ZooKeeper), nor Kafka Connect,
+in particular it doesn’t require you to start Apache Kafka (and ZooKeeper), nor Kafka Connect,
 resulting in very fast test execution times and a great dev experience when creating and running these tests in your IDE.</p>
 </div>
 <div class="paragraph">
@@ -579,7 +579,7 @@ resulting in very fast test execution times and a great dev experience when crea
 Essentially, we end up emulating the behavior of the actual Kafka Connect runtime in our testing harness.
 This can become tedious when more advanced Connect features are required for a given test,
 for instance retrying/restart logic, the dynamic reconfiguration of connector tasks while the connector is running, etc.
-Ideally, there&#8217;d be a testing harness with all these capabilities provided as part of Kafka Connect itself
+Ideally, there’d be a testing harness with all these capabilities provided as part of Kafka Connect itself
 (similar in spirit to the <a href="https://kafka.apache.org/32/javadoc/org/apache/kafka/streams/TopologyTestDriver.html"><code>TopologyTestDriver</code></a> of Kafka Streams),
 but in the absence of that,
 we may be better off for certain tests by deploying our source connector into an actual Kafka Connect instance and run assertions against the topic(s) it writes to.</p>
@@ -592,10 +592,10 @@ we may be better off for certain tests by deploying our source connector into an
 <div class="paragraph">
 <p>When it comes to setting up the required infrastructure for integration tests in Java,
 the go-to solution these days is the excellent <a href="https://www.testcontainers.org/">Testcontainers</a> project.
-So let&#8217;s see what it takes to test a custom Kafka connector using Testcontainers.</p>
+So let’s see what it takes to test a custom Kafka connector using Testcontainers.</p>
 </div>
 <div class="paragraph">
-<p>As far as Kafka itself is concerned, there&#8217;s a <a href="https://www.testcontainers.org/modules/kafka/">module</a> for that coming with Testcontainers,
+<p>As far as Kafka itself is concerned, there’s a <a href="https://www.testcontainers.org/modules/kafka/">module</a> for that coming with Testcontainers,
 based on <a href="https://hub.docker.com/r/confluentinc/cp-kafka/">Confluent Platform</a>.
 Alternatively, you could use the <a href="https://github.com/strimzi/test-container">Testcontainers module</a> from the Strimzi project,
 which provides you with plain upstream Apache Kafka container images.
@@ -605,20 +605,20 @@ offering an API for registering connectors and controlling their lifecycle.</p>
 <div class="paragraph">
 <p>Now, unfortunately, the application server like deployment model of Kafka Connect poses a challenge when it comes to testing a connector which is built as part of the current project itself.
 For each connector plug-in, Connect expects a directory on its plug-in path which contains all the JARs of the connector itself and its dependencies.
-I&#8217;m not aware of any kind of "exploded mode",
-where you could point Connect to a directory which contains a connector&#8217;s class files and its dependencies in JAR form.</p>
+I’m not aware of any kind of &#34;exploded mode&#34;,
+where you could point Connect to a directory which contains a connector’s class files and its dependencies in JAR form.</p>
 </div>
 <div class="paragraph">
 <p>This means that that the connector must be packaged into a JAR file as part of the test preparation.
 In order to make integration tests friendly towards being run from within an IDE,
 this should happen programmatically within the test itself.
 That way, any code changes to the connector will be picked up automatically when running the test for the next time,
-without having to run the project&#8217;s Maven build.
+without having to run the project’s Maven build.
 The entire code for doing this is a bit too long (and boring) for sharing it in this blog post,
 but you can find it in the kc-etcd repository on GitHub.</p>
 </div>
 <div class="paragraph">
-<p>Here&#8217;s the key parts of an integration test based on that approach, though:</p>
+<p>Here’s the key parts of an integration test based on that approach, though:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -710,20 +710,20 @@ but you can find it in the kc-etcd repository on GitHub.</p>
   <span class="kd">private</span> <span class="kd">static</span> <span class="nc">Network</span> <span class="n">network</span> <span class="o">=</span> <span class="nc">Network</span><span class="o">.</span><span class="na">newNetwork</span><span class="o">();</span>
 
   <i class="conum" data-value="1"></i><b>(1)</b>
-  <span class="kd">private</span> <span class="kd">static</span> <span class="nc">KafkaContainer</span> <span class="n">kafkaContainer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">KafkaContainer</span><span class="o">(</span><span class="nc">DockerImageName</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="s">"confluentinc/cp-kafka:7.2.0"</span><span class="o">))</span>
+  <span class="kd">private</span> <span class="kd">static</span> <span class="nc">KafkaContainer</span> <span class="n">kafkaContainer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">KafkaContainer</span><span class="o">(</span><span class="nc">DockerImageName</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="s">&#34;confluentinc/cp-kafka:7.2.0&#34;</span><span class="o">))</span>
       <span class="o">.</span><span class="na">withNetwork</span><span class="o">(</span><span class="n">network</span><span class="o">);</span>
 
   <i class="conum" data-value="2"></i><b>(2)</b>
-  <span class="kd">public</span> <span class="kd">static</span> <span class="nc">DebeziumContainer</span> <span class="n">connectContainer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">DebeziumContainer</span><span class="o">(</span><span class="s">"debezium/connect-base:1.9.5.Final"</span><span class="o">)</span>
-      <span class="o">.</span><span class="na">withFileSystemBind</span><span class="o">(</span><span class="s">"target/kcetcd-connector"</span><span class="o">,</span> <span class="s">"/kafka/connect/kcetcd-connector"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="kd">static</span> <span class="nc">DebeziumContainer</span> <span class="n">connectContainer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">DebeziumContainer</span><span class="o">(</span><span class="s">&#34;debezium/connect-base:1.9.5.Final&#34;</span><span class="o">)</span>
+      <span class="o">.</span><span class="na">withFileSystemBind</span><span class="o">(</span><span class="s">&#34;target/kcetcd-connector&#34;</span><span class="o">,</span> <span class="s">&#34;/kafka/connect/kcetcd-connector&#34;</span><span class="o">)</span>
       <span class="o">.</span><span class="na">withNetwork</span><span class="o">(</span><span class="n">network</span><span class="o">)</span>
       <span class="o">.</span><span class="na">withKafka</span><span class="o">(</span><span class="n">kafkaContainer</span><span class="o">)</span>
       <span class="o">.</span><span class="na">dependsOn</span><span class="o">(</span><span class="n">kafkaContainer</span><span class="o">);</span>
 
   <i class="conum" data-value="3"></i><b>(3)</b>
-  <span class="kd">public</span> <span class="kd">static</span> <span class="nc">EtcdContainer</span> <span class="n">etcdContainer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">EtcdContainer</span><span class="o">(</span><span class="s">"gcr.io/etcd-development/etcd:v3.5.4"</span><span class="o">,</span>
-      <span class="s">"etcd-a"</span><span class="o">,</span> <span class="nc">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="s">"etcd-a"</span><span class="o">))</span>
-          <span class="o">.</span><span class="na">withNetworkAliases</span><span class="o">(</span><span class="s">"etcd"</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="kd">static</span> <span class="nc">EtcdContainer</span> <span class="n">etcdContainer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">EtcdContainer</span><span class="o">(</span><span class="s">&#34;gcr.io/etcd-development/etcd:v3.5.4&#34;</span><span class="o">,</span>
+      <span class="s">&#34;etcd-a&#34;</span><span class="o">,</span> <span class="nc">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="s">&#34;etcd-a&#34;</span><span class="o">))</span>
+          <span class="o">.</span><span class="na">withNetworkAliases</span><span class="o">(</span><span class="s">&#34;etcd&#34;</span><span class="o">)</span>
           <span class="o">.</span><span class="na">withNetwork</span><span class="o">(</span><span class="n">network</span><span class="o">);</span>
 
   <span class="nd">@BeforeAll</span>
@@ -742,31 +742,31 @@ but you can find it in the kc-etcd repository on GitHub.</p>
 
     <i class="conum" data-value="5"></i><b>(5)</b>
     <span class="nc">ConnectorConfiguration</span> <span class="n">connector</span> <span class="o">=</span> <span class="nc">ConnectorConfiguration</span><span class="o">.</span><span class="na">create</span><span class="o">()</span>
-        <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="s">"connector.class"</span><span class="o">,</span> <span class="s">"dev.morling.kcetcd.source.EtcdSourceConnector"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="s">"clusters"</span><span class="o">,</span> <span class="s">"test-etcd=http://etcd:2379"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="s">"tasks.max"</span><span class="o">,</span> <span class="s">"2"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="s">"key.converter"</span><span class="o">,</span> <span class="s">"org.apache.kafka.connect.storage.StringConverter"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="s">"value.converter"</span><span class="o">,</span> <span class="s">"org.apache.kafka.connect.storage.StringConverter"</span><span class="o">);</span>
+        <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="s">&#34;connector.class&#34;</span><span class="o">,</span> <span class="s">&#34;dev.morling.kcetcd.source.EtcdSourceConnector&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="s">&#34;clusters&#34;</span><span class="o">,</span> <span class="s">&#34;test-etcd=http://etcd:2379&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="s">&#34;tasks.max&#34;</span><span class="o">,</span> <span class="s">&#34;2&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="s">&#34;key.converter&#34;</span><span class="o">,</span> <span class="s">&#34;org.apache.kafka.connect.storage.StringConverter&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="s">&#34;value.converter&#34;</span><span class="o">,</span> <span class="s">&#34;org.apache.kafka.connect.storage.StringConverter&#34;</span><span class="o">);</span>
 
     <i class="conum" data-value="6"></i><b>(6)</b>
-    <span class="n">connectContainer</span><span class="o">.</span><span class="na">registerConnector</span><span class="o">(</span><span class="s">"my-connector"</span><span class="o">,</span> <span class="n">connector</span><span class="o">);</span>
-    <span class="n">connectContainer</span><span class="o">.</span><span class="na">ensureConnectorTaskState</span><span class="o">(</span><span class="s">"my-connector"</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="nc">State</span><span class="o">.</span><span class="na">RUNNING</span><span class="o">);</span>
+    <span class="n">connectContainer</span><span class="o">.</span><span class="na">registerConnector</span><span class="o">(</span><span class="s">&#34;my-connector&#34;</span><span class="o">,</span> <span class="n">connector</span><span class="o">);</span>
+    <span class="n">connectContainer</span><span class="o">.</span><span class="na">ensureConnectorTaskState</span><span class="o">(</span><span class="s">&#34;my-connector&#34;</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="nc">State</span><span class="o">.</span><span class="na">RUNNING</span><span class="o">);</span>
 
     <span class="no">KV</span> <span class="n">kvClient</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">getKVClient</span><span class="o">();</span>
 
     <i class="conum" data-value="7"></i><b>(7)</b>
     <span class="c1">// insert</span>
-    <span class="nc">ByteSequence</span> <span class="n">key</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">"key-1"</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
-    <span class="nc">ByteSequence</span> <span class="n">value</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">"value-1"</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+    <span class="nc">ByteSequence</span> <span class="n">key</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">&#34;key-1&#34;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+    <span class="nc">ByteSequence</span> <span class="n">value</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">&#34;value-1&#34;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
     <span class="n">kvClient</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">value</span><span class="o">).</span><span class="na">get</span><span class="o">();</span>
 
     <span class="c1">// update</span>
-    <span class="n">key</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">"key-1"</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
-    <span class="n">value</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">"value-1a"</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">&#34;key-1&#34;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">&#34;value-1a&#34;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
     <span class="n">kvClient</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">value</span><span class="o">).</span><span class="na">get</span><span class="o">();</span>
 
     <span class="c1">// delete</span>
-    <span class="n">key</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">"key-2"</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="nc">ByteSequence</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="s">&#34;key-2&#34;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
     <span class="n">kvClient</span><span class="o">.</span><span class="na">delete</span><span class="o">(</span><span class="n">key</span><span class="o">).</span><span class="na">get</span><span class="o">();</span>
 
     <i class="conum" data-value="8"></i><b>(8)</b>
@@ -774,17 +774,17 @@ but you can find it in the kc-etcd repository on GitHub.</p>
 
     <span class="c1">// insert</span>
     <span class="nc">ConsumerRecord</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">record</span> <span class="o">=</span> <span class="n">records</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">key</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">"key-1"</span><span class="o">);</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">value</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">"value-1"</span><span class="o">);</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">key</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">&#34;key-1&#34;</span><span class="o">);</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">value</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">&#34;value-1&#34;</span><span class="o">);</span>
 
     <span class="c1">// update</span>
     <span class="n">record</span> <span class="o">=</span> <span class="n">records</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">key</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">"key-1"</span><span class="o">);</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">value</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">"value-1a"</span><span class="o">);</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">key</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">&#34;key-1&#34;</span><span class="o">);</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">value</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">&#34;value-1a&#34;</span><span class="o">);</span>
 
     <span class="c1">// delete</span>
     <span class="n">record</span> <span class="o">=</span> <span class="n">records</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="mi">2</span><span class="o">);</span>
-    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">key</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">"key-2"</span><span class="o">);</span>
+    <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">key</span><span class="o">()).</span><span class="na">isEqualTo</span><span class="o">(</span><span class="s">&#34;key-2&#34;</span><span class="o">);</span>
     <span class="n">assertThat</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">value</span><span class="o">()).</span><span class="na">isNull</span><span class="o">();</span>
   <span class="o">}</span>
 <span class="o">}</span>
@@ -793,13 +793,13 @@ but you can find it in the kc-etcd repository on GitHub.</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Set up Apache Kafka in a container using the Testcontainers Kafka module</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Set up Kafka Connect in a container, mounting the <em>target/kcetcd-connector</em> directory onto the plug-in path; as part of the project&#8217;s Maven build, all the dependencies of the kc-etcd connector are copied into that directory</td>
+<td>Set up Kafka Connect in a container, mounting the <em>target/kcetcd-connector</em> directory onto the plug-in path; as part of the project’s Maven build, all the dependencies of the kc-etcd connector are copied into that directory</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
@@ -825,10 +825,10 @@ but you can find it in the kc-etcd repository on GitHub.</p>
 <td><i class="conum" data-value="8"></i><b>8</b></td>
 <td>Using a regular Kafka consumer, read three records from the corresponding Kafka topic and assert the keys and values (complete code <a href="https://github.com/gunnarmorling/kcetcd/blob/main/src/test/java/dev/morling/kcetcd/source/EtcdConnectorIT.java#L145-L169">here</a>)</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>And that&#8217;s all there is to it;
+<p>And that’s all there is to it;
 we now have a test which packages our source connector, deploys it into Kafka Connect and asserts the messages it sends to Kafka.
 While this is definitely more time-consuming to run than the simple test harness shown above,
 this true end-to-end approach tests the connector in the actual runtime environment,
@@ -841,25 +841,25 @@ just as it would be the case when running the connector in production later on.<
 <h2 id="_wrap_up">Wrap-Up</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>In this post, we&#8217;ve discussed two approaches for testing Kafka Connect source connectors:
-plain unit tests, "manually" invoking the methods of the connector/task classes under test,
+<p>In this post, we’ve discussed two approaches for testing Kafka Connect source connectors:
+plain unit tests, &#34;manually&#34; invoking the methods of the connector/task classes under test,
 and integration tests, deploying a connector into Kafka Connect and verifying its behavior there via Testcontainers.</p>
 </div>
 <div class="paragraph">
 <p>The former approach provides you with faster turnaround times and shorter feedback cycles,
 whereas the latter approach gives you the confidence of testing a connector within the actual Kafka Connect runtime environment,
 at the cost of a more complex infrastructure set-up and longer test execution times.
-While we&#8217;ve focused on testing source connectors in this post,
+While we’ve focused on testing source connectors in this post,
 both approaches could equally be applied to sink connectors,
-with the only difference being that you&#8217;d feed records to the connector (either directly or by writing to a Kafka topic) and then observe and assert the expected state changes of the sink system in question.</p>
+with the only difference being that you’d feed records to the connector (either directly or by writing to a Kafka topic) and then observe and assert the expected state changes of the sink system in question.</p>
 </div>
 <div class="paragraph">
 <p>You can find the complete source code for this post, including some parts omitted here for brevity,
 in the <a href="https://github.com/gunnarmorling/kcetcd">kc-etcd</a> repository on GitHub.
-If you think that having a test harness like <a href="https://github.com/gunnarmorling/kcetcd/tree/main/src/test/java/dev/morling/kcute">kcute</a> for unit testing connectors is a good idea and it&#8217;s something you&#8217;d like to contribute to, then please let me know.
+If you think that having a test harness like <a href="https://github.com/gunnarmorling/kcetcd/tree/main/src/test/java/dev/morling/kcute">kcute</a> for unit testing connectors is a good idea and it’s something you’d like to contribute to, then please let me know.
 Ultimately, this could be extracted into its own project, independent from kc-etcd, or even be upstreamed to the Apache Kafka project proper,
 reusing as much as possible the actual Connect code,
-sans the bits for "deploying" connectors via a separate process.</p>
+sans the bits for &#34;deploying&#34; connectors via a separate process.</p>
 </div>
 <div class="paragraph">
 <p><em>Many thanks to <a href="https://twitter.com/hpgrahsl">Hans-Peter Grahsl</a> and <a href="https://twitter.com/KateStanley91">Kate Stanley</a> for their feedback while writing this blog post!</em></p>

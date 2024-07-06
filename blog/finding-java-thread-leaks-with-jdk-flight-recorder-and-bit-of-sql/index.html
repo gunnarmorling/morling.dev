@@ -21,14 +21,14 @@ Each thread requires a bit of memory for its stack space,
 so starting an unbounded number of threads can be considered as a form of memory leak, causing your application to run out of memory eventually.
 In addition, the more threads there are, the more overhead the operating system incurs for scheduling them,
 until the scheduler itself will consume most of the available CPU resources.
-Thus it&#8217;s vital to detect and fix this kind of problem early on.
+Thus it’s vital to detect and fix this kind of problem early on.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/finding-java-thread-leaks-with-jdk-flight-recorder-and-bit-of-sql/" />
+<meta property="og:url" content="https://www.morling.dev/blog/finding-java-thread-leaks-with-jdk-flight-recorder-and-bit-of-sql/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2023-02-28T22:16:10+01:00" />
 <meta property="article:modified_time" content="2023-02-28T22:16:10+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Finding Java Thread Leaks With JDK Flight Recorder and a Bit Of SQL"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Finding Java Thread Leaks With JDK Flight Recorder and a Bit Of SQL"/>
 <meta name="twitter:description" content="
 The other day at work, we had a situation where we suspected a thread leak in one particular service,
 i.e. code which continuously starts new threads, without taking care of ever stopping them again.
@@ -36,7 +36,7 @@ Each thread requires a bit of memory for its stack space,
 so starting an unbounded number of threads can be considered as a form of memory leak, causing your application to run out of memory eventually.
 In addition, the more threads there are, the more overhead the operating system incurs for scheduling them,
 until the scheduler itself will consume most of the available CPU resources.
-Thus it&#8217;s vital to detect and fix this kind of problem early on.
+Thus it’s vital to detect and fix this kind of problem early on.
 "/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
@@ -276,35 +276,35 @@ Each thread requires a bit of memory for its stack space,
 so starting an unbounded number of threads can be considered as a form of memory leak, causing your application to run out of memory eventually.
 In addition, the more threads there are, the more overhead the operating system incurs for scheduling them,
 until the scheduler itself will consume most of the available CPU resources.
-Thus it&#8217;s vital to detect and fix this kind of problem early on.</p>
+Thus it’s vital to detect and fix this kind of problem early on.</p>
 </div>
 <div class="paragraph">
 <p>The usual starting point for analyzing a suspected thread leak is <a href="https://access.redhat.com/solutions/18178">taking a thread dump</a>,
 for instance using the <a href="https://docs.oracle.com/en/java/javase/17/docs/specs/man/jstack.html"><em>jstack</em></a> CLI tool or via <a href="https://jdk.java.net/jmc/">JDK Mission Control</a>;
-if there&#8217;s an unexpected large number of threads (oftentimes with similar or even identical names), then it&#8217;s very likely that something is wrong indeed.
+if there’s an unexpected large number of threads (oftentimes with similar or even identical names), then it’s very likely that something is wrong indeed.
 But a thread dump by itself is only a snapshot of the thread state at a given time,
-i.e. it doesn&#8217;t tell you how the thread count is changing over time (perhaps there are many threads which are started but also stopped again?),
-and it also doesn&#8217;t provide you with information about the cause, i.e. which part of your application is starting all those threads. Does it happen in your own code base, or within some 3rd party dependency? While the thread names and stacks in the dump can give you some idea, that information isn&#8217;t necessarily enough for a conclusive root cause analysis.</p>
+i.e. it doesn’t tell you how the thread count is changing over time (perhaps there are many threads which are started but also stopped again?),
+and it also doesn’t provide you with information about the cause, i.e. which part of your application is starting all those threads. Does it happen in your own code base, or within some 3rd party dependency? While the thread names and stacks in the dump can give you some idea, that information isn’t necessarily enough for a conclusive root cause analysis.</p>
 </div>
 <div class="paragraph">
-<p>Luckily, Java&#8217;s built-in event recorder and performance analysis tool, <a href="https://openjdk.org/jeps/328">JDK Flight Recorder</a>,
+<p>Luckily, Java’s built-in event recorder and performance analysis tool, <a href="https://openjdk.org/jeps/328">JDK Flight Recorder</a>,
 exposes all the data you need to identify thread leaks and their cause.
-So let&#8217;s take a look at the details, bidding farewell to those pesky thread leaks once and forever!</p>
+So let’s take a look at the details, bidding farewell to those pesky thread leaks once and forever!</p>
 </div>
 <div class="paragraph">
 <p>The first JFR event type to look at is <a href="https://bestsolution-at.github.io/jfr-doc/openjdk-17.html#jdk.JavaThreadStatistics"><code>jdk.JavaThreadStatistics</code></a>:
 recorded every second by default, it keeps track of active, accumulated, and peak thread counts.
-Here is a JFR recording from a simple thread leak demo application I&#8217;ve created
+Here is a JFR recording from a simple thread leak demo application I’ve created
 (newest events at the top):</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/thread_leak_analysis.png" alt="`jdk.JavaThreadStatistics` Events in JDK Mission Control">
+<img src="/images/thread_leak_analysis.png" alt="`jdk.JavaThreadStatistics` Events in JDK Mission Control"/>
 </div>
 </div>
 <div class="paragraph">
-<p>The number of active threads is continuously increasing, never going back down again&#8201;&#8212;&#8201;pretty clearly that this a thread leak.
-Now let&#8217;s figure out where exactly all those threads are coming from.</p>
+<p>The number of active threads is continuously increasing, never going back down again — pretty clearly that this a thread leak.
+Now let’s figure out where exactly all those threads are coming from.</p>
 </div>
 <div class="paragraph">
 <p>For this, two other JFR event types come in handy: <a href="https://bestsolution-at.github.io/jfr-doc/openjdk-17.html#jdk.ThreadStart"><code>jdk.ThreadStart</code></a> and <a href="https://bestsolution-at.github.io/jfr-doc/openjdk-17.html#jdk.ThreadEnd"><code>jdk.ThreadEnd</code></a>.
@@ -317,11 +317,11 @@ If we find many thread start events originating at the same code location withou
 <div class="paragraph">
 <p>This sort of event analysis is a perfect use case for <a href="https://github.com/moditect/jfr-analytics">JFR Analytics</a>.
 This tool allows you to analyze JFR recordings using standard SQL (leveraging <a href="https://calcite.apache.org/">Apache Calcite</a> under the hood).
-In JFR Analytics, each event type is represented by its own "table".
-Finding thread start events without matching end events is as simple as running a <code>LEFT JOIN</code> on the two event types and keeping only those start events which don&#8217;t have a join partner.</p>
+In JFR Analytics, each event type is represented by its own &#34;table&#34;.
+Finding thread start events without matching end events is as simple as running a <code>LEFT JOIN</code> on the two event types and keeping only those start events which don’t have a join partner.</p>
 </div>
 <div class="paragraph">
-<p>So let&#8217;s load the file into the SQLLine command line client
+<p>So let’s load the file into the SQLLine command line client
 (see the <a href="https://github.com/moditect/jfr-analytics#running-queries-using-sqlline">README</a> of JFR Analytics for <a href="https://github.com/moditect/jfr-analytics#running-queries-using-sqlline">instructions</a> on building and launching this tool):</p>
 </div>
 <div class="listingblock">
@@ -349,19 +349,19 @@ Finding thread start events without matching end events is as simple as running 
 7
 8
 </pre></td><td class="code"><pre><span class="k">SELECT</span>
-  <span class="n">ts</span><span class="p">.</span><span class="nv">"startTime"</span><span class="p">,</span>
-  <span class="n">ts</span><span class="p">.</span><span class="nv">"parentThread"</span><span class="p">.</span><span class="nv">"javaName"</span> <span class="k">as</span> <span class="nv">"parentThread"</span><span class="p">,</span>
-  <span class="n">ts</span><span class="p">.</span><span class="nv">"eventThread"</span><span class="p">.</span><span class="nv">"javaName"</span> <span class="k">AS</span> <span class="nv">"newThread"</span><span class="p">,</span>
-  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="n">ts</span><span class="p">.</span><span class="nv">"stackTrace"</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">"stackTrace"</span>
-<span class="k">FROM</span> <span class="nv">"jdk.ThreadStart"</span> <span class="n">ts</span> <span class="k">LEFT</span> <span class="k">JOIN</span> <span class="nv">"jdk.ThreadEnd"</span> <span class="n">te</span>
-  <span class="k">ON</span> <span class="n">ts</span><span class="p">.</span><span class="nv">"eventThread"</span><span class="p">.</span><span class="nv">"javaThreadId"</span> <span class="o">=</span> <span class="n">te</span><span class="p">.</span><span class="nv">"eventThread"</span><span class="p">.</span><span class="nv">"javaThreadId"</span>
-<span class="k">WHERE</span> <span class="n">te</span><span class="p">.</span><span class="nv">"startTime"</span> <span class="k">IS</span> <span class="k">NULL</span><span class="p">;</span>
+  <span class="n">ts</span><span class="p">.</span><span class="nv">&#34;startTime&#34;</span><span class="p">,</span>
+  <span class="n">ts</span><span class="p">.</span><span class="nv">&#34;parentThread&#34;</span><span class="p">.</span><span class="nv">&#34;javaName&#34;</span> <span class="k">as</span> <span class="nv">&#34;parentThread&#34;</span><span class="p">,</span>
+  <span class="n">ts</span><span class="p">.</span><span class="nv">&#34;eventThread&#34;</span><span class="p">.</span><span class="nv">&#34;javaName&#34;</span> <span class="k">AS</span> <span class="nv">&#34;newThread&#34;</span><span class="p">,</span>
+  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="n">ts</span><span class="p">.</span><span class="nv">&#34;stackTrace&#34;</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">&#34;stackTrace&#34;</span>
+<span class="k">FROM</span> <span class="nv">&#34;jdk.ThreadStart&#34;</span> <span class="n">ts</span> <span class="k">LEFT</span> <span class="k">JOIN</span> <span class="nv">&#34;jdk.ThreadEnd&#34;</span> <span class="n">te</span>
+  <span class="k">ON</span> <span class="n">ts</span><span class="p">.</span><span class="nv">&#34;eventThread&#34;</span><span class="p">.</span><span class="nv">&#34;javaThreadId&#34;</span> <span class="o">=</span> <span class="n">te</span><span class="p">.</span><span class="nv">&#34;eventThread&#34;</span><span class="p">.</span><span class="nv">&#34;javaThreadId&#34;</span>
+<span class="k">WHERE</span> <span class="n">te</span><span class="p">.</span><span class="nv">&#34;startTime&#34;</span> <span class="k">IS</span> <span class="k">NULL</span><span class="p">;</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
 <p>Note how the <code>parentThread</code> and <code>eventThread</code> columns are of a complex SQL type, allowing you to refer to thread properties such as <code>javaName</code> or <code>javaThreadId</code> using dot notation.
-In that simple example recording, there&#8217;s one stack trace which dominates the result set, so looking at any of the events reveals the culprit:</p>
+In that simple example recording, there’s one stack trace which dominates the result set, so looking at any of the events reveals the culprit:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -440,7 +440,7 @@ And surely enough, this is how it looks like:</p>
             <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">1000L</span><span class="o">);</span>
         <span class="o">}</span>
     <span class="o">});</span>
-    <span class="k">return</span> <span class="s">"Hello World"</span><span class="o">;</span>
+    <span class="k">return</span> <span class="s">&#34;Hello World&#34;</span><span class="o">;</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
@@ -462,14 +462,14 @@ JFR Analytics provides the built-in function <code>TRUNCATE_STACKTRACE</code> fo
 8
 9
 </pre></td><td class="code"><pre><span class="k">SELECT</span>
-  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="n">ts</span><span class="p">.</span><span class="nv">"stackTrace"</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">"stackTrace"</span><span class="p">,</span>
-  <span class="k">COUNT</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">"threadCount"</span>
-<span class="k">FROM</span> <span class="nv">"jdk.ThreadStart"</span> <span class="n">ts</span> <span class="k">LEFT</span> <span class="k">JOIN</span> <span class="nv">"jdk.ThreadEnd"</span> <span class="n">te</span>
-  <span class="k">ON</span> <span class="n">ts</span><span class="p">.</span><span class="nv">"eventThread"</span><span class="p">.</span><span class="nv">"javaThreadId"</span> <span class="o">=</span> <span class="n">te</span><span class="p">.</span><span class="nv">"eventThread"</span><span class="p">.</span><span class="nv">"javaThreadId"</span>
-<span class="k">WHERE</span> <span class="n">te</span><span class="p">.</span><span class="nv">"startTime"</span> <span class="k">IS</span> <span class="k">NULL</span>
+  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="n">ts</span><span class="p">.</span><span class="nv">&#34;stackTrace&#34;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">&#34;stackTrace&#34;</span><span class="p">,</span>
+  <span class="k">COUNT</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">&#34;threadCount&#34;</span>
+<span class="k">FROM</span> <span class="nv">&#34;jdk.ThreadStart&#34;</span> <span class="n">ts</span> <span class="k">LEFT</span> <span class="k">JOIN</span> <span class="nv">&#34;jdk.ThreadEnd&#34;</span> <span class="n">te</span>
+  <span class="k">ON</span> <span class="n">ts</span><span class="p">.</span><span class="nv">&#34;eventThread&#34;</span><span class="p">.</span><span class="nv">&#34;javaThreadId&#34;</span> <span class="o">=</span> <span class="n">te</span><span class="p">.</span><span class="nv">&#34;eventThread&#34;</span><span class="p">.</span><span class="nv">&#34;javaThreadId&#34;</span>
+<span class="k">WHERE</span> <span class="n">te</span><span class="p">.</span><span class="nv">&#34;startTime&#34;</span> <span class="k">IS</span> <span class="k">NULL</span>
 <span class="k">GROUP</span> <span class="k">BY</span>
-  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="n">ts</span><span class="p">.</span><span class="nv">"stackTrace"</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-<span class="k">ORDER</span> <span class="k">BY</span> <span class="nv">"threadCount"</span> <span class="k">DESC</span><span class="p">;</span>
+  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="n">ts</span><span class="p">.</span><span class="nv">&#34;stackTrace&#34;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="nv">&#34;threadCount&#34;</span> <span class="k">DESC</span><span class="p">;</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -523,11 +523,11 @@ threadCount  1
 <p>Sometimes you may encounter a situation where new threads are started from within other threads in a 3rd party dependency,
 rather than directly from threads within your own code base.
 In that case the stack traces of the thread start events may not tell you enough about the root cause of the problem,
-i.e. where those other "intermediary" threads are coming from, and how they relate to your own code.</p>
+i.e. where those other &#34;intermediary&#34; threads are coming from, and how they relate to your own code.</p>
 </div>
 <div class="paragraph">
 <p>To dig into the details here, you can leverage the fact that each <code>jdk.ThreadStart</code> event contains information about the parent thread which started a new thread.
-So you can join the <code>jdk.ThreadStart</code> table to itself on the parent thread&#8217;s id,
+So you can join the <code>jdk.ThreadStart</code> table to itself on the parent thread’s id,
 fetching also the stack traces of the code starting those parent threads:</p>
 </div>
 <div class="listingblock">
@@ -545,23 +545,23 @@ fetching also the stack traces of the code starting those parent threads:</p>
 11
 12
 </pre></td><td class="code"><pre><span class="k">SELECT</span>
-  <span class="n">ts</span><span class="p">.</span><span class="nv">"startTime"</span><span class="p">,</span>
-  <span class="n">pts</span><span class="p">.</span><span class="nv">"parentThread"</span><span class="p">.</span><span class="nv">"javaName"</span> <span class="k">AS</span> <span class="nv">"grandParentThread"</span><span class="p">,</span>
-  <span class="n">ts</span><span class="p">.</span><span class="nv">"parentThread"</span><span class="p">.</span><span class="nv">"javaName"</span> <span class="k">AS</span> <span class="nv">"parentThread"</span><span class="p">,</span>
-  <span class="n">ts</span><span class="p">.</span><span class="nv">"eventThread"</span><span class="p">.</span><span class="nv">"javaName"</span> <span class="k">AS</span> <span class="nv">"newThread"</span><span class="p">,</span>
-  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="n">pts</span><span class="p">.</span><span class="nv">"stackTrace"</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">"parentStackTrace"</span><span class="p">,</span>
-  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="n">ts</span><span class="p">.</span><span class="nv">"stackTrace"</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">"stackTrace"</span>
-<span class="k">FROM</span> <span class="nv">"jdk.ThreadStart"</span> <span class="n">ts</span> <span class="k">LEFT</span> <span class="k">JOIN</span> <span class="nv">"jdk.ThreadEnd"</span> <span class="n">te</span>
-  <span class="k">ON</span> <span class="n">ts</span><span class="p">.</span><span class="nv">"startTime"</span> <span class="o">=</span> <span class="n">te</span><span class="p">.</span><span class="nv">"startTime"</span>
-  <span class="k">JOIN</span> <span class="nv">"jdk.ThreadStart"</span> <span class="n">pts</span>
-  <span class="k">ON</span> <span class="n">ts</span><span class="p">.</span><span class="nv">"parentThread"</span><span class="p">.</span><span class="nv">"javaThreadId"</span> <span class="o">=</span> <span class="n">pts</span><span class="p">.</span><span class="nv">"eventThread"</span><span class="p">.</span><span class="nv">"javaThreadId"</span>
-<span class="k">WHERE</span> <span class="n">te</span><span class="p">.</span><span class="nv">"startTime"</span> <span class="k">IS</span> <span class="k">NULL</span><span class="p">;</span>
+  <span class="n">ts</span><span class="p">.</span><span class="nv">&#34;startTime&#34;</span><span class="p">,</span>
+  <span class="n">pts</span><span class="p">.</span><span class="nv">&#34;parentThread&#34;</span><span class="p">.</span><span class="nv">&#34;javaName&#34;</span> <span class="k">AS</span> <span class="nv">&#34;grandParentThread&#34;</span><span class="p">,</span>
+  <span class="n">ts</span><span class="p">.</span><span class="nv">&#34;parentThread&#34;</span><span class="p">.</span><span class="nv">&#34;javaName&#34;</span> <span class="k">AS</span> <span class="nv">&#34;parentThread&#34;</span><span class="p">,</span>
+  <span class="n">ts</span><span class="p">.</span><span class="nv">&#34;eventThread&#34;</span><span class="p">.</span><span class="nv">&#34;javaName&#34;</span> <span class="k">AS</span> <span class="nv">&#34;newThread&#34;</span><span class="p">,</span>
+  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="n">pts</span><span class="p">.</span><span class="nv">&#34;stackTrace&#34;</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">&#34;parentStackTrace&#34;</span><span class="p">,</span>
+  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="n">ts</span><span class="p">.</span><span class="nv">&#34;stackTrace&#34;</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">&#34;stackTrace&#34;</span>
+<span class="k">FROM</span> <span class="nv">&#34;jdk.ThreadStart&#34;</span> <span class="n">ts</span> <span class="k">LEFT</span> <span class="k">JOIN</span> <span class="nv">&#34;jdk.ThreadEnd&#34;</span> <span class="n">te</span>
+  <span class="k">ON</span> <span class="n">ts</span><span class="p">.</span><span class="nv">&#34;startTime&#34;</span> <span class="o">=</span> <span class="n">te</span><span class="p">.</span><span class="nv">&#34;startTime&#34;</span>
+  <span class="k">JOIN</span> <span class="nv">&#34;jdk.ThreadStart&#34;</span> <span class="n">pts</span>
+  <span class="k">ON</span> <span class="n">ts</span><span class="p">.</span><span class="nv">&#34;parentThread&#34;</span><span class="p">.</span><span class="nv">&#34;javaThreadId&#34;</span> <span class="o">=</span> <span class="n">pts</span><span class="p">.</span><span class="nv">&#34;eventThread&#34;</span><span class="p">.</span><span class="nv">&#34;javaThreadId&#34;</span>
+<span class="k">WHERE</span> <span class="n">te</span><span class="p">.</span><span class="nv">&#34;startTime&#34;</span> <span class="k">IS</span> <span class="k">NULL</span><span class="p">;</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Here, <code>stackTrace</code> is the trace of a thread (named "pool-728-thread-1") of an external library, "greeting provider", which starts another (leaking) thread (named "pool-729-thread-1"),
-and <code>parentStackTrace</code> points to the code in our own application (thread name "executor-thread-0") which started that first thread:</p>
+<p>Here, <code>stackTrace</code> is the trace of a thread (named &#34;pool-728-thread-1&#34;) of an external library, &#34;greeting provider&#34;, which starts another (leaking) thread (named &#34;pool-729-thread-1&#34;),
+and <code>parentStackTrace</code> points to the code in our own application (thread name &#34;executor-thread-0&#34;) which started that first thread:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -639,7 +639,7 @@ java.lang.Thread.run<span class="o">()</span>:1589
 </div>
 </div>
 <div class="paragraph">
-<p>If the thread hierarchy is even deeper, you could continue down that path and keep joining more and more parent threads until you&#8217;ve arrived at the application&#8217;s main thread.
+<p>If the thread hierarchy is even deeper, you could continue down that path and keep joining more and more parent threads until you’ve arrived at the application’s main thread.
 I was hoping to leverage recursive query support in Calcite for this purpose,
 but as it <a href="https://lists.apache.org/thread/f6zcfsdh5f9dhnknmn2rr4qbf7whycsp">turned out</a>, support for this only exists in the Calcite <code>RelBuilder</code> API at the moment,
 while the <code>RECURSIVE</code> keyword is not supported for SQL queries yet.</p>

@@ -19,23 +19,23 @@ The JDK Flight Recorder (JFR) is an invaluable tool for gaining deep insights in
 Open-sourced in JDK 11, JFR provides a low-overhead framework for collecting events from Java applications, the JVM and the operating system.
 
 
-In this blog post we&#8217;re going to explore how custom, application-specific JFR events can be used to monitor a REST API, allowing to track request counts, identify long-running requests and more.
-We&#8217;ll also discuss how the JFR Event Streaming API new in Java 14 can be used to export live events,
+In this blog post we’re going to explore how custom, application-specific JFR events can be used to monitor a REST API, allowing to track request counts, identify long-running requests and more.
+We’ll also discuss how the JFR Event Streaming API new in Java 14 can be used to export live events,
 making them available for monitoring and alerting via tools such as Prometheus and Grafana.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/" />
+<meta property="og:url" content="https://www.morling.dev/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-01-29T15:30:00+01:00" />
 <meta property="article:modified_time" content="2020-01-29T15:30:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Monitoring REST APIs with Custom JDK Flight Recorder Events"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Monitoring REST APIs with Custom JDK Flight Recorder Events"/>
 <meta name="twitter:description" content="
 The JDK Flight Recorder (JFR) is an invaluable tool for gaining deep insights into the performance characteristics of Java applications.
 Open-sourced in JDK 11, JFR provides a low-overhead framework for collecting events from Java applications, the JVM and the operating system.
 
 
-In this blog post we&#8217;re going to explore how custom, application-specific JFR events can be used to monitor a REST API, allowing to track request counts, identify long-running requests and more.
-We&#8217;ll also discuss how the JFR Event Streaming API new in Java 14 can be used to export live events,
+In this blog post we’re going to explore how custom, application-specific JFR events can be used to monitor a REST API, allowing to track request counts, identify long-running requests and more.
+We’ll also discuss how the JFR Event Streaming API new in Java 14 can be used to export live events,
 making them available for monitoring and alerting via tools such as Prometheus and Grafana.
 "/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
@@ -274,8 +274,8 @@ making them available for monitoring and alerting via tools such as Prometheus a
 Open-sourced in JDK 11, JFR provides a low-overhead framework for collecting events from Java applications, the JVM and the operating system.</p>
 </div>
 <div class="paragraph">
-<p>In this blog post we&#8217;re going to explore how custom, application-specific JFR events can be used to monitor a REST API, allowing to track request counts, identify long-running requests and more.
-We&#8217;ll also discuss how the JFR <a href="https://openjdk.java.net/jeps/349">Event Streaming API</a> new in Java 14 can be used to export live events,
+<p>In this blog post we’re going to explore how custom, application-specific JFR events can be used to monitor a REST API, allowing to track request counts, identify long-running requests and more.
+We’ll also discuss how the JFR <a href="https://openjdk.java.net/jeps/349">Event Streaming API</a> new in Java 14 can be used to export live events,
 making them available for monitoring and alerting via tools such as Prometheus and Grafana.</p>
 </div>
 <div class="paragraph">
@@ -283,7 +283,7 @@ making them available for monitoring and alerting via tools such as Prometheus a
 originally developed at BEA and part of the JRockit VM,
 they were later on commercial features of the Oracle JDK.
 As of Java 11, JFR got open-sourced and is part of OpenJDK distributions.
-JMC is also open-source, but it&#8217;s an independent tool under the OpenJDK umbrella,
+JMC is also open-source, but it’s an independent tool under the OpenJDK umbrella,
 which must be downloaded separately.</p>
 </div>
 <div class="paragraph">
@@ -296,7 +296,7 @@ You can find some more links to related useful resources towards the end of this
 <h2 id="_custom_flight_recorder_events">Custom Flight Recorder Events</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>One thing that&#8217;s really great about JFR and JMC is that you&#8217;re not limited to the events and data baked into the JVM and platform libraries:
+<p>One thing that’s really great about JFR and JMC is that you’re not limited to the events and data baked into the JVM and platform libraries:
 JFR also provides an API for implementing custom events.
 That way you can use the low-overhead event recording infrastructure (its goal is to add at most 1% performance overhead) for your own event types.
 This allows you to record and analyze higher-level events, using the language of your application-specific domain.</p>
@@ -304,12 +304,12 @@ This allows you to record and analyze higher-level events, using the language of
 <div class="paragraph">
 <p>Taking my day job project <a href="https://debezium.io/">Debezium</a> as an example
 (an open-source platform for change data capture for a variety of databases),
-we could for instance produce events such as "Snapshot started", "Snapshotting of table 'Customers' completed", "Captured change event for transaction log offset 123" etc.
+we could for instance produce events such as &#34;Snapshot started&#34;, &#34;Snapshotting of table &#39;Customers&#39; completed&#34;, &#34;Captured change event for transaction log offset 123&#34; etc.
 Users could send us recordings with these events and we could dive into them, in order to identify bugs or performance issues.</p>
 </div>
 <div class="paragraph">
-<p>In the following let&#8217;s consider a less complex and hence better approachable example, though.
-We&#8217;ll implement an event for measuring the duration of REST API calls.
+<p>In the following let’s consider a less complex and hence better approachable example, though.
+We’ll implement an event for measuring the duration of REST API calls.
 The Todo service from my recent blog post on <a href="/blog/quarkus-qute-test-ride/">Quarkus Qute</a> will serve as our guinea pig.
 It is based on the <a href="https://quarkus.io/">Quarkus</a> stack and provides a simple REST API based on <a href="https://projects.eclipse.org/projects/ee4j.jaxrs">JAX-RS</a>.
 As always, you can find the complete <a href="https://github.com/gunnarmorling/jfr-custom-events">source code</a> for this blog post on GitHub.</p>
@@ -328,7 +328,7 @@ Also retrieval of the attributes should be an efficient operation,
 so to avoid any unneccessary overhead.</p>
 </div>
 <div class="paragraph">
-<p>Here&#8217;s a basic event class for monitoring our REST API calls:</p>
+<p>Here’s a basic event class for monitoring our REST API calls:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -373,43 +373,43 @@ so to avoid any unneccessary overhead.</p>
 39
 40
 </pre></td><td class="code"><pre><span class="nd">@Name</span><span class="o">(</span><span class="nc">JaxRsInvocationEvent</span><span class="o">.</span><span class="na">NAME</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
-<span class="nd">@Label</span><span class="o">(</span><span class="s">"JAX-RS Invocation"</span><span class="o">)</span>
-<span class="nd">@Category</span><span class="o">(</span><span class="s">"JAX-RS"</span><span class="o">)</span>
-<span class="nd">@Description</span><span class="o">(</span><span class="s">"Invocation of a JAX-RS resource method"</span><span class="o">)</span>
+<span class="nd">@Label</span><span class="o">(</span><span class="s">&#34;JAX-RS Invocation&#34;</span><span class="o">)</span>
+<span class="nd">@Category</span><span class="o">(</span><span class="s">&#34;JAX-RS&#34;</span><span class="o">)</span>
+<span class="nd">@Description</span><span class="o">(</span><span class="s">&#34;Invocation of a JAX-RS resource method&#34;</span><span class="o">)</span>
 <span class="nd">@StackTrace</span><span class="o">(</span><span class="kc">false</span><span class="o">)</span> <i class="conum" data-value="2"></i><b>(2)</b>
 <span class="kd">public</span> <span class="kd">class</span> <span class="nc">JaxRsInvocationEvent</span> <span class="kd">extends</span> <span class="nc">Event</span> <span class="o">{</span>
 
-  <span class="kd">static</span> <span class="kd">final</span> <span class="nc">String</span> <span class="no">NAME</span> <span class="o">=</span> <span class="s">"dev.morling.jfr.JaxRsInvocation"</span><span class="o">;</span>
+  <span class="kd">static</span> <span class="kd">final</span> <span class="nc">String</span> <span class="no">NAME</span> <span class="o">=</span> <span class="s">&#34;dev.morling.jfr.JaxRsInvocation&#34;</span><span class="o">;</span>
 
-  <span class="nd">@Label</span><span class="o">(</span><span class="s">"Resource Method"</span><span class="o">)</span> <i class="conum" data-value="3"></i><b>(3)</b>
+  <span class="nd">@Label</span><span class="o">(</span><span class="s">&#34;Resource Method&#34;</span><span class="o">)</span> <i class="conum" data-value="3"></i><b>(3)</b>
   <span class="kd">public</span> <span class="nc">String</span> <span class="n">method</span><span class="o">;</span>
 
-  <span class="nd">@Label</span><span class="o">(</span><span class="s">"Media Type"</span><span class="o">)</span>
+  <span class="nd">@Label</span><span class="o">(</span><span class="s">&#34;Media Type&#34;</span><span class="o">)</span>
   <span class="kd">public</span> <span class="nc">String</span> <span class="n">mediaType</span><span class="o">;</span>
 
-  <span class="nd">@Label</span><span class="o">(</span><span class="s">"Java Method"</span><span class="o">)</span>
+  <span class="nd">@Label</span><span class="o">(</span><span class="s">&#34;Java Method&#34;</span><span class="o">)</span>
   <span class="kd">public</span> <span class="nc">String</span> <span class="n">javaMethod</span><span class="o">;</span>
 
-  <span class="nd">@Label</span><span class="o">(</span><span class="s">"Path"</span><span class="o">)</span>
+  <span class="nd">@Label</span><span class="o">(</span><span class="s">&#34;Path&#34;</span><span class="o">)</span>
   <span class="kd">public</span> <span class="nc">String</span> <span class="n">path</span><span class="o">;</span>
 
-  <span class="nd">@Label</span><span class="o">(</span><span class="s">"Query Parameters"</span><span class="o">)</span>
+  <span class="nd">@Label</span><span class="o">(</span><span class="s">&#34;Query Parameters&#34;</span><span class="o">)</span>
   <span class="kd">public</span> <span class="nc">String</span> <span class="n">queryParameters</span><span class="o">;</span>
 
-  <span class="nd">@Label</span><span class="o">(</span><span class="s">"Headers"</span><span class="o">)</span>
+  <span class="nd">@Label</span><span class="o">(</span><span class="s">&#34;Headers&#34;</span><span class="o">)</span>
   <span class="kd">public</span> <span class="nc">String</span> <span class="n">headers</span><span class="o">;</span>
 
-  <span class="nd">@Label</span><span class="o">(</span><span class="s">"Length"</span><span class="o">)</span>
+  <span class="nd">@Label</span><span class="o">(</span><span class="s">&#34;Length&#34;</span><span class="o">)</span>
   <span class="nd">@DataAmount</span> <i class="conum" data-value="4"></i><b>(4)</b>
   <span class="kd">public</span> <span class="kt">int</span> <span class="n">length</span><span class="o">;</span>
 
-  <span class="nd">@Label</span><span class="o">(</span><span class="s">"Response Headers"</span><span class="o">)</span>
+  <span class="nd">@Label</span><span class="o">(</span><span class="s">&#34;Response Headers&#34;</span><span class="o">)</span>
   <span class="kd">public</span> <span class="nc">String</span> <span class="n">responseHeaders</span><span class="o">;</span>
 
-  <span class="nd">@Label</span><span class="o">(</span><span class="s">"Response Length"</span><span class="o">)</span>
+  <span class="nd">@Label</span><span class="o">(</span><span class="s">&#34;Response Length&#34;</span><span class="o">)</span>
   <span class="kd">public</span> <span class="kt">int</span> <span class="n">responseLength</span><span class="o">;</span>
 
-  <span class="nd">@Label</span><span class="o">(</span><span class="s">"Response Status"</span><span class="o">)</span>
+  <span class="nd">@Label</span><span class="o">(</span><span class="s">&#34;Response Status&#34;</span><span class="o">)</span>
   <span class="kd">public</span> <span class="kt">int</span> <span class="n">status</span><span class="o">;</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
@@ -417,13 +417,13 @@ so to avoid any unneccessary overhead.</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>The <code>@Name</code>, <code>@Category</code>, <code>@Description</code> and <code>@Label</code> annotations define some meta-data, e.g. used for controlling the appearance of these events in the JMC UI</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>JAX-RS invocation events shouldn&#8217;t contain a stacktrace by default, as that&#8217;d only increase the size of Flight Recordings without adding much value</td>
+<td>JAX-RS invocation events shouldn’t contain a stacktrace by default, as that’d only increase the size of Flight Recordings without adding much value</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
@@ -433,13 +433,13 @@ so to avoid any unneccessary overhead.</p>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
 <td><code>@DataAmount</code> tags this attribute as a data amount (by default in bytes) and will be displayed accordingly in JMC; there are many other similar annotations in the <code><a href="https://docs.oracle.com/en/java/javase/11/docs/api/jdk.jfr/jdk/jfr/package-summary.html">jdk.jfr</a></code> package, such as <code>@MemoryAddress</code>, <code>@Timestamp</code> and more</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Having defined the event class itself,
 we must find a way for emitting event instances at the right point in time.
 In the simplest case, e.g. suitable for events related to your application logic, this might happen right in the application code itself.
-For more "technical" events it&#8217;s a good idea though to keep the creation of Flight Recorder events separate from your business logic,
+For more &#34;technical&#34; events it’s a good idea though to keep the creation of Flight Recorder events separate from your business logic,
 e.g. by using mechanisms such as servlet filters, interceptors and similar, which allow to inject cross-cutting logic into the call flow of your application.</p>
 </div>
 <div class="paragraph">
@@ -559,7 +559,7 @@ as they allow to hook into the request handling logic <em>before</em> and <em>af
   <span class="o">}</span>
 
   <span class="kd">private</span> <span class="nc">String</span> <span class="nf">getJavaMethod</span><span class="o">(</span><span class="nc">ContainerRequestContext</span> <span class="n">requestContext</span><span class="o">)</span> <span class="o">{</span>
-    <span class="nc">String</span> <span class="n">propName</span> <span class="o">=</span> <span class="s">"org.jboss.resteasy.core.ResourceMethodInvoker"</span><span class="o">;</span>
+    <span class="nc">String</span> <span class="n">propName</span> <span class="o">=</span> <span class="s">&#34;org.jboss.resteasy.core.ResourceMethodInvoker&#34;</span><span class="o">;</span>
     <span class="nc">ResourceMethodInvoker</span> <span class="n">invoker</span> <span class="o">=</span>
         <span class="o">(</span><span class="nc">ResourceMethodInvoker</span><span class="o">)</span><span class="n">requestContext</span><span class="o">.</span><span class="na">getProperty</span><span class="o">(</span><span class="n">propName</span><span class="o">);</span>
     <span class="k">return</span> <span class="n">invoker</span><span class="o">.</span><span class="na">getMethod</span><span class="o">().</span><span class="na">toString</span><span class="o">();</span>
@@ -570,7 +570,7 @@ as they allow to hook into the request handling logic <em>before</em> and <em>af
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Allows the filter to be picked up automatically by the JAX-RS implementation</td>
 </tr>
@@ -607,11 +607,11 @@ in that case, populate all the payload attributes of the event based on the valu
 <td><i class="conum" data-value="9"></i><b>9</b></td>
 <td>Commit the event with Flight Recorder</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>With that, our event class is pretty much ready to be used.
-There&#8217;s only one more thing to do, and that is registering the new type with the Flight Recorder system.
+There’s only one more thing to do, and that is registering the new type with the Flight Recorder system.
 A Quarkus application start-up lifecycle method comes in handy for that:</p>
 </div>
 <div class="listingblock">
@@ -634,7 +634,7 @@ A Quarkus application start-up lifecycle method comes in handy for that:</p>
 </div>
 </div>
 <div class="paragraph">
-<p>Note this step isn&#8217;t strictly needed, the event type can also be used without explicit registration.
+<p>Note this step isn’t strictly needed, the event type can also be used without explicit registration.
 But doing so will later on allow to apply specific settings for the event in Mission Control (see below),
 also if no event of this type has been emitted yet.</p>
 </div>
@@ -644,12 +644,12 @@ also if no event of this type has been emitted yet.</p>
 <h2 id="_creating_jfr_recordings">Creating JFR Recordings</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Now let&#8217;s capture some JAX-RS API events using Flight Recorder and inspect them in Mission Control.</p>
+<p>Now let’s capture some JAX-RS API events using Flight Recorder and inspect them in Mission Control.</p>
 </div>
 <div class="paragraph">
 <p>To do so, make sure to have Mission Control installed.
 Just as with OpenJDK, there are different builds for Mission Control to choose from.
-If you&#8217;re in the Fedora/RHEL universe, there&#8217;s a repository package which you can install,
+If you’re in the Fedora/RHEL universe, there’s a repository package which you can install,
 e.g. like this for the <a href="https://fedoraproject.org/wiki/JMC_on_Fedora">Fedora JMC package</a>:</p>
 </div>
 <div class="listingblock">
@@ -662,11 +662,11 @@ e.g. like this for the <a href="https://fedoraproject.org/wiki/JMC_on_Fedora">Fe
 <div class="paragraph">
 <p>Alternatively, you can download <a href="https://jdk.java.net/jmc/">builds for different</a> platforms from Oracle;
 some more info about these builds can be found in <a href="http://hirt.se/blog/?p=1208">this blog post</a> by Marcus Hirt.
-There&#8217;s also the <a href="https://bell-sw.com/pages/lmc/">Liberica Mission Control</a> build by BellSoft and <a href="https://www.azul.com/products/zulu-mission-control/">Zulu Mission Control</a> by Azul.
+There’s also the <a href="https://bell-sw.com/pages/lmc/">Liberica Mission Control</a> build by BellSoft and <a href="https://www.azul.com/products/zulu-mission-control/">Zulu Mission Control</a> by Azul.
 The AdoptOpenJDK provides <a href="https://adoptopenjdk.net/jmc.html">snapshot builds</a> of JMC 8 as well as an Eclipse update site for installing JMC into an existing Eclipse instance.</p>
 </div>
 <div class="paragraph">
-<p>If you&#8217;d like to follow along and run these steps yourself,
+<p>If you’d like to follow along and run these steps yourself,
 check out the <a href="https://github.com/gunnarmorling/jfr-custom-events">source code</a> from GitHub and then perform the following commands:</p>
 </div>
 <div class="listingblock">
@@ -699,37 +699,37 @@ docker-compose up <span class="nt">--build</span>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/jfr_todo_app.png" alt="jfr todo app">
+<img src="/images/jfr_todo_app.png" alt="jfr todo app"/>
 </div>
 </div>
 <div class="paragraph">
 <p>Now fire up Mission Control.
 The example service run via Docker Compose is configured so you can connect to it on localhost.
-In the JVM Browser, create a new connection with host "localhost" and port "1898".
-Hit "Test connection", which should yield "OK", then click "Finish".</p>
+In the JVM Browser, create a new connection with host &#34;localhost&#34; and port &#34;1898&#34;.
+Hit &#34;Test connection&#34;, which should yield &#34;OK&#34;, then click &#34;Finish&#34;.</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/jfr_new_connection.png" alt="jfr new connection">
+<img src="/images/jfr_new_connection.png" alt="jfr new connection"/>
 </div>
 </div>
 <div class="paragraph">
 <p>Create a new recording by expanding the localhost:1898 node in the JVM Explorer,
-right-clicking on "Flight Recorder" and choosing "Start Flight Recording&#8230;&#8203;".
+right-clicking on &#34;Flight Recorder&#34; and choosing &#34;Start Flight Recording…​&#34;.
 Confirm the default settings, which will create a recording with a duration of one minute.
 Go back to the Todo web application and perform a few tasks like creating some new todos, editing and deleting them, or filtering the todo list.</p>
 </div>
 <div class="paragraph">
-<p>Either wait for the recording to complete or stop it by right-clicking on the recording name and selecting "Stop".
+<p>Either wait for the recording to complete or stop it by right-clicking on the recording name and selecting &#34;Stop&#34;.
 Once the recording is done, it will be opened automatically.
-Now you could dive into all the logged events for the OS, the JVM etc, but as we&#8217;re interested in our custom JAX-RS events,
-Choose "Event Browser" in the outline view and expand the "JAX-RS" category.
+Now you could dive into all the logged events for the OS, the JVM etc, but as we’re interested in our custom JAX-RS events,
+Choose &#34;Event Browser&#34; in the outline view and expand the &#34;JAX-RS&#34; category.
 You will see the events for all your REST API invocations,
 including information such as duration of the request, the HTTP method, the resource path and much more:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/jfr_jax_rs_events.png" alt="jfr jax rs events">
+<img src="/images/jfr_jax_rs_events.png" alt="jfr jax rs events"/>
 </div>
 </div>
 <div class="paragraph">
@@ -737,7 +737,7 @@ including information such as duration of the request, the HTTP method, the reso
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -752,7 +752,7 @@ you can use it to issue diagnostic commands against a running JVM.</p>
 <p>Amongst many other things, it allows you to start and stop Flight Recordings.
 On the environment with your running application,
 first run <code>jcmd -l</code>, which will show you the PIDs of all running Java processes.
-Having identified the PID of the process you&#8217;d like to examine, you can initiate a recording like so:</p>
+Having identified the PID of the process you’d like to examine, you can initiate a recording like so:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -770,7 +770,7 @@ To learn more about creating Flight Recordings via <em>jcmd</em>, refer to this 
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Another useful tool in the belt is the <a href="https://docs.oracle.com/en/java/javase/13/docs/specs/man/jfr.html"><em>jfr</em></a> command, which <a href="https://bugs.openjdk.java.net/browse/JDK-8205517">was introduced</a> in JDK 12.
@@ -792,7 +792,7 @@ E.g. you could convert all the JAX-RS events to JSON like so:</p>
 <h2 id="_event_settings">Event Settings</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Sometimes it&#8217;s desirable to configure detailed behaviors of a given event type.
+<p>Sometimes it’s desirable to configure detailed behaviors of a given event type.
 For the JAX-RS invocation event it might for instance make sense to only log invocations of particular paths in a specific recording,
 allowing for a smaller recording size and keeping the focus on a particular subset of all invocations.
 JFR supports this by the notion of event settings.
@@ -800,7 +800,7 @@ Such settings can be specified when creating a recording;
 based on the active settings, particular events will be included or excluded in the recording.</p>
 </div>
 <div class="paragraph">
-<p>Inspired by the JavaDoc of <code><a href="https://docs.oracle.com/en/java/javase/11/docs/api/jdk.jfr/jdk/jfr/SettingDefinition.html">@SettingDefinition</a></code> let&#8217;s see what&#8217;s needed to enhance <code>JaxRsInvocationEvent</code> with that capability.
+<p>Inspired by the JavaDoc of <code><a href="https://docs.oracle.com/en/java/javase/11/docs/api/jdk.jfr/jdk/jfr/SettingDefinition.html">@SettingDefinition</a></code> let’s see what’s needed to enhance <code>JaxRsInvocationEvent</code> with that capability.
 The first step is to define a subclass of <code>jdk.jfr.SettingControl</code>, which serves as the value holder for our setting:</p>
 </div>
 <div class="listingblock">
@@ -831,7 +831,7 @@ The first step is to define a subclass of <code>jdk.jfr.SettingControl</code>, w
 24
 </pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">PathFilterControl</span> <span class="kd">extends</span> <span class="nc">SettingControl</span> <span class="o">{</span>
 
-  <span class="kd">private</span> <span class="nc">Pattern</span> <span class="n">pattern</span> <span class="o">=</span> <span class="nc">Pattern</span><span class="o">.</span><span class="na">compile</span><span class="o">(</span><span class="s">".*"</span><span class="o">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="kd">private</span> <span class="nc">Pattern</span> <span class="n">pattern</span> <span class="o">=</span> <span class="nc">Pattern</span><span class="o">.</span><span class="na">compile</span><span class="o">(</span><span class="s">&#34;.*&#34;</span><span class="o">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
 
   <span class="nd">@Override</span> <i class="conum" data-value="2"></i><b>(2)</b>
   <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setValue</span><span class="o">(</span><span class="nc">String</span> <span class="n">value</span><span class="o">)</span> <span class="o">{</span>
@@ -840,7 +840,7 @@ The first step is to define a subclass of <code>jdk.jfr.SettingControl</code>, w
 
   <span class="nd">@Override</span> <i class="conum" data-value="3"></i><b>(3)</b>
   <span class="kd">public</span> <span class="nc">String</span> <span class="nf">combine</span><span class="o">(</span><span class="nc">Set</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">values</span><span class="o">)</span> <span class="o">{</span>
-    <span class="k">return</span> <span class="nc">String</span><span class="o">.</span><span class="na">join</span><span class="o">(</span><span class="s">"|"</span><span class="o">,</span> <span class="n">values</span><span class="o">);</span>
+    <span class="k">return</span> <span class="nc">String</span><span class="o">.</span><span class="na">join</span><span class="o">(</span><span class="s">&#34;|&#34;</span><span class="o">,</span> <span class="n">values</span><span class="o">);</span>
   <span class="o">}</span>
 
   <span class="nd">@Override</span> <i class="conum" data-value="4"></i><b>(4)</b>
@@ -858,9 +858,9 @@ The first step is to define a subclass of <code>jdk.jfr.SettingControl</code>, w
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>A regular expression pattern that&#8217;ll be matched against the path of incoming events; by default all paths are included (<code>.*</code>)</td>
+<td>A regular expression pattern that’ll be matched against the path of incoming events; by default all paths are included (<code>.*</code>)</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
@@ -878,7 +878,7 @@ The first step is to define a subclass of <code>jdk.jfr.SettingControl</code>, w
 <td><i class="conum" data-value="5"></i><b>5</b></td>
 <td>Matches the configured setting value against a particular path</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>On the event class itself a method with the following characteristics must be declared which will receive the setting by the JFR runtime:</p>
@@ -900,12 +900,12 @@ The first step is to define a subclass of <code>jdk.jfr.SettingControl</code>, w
 13
 </pre></td><td class="code"><pre><span class="kd">class</span> <span class="nc">JaxRsInvocationEvent</span> <span class="kd">extends</span> <span class="nc">Event</span> <span class="o">{</span>
 
-  <span class="nd">@Label</span><span class="o">(</span><span class="s">"Path"</span><span class="o">)</span>
+  <span class="nd">@Label</span><span class="o">(</span><span class="s">&#34;Path&#34;</span><span class="o">)</span>
   <span class="kd">public</span> <span class="nc">String</span> <span class="n">path</span><span class="o">;</span>
 
   <span class="c1">// other members...</span>
 
-  <span class="nd">@Label</span><span class="o">(</span><span class="s">"Path Filter"</span><span class="o">)</span>
+  <span class="nd">@Label</span><span class="o">(</span><span class="s">&#34;Path Filter&#34;</span><span class="o">)</span>
   <span class="nd">@SettingDefinition</span> <i class="conum" data-value="1"></i><b>(1)</b>
   <span class="kd">protected</span> <span class="kt">boolean</span> <span class="nf">pathFilter</span><span class="o">(</span><span class="nc">PathFilterControl</span> <span class="n">pathFilter</span><span class="o">)</span> <span class="o">{</span> <i class="conum" data-value="2"></i><b>(2)</b>
     <span class="k">return</span> <span class="n">pathFilter</span><span class="o">.</span><span class="na">matches</span><span class="o">(</span><span class="n">path</span><span class="o">);</span>
@@ -916,7 +916,7 @@ The first step is to define a subclass of <code>jdk.jfr.SettingControl</code>, w
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Tags this as a setting</td>
 </tr>
@@ -924,7 +924,7 @@ The first step is to define a subclass of <code>jdk.jfr.SettingControl</code>, w
 <td><i class="conum" data-value="2"></i><b>2</b></td>
 <td>The method must be public, take a <code>SettingControl</code> type as its single parameter and return <code>boolean</code></td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>This method will be invoked by the JFR runtime during the <code>shouldCommit()</code> call.
@@ -938,49 +938,49 @@ For instance this might come in handy if we wanted to log the entire request/res
 Doing this all the time might be prohibitive in terms of recording size, but it might be enabled for a particlar short-term recording for analyzing some bug.</p>
 </div>
 <div class="paragraph">
-<p>Now let&#8217;s see how the path filter can be applied when creating a new recording in Mission Control.
-The option is a bit hidden, but here&#8217;s how you can enable it.
-First, create a new Flight Recording, then choose "Template Manager" in the dialogue:</p>
+<p>Now let’s see how the path filter can be applied when creating a new recording in Mission Control.
+The option is a bit hidden, but here’s how you can enable it.
+First, create a new Flight Recording, then choose &#34;Template Manager&#34; in the dialogue:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/jfr_filtering_1.png" alt="jfr filtering 1">
+<img src="/images/jfr_filtering_1.png" alt="jfr filtering 1"/>
 </div>
 </div>
 <div class="paragraph">
-<p>Duplicate the "Continuous" template and edit it:</p>
+<p>Duplicate the &#34;Continuous&#34; template and edit it:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/jfr_filtering_2.png" alt="jfr filtering 2">
+<img src="/images/jfr_filtering_2.png" alt="jfr filtering 2"/>
 </div>
 </div>
 <div class="paragraph">
-<p>Click "Advanced":</p>
+<p>Click &#34;Advanced&#34;:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/jfr_filtering_3.png" alt="jfr filtering 3">
+<img src="/images/jfr_filtering_3.png" alt="jfr filtering 3"/>
 </div>
 </div>
 <div class="paragraph">
-<p>Expand "JAX-RS" &#8594; "JAX-RS Invocation" and put <code>.*(new|edit).*</code> into the Path Filter control:</p>
+<p>Expand &#34;JAX-RS&#34; → &#34;JAX-RS Invocation&#34; and put <code>.*(new|edit).*</code> into the Path Filter control:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/jfr_filtering_4.png" alt="jfr filtering 4">
+<img src="/images/jfr_filtering_4.png" alt="jfr filtering 4"/>
 </div>
 </div>
 <div class="paragraph">
 <p>Now close the last two dialogues.
-In the "Start Flight Recording" dialogue make sure to select your new template under "Event Settings"; although you&#8217;ve edited it before, it won&#8217;t be selected automatically. I lost an hour or so wondering why my settings were not applied&#8230;&#8203; .</p>
+In the &#34;Start Flight Recording&#34; dialogue make sure to select your new template under &#34;Event Settings&#34;; although you’ve edited it before, it won’t be selected automatically. I lost an hour or so wondering why my settings were not applied…​ .</p>
 </div>
 <div class="paragraph">
-<p>Lastly, click "Finish" to begin the recording:</p>
+<p>Lastly, click &#34;Finish&#34; to begin the recording:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/jfr_filtering_5.png" alt="jfr filtering 5">
+<img src="/images/jfr_filtering_5.png" alt="jfr filtering 5"/>
 </div>
 </div>
 <div class="paragraph">
@@ -989,7 +989,7 @@ You should see only the REST API calls for the new and edit operations, whereas 
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -997,12 +997,12 @@ You should see only the REST API calls for the new and edit operations, whereas 
 <div class="paragraph">
 <p>In order to apply specific settings when creating a recording on the CLI using <em>jcmd</em>,
 edit the settings as described above.
-Then go to the Template Manager and export the profile you&#8217;d like to use.
+Then go to the Template Manager and export the profile you’d like to use.
 When starting the recording via <em>jcmd</em>, specify the settings file via the <code>settings=/path/to/settings.jfc</code> parameter.</p>
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 </div>
 </div>
@@ -1010,29 +1010,29 @@ When starting the recording via <em>jcmd</em>, specify the settings file via the
 <h2 id="_jfr_event_streaming">JFR Event Streaming</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Flight Recorder files are great for analyzing performance characteristics in an "offline" approach:
+<p>Flight Recorder files are great for analyzing performance characteristics in an &#34;offline&#34; approach:
 you can take recordings in your production environment and ship them to your work station or a remote support team,
 without requiring live access to the running application.
-This is also an interesting mode for open-source projects, where maintainers typically don&#8217;t have access to running applications of their users.
+This is also an interesting mode for open-source projects, where maintainers typically don’t have access to running applications of their users.
 Exchanging Flight Recordings (limited to a sensible subset of information, so to avoid exposure of confidential internals) might allow open source developers to gain insight into characteristics of their libraries when deployed to production at their users.</p>
 </div>
 <div class="paragraph">
-<p>But there&#8217;s another category of use cases for event data sourced from applications, the JVM and the operating system, where the recording file approach doesn&#8217;t quite fit: live monitoring and alerting of running applications.
-E.g. operations teams might want to set up dashboards showing the most relevant application metrics in "real-time",
+<p>But there’s another category of use cases for event data sourced from applications, the JVM and the operating system, where the recording file approach doesn’t quite fit: live monitoring and alerting of running applications.
+E.g. operations teams might want to set up dashboards showing the most relevant application metrics in &#34;real-time&#34;,
 without having to create any recording files first.
 A related requirement is alerting, so to be notified when metrics reach a certain threshold.
 For instance it might be desirable to be alterted if the request duration of our JAX-RS API goes beyond a defined value such as 100 ms.</p>
 </div>
 <div class="paragraph">
-<p>This is where <a href="https://openjdk.java.net/jeps/349">JEP 349</a> ("JFR Event Streaming") comes in.
-It&#8217;ll be part of Java 14 and its stated goal is to "provide an API for the continuous consumption of JFR data on disk, both for in-process and out-of-process applications".
-That&#8217;s exactly what we need for our monitoring/dashboarding use case.
+<p>This is where <a href="https://openjdk.java.net/jeps/349">JEP 349</a> (&#34;JFR Event Streaming&#34;) comes in.
+It’ll be part of Java 14 and its stated goal is to &#34;provide an API for the continuous consumption of JFR data on disk, both for in-process and out-of-process applications&#34;.
+That’s exactly what we need for our monitoring/dashboarding use case.
 Using the Streaming API, Flight Recorder events of the running application can be exposed to external consumers,
 without having to explicitly load any recording files.</p>
 </div>
 <div class="paragraph">
 <p>Now it may be prohibitively expensive to stream each and every event with all its detailed information to remote clients.
-But that&#8217;s not needed for monitoring purposes anyways.
+But that’s not needed for monitoring purposes anyways.
 Instead, we can expose metrics based on our events, such as the total number and frequency of REST API invocations,
 or the average and 99th percentile duration of the calls.</p>
 </div>
@@ -1046,7 +1046,7 @@ or the average and 99th percentile duration of the calls.</p>
 where they can be visualized using a dashboard.
 Being based on Quarkus, the Todo web application can leverage all the <a href="https://microprofile.io/">MicroProfile</a> APIs.
 On of them is the <a href="https://github.com/eclipse/microprofile-metrics">MicroProfile Metrics API</a>,
-which defines a "unified way for Microprofile servers to export Monitoring data ("Telemetry") to management agents".</p>
+which defines a &#34;unified way for Microprofile servers to export Monitoring data (&#34;Telemetry&#34;) to management agents&#34;.</p>
 </div>
 <div class="paragraph">
 <p>While the MicroProfile Metrics API is used in an annotation-driven fashion often-times, it also provides a programmatic API for registering metrics.
@@ -1115,18 +1115,18 @@ This can be leveraged to expose metrics based on the JAX-RS Flight Recorder even
 
     <span class="n">recordingStream</span><span class="o">.</span><span class="na">onEvent</span><span class="o">(</span><span class="nc">JaxRsInvocationEvent</span><span class="o">.</span><span class="na">NAME</span><span class="o">,</span> <span class="n">event</span> <span class="o">-&gt;</span> <span class="o">{</span>  <i class="conum" data-value="4"></i><b>(4)</b>
 
-      <span class="nc">String</span> <span class="n">path</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="s">"path"</span><span class="o">)</span>
-          <span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">"(\\/)([0-9]+)(\\/?)"</span><span class="o">,</span> <span class="s">"$1{param}$3"</span><span class="o">);</span> <i class="conum" data-value="5"></i><b>(5)</b>
-      <span class="nc">String</span> <span class="n">method</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="s">"method"</span><span class="o">);</span>
-      <span class="nc">String</span> <span class="n">name</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="s">"-"</span> <span class="o">+</span> <span class="n">method</span><span class="o">;</span>
+      <span class="nc">String</span> <span class="n">path</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="s">&#34;path&#34;</span><span class="o">)</span>
+          <span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&#34;(\\/)([0-9]+)(\\/?)&#34;</span><span class="o">,</span> <span class="s">&#34;$1{param}$3&#34;</span><span class="o">);</span> <i class="conum" data-value="5"></i><b>(5)</b>
+      <span class="nc">String</span> <span class="n">method</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="s">&#34;method&#34;</span><span class="o">);</span>
+      <span class="nc">String</span> <span class="n">name</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="s">&#34;-&#34;</span> <span class="o">+</span> <span class="n">method</span><span class="o">;</span>
 
       <span class="nc">Metadata</span> <span class="n">metadata</span> <span class="o">=</span> <span class="n">metricsRegistry</span><span class="o">.</span><span class="na">getMetadata</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="n">name</span><span class="o">);</span>
       <span class="k">if</span> <span class="o">(</span><span class="n">metadata</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
         <span class="n">metricsRegistry</span><span class="o">.</span><span class="na">timer</span><span class="o">(</span><span class="nc">Metadata</span><span class="o">.</span><span class="na">builder</span><span class="o">()</span> <i class="conum" data-value="6"></i><b>(6)</b>
             <span class="o">.</span><span class="na">withName</span><span class="o">(</span><span class="n">name</span><span class="o">)</span>
             <span class="o">.</span><span class="na">withType</span><span class="o">(</span><span class="nc">MetricType</span><span class="o">.</span><span class="na">TIMER</span><span class="o">)</span>
-            <span class="o">.</span><span class="na">withDescription</span><span class="o">(</span><span class="s">"Metrics for "</span> <span class="o">+</span> <span class="n">path</span> <span class="o">+</span>
-                <span class="s">" ("</span> <span class="o">+</span> <span class="n">method</span> <span class="o">+</span> <span class="s">")"</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">withDescription</span><span class="o">(</span><span class="s">&#34;Metrics for &#34;</span> <span class="o">+</span> <span class="n">path</span> <span class="o">+</span>
+                <span class="s">&#34; (&#34;</span> <span class="o">+</span> <span class="n">method</span> <span class="o">+</span> <span class="s">&#34;)&#34;</span><span class="o">)</span>
             <span class="o">.</span><span class="na">build</span><span class="o">()).</span><span class="na">update</span><span class="o">(</span><span class="n">event</span><span class="o">.</span><span class="na">getDuration</span><span class="o">().</span><span class="na">toNanos</span><span class="o">(),</span>
                 <span class="nc">TimeUnit</span><span class="o">.</span><span class="na">NANOSECONDS</span><span class="o">);</span>
       <span class="o">}</span>
@@ -1153,7 +1153,7 @@ This can be leveraged to expose metrics based on the JAX-RS Flight Recorder even
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Inject the MicroProfile Metrics registry</td>
 </tr>
@@ -1175,7 +1175,7 @@ This can be leveraged to expose metrics based on the JAX-RS Flight Recorder even
 </tr>
 <tr>
 <td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>If the metric for the specific path hasn&#8217;t been registered yet, then do so; it&#8217;s a metric of type <code>TIMER</code>, allowing metric consumers to track the duration of calls of that particular path</td>
+<td>If the metric for the specific path hasn’t been registered yet, then do so; it’s a metric of type <code>TIMER</code>, allowing metric consumers to track the duration of calls of that particular path</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="7"></i><b>7</b></td>
@@ -1189,10 +1189,10 @@ This can be leveraged to expose metrics based on the JAX-RS Flight Recorder even
 <td><i class="conum" data-value="9"></i><b>9</b></td>
 <td>Close the JFR event stream upon application shutdown</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>When connecting to the running application using JMC now, you&#8217;ll see a continuous recording, which serves as the basis for the event stream.
+<p>When connecting to the running application using JMC now, you’ll see a continuous recording, which serves as the basis for the event stream.
 It only contains events of the <code>JaxRsInvocationEvent</code> type.</p>
 </div>
 <div class="paragraph">
@@ -1217,21 +1217,21 @@ for each operation of the REST API, e.g. <code>POST</code> to <em>/todo/{id}/edi
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/jfr_metrics_endpoint.png" alt="jfr metrics endpoint">
+<img src="/images/jfr_metrics_endpoint.png" alt="jfr metrics endpoint"/>
 </div>
 </div>
 <div class="paragraph">
-<p>Once the endpoint is provided, it&#8217;s not difficult to set up a scraping process for ingesting the metrics into the <a href="https://prometheus.io/">Prometheus</a> time-series database.
+<p>Once the endpoint is provided, it’s not difficult to set up a scraping process for ingesting the metrics into the <a href="https://prometheus.io/">Prometheus</a> time-series database.
 You can find the required <a href="https://github.com/gunnarmorling/jfr-custom-events/blob/master/prometheus.yml">Prometheus configuration</a> in the accompanying source code repository.</p>
 </div>
 <div class="paragraph">
 <p>While Prometheus provides some visualization capabilities itself,
 it is often used together with <a href="https://grafana.com/">Grafana</a>, which allows to build nicely looking dashboards via a rather intuitive UI.
-Here&#8217;s an example dashboard showing the duration and invocation numbers for the different methods in the Todo REST API:</p>
+Here’s an example dashboard showing the duration and invocation numbers for the different methods in the Todo REST API:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/jfr_grafana.png" alt="jfr grafana">
+<img src="/images/jfr_grafana.png" alt="jfr grafana"/>
 </div>
 </div>
 <div class="paragraph">
@@ -1246,10 +1246,10 @@ Based on that you could easily expand the dashboard for other metrics and set up
 <ul>
 <li>
 <p>When setting up the continuous recording that serves as the basis for the metrics,
-have it contain all the event types you&#8217;d need to gain insight into GC or memory issues etc.; specify a maximum size via <code>RecordingStream#setMaxSize()</code>,
+have it contain all the event types you’d need to gain insight into GC or memory issues etc.; specify a maximum size via <code>RecordingStream#setMaxSize()</code>,
 so to avoid an indefinitely growing recording;
-you&#8217;ll probably need to experiment a bit to find the right trade-off between number of enabled events,
-duration that&#8217;ll be covered by the recording and the required disk space</p>
+you’ll probably need to experiment a bit to find the right trade-off between number of enabled events,
+duration that’ll be covered by the recording and the required disk space</p>
 </li>
 <li>
 <p>Only expose a relevant subset of the events as metrics to Prometheus/Grafana, such as the JAX-RS API invocation events in our example</p>
@@ -1269,16 +1269,16 @@ duration that&#8217;ll be covered by the recording and the required disk space</
 <div class="sectionbody">
 <div class="paragraph">
 <p>Flight Recorder and Mission Control are excellent tools providing deep insight into the performance characteristics of Java applications.
-While there&#8217;s a large amount of data and highly valuable information provided out the box,
+While there’s a large amount of data and highly valuable information provided out the box,
 JFR and JMC also allow for the recording of custom, application-specific events.
 With its low overhead, JFR can be enabled on a permanent basis in production environments.
 Combined with the Event Streaming API introduced in Java 14,
 this opens up an attractive, very performant alternative to other means of capturing analysis information at application runtime,
 such as logging libraries.
-Providing live key metrics derived from JFR events to tools such as Prometheus and Grafana enables monitoring and alerting in "real-time".</p>
+Providing live key metrics derived from JFR events to tools such as Prometheus and Grafana enables monitoring and alerting in &#34;real-time&#34;.</p>
 </div>
 <div class="paragraph">
-<p>For many enterprises that are still on Java 11 or even 8, it&#8217;ll still be far out into the future until they might adopt the streaming API.
+<p>For many enterprises that are still on Java 11 or even 8, it’ll still be far out into the future until they might adopt the streaming API.
 But with more and more companies joining the OpenJDK efforts,
 it might be a possiblity that this useful feature gets backported to earlier LTS releases, just as the open-sourced version of Flight Recorder itself got <a href="http://hirt.se/blog/?p=1161">backported to Java 8</a>.</p>
 </div>
@@ -1293,7 +1293,7 @@ Here are some up-to-date resources which I found very helpful:</p>
 <p><a href="https://qconsf.com/system/files/presentation-slides/mikael_vidstedt_-_qconsf-continuous_monitoring_with_jdk_flight_recorder.pdf">Continuous Monitoring with JDK Flight Recorder</a>: a talk from QCon SF 2019 by Mikael Vidstedt</p>
 </li>
 <li>
-<p><a href="http://hirt.se/blog/?p=1158">Flight Recorder &amp; Mission Control at Code One 2019</a>: a compilation of several great sessions on these two tools at last year&#8217;s Code One, put together by Marcus Hirt</p>
+<p><a href="http://hirt.se/blog/?p=1158">Flight Recorder &amp; Mission Control at Code One 2019</a>: a compilation of several great sessions on these two tools at last year’s Code One, put together by Marcus Hirt</p>
 </li>
 <li>
 <p><a href="https://dzone.com/articles/analyzing-tcp-socket-with-java-flight-recorder">Digging Into Sockets With Java Flight Recorder</a>: blog post by Petr Bouda on identifying performance bottlenecks with JFR in a Netty-based web application</p>
@@ -1302,14 +1302,14 @@ Here are some up-to-date resources which I found very helpful:</p>
 </div>
 <div class="paragraph">
 <p>Lastly, the Red Hat OpenJDK team is working on some very interesting projects around JFR and JMC, too.
-E.g. they&#8217;ve built a <a href="https://github.com/rh-jmc-team/jfr-datasource">datasource for Grafana</a> which lets you examine the events of a JFR file.
+E.g. they’ve built a <a href="https://github.com/rh-jmc-team/jfr-datasource">datasource for Grafana</a> which lets you examine the events of a JFR file.
 They also work on tooling to simplify the usage of JFR in container-based environments such as Kubernetes and OpenShift,
 including a <a href="https://github.com/rh-jmc-team/container-jfr-operator">K8s Operator</a> for controlling Flight Recordings and a <a href="https://github.com/rh-jmc-team/container-jfr-web">web-based UI</a> for managing JFR in remote JVMs.
 Should you happen to be at the FOSDEM conference in Brussels on the next weekend,
 be sure to not miss the <a href="https://fosdem.org/2020/schedule/event/imc/">JMC &amp; JFR - 2020 Vision</a> session by Red Hat engineer Jie Kang.</p>
 </div>
 <div class="paragraph">
-<p>If you&#8217;d like to experiment with JDK Flight Recorder and JDK Mission Control based on the Todo web application yourself,
+<p>If you’d like to experiment with JDK Flight Recorder and JDK Mission Control based on the Todo web application yourself,
 you can find the complete source code for this post on <a href="https://github.com/gunnarmorling/jfr-custom-events">GitHub</a>.</p>
 </div>
 <div class="paragraph">

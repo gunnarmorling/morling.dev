@@ -17,7 +17,7 @@
 <meta property="og:description" content="
 If you work on any kind of software library,
 ensuring backwards-compatibility is a key concern:
-if there&#8217;s one thing which users really dislike, it is breaking changes in a new version of a library.
+if there’s one thing which users really dislike, it is breaking changes in a new version of a library.
 The rules of what can (and cannot) be changed in a Java API without breaking existing consumers are well defined in the Java language specification (JLS),
 but things can get pretty interesting in certain corner cases.
 
@@ -28,7 +28,7 @@ I received an interesting reply from Lukas Eder:
 
 
 
-I wish Java had a few tools to prevent some cases of binary compatibility breakages. E.g. when refining a method return type, I&#8217;d like to keep the old method around in byte code (but not in source code).
+I wish Java had a few tools to prevent some cases of binary compatibility breakages. E.g. when refining a method return type, I’d like to keep the old method around in byte code (but not in source code).
 
 
 I think kotlin has such tools?
@@ -36,19 +36,19 @@ I think kotlin has such tools?
 
 
 In the remainder of this post,
-I&#8217;d like to provide some more insight into that problem mentioned by Lukas,
+I’d like to provide some more insight into that problem mentioned by Lukas,
 and how it can be addressed using an open-source tool called Bridger.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/refining-return-type-java-methods-without-breaking-backwards-compatibility/" />
+<meta property="og:url" content="https://www.morling.dev/blog/refining-return-type-java-methods-without-breaking-backwards-compatibility/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2021-11-22T18:30:00+01:00" />
 <meta property="article:modified_time" content="2021-11-22T18:30:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Refining The Return Type Of Java Methods Without Breaking Backwards-Compatibility"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Refining The Return Type Of Java Methods Without Breaking Backwards-Compatibility"/>
 <meta name="twitter:description" content="
 If you work on any kind of software library,
 ensuring backwards-compatibility is a key concern:
-if there&#8217;s one thing which users really dislike, it is breaking changes in a new version of a library.
+if there’s one thing which users really dislike, it is breaking changes in a new version of a library.
 The rules of what can (and cannot) be changed in a Java API without breaking existing consumers are well defined in the Java language specification (JLS),
 but things can get pretty interesting in certain corner cases.
 
@@ -59,7 +59,7 @@ I received an interesting reply from Lukas Eder:
 
 
 
-I wish Java had a few tools to prevent some cases of binary compatibility breakages. E.g. when refining a method return type, I&#8217;d like to keep the old method around in byte code (but not in source code).
+I wish Java had a few tools to prevent some cases of binary compatibility breakages. E.g. when refining a method return type, I’d like to keep the old method around in byte code (but not in source code).
 
 
 I think kotlin has such tools?
@@ -67,7 +67,7 @@ I think kotlin has such tools?
 
 
 In the remainder of this post,
-I&#8217;d like to provide some more insight into that problem mentioned by Lukas,
+I’d like to provide some more insight into that problem mentioned by Lukas,
 and how it can be addressed using an open-source tool called Bridger.
 "/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
@@ -304,7 +304,7 @@ and how it can be addressed using an open-source tool called Bridger.
 				<div class="paragraph">
 <p>If you work on any kind of software library,
 ensuring backwards-compatibility is a key concern:
-if there&#8217;s one thing which users really dislike, it is breaking changes in a new version of a library.
+if there’s one thing which users really dislike, it is breaking changes in a new version of a library.
 The rules of what can (and cannot) be changed in a Java API without breaking existing consumers are well defined in the Java language specification (JLS),
 but things can get pretty interesting in certain corner cases.</p>
 </div>
@@ -315,22 +315,22 @@ I received an <a href="https://twitter.com/lukaseder/status/1462358911072317440"
 </div>
 <div class="quoteblock">
 <blockquote>
-I wish Java had a few tools to prevent some cases of binary compatibility breakages. E.g. when refining a method return type, I&#8217;d like to keep the old method around in byte code (but not in source code).
-<br>
-<br>
+I wish Java had a few tools to prevent some cases of binary compatibility breakages. E.g. when refining a method return type, I’d like to keep the old method around in byte code (but not in source code).
+<br/>
+<br/>
 I think kotlin has such tools?
 </blockquote>
 </div>
 <div class="paragraph">
 <p>In the remainder of this post,
-I&#8217;d like to provide some more insight into that problem mentioned by Lukas,
+I’d like to provide some more insight into that problem mentioned by Lukas,
 and how it can be addressed using an open-source tool called <a href="https://github.com/dmlloyd/bridger">Bridger</a>.</p>
 </div>
 <div class="sect1">
 <h2 id="_the_problem">The Problem</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Let&#8217;s assume we have a Java library which provides a public class and method like this:</p>
+<p>Let’s assume we have a Java library which provides a public class and method like this:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -351,18 +351,18 @@ and how it can be addressed using an open-source tool called <a href="https://gi
 </div>
 <div class="paragraph">
 <p>The library is released as open-source and it gets adopted quickly by the community;
-it&#8217;s a great service after all, providing <a href="https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#The_Answer_to_the_Ultimate_Question_of_Life,_the_Universe,_and_Everything_is_42">42 as the answer</a>, right?</p>
+it’s a great service after all, providing <a href="https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#The_Answer_to_the_Ultimate_Question_of_Life,_the_Universe,_and_Everything_is_42">42 as the answer</a>, right?</p>
 </div>
 <div class="paragraph">
 <p>After some time though, people start to complain:
-instead of the generic <code>Number</code> return type, they&#8217;d rather prefer a more specific return type of <code>Long</code>,
+instead of the generic <code>Number</code> return type, they’d rather prefer a more specific return type of <code>Long</code>,
 which for instance offers the <code>compareTo()</code> method.
 Since the returned value is always a long value indeed (and no other <code>Number</code> subtype such as <code>Double</code>),
-we agree that the initial API definition wasn&#8217;t ideal, and we alter the method definition,
+we agree that the initial API definition wasn’t ideal, and we alter the method definition,
 now returning <code>Long</code> instead.</p>
 </div>
 <div class="paragraph">
-<p>But soon after we&#8217;ve released version 2.0 of the library with that change,
+<p>But soon after we’ve released version 2.0 of the library with that change,
 users report a new problem:
 after upgrading to the new version,
 they suddenly get the following error when running their application:</p>
@@ -371,17 +371,17 @@ they suddenly get the following error when running their application:</p>
 <div class="content">
 <pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
-</pre></td><td class="code"><pre>java.lang.NoSuchMethodError: 'java.lang.Number dev.morling.demos.bridgemethods.SomeService.getSomeNumber()'
+</pre></td><td class="code"><pre>java.lang.NoSuchMethodError: &#39;java.lang.Number dev.morling.demos.bridgemethods.SomeService.getSomeNumber()&#39;
   at dev.morling.demos.bridgemethods.SomeClientTest.shouldReturn42(SomeClientTest.java:27)
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>That doesn&#8217;t look good!
-Interestingly, other users don&#8217;t have a problem with version 2.0,
+<p>That doesn’t look good!
+Interestingly, other users don’t have a problem with version 2.0,
 so what is going on here?
 In order to understand that,
-let&#8217;s take a look at how this method is used, in source code and in Java binary code.
+let’s take a look at how this method is used, in source code and in Java binary code.
 First the source code:</p>
 </div>
 <div class="listingblock">
@@ -405,7 +405,7 @@ First the source code:</p>
 </div>
 <div class="paragraph">
 <p>Rather unspectacular;
-so let&#8217;s use <em>javap</em> to examine the byte code of that class:</p>
+so let’s use <em>javap</em> to examine the byte code of that class:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -436,7 +436,7 @@ so let&#8217;s use <em>javap</em> to examine the byte code of that class:</p>
       stack=2, locals=2, args_size=1
          0: new           #7                  // class dev/morling/demos/bridgemethods/SomeService
          3: dup
-         4: invokespecial #9                  // Method dev/morling/demos/bridgemethods/SomeService."&lt;init&gt;":()V
+         4: invokespecial #9                  // Method dev/morling/demos/bridgemethods/SomeService.&#34;&lt;init&gt;&#34;:()V
          7: astore_1
          8: aload_1
          9: invokevirtual #10                 // Method dev/morling/demos/bridgemethods/SomeService.getSomeNumber:()Ljava/lang/Number;
@@ -454,10 +454,10 @@ so let&#8217;s use <em>javap</em> to examine the byte code of that class:</p>
 </div>
 <div class="paragraph">
 <p>The interesting part is the <code>invokevirtual</code> at label 9;
-that&#8217;s the invocation of the <code>SomeService::getSomeNumber()</code> method,
+that’s the invocation of the <code>SomeService::getSomeNumber()</code> method,
 and as we see, the return type of the invoked method is part of the byte code of that invocation, too.
 As developers writing code in the Java <em>language</em>, this might come at a suprise at first,
-as we tend to think of just a method&#8217;s names and its parameter types as the method signature.
+as we tend to think of just a method’s names and its parameter types as the method signature.
 For instance,
 we may not declare two methods which only differ by their return type in the same Java class.
 But from the perspective of the Java <em>runtime</em>, the return type of a method is part of method signatures as well.</p>
@@ -467,7 +467,7 @@ But from the perspective of the Java <em>runtime</em>, the return type of a meth
 when changing the method return type from <code>Number</code> to <code>Long</code>,
 we did a change that broke the <em>binary compatibility</em> of our library.
 The JVM was looking for a method <code>SomeService::getSomeNumber()</code> returning <code>Number</code>,
-but it couldn&#8217;t find it in the class file of version 2.0 of our service.</p>
+but it couldn’t find it in the class file of version 2.0 of our service.</p>
 </div>
 <div class="paragraph">
 <p>It also explains why not all the users reported that problem:
@@ -483,9 +483,9 @@ i.e. the change actually was <em>source-compatible</em>.</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>At this point you might wonder:
-Isn&#8217;t it possible to refine method return types in sub-classes?
+Isn’t it possible to refine method return types in sub-classes?
 How does that work then?
-Indeed it&#8217;s true, Java does support <em>co-variant return types</em>,
+Indeed it’s true, Java does support <em>co-variant return types</em>,
 i.e. a sub-class can override a method using a more specific return type than declared in the super-type:</p>
 </div>
 <div class="listingblock">
@@ -575,7 +575,7 @@ public java.lang.Number getSomeNumber(); <i class="conum" data-value="2"></i><b>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>The overriding method as defined in the sub-class</td>
 </tr>
@@ -587,16 +587,16 @@ public java.lang.Number getSomeNumber(); <i class="conum" data-value="2"></i><b>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>The injected method has the <code>ACC_BRIDGE</code> and <code>ACC_SYNTHETIC</code> modifiers</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>That way, a client compiled against the super-type method will first invoke the bridge method,
 which in turn delegates to the overriding method of the sub-class,
-providing the <a href="https://en.wikipedia.org/wiki/Late_binding">late binding</a> semantics we&#8217;d expect from Java.</p>
+providing the <a href="https://en.wikipedia.org/wiki/Late_binding">late binding</a> semantics we’d expect from Java.</p>
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -605,7 +605,7 @@ Another situation where the Java compiler relies on bridge methods is compiling 
 Refer to the <a href="https://docs.oracle.com/javase/tutorial/java/generics/bridgeMethods.html">Java Tutorial</a> to learn more about this.
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 </div>
 </div>
@@ -613,24 +613,24 @@ Refer to the <a href="https://docs.oracle.com/javase/tutorial/java/generics/brid
 <h2 id="_creating_bridge_methods_ourselves">Creating Bridge Methods Ourselves</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>So as we&#8217;ve seen, with bridge methods, there is a tool in the box to ensure compatibility in case of refining return types in sub-classes.
-Which brings us back to Lukas' question from the beginning:
+<p>So as we’ve seen, with bridge methods, there is a tool in the box to ensure compatibility in case of refining return types in sub-classes.
+Which brings us back to Lukas&#39; question from the beginning:
 is there a way for using the same trick for ensuring compatibility when evolving our API across library versions?</p>
 </div>
 <div class="paragraph">
-<p>Now you can&#8217;t define a bridge method using the Java language,
-this concept just doesn&#8217;t exist at the language level.
+<p>Now you can’t define a bridge method using the Java language,
+this concept just doesn’t exist at the language level.
 So I thought about quickly hacking together a PoC for this using the <a href="https://asm.ow2.io/">ASM</a> bytecode manipulation toolkit;
-but what&#8217;s better than creating open-source?
+but what’s better than creating open-source?
 Re-using existing open-source!
-As it turns out, there&#8217;s a tool for that very purpose exactly:
+As it turns out, there’s a tool for that very purpose exactly:
 <a href="https://github.com/dmlloyd/bridger">Bridger</a>, created by my fellow Red Hatter <a href="https://twitter.com/dmlloyd0">David M. Lloyd</a>.</p>
 </div>
 <div class="paragraph">
 <p>Bridger lets you create your own bridge methods,
 using ASM to apply the required class file transformations for turning a method into a bridge method.
 It comes with a Maven plug-in for integrating this transformation step into your build process.
-Here&#8217;s the plug-in configuration we need:</p>
+Here’s the plug-in configuration we need:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -681,7 +681,7 @@ Here&#8217;s the plug-in configuration we need:</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Bind the <code>transform</code> goal to the <code>process-classes</code> build lifecycle phase, so as to modify the classes produced by the Java compiler</td>
 </tr>
@@ -689,12 +689,12 @@ Here&#8217;s the plug-in configuration we need:</p>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
 <td>Use the latest version of ASM, so we can work with Java 17</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>With the plug-in in place,
 you can define bridge methods like so, using the <code>$$bridge</code> name suffix
-(seems the syntax highligher doesn&#8217;t like the $ signs in identifiers&#8230;&#8203;):</p>
+(seems the syntax highligher doesn’t like the $ signs in identifiers…​):</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -729,7 +729,7 @@ you can define bridge methods like so, using the <code>$$bridge</code> name suff
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>By means of the <code>@hidden</code> JavaDoc tag (added in Java 9), this method will be excluded from the JavaDoc generated for our library</td>
 </tr>
@@ -737,10 +737,10 @@ you can define bridge methods like so, using the <code>$$bridge</code> name suff
 <td><i class="conum" data-value="2"></i><b>2</b></td>
 <td>The bridge method to be; the name suffix will be removed by Bridger, i.e. it will be named <code>getSomeNumber</code>; it will also have the <code>ACC_BRIDGE</code> and <code>ACC_SYNTHETIC</code> modifiers</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>And that&#8217;s how the byte code of <code>SomeService</code> looks like after Bridger applied the transformation:</p>
+<p>And that’s how the byte code of <code>SomeService</code> looks like after Bridger applied the transformation:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -810,18 +810,18 @@ without breaking source nor binary compatibility with existing users.</p>
 </div>
 <div class="paragraph">
 <p>By means of the <code>@hidden</code> JavaDoc tag,
-the source of our bridge method won&#8217;t show up in the rendered documentation
+the source of our bridge method won’t show up in the rendered documentation
 (which would be rather confusing),
 and marked as a synthetic bridge method in the class file,
-it also won&#8217;t show up when looking at the JAR in an IDE.</p>
+it also won’t show up when looking at the JAR in an IDE.</p>
 </div>
 <div class="paragraph">
-<p>If you&#8217;d like to start your own explorations of Java bridge methods,
+<p>If you’d like to start your own explorations of Java bridge methods,
 you can find the complete source code of the example in this <a href="https://github.com/gunnarmorling/bridge-methods-demo">GitHub repo</a>.
 Useful tools for tracking API changes and identifying any potential breaking changes include <a href="https://github.com/jtulach/netbeans-apitest">SigTest</a>
 (we use this one for instance in the Bean Validation specification to ensure backwards compatibility) and <a href="https://github.com/revapi/revapi">Revapi</a>
 (which we use in Debezium).
-Lastly, here&#8217;s a <a href="https://stuartmarks.wordpress.com/2020/09/22/incompatibilities-with-jdk-15-charsequence-isempty/">great blog post</a> by <a href="https://twitter.com/stuartmarks">Stuart Marks</a>,
+Lastly, here’s a <a href="https://stuartmarks.wordpress.com/2020/09/22/incompatibilities-with-jdk-15-charsequence-isempty/">great blog post</a> by <a href="https://twitter.com/stuartmarks">Stuart Marks</a>,
 where he describes how even the seemingly innocent addition of a Java default method to a widely used (and implemented) interface may lead to problems in the real world.</p>
 </div>
 </div>

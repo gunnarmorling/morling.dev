@@ -14,14 +14,14 @@
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Enforcing Java Record Invariants With Bean Validation - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta property="og:title" content="Enforcing Java Record Invariants With Bean Validation" />
-<meta property="og:description" content="Record types are one of the most awaited features in Java 14; they promise to &#34;provide a compact syntax for declaring classes which are transparent holders for shallowly immutable data&#34;. One example where records should be beneficial are data transfer objects (DTOs), as e.g. found in the remoting layer of enterprise applications. Typically, certain rules should be applied to the attributes of such DTO, e.g. in terms of allowed values. The goal of this blog post is to explore how such invariants can be enforced on record types, using annotation-based constraints as provided by the Bean Validation API." />
+<meta property="og:description" content="Record types are one of the most awaited features in Java 14; they promise to &#34;provide a compact syntax for declaring classes which are transparent holders for shallowly immutable data&#34;. One example where records should be beneficial are data transfer objects (DTOs), as e.g. found in the remoting layer of enterprise applications. Typically, certain rules should be applied to the attributes of such DTO, e.g. in terms of allowed values." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/enforcing-java-record-invariants-with-bean-validation/" />
+<meta property="og:url" content="https://www.morling.dev/blog/enforcing-java-record-invariants-with-bean-validation/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-01-20T17:30:00+01:00" />
 <meta property="article:modified_time" content="2020-01-20T17:30:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Enforcing Java Record Invariants With Bean Validation"/>
-<meta name="twitter:description" content="Record types are one of the most awaited features in Java 14; they promise to &#34;provide a compact syntax for declaring classes which are transparent holders for shallowly immutable data&#34;. One example where records should be beneficial are data transfer objects (DTOs), as e.g. found in the remoting layer of enterprise applications. Typically, certain rules should be applied to the attributes of such DTO, e.g. in terms of allowed values. The goal of this blog post is to explore how such invariants can be enforced on record types, using annotation-based constraints as provided by the Bean Validation API."/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Enforcing Java Record Invariants With Bean Validation"/>
+<meta name="twitter:description" content="Record types are one of the most awaited features in Java 14; they promise to &#34;provide a compact syntax for declaring classes which are transparent holders for shallowly immutable data&#34;. One example where records should be beneficial are data transfer objects (DTOs), as e.g. found in the remoting layer of enterprise applications. Typically, certain rules should be applied to the attributes of such DTO, e.g. in terms of allowed values."/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -255,7 +255,7 @@
 			<div class="markdown">
 				<div class="paragraph">
 <p>Record types are one of the most awaited features in Java 14;
-<a href="https://openjdk.java.net/jeps/359">they promise</a> to "provide a compact syntax for declaring classes which are transparent holders for shallowly immutable data".
+<a href="https://openjdk.java.net/jeps/359">they promise</a> to &#34;provide a compact syntax for declaring classes which are transparent holders for shallowly immutable data&#34;.
 One example where records should be beneficial are data transfer objects (DTOs),
 as e.g. found in the remoting layer of enterprise applications.
 Typically, certain rules should be applied to the attributes of such DTO,
@@ -269,8 +269,8 @@ using annotation-based constraints as provided by the <a href="https://beanvalid
 <div class="paragraph">
 <p>Records (a preview feature as of Java 14) help to cut down the ceremony when defining plain data holder objects.
 In a nutshell, you solely need to declare the attributes that should make up the state of the record type
-("components" in terms of JEP 359),
-and quite a few things you&#8217;d otherwise have to implement by hand will be created for you automatically:</p>
+(&#34;components&#34; in terms of JEP 359),
+and quite a few things you’d otherwise have to implement by hand will be created for you automatically:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -286,7 +286,7 @@ and quite a few things you&#8217;d otherwise have to implement by hand will be c
 </ul>
 </div>
 <div class="paragraph">
-<p>As an example, here&#8217;s a record <code>Car</code> with three components:</p>
+<p>As an example, here’s a record <code>Car</code> with three components:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -300,7 +300,7 @@ and quite a few things you&#8217;d otherwise have to implement by hand will be c
 </div>
 </div>
 <div class="paragraph">
-<p>Now let&#8217;s assume a few <a href="https://en.wikipedia.org/wiki/Class_invariant">class invariants</a> should be applied to this record
+<p>Now let’s assume a few <a href="https://en.wikipedia.org/wiki/Class_invariant">class invariants</a> should be applied to this record
 (inspired by <a href="https://docs.jboss.org/hibernate/stable/validator/reference/en-US/html_single/#validator-gettingstarted-createmodel">an example</a> from the Hibernate Validator reference guide):</p>
 </div>
 <div class="ulist">
@@ -324,7 +324,7 @@ which always are guaranteed to be satisfied for the lifetime of an instance of t
 <div class="paragraph">
 <p>The Bean Validation API defines a way for expressing and validating constraints using Java annotations.
 By putting constraint annotations to the components of a record type,
-it&#8217;s a perfect means of describing the invariants from above:</p>
+it’s a perfect means of describing the invariants from above:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -342,7 +342,7 @@ it&#8217;s a perfect means of describing the invariants from above:</p>
 </div>
 </div>
 <div class="paragraph">
-<p>Of course declaring constraints using annotations by itself won&#8217;t magically enforce these invariants.
+<p>Of course declaring constraints using annotations by itself won’t magically enforce these invariants.
 In order to do so, the <code>javax.validation.Validator</code> API must be invoked at suitable points in the object lifecycle,
 so to avoid any of the invariants to be violated.
 As records are immutable, it is sufficient to validate the constraints once when creating a new <code>Car</code> instance.
@@ -355,7 +355,7 @@ If no constraints are violated, the created instance is guaranteed to always sat
 <div class="sectionbody">
 <div class="paragraph">
 <p>The key question now is how to validate the invariants while constructing new <code>Car</code> instances.
-This is where Bean Validation&#8217;s <a href="https://jakarta.ee/specifications/bean-validation/2.0/bean-validation_2.0.html#validationapi-validatorapi-methodlevelvalidationmethods">API for method validation</a> comes in:
+This is where Bean Validation’s <a href="https://jakarta.ee/specifications/bean-validation/2.0/bean-validation_2.0.html#validationapi-validatorapi-methodlevelvalidationmethods">API for method validation</a> comes in:
 it allows to validate pre- and post-conditions that should be satisfied when a Java method or constructor gets invoked.
 Pre-conditions are expressed by applying constraints to method and constructor parameters,
 whereas post-conditions are expressed by putting constraints to a method or constructor itself.</p>
@@ -389,18 +389,18 @@ I.e. the <code>Car</code> record implicitly has a constructor which looks like t
 </div>
 </div>
 <div class="paragraph">
-<p>That&#8217;s exactly what we need:
+<p>That’s exactly what we need:
 by validating these parameter constraints upon instantiation of the <code>Car</code> class,
 we can make sure that only valid objects can ever be created,
-ensuring that the record type&#8217;s invariants are always guaranteed.</p>
+ensuring that the record type’s invariants are always guaranteed.</p>
 </div>
 <div class="paragraph">
-<p>What&#8217;s missing is a way for automatically validating them upon constructor invocation.
-The idea for that is to enhance the byte code of the implicit <code>Car</code> constructor so that it passes the incoming parameter values to Bean Validation&#8217;s <code>ExecutableValidator#validateConstructorParameters()</code> method and raises a constraint violation exception in case of any invalid parameter values.</p>
+<p>What’s missing is a way for automatically validating them upon constructor invocation.
+The idea for that is to enhance the byte code of the implicit <code>Car</code> constructor so that it passes the incoming parameter values to Bean Validation’s <code>ExecutableValidator#validateConstructorParameters()</code> method and raises a constraint violation exception in case of any invalid parameter values.</p>
 </div>
 <div class="paragraph">
-<p>We&#8217;re going to use the excellent <a href="https://bytebuddy.net/">ByteBuddy</a> library for this job.
-Here&#8217;s a slightly simplified implementation for invoking the executable validator
+<p>We’re going to use the excellent <a href="https://bytebuddy.net/">ByteBuddy</a> library for this job.
+Here’s a slightly simplified implementation for invoking the executable validator
 (you can find the complete source code of this example in <a href="https://github.com/gunnarmorling/records-bean-validation">this GitHub repository</a>):</p>
 </div>
 <div class="listingblock">
@@ -463,11 +463,11 @@ Here&#8217;s a slightly simplified implementation for invoking the executable va
     <span class="k">if</span> <span class="o">(!</span><span class="n">violations</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
       <span class="nc">String</span> <span class="n">message</span> <span class="o">=</span> <span class="n">violations</span><span class="o">.</span><span class="na">stream</span><span class="o">()</span>                    <i class="conum" data-value="4"></i><b>(4)</b>
           <span class="o">.</span><span class="na">sorted</span><span class="o">(</span><span class="nl">ValidationInterceptor:</span><span class="o">:</span><span class="n">compare</span><span class="o">)</span>
-          <span class="o">.</span><span class="na">map</span><span class="o">(</span><span class="n">cv</span> <span class="o">-&gt;</span> <span class="n">getParameterName</span><span class="o">(</span><span class="n">cv</span><span class="o">)</span> <span class="o">+</span> <span class="s">" - "</span> <span class="o">+</span> <span class="n">cv</span><span class="o">.</span><span class="na">getMessage</span><span class="o">())</span>
+          <span class="o">.</span><span class="na">map</span><span class="o">(</span><span class="n">cv</span> <span class="o">-&gt;</span> <span class="n">getParameterName</span><span class="o">(</span><span class="n">cv</span><span class="o">)</span> <span class="o">+</span> <span class="s">&#34; - &#34;</span> <span class="o">+</span> <span class="n">cv</span><span class="o">.</span><span class="na">getMessage</span><span class="o">())</span>
           <span class="o">.</span><span class="na">collect</span><span class="o">(</span><span class="nc">Collectors</span><span class="o">.</span><span class="na">joining</span><span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">lineSeparator</span><span class="o">()));</span>
 
       <span class="k">throw</span> <span class="k">new</span> <span class="nf">ConstraintViolationException</span><span class="o">(</span>                 <i class="conum" data-value="5"></i><b>(5)</b>
-          <span class="s">"Invalid instantiation of record type "</span> <span class="o">+</span>
+          <span class="s">&#34;Invalid instantiation of record type &#34;</span> <span class="o">+</span>
           <span class="n">constructor</span><span class="o">.</span><span class="na">getDeclaringClass</span><span class="o">().</span><span class="na">getSimpleName</span><span class="o">()</span> <span class="o">+</span>
           <span class="nc">System</span><span class="o">.</span><span class="na">lineSeparator</span><span class="o">()</span> <span class="o">+</span> <span class="n">message</span><span class="o">,</span>
           <span class="n">violations</span><span class="o">);</span>
@@ -494,7 +494,7 @@ Here&#8217;s a slightly simplified implementation for invoking the executable va
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Obtain a Bean Validation <code>Validator</code> instance</td>
 </tr>
@@ -508,20 +508,20 @@ Here&#8217;s a slightly simplified implementation for invoking the executable va
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>If there&#8217;s at least one violated constraint, create a message comprising all constraint violation messages, ordered by parameter index</td>
+<td>If there’s at least one violated constraint, create a message comprising all constraint violation messages, ordered by parameter index</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
 <td>Raise a <code>ConstraintViolationException</code>, containing the message created before as well as all the constraint violations</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Having implemented the validation interceptor,
 the code of the record constructor must be enhanced by ByteBuddy,
 so that it invokes the inceptor.
 ByteBuddy provides different ways for doing so, e.g. at application start-up using a Java agent.
-For this example, we&#8217;re going to employ build-time enhancement via the <a href="https://github.com/raphw/byte-buddy/tree/master/byte-buddy-maven-plugin">ByteBuddy Maven plug-in</a>.
+For this example, we’re going to employ build-time enhancement via the <a href="https://github.com/raphw/byte-buddy/tree/master/byte-buddy-maven-plugin">ByteBuddy Maven plug-in</a>.
 The enhancement logic itself is implemented in a custom <code>net.bytebuddy.build.Plugin</code>:</p>
 </div>
 <div class="listingblock">
@@ -609,9 +609,9 @@ The enhancement logic itself is implemented in a custom <code>net.bytebuddy.buil
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Determines whether a type should be enhanced or not; this is the case if there&#8217;s at least one constructor that has one more more constrained parameters</td>
+<td>Determines whether a type should be enhanced or not; this is the case if there’s at least one constructor that has one more more constrained parameters</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
@@ -625,7 +625,7 @@ The enhancement logic itself is implemented in a custom <code>net.bytebuddy.buil
 <td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>Determines whether a parameter has at least one constraint annotation (an annotation meta-annotated with <code>@Constraint</code>; for the sake of simplicity the case of constraint inheritance is ignored here)</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>The next step is to configure the ByteBuddy Maven plug-in in the <em>pom.xml</em> of the project:</p>
@@ -679,16 +679,16 @@ The enhancement logic itself is implemented in a custom <code>net.bytebuddy.buil
 </div>
 <div class="paragraph">
 <p>This plug-in runs in the <code>process-classes</code> phase by default, so it can access and enhance the class files generated during compilation.
-If you were to build the project now, you could use the <em>javap</em> tool to examine the byte code of the <code>Car</code> class,and you&#8217;d see that the implicit constructor of that class contains an invocation of the <code>ValidationInterceptor#validate()</code> method.</p>
+If you were to build the project now, you could use the <em>javap</em> tool to examine the byte code of the <code>Car</code> class,and you’d see that the implicit constructor of that class contains an invocation of the <code>ValidationInterceptor#validate()</code> method.</p>
 </div>
 <div class="paragraph">
-<p>As an example, let&#8217;s consider the following attempt to instantiate a <code>Car</code> object,
+<p>As an example, let’s consider the following attempt to instantiate a <code>Car</code> object,
 which violates the invariants of that record type:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
-</pre></td><td class="code"><pre><span class="nc">Car</span> <span class="n">invalid</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Car</span><span class="o">(</span><span class="s">""</span><span class="o">,</span> <span class="s">"HH-AB-123"</span><span class="o">,</span> <span class="mi">1</span><span class="o">);</span>
+</pre></td><td class="code"><pre><span class="nc">Car</span> <span class="n">invalid</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Car</span><span class="o">(</span><span class="s">&#34;&#34;</span><span class="o">,</span> <span class="s">&#34;HH-AB-123&#34;</span><span class="o">,</span> <span class="mi">1</span><span class="o">);</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -712,7 +712,7 @@ seatCount - must be greater than or equal to 2
 </div>
 <div class="paragraph">
 <p>If all constraints are satisfied, no exception will be thrown and the caller obtains the new <code>Car</code> instance,
-whose invariants are guaranteed to be met for the remainder of the object&#8217;s lifetime.</p>
+whose invariants are guaranteed to be met for the remainder of the object’s lifetime.</p>
 </div>
 </div>
 </div>
@@ -748,7 +748,7 @@ All this makes it easy for users of the type to understand the invariants and al
 <p><strong>I18N support:</strong> Bean Validation provides means of internationalizing constraint violation messages; if your record types are instantiated based on user input (e.g. when using them as data types in a REST API), this allows for localized error messages in the UI</p>
 </li>
 <li>
-<p><strong>Returning all constraints at once:</strong> For UIs it&#8217;s typically beneficial to return all the constraint violations at once instead of showing them one by one; while doable in a hand-written implementation, it requires a bit of effort, whereas you get this "for free" when using Bean Validation which always returns a set of all the violations</p>
+<p><strong>Returning all constraints at once:</strong> For UIs it’s typically beneficial to return all the constraint violations at once instead of showing them one by one; while doable in a hand-written implementation, it requires a bit of effort, whereas you get this &#34;for free&#34; when using Bean Validation which always returns a set of all the violations</p>
 </li>
 <li>
 <p><strong>Lots of ready-made constraints:</strong> Bean Validation comes with a range of constraints out of the box;
@@ -767,7 +767,7 @@ coming in handy for instance when implementing domain-specific value types with 
 </div>
 </li>
 <li>
-<p><strong>Support for validation groups:</strong> Bean Validation&#8217;s concept of validation groups allows you to validate only sub-sets of constraints in specific contexts; e.g. based on location and applying legal requirements</p>
+<p><strong>Support for validation groups:</strong> Bean Validation’s concept of validation groups allows you to validate only sub-sets of constraints in specific contexts; e.g. based on location and applying legal requirements</p>
 </li>
 <li>
 <p><strong>Dynamic constraint definition:</strong> Using Hibernate Validator, constraints can also be <a href="https://docs.jboss.org/hibernate/stable/validator/reference/en-US/html_single/#section-programmatic-api">declared dynamically</a> using a fluent API. This can be very useful when your validation requirements vary at runtime,
@@ -783,7 +783,7 @@ e.g. if you need to apply different constraint configurations for different tena
 <div class="paragraph">
 <p>One area where this current proof-of-concept implementation falls a bit short is the validation of invariants that apply to multiple components.
 For instance consider a record type representing an interval with a <code>begin</code> and an <code>end</code> attribute,
-where you&#8217;d like to enforce the invariant that <code>end</code> is larger than <code>begin</code>.</p>
+where you’d like to enforce the invariant that <code>end</code> is larger than <code>begin</code>.</p>
 </div>
 <div class="paragraph">
 <p>Bean Validation addresses this sort of requirement via class-level constraints and,
@@ -793,10 +793,10 @@ Class-level constraints are not really suitable for our purposes,
 because we want to validate the invariants <em>before</em> an object instance is created.</p>
 </div>
 <div class="paragraph">
-<p>Cross-parameter constraints on the other hand are exactly what we&#8217;d need.
+<p>Cross-parameter constraints on the other hand are exactly what we’d need.
 As they must be given on a constructor or method,
 the canonical constructor of a record must be explicitly declared in this case.
-Using Hibernate Validator&#8217;s <code>@ParameterScriptAssert</code> constraint, the invariant from above could be expressed like so:</p>
+Using Hibernate Validator’s <code>@ParameterScriptAssert</code> constraint, the invariant from above could be expressed like so:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -808,7 +808,7 @@ Using Hibernate Validator&#8217;s <code>@ParameterScriptAssert</code> constraint
 6
 </pre></td><td class="code"><pre><span class="kd">public</span> <span class="n">record</span> <span class="nf">Interval</span><span class="o">(</span><span class="kt">int</span> <span class="n">begin</span><span class="o">,</span> <span class="kt">int</span> <span class="n">end</span><span class="o">)</span> <span class="o">{</span>
 
-  <span class="nd">@ParameterScriptAssert</span><span class="o">(</span><span class="n">lang</span><span class="o">=</span><span class="s">"javascript"</span><span class="o">,</span> <span class="n">script</span><span class="o">=</span><span class="s">"end &gt; begin"</span><span class="o">)</span>
+  <span class="nd">@ParameterScriptAssert</span><span class="o">(</span><span class="n">lang</span><span class="o">=</span><span class="s">&#34;javascript&#34;</span><span class="o">,</span> <span class="n">script</span><span class="o">=</span><span class="s">&#34;end &gt; begin&#34;</span><span class="o">)</span>
   <span class="kd">public</span> <span class="nc">Interval</span> <span class="o">{</span>
   <span class="o">}</span>
 <span class="o">}</span>
@@ -816,13 +816,13 @@ Using Hibernate Validator&#8217;s <code>@ParameterScriptAssert</code> constraint
 </div>
 </div>
 <div class="paragraph">
-<p>This works as expected, but there&#8217;s one caveat:
+<p>This works as expected, but there’s one caveat:
 any annotations from the record components are not propagated to the corresponding parameters of the canoncial constructor in this case.
 This means that any constraints given on the individual components would be lost.
-Right now it&#8217;s not <a href="https://mail.openjdk.java.net/pipermail/amber-dev/2020-January/005485.html">quite clear</a> to me whether that&#8217;s an intended behavior or rather a bug in the current record implementation.</p>
+Right now it’s not <a href="https://mail.openjdk.java.net/pipermail/amber-dev/2020-January/005485.html">quite clear</a> to me whether that’s an intended behavior or rather a bug in the current record implementation.</p>
 </div>
 <div class="paragraph">
-<p>If indeed it <em>is</em> intentional, than there&#8217;d be no way other than specifying the constraints explicitly on the parameters of a fully manually implemented constructor:</p>
+<p>If indeed it <em>is</em> intentional, than there’d be no way other than specifying the constraints explicitly on the parameters of a fully manually implemented constructor:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -836,7 +836,7 @@ Right now it&#8217;s not <a href="https://mail.openjdk.java.net/pipermail/amber-
 8
 </pre></td><td class="code"><pre><span class="kd">public</span> <span class="n">record</span> <span class="nf">Interval</span><span class="o">(</span><span class="kt">int</span> <span class="n">begin</span><span class="o">,</span> <span class="kt">int</span> <span class="n">end</span><span class="o">)</span> <span class="o">{</span>
 
-  <span class="nd">@ParameterScriptAssert</span><span class="o">(</span><span class="n">lang</span><span class="o">=</span><span class="s">"javascript"</span><span class="o">,</span> <span class="n">script</span><span class="o">=</span><span class="s">"end &gt; begin"</span><span class="o">)</span>
+  <span class="nd">@ParameterScriptAssert</span><span class="o">(</span><span class="n">lang</span><span class="o">=</span><span class="s">&#34;javascript&#34;</span><span class="o">,</span> <span class="n">script</span><span class="o">=</span><span class="s">&#34;end &gt; begin&#34;</span><span class="o">)</span>
   <span class="kd">public</span> <span class="nf">Interval</span><span class="o">(</span><span class="nd">@Positive</span> <span class="kt">int</span> <span class="n">begin</span><span class="o">,</span> <span class="nd">@Positive</span> <span class="kt">int</span> <span class="n">end</span><span class="o">)</span> <span class="o">{</span>
     <span class="k">this</span><span class="o">.</span><span class="na">begin</span> <span class="o">=</span> <span class="n">begin</span><span class="o">;</span>
     <span class="k">this</span><span class="o">.</span><span class="na">end</span> <span class="o">=</span> <span class="n">end</span><span class="o">;</span>
@@ -846,7 +846,7 @@ Right now it&#8217;s not <a href="https://mail.openjdk.java.net/pipermail/amber-
 </div>
 </div>
 <div class="paragraph">
-<p>This works, but of course we&#8217;re losing a bit of the conciseness promised by records.</p>
+<p>This works, but of course we’re losing a bit of the conciseness promised by records.</p>
 </div>
 <div class="paragraph">
 <p><em>Update, Jan 20, 2020, 20:57:</em> Turns out, the current behavior indeed is <em>not</em> intended (see <a href="https://bugs.openjdk.java.net/browse/JDK-8236597">JDK-8236597</a>) and in a future Java version the shorter version of the code shown above should work.</p>
@@ -857,32 +857,32 @@ Right now it&#8217;s not <a href="https://mail.openjdk.java.net/pipermail/amber-
 <h2 id="_wrap_up">Wrap-Up</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>In this blog post we&#8217;ve explored how invariants on Java 14 record types can be enforced using the Bean Validation API.
+<p>In this blog post we’ve explored how invariants on Java 14 record types can be enforced using the Bean Validation API.
 With just a bit of byte code magic the task gets manageable:
 by validating invariants expressed by constraint annotations on record components right at instantiation time,
 only valid record instances will ever be exposed to callers.
 Key for that is the fact that any annotations from record components are automatically propagated to the corresponding parameters of the canonical record constructor.
-That way they can be validated using Bean Validation&#8217;s method validation API.
+That way they can be validated using Bean Validation’s method validation API.
 It remains to be seen, whether invariants based on multiple record components also can be enforced as easily.</p>
 </div>
 <div class="paragraph">
 <p>From the perspective of the Bean Validation specification,
-it&#8217;ll surely make sense to explore support for record types.
+it’ll surely make sense to explore support for record types.
 While not as powerful as enforcing invariants at construction time via byte code enhancement,
 it might also be useful to support the validation of component values via their read accessors.
-For that, the notion of "properties" would have to be relaxed,
-as the read accessors of records don&#8217;t have the JavaBeans <code>get</code> prefix currently expected by Bean Validation.
+For that, the notion of &#34;properties&#34; would have to be relaxed,
+as the read accessors of records don’t have the JavaBeans <code>get</code> prefix currently expected by Bean Validation.
 It also should be considered to expand the Bean Validation metadata API accordingly.</p>
 </div>
 <div class="paragraph">
 <p>I would also be very happy to learn about your thoughts around this topic.
 While Bean Validation 3.0
 (as part of <a href="https://eclipse-ee4j.github.io/jakartaee-platform/jakartaee9/JakartaEE9ReleasePlan">Jakarta EE 9</a>)
-in all likelyhood won&#8217;t bring any changes besides the transition to the <code>jakarta.*</code> package namespace,
+in all likelyhood won’t bring any changes besides the transition to the <code>jakarta.*</code> package namespace,
 this may be an area where we could evolve the specification for Jakarta EE 10.</p>
 </div>
 <div class="paragraph">
-<p>If you&#8217;d like to experiment with the validation of record types yourself,
+<p>If you’d like to experiment with the validation of record types yourself,
 you can find the complete source code on <a href="https://github.com/gunnarmorling/records-bean-validation">GitHub</a>.</p>
 </div>
 </div>

@@ -20,29 +20,29 @@ But sometimes, e.g. in order to analyse some specific kinds of failures,
 doing so can be inevitable.
 
 
-Now, if this is the case, I really, really want to be sure that I&#8217;m aware of the environment I am working in.
+Now, if this is the case, I really, really want to be sure that I’m aware of the environment I am working in.
 I absolutely want to avoid a situation as in the catchy title of this post,
 when for instance you realize that you just ran some integration test against a production environment.
-In the context of working with the AWS CLI tool this means I&#8217;d like to be aware of the currently active profile by means of coloring my shell accordingly.
-Here&#8217;s how I&#8217;ve set this up using iTerm2 and zsh.
+In the context of working with the AWS CLI tool this means I’d like to be aware of the currently active profile by means of coloring my shell accordingly.
+Here’s how I’ve set this up using iTerm2 and zsh.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/oh_this_is_prod/" />
+<meta property="og:url" content="https://www.morling.dev/blog/oh_this_is_prod/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2023-01-05T22:10:00+01:00" />
 <meta property="article:modified_time" content="2023-01-05T22:10:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Oh... This is Prod?!"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Oh... This is Prod?!"/>
 <meta name="twitter:description" content="
 I strongly believe that you should avoid connecting to production environments from local developer machines as much as possible.
 But sometimes, e.g. in order to analyse some specific kinds of failures,
 doing so can be inevitable.
 
 
-Now, if this is the case, I really, really want to be sure that I&#8217;m aware of the environment I am working in.
+Now, if this is the case, I really, really want to be sure that I’m aware of the environment I am working in.
 I absolutely want to avoid a situation as in the catchy title of this post,
 when for instance you realize that you just ran some integration test against a production environment.
-In the context of working with the AWS CLI tool this means I&#8217;d like to be aware of the currently active profile by means of coloring my shell accordingly.
-Here&#8217;s how I&#8217;ve set this up using iTerm2 and zsh.
+In the context of working with the AWS CLI tool this means I’d like to be aware of the currently active profile by means of coloring my shell accordingly.
+Here’s how I’ve set this up using iTerm2 and zsh.
 "/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
@@ -281,23 +281,23 @@ But sometimes, e.g. in order to analyse some specific kinds of failures,
 doing so can be inevitable.</p>
 </div>
 <div class="paragraph">
-<p>Now, if this is the case, I really, really want to be sure that I&#8217;m aware of the environment I am working in.
+<p>Now, if this is the case, I really, really want to be sure that I’m aware of the environment I am working in.
 I absolutely want to avoid a situation as in the catchy title of this post,
 when for instance you realize that you just ran some integration test against a production environment.
-In the context of working with the AWS CLI tool this means I&#8217;d like to be aware of the currently active <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html">profile</a> by means of coloring my shell accordingly.
-Here&#8217;s how I&#8217;ve set this up using <a href="https://iterm2.com/">iTerm2</a> and <a href="https://www.zsh.org/">zsh</a>.</p>
+In the context of working with the AWS CLI tool this means I’d like to be aware of the currently active <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html">profile</a> by means of coloring my shell accordingly.
+Here’s how I’ve set this up using <a href="https://iterm2.com/">iTerm2</a> and <a href="https://www.zsh.org/">zsh</a>.</p>
 </div>
 <div class="paragraph">
 <p>The first step is to create a <a href="https://iterm2.com/documentation-preferences-profiles-general.html">profile</a> in iTerm2 for each separate environment which you can easily recognize and tell apart.
-In my case, I&#8217;ve set up two profiles:</p>
+In my case, I’ve set up two profiles:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>A "Dev" profile with a dark green background</p>
+<p>A &#34;Dev&#34; profile with a dark green background</p>
 </li>
 <li>
-<p>A "Prod" profile with a dark red background</p>
+<p>A &#34;Prod&#34; profile with a dark red background</p>
 </li>
 </ul>
 </div>
@@ -322,7 +322,7 @@ This can be done programmatically by echo-ing a specific escape sequence which i
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
-</pre></td><td class="code"><pre><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"</span><span class="se">\0</span><span class="s2">33]50;SetProfile=Dev</span><span class="se">\a</span><span class="s2">"</span>
+</pre></td><td class="code"><pre><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">&#34;</span><span class="se">\0</span><span class="s2">33]50;SetProfile=Dev</span><span class="se">\a</span><span class="s2">&#34;</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -330,7 +330,7 @@ This can be done programmatically by echo-ing a specific escape sequence which i
 <p>To make sure the right profile is set, I am using the <code>precmd</code> <a href="https://zsh.sourceforge.io/Doc/Release/Functions.html">hook function</a> in zsh.
 It is invoked every time before the prompt is displayed.
 Just add the following to your <em>.zshrc</em> file
-(if you have multiple actions you&#8217;d like to execute,
+(if you have multiple actions you’d like to execute,
 it can be worthwhile to set them up as separate hook functions,
 as described in <a href="https://stephencharlesweiss.com/zsh-hooks">this post</a>):</p>
 </div>
@@ -348,14 +348,14 @@ as described in <a href="https://stephencharlesweiss.com/zsh-hooks">this post</a
 10
 11
 </pre></td><td class="code"><pre>precmd <span class="o">()</span> <span class="o">{</span>
-    <span class="k">if</span> <span class="o">[</span> <span class="s2">"</span><span class="nv">$AWS_PROFILE</span><span class="s2">"</span> <span class="o">=</span> <span class="s2">"dev"</span> <span class="o">]</span>
+    <span class="k">if</span> <span class="o">[</span> <span class="s2">&#34;</span><span class="nv">$AWS_PROFILE</span><span class="s2">&#34;</span> <span class="o">=</span> <span class="s2">&#34;dev&#34;</span> <span class="o">]</span>
     <span class="k">then
-        </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"</span><span class="se">\0</span><span class="s2">33]50;SetProfile=Dev</span><span class="se">\a</span><span class="s2">"</span>
-    <span class="k">elif</span> <span class="o">[</span> <span class="s2">"</span><span class="nv">$AWS_PROFILE</span><span class="s2">"</span> <span class="o">=</span> <span class="s2">"prod"</span> <span class="o">]</span>
+        </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">&#34;</span><span class="se">\0</span><span class="s2">33]50;SetProfile=Dev</span><span class="se">\a</span><span class="s2">&#34;</span>
+    <span class="k">elif</span> <span class="o">[</span> <span class="s2">&#34;</span><span class="nv">$AWS_PROFILE</span><span class="s2">&#34;</span> <span class="o">=</span> <span class="s2">&#34;prod&#34;</span> <span class="o">]</span>
     <span class="k">then
-        </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"</span><span class="se">\0</span><span class="s2">33]50;SetProfile=Prod</span><span class="se">\a</span><span class="s2">"</span>
+        </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">&#34;</span><span class="se">\0</span><span class="s2">33]50;SetProfile=Prod</span><span class="se">\a</span><span class="s2">&#34;</span>
     <span class="k">else
-        </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"</span><span class="se">\0</span><span class="s2">33]50;SetProfile=Default</span><span class="se">\a</span><span class="s2">"</span>
+        </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">&#34;</span><span class="se">\0</span><span class="s2">33]50;SetProfile=Default</span><span class="se">\a</span><span class="s2">&#34;</span>
     <span class="k">fi</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
@@ -367,11 +367,11 @@ choosing a specific AWS profile automatically triggers the activation of the mat
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/shell_profile_selection.gif" alt="shell profile selection">
+<img src="/images/shell_profile_selection.gif" alt="shell profile selection"/>
 </div>
 </div>
 <div class="paragraph">
-<p>That way, it&#8217;s very apparent which AWS profile currently is active, substantially reducing the risk for making any stupid mistakes.</p>
+<p>That way, it’s very apparent which AWS profile currently is active, substantially reducing the risk for making any stupid mistakes.</p>
 </div>
 			</div>
 

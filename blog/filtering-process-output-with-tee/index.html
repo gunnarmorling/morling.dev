@@ -22,11 +22,11 @@ The letter for further processing on our end:
 we were looking to detect when the JVM stops due to an OutOfMemoryError, passing on that information to some error classifier.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/filtering-process-output-with-tee/" />
+<meta property="og:url" content="https://www.morling.dev/blog/filtering-process-output-with-tee/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2024-02-10T11:11:00+01:00" />
 <meta property="article:modified_time" content="2024-02-10T11:11:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Filtering Process Output With tee"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Filtering Process Output With tee"/>
 <meta name="twitter:description" content="
 Recently I ran into a situation where it was necessary to capture the output of a Java process on the stdout stream,
 and at the same time a filtered subset of the output in a log file.
@@ -273,7 +273,7 @@ The letter for further processing on our end:
 we were looking to detect when the JVM stops due to an <code>OutOfMemoryError</code>, passing on that information to some error classifier.</p>
 </div>
 <div class="paragraph">
-<p>Simply redirecting the standard output stream of the process to a file wouldn&#8217;t satisfy the first requirement.
+<p>Simply redirecting the standard output stream of the process to a file wouldn’t satisfy the first requirement.
 Instead, the <a href="https://www.unix.com/man-page/posix/1p/tee/"><code>tee</code></a> command offers a solution: it reads from <code>stdin</code> and writes everything to <code>stdout</code> as well as a file:</p>
 </div>
 <div class="listingblock">
@@ -287,16 +287,16 @@ Instead, the <a href="https://www.unix.com/man-page/posix/1p/tee/"><code>tee</co
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Pipe <code>stdout</code> to <code>tee</code>, which writes it to both <code>stdout</code> and a log file</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>This kinda gives us what we want, but we lack control over the size of that log file.
-As is, it can grow indefinitely, eventually causing the application&#8217;s pod to run out of disk space.
-For the case at hand, we&#8217;re just interested in specific lines anyways.
+As is, it can grow indefinitely, eventually causing the application’s pod to run out of disk space.
+For the case at hand, we’re just interested in specific lines anyways.
 So ideally the content written to the log file would be filtered accordingly,
 while exposing the <em>complete</em> output to the Kubernetes log collector via <code>stdout</code>.</p>
 </div>
@@ -319,27 +319,27 @@ In a nutshell, it provides a bridge between the standard input and output stream
 I.e. this is no <a href="https://www.gnu.org/software/bash/manual/html_node/Redirections.html">redirection</a>.
 The former variant is exactly what we need:
 instead of directly writing all the process output to the log file,
-we use <code>grep</code> to filter any written content, based on the string we&#8217;re looking for:</p>
+we use <code>grep</code> to filter any written content, based on the string we’re looking for:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 </pre></td><td class="code"><pre><span class="nv">$ </span>java <span class="nt">-jar</span> my-app.jar <span class="nt">-XX</span>:+ExitOnOutOfMemoryError <span class="se">\</span>
-  | <span class="nb">tee</span> <span class="o">&gt;(</span><span class="nb">grep</span> <span class="s1">'OutOfMemoryError'</span> <span class="o">&gt;</span> my-app.log<span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
+  | <span class="nb">tee</span> <span class="o">&gt;(</span><span class="nb">grep</span> <span class="s1">&#39;OutOfMemoryError&#39;</span> <span class="o">&gt;</span> my-app.log<span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Represent the <code>stdin</code> of <code>grep</code> as a file for <code>tee</code> to write to</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>That way, the complete <code>stdout</code> of our process gets exposed to Kubernetes' logging infrastructure,
+<p>That way, the complete <code>stdout</code> of our process gets exposed to Kubernetes&#39; logging infrastructure,
 while only the filtered output get written to our log file:</p>
 </div>
 <div class="listingblock">
@@ -353,7 +353,7 @@ Terminating due to java.lang.OutOfMemoryError: Java heap space
 </div>
 <div class="paragraph">
 <p>To get a better intuition of what process substitution does under the hood,
-let&#8217;s create a simple Java program which reads from a file specified as a program argument:</p>
+let’s create a simple Java program which reads from a file specified as a program argument:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -376,19 +376,19 @@ let&#8217;s create a simple Java program which reads from a file specified as a 
 
 <span class="kd">public</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">...</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
   <span class="kt">var</span> <span class="n">fileName</span> <span class="o">=</span> <span class="n">args</span><span class="o">[</span><span class="mi">0</span><span class="o">];</span>
-  <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"File: "</span> <span class="o">+</span> <span class="n">fileName</span><span class="o">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&#34;File: &#34;</span> <span class="o">+</span> <span class="n">fileName</span><span class="o">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
 
   <span class="nc">String</span> <span class="n">content</span> <span class="o">=</span> <span class="nc">Files</span><span class="o">.</span><span class="na">readString</span><span class="o">(</span> <i class="conum" data-value="2"></i><b>(2)</b>
       <span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">fileName</span><span class="o">),</span> <span class="nc">Charset</span><span class="o">.</span><span class="na">defaultCharset</span><span class="o">()</span>
   <span class="o">);</span>
-  <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Content: "</span> <span class="o">+</span> <span class="n">content</span><span class="o">);</span>
+  <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&#34;Content: &#34;</span> <span class="o">+</span> <span class="n">content</span><span class="o">);</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Print the passed file name</td>
 </tr>
@@ -396,17 +396,17 @@ let&#8217;s create a simple Java program which reads from a file specified as a 
 <td><i class="conum" data-value="2"></i><b>2</b></td>
 <td>Print the content of the file</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>Here&#8217;s the program&#8217;s output when using process substitution for exposing the <code>stdout</code> of <code>echo</code>:</p>
+<p>Here’s the program’s output when using process substitution for exposing the <code>stdout</code> of <code>echo</code>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 3
-</pre></td><td class="code"><pre><span class="nv">$ </span>java <span class="nt">--enable-preview</span> <span class="nt">--source</span> 21 read_file.java &lt;<span class="o">(</span><span class="nb">echo</span> <span class="s2">"hello"</span><span class="o">)</span>
+</pre></td><td class="code"><pre><span class="nv">$ </span>java <span class="nt">--enable-preview</span> <span class="nt">--source</span> 21 read_file.java &lt;<span class="o">(</span><span class="nb">echo</span> <span class="s2">&#34;hello&#34;</span><span class="o">)</span>
 File: /dev/fd/11
 Content: hello
 </pre></td></tr></tbody></table></code></pre>

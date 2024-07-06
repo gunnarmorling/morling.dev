@@ -29,11 +29,11 @@ The problem was though that I was really sure that there was no traffic in that 
 What could cause a WAL growth of ~18 GB/day then?
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/insatiable-postgres-replication-slot/" />
+<meta property="og:url" content="https://www.morling.dev/blog/insatiable-postgres-replication-slot/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2022-11-30T14:00:00+01:00" />
 <meta property="article:modified_time" content="2022-11-30T14:00:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="The Insatiable Postgres Replication Slot"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="The Insatiable Postgres Replication Slot"/>
 <meta name="twitter:description" content="
 While working on a demo for processing change events from Postgres with Apache Flink,
 I noticed an interesting phenomenon:
@@ -301,8 +301,8 @@ but I hope this will come in handy for others in the same situation, too.</p>
 <h2 id="_the_observation">The Observation</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Let&#8217;s start with the observations I made.
-I don&#8217;t have the data and log files from the original situation any longer,
+<p>Let’s start with the observations I made.
+I don’t have the data and log files from the original situation any longer,
 but the following steps are enough to reproduce the issue.
 The first thing is to create a new Postgres database on <a href="https://aws.amazon.com/rds/postgresql/">Amazon RDS</a> (I used version 14.5 on the free tier).
 Then get a session on the database and create a replication slot like this:</p>
@@ -316,8 +316,8 @@ Then get a session on the database and create a replication slot like this:</p>
 5
 6
 </pre></td><td class="code"><pre><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">pg_create_logical_replication_slot</span><span class="p">(</span>
-  <span class="s1">'regression_slot'</span><span class="p">,</span>
-  <span class="s1">'test_decoding'</span><span class="p">,</span>
+  <span class="s1">&#39;regression_slot&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;test_decoding&#39;</span><span class="p">,</span>
   <span class="k">false</span><span class="p">,</span>
   <span class="k">true</span>
 <span class="p">);</span>
@@ -327,37 +327,37 @@ Then get a session on the database and create a replication slot like this:</p>
 <div class="paragraph">
 <p>Now grab a coffee (or two, or three),
 and after some hours take a look into the metrics of the database in the RDS web console.
-"Free Storage Space" shows the following, rather unpleasant, picture:</p>
+&#34;Free Storage Space&#34; shows the following, rather unpleasant, picture:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/rds_free_storage_space.png" alt="rds free storage space">
+<img src="/images/rds_free_storage_space.png" alt="rds free storage space"/>
 </div>
 </div>
 <div class="paragraph">
-<p>We&#8217;ve lost more than two GB within three hours,
+<p>We’ve lost more than two GB within three hours,
 meaning that the 20 GiB free tier database would run out of disk space within less than two days.
-Next, let&#8217;s take a look at the "Transaction Log Disk Usage" metric.
+Next, let’s take a look at the &#34;Transaction Log Disk Usage&#34; metric.
 It shows the problem in a very pronounced way:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/rds_transaction_log_disk_usage.png" alt="rds transaction log disk usage">
+<img src="/images/rds_transaction_log_disk_usage.png" alt="rds transaction log disk usage"/>
 </div>
 </div>
 <div class="paragraph">
 <p>Roughly very few minutes the transaction log of the database grows by 64 MB.
-The "Write IOPS" metric further completes this picture.
+The &#34;Write IOPS&#34; metric further completes this picture.
 Again, every five minutes something causes write IOPS in that idle database:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/rds_write_iops.png" alt="rds write iops">
+<img src="/images/rds_write_iops.png" alt="rds write iops"/>
 </div>
 </div>
 <div class="paragraph">
-<p>Now let&#8217;s see whether our replication slot actually is the culprit.
-By looking at the difference between its restart LSN (the earliest LSN which the database needs to retain in order to allow for this slot to resume) and the database&#8217;s current LSN we see how much bytes of WAL this slot prevents from being freed while it is inactive:</p>
+<p>Now let’s see whether our replication slot actually is the culprit.
+By looking at the difference between its restart LSN (the earliest LSN which the database needs to retain in order to allow for this slot to resume) and the database’s current LSN we see how much bytes of WAL this slot prevents from being freed while it is inactive:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -392,7 +392,7 @@ By looking at the difference between its restart LSN (the earliest LSN which the
 <p>Pretty much exactly the size of the WAL we saw in the database metrics.
 The big question now is of course what is causing that growth of the WAL?
 Which process is adding 64 MB to it every five minutes?
-So let&#8217;s take a look at the active server processes in Postgres,
+So let’s take a look at the active server processes in Postgres,
 using the <a href="https://www.postgresql.org/docs/current/monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW">pg_stat_activity</a> view:</p>
 </div>
 <div class="listingblock">
@@ -436,8 +436,8 @@ using the <a href="https://www.postgresql.org/docs/current/monitoring-stats.html
 </div>
 <div class="paragraph">
 <p>This is interesting: besides our own session (user <code>postgres</code>),
-there&#8217;s also two other sessions by a user <code>rdsadmin</code>.
-As we don&#8217;t do any data changes ourselves, they must be somehow related to the WAL growth we observe.</p>
+there’s also two other sessions by a user <code>rdsadmin</code>.
+As we don’t do any data changes ourselves, they must be somehow related to the WAL growth we observe.</p>
 </div>
 </div>
 </div>
@@ -446,7 +446,7 @@ As we don&#8217;t do any data changes ourselves, they must be somehow related to
 <div class="sectionbody">
 <div class="paragraph">
 <p>At this point I had enough information to do some meaningful Google search,
-and I came across the blog post <a href="https://wolfman.dev/posts/pg-logical-heartbeats/">"Postgres Logical Replication and Idle Databases"</a> by Byron Wolfman,
+and I came across the blog post <a href="https://wolfman.dev/posts/pg-logical-heartbeats/">&#34;Postgres Logical Replication and Idle Databases&#34;</a> by Byron Wolfman,
 who ran into the exact same issue as I did.
 As it turns out, RDS is periodically writing heartbeats into that <code>rdsadmin</code> database:</p>
 </div>
@@ -461,11 +461,11 @@ As it turns out, RDS is periodically writing heartbeats into that <code>rdsadmin
 <p>This is one part of the explanation: in our seemingless inactive RDS Postgres database,
 there actually <em>is</em> some traffic.
 But how is it possible that this heartbeat causes such a large amount of WAL growth?
-Surely those heartbeat events won&#8217;t be 64 MB large?</p>
+Surely those heartbeat events won’t be 64 MB large?</p>
 </div>
 <div class="paragraph">
 <p><a href="https://aws.amazon.com/premiumsupport/knowledge-center/rds-postgresql-upgrade-write-latency/">Another blog post</a> hinted at the next bit of information:
-as of Postgres 11, the WAL segment size&#8201;&#8212;&#8201;i.e. the size of individual files making up the WAL&#8201;&#8212;&#8201;can <a href="https://www.dbi-services.com/blog/the-wal-segement-size-becomes-changeable-in-postgresql-11/">be configured</a>.
+as of Postgres 11, the WAL segment size — i.e. the size of individual files making up the WAL — can <a href="https://www.dbi-services.com/blog/the-wal-segement-size-becomes-changeable-in-postgresql-11/">be configured</a>.
 On RDS, this is changed from the default of 16 MB to 64 MB.
 This sounds familiar!</p>
 </div>
@@ -476,7 +476,7 @@ This is what the excellent postgresqlco.nf site <a href="https://postgresqlco.nf
 <div class="quoteblock">
 <blockquote>
 <div class="paragraph">
-<p>When this parameter is greater than zero, the server will switch to a new segment file whenever this amount of time has elapsed since the last segment file switch, and there has been any database activity &#8230;&#8203; Note that archived files that are closed early due to a forced switch are still the same length as completely full files.</p>
+<p>When this parameter is greater than zero, the server will switch to a new segment file whenever this amount of time has elapsed since the last segment file switch, and there has been any database activity …​ Note that archived files that are closed early due to a forced switch are still the same length as completely full files.</p>
 </div>
 </blockquote>
 </div>
@@ -484,7 +484,7 @@ This is what the excellent postgresqlco.nf site <a href="https://postgresqlco.nf
 <p>And this finally explains why that inactive replication slot causes the retention of that much WAL on an idle database:
 there actually are some data changes made every five minutes in form of that heartbeat in the <code>rdsadmin</code> database.
 This in turn causes a new WAL segment of 64 MB to be created every five minutes.
-As long as that replication slot is inactive and doesn&#8217;t make any progress,
+As long as that replication slot is inactive and doesn’t make any progress,
 all those WAL segments will be kept,
 (not so) slowly causing the database server to run out of disk space.</p>
 </div>
@@ -495,32 +495,32 @@ all those WAL segments will be kept,
 <div class="sectionbody">
 <div class="paragraph">
 <p>The morale of the story?
-Don&#8217;t leave your replication slots unattended!
-There shouldn&#8217;t be any slots which are inactive for too long.
+Don’t leave your replication slots unattended!
+There shouldn’t be any slots which are inactive for too long.
 For instance you could set up an alert based on the query above which notifies you if some slot retains WAL of more than 100 MB.
 And of course you should monitor your free disk space, too.</p>
 </div>
 <div class="paragraph">
 <p>That being said, you still might be in for a bad surprise:
 under specific instances, also an active replication slot can cause unexpected WAL retention.
-If for instance large amounts of changes are being made to one database but a replication slot has been set up for another database which doesn&#8217;t receive any changes,
-that slot still won&#8217;t be able to make any progress.</p>
+If for instance large amounts of changes are being made to one database but a replication slot has been set up for another database which doesn’t receive any changes,
+that slot still won’t be able to make any progress.</p>
 </div>
 <div class="paragraph">
 <p>A common solution to that scenario is inducing some sort of artificial traffic into the database,
 as for instance supported by the <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-wal-disk-space">Debezium Postgres connector</a>.
-Note this doesn&#8217;t even require a specific tables,
+Note this doesn’t even require a specific tables,
 periodically writing a message just to the WAL using <a href="https://pgpedia.info/p/pg_logical_emit_message.html"><code>pg_logical_emit_message()</code></a> is enough:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
-</pre></td><td class="code"><pre><span class="k">SELECT</span> <span class="n">pg_logical_emit_message</span><span class="p">(</span><span class="k">false</span><span class="p">,</span> <span class="s1">'heartbeat'</span><span class="p">,</span> <span class="n">now</span><span class="p">()::</span><span class="nb">varchar</span><span class="p">);</span>
+</pre></td><td class="code"><pre><span class="k">SELECT</span> <span class="n">pg_logical_emit_message</span><span class="p">(</span><span class="k">false</span><span class="p">,</span> <span class="s1">&#39;heartbeat&#39;</span><span class="p">,</span> <span class="n">now</span><span class="p">()::</span><span class="nb">varchar</span><span class="p">);</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>If you use a logical decoding plug-in which supports logical replication messages&#8201;&#8212;&#8201;like <a href="https://www.postgresql.org/docs/14/protocol-logicalrep-message-formats.html">pgoutput</a> since Postgres 14&#8201;&#8212;&#8201;then that&#8217;s all that&#8217;s needed for letting your replication slot advance within an otherwise idle database.</p>
+<p>If you use a logical decoding plug-in which supports logical replication messages — like <a href="https://www.postgresql.org/docs/14/protocol-logicalrep-message-formats.html">pgoutput</a> since Postgres 14 — then that’s all that’s needed for letting your replication slot advance within an otherwise idle database.</p>
 </div>
 </div>
 </div>

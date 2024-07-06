@@ -26,15 +26,15 @@ without having to resort to less familiar and often more complex to use reactive
 
 
 Having been in the workings for several years, Loom got merged into the mainline of OpenJDK just recently and is available as a preview feature in the latest Java 19 early access builds.
-I.e. it&#8217;s the perfect time to get your hands onto virtual threads and explore the new feature.
-In this post I&#8217;m going to share an interesting aspect I learned about thread scheduling fairness for CPU-bound workloads running on Loom.
+I.e. it’s the perfect time to get your hands onto virtual threads and explore the new feature.
+In this post I’m going to share an interesting aspect I learned about thread scheduling fairness for CPU-bound workloads running on Loom.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/loom-and-thread-fairness/" />
+<meta property="og:url" content="https://www.morling.dev/blog/loom-and-thread-fairness/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2022-05-27T09:20:00+01:00" />
 <meta property="article:modified_time" content="2022-05-27T09:20:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Loom and Thread Fairness"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Loom and Thread Fairness"/>
 <meta name="twitter:description" content="
 Update Jun 3: This post is discussed on Reddit and Hacker News
 
@@ -47,8 +47,8 @@ without having to resort to less familiar and often more complex to use reactive
 
 
 Having been in the workings for several years, Loom got merged into the mainline of OpenJDK just recently and is available as a preview feature in the latest Java 19 early access builds.
-I.e. it&#8217;s the perfect time to get your hands onto virtual threads and explore the new feature.
-In this post I&#8217;m going to share an interesting aspect I learned about thread scheduling fairness for CPU-bound workloads running on Loom.
+I.e. it’s the perfect time to get your hands onto virtual threads and explore the new feature.
+In this post I’m going to share an interesting aspect I learned about thread scheduling fairness for CPU-bound workloads running on Loom.
 "/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
@@ -286,15 +286,15 @@ In this post I&#8217;m going to share an interesting aspect I learned about thre
 </div>
 <div class="paragraph">
 <p>Project Loom (<a href="https://openjdk.java.net/jeps/425">JEP 425</a>) is probably amongst the most awaited feature additions to Java ever;
-its implementation of virtual threads (or "green threads") promises developers the ability to create highly concurrent applications,
+its implementation of virtual threads (or &#34;green threads&#34;) promises developers the ability to create highly concurrent applications,
 for instance with hundreds of thousands of open HTTP connections,
 sticking to the well-known thread-per-request programming model,
 without having to resort to less familiar and often more complex to use reactive approaches.</p>
 </div>
 <div class="paragraph">
 <p>Having been in the workings for several years, Loom got merged into the mainline of OpenJDK <a href="https://github.com/openjdk/jdk/commit/9583e3657e43cc1c6f2101a64534564db2a9bd84">just recently</a> and is available as a preview feature in the latest <a href="https://jdk.java.net/19/">Java 19 early access builds</a>.
-I.e. it&#8217;s the perfect time to get your hands onto virtual threads and explore the new feature.
-In this post I&#8217;m going to share an interesting aspect I learned about thread scheduling fairness for CPU-bound workloads running on Loom.</p>
+I.e. it’s the perfect time to get your hands onto virtual threads and explore the new feature.
+In this post I’m going to share an interesting aspect I learned about thread scheduling fairness for CPU-bound workloads running on Loom.</p>
 </div>
 <div class="sect1">
 <h2 id="_project_loom">Project Loom</h2>
@@ -315,7 +315,7 @@ allowing other requests to be processed in the meantime.
 Once a blocking call has completed,
 the request in question will be continued, using a thread again.
 This model makes much more efficient use of the threads resource for IO-bound workloads,
-unfortunately at the price of a more involved programming model, which doesn&#8217;t feel familiar to many developers.
+unfortunately at the price of a more involved programming model, which doesn’t feel familiar to many developers.
 Also aspects like debuggability or observability can be more challenging with reactive models,
 as described in the Loom JEP.</p>
 </div>
@@ -337,26 +337,26 @@ which is very well written and provides much more details and context.</p>
 <h2 id="_scheduling">Scheduling</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Now how does Loom&#8217;s scheduler  know that a method is blocking?
-Turns out, it doesn&#8217;t.
+<p>Now how does Loom’s scheduler  know that a method is blocking?
+Turns out, it doesn’t.
 As I learned from <a href="https://twitter.com/pressron/">Ron Pressler</a>, the main author of Project Loom,
-it&#8217;s the other way around:
+it’s the other way around:
 blocking methods in the JDK have been adjusted for Loom,
 so as to release the OS-level carrier thread when being called by a virtual thread:</p>
 </div>
 <div align="center">
-<blockquote class="twitter-tweet" data-conversation="none" data-dnt="true"><p lang="en" dir="ltr">All blocking in Java is done through the JDK (unless you explicitly call native code). We changed the &quot;leaf&quot; blocking methods in the JDK to block the virtual thread rather than the platform thread. E.g. in all of java.util.concurrent there&#39;s just one such method: LockSupport.park</p>&mdash; Ron Pressler (@pressron) <a href="https://twitter.com/pressron/status/1529194463242989568?ref_src=twsrc%5Etfw">May 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<blockquote class="twitter-tweet" data-conversation="none" data-dnt="true"><p lang="en" dir="ltr">All blocking in Java is done through the JDK (unless you explicitly call native code). We changed the &#34;leaf&#34; blocking methods in the JDK to block the virtual thread rather than the platform thread. E.g. in all of java.util.concurrent there&#39;s just one such method: LockSupport.park</p>— Ron Pressler (@pressron) <a href="https://twitter.com/pressron/status/1529194463242989568?ref_src=twsrc%5Etfw">May 24, 2022</a></blockquote> <script async="" src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 </div>
 <div class="paragraph">
-<p>Ron&#8217;s reply triggered a very <a href="https://twitter.com/timfox/status/1529804141140262913">interesting discussion</a> with <a href="https://twitter.com/timfox">Tim Fox</a> (e.g. of Vert.x fame):
+<p>Ron’s reply triggered a very <a href="https://twitter.com/timfox/status/1529804141140262913">interesting discussion</a> with <a href="https://twitter.com/timfox">Tim Fox</a> (e.g. of Vert.x fame):
 what happens if code is not IO-bound, but CPU-bound?
-I.e. if code in a virtual thread runs some heavy calculation without ever calling any of the JDK&#8217;s blocking methods,
+I.e. if code in a virtual thread runs some heavy calculation without ever calling any of the JDK’s blocking methods,
 will that virtual thread ever be unmounted?</p>
 </div>
 <div class="paragraph">
 <p>Perhaps surprisingly, the answer currently is: No.
 Which means that CPU-bound code will actually behave very differently with virtual threads than with OS-level threads.
-So let&#8217;s take a closer look at that phenomenon with the following example program:</p>
+So let’s take a closer look at that phenomenon with the following example program:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -409,7 +409,7 @@ So let&#8217;s take a closer look at that phenomenon with the following example 
 
         <span class="n">blackHole</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="na">longValue</span><span class="o">();</span>
 
-        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">id</span> <span class="o">+</span> <span class="s">";"</span> <span class="o">+</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">id</span> <span class="o">+</span> <span class="s">&#34;;&#34;</span> <span class="o">+</span>
             <span class="nc">Duration</span><span class="o">.</span><span class="na">between</span><span class="o">(</span><span class="n">start</span><span class="o">,</span> <span class="nc">Instant</span><span class="o">.</span><span class="na">now</span><span class="o">()).</span><span class="na">toMillis</span><span class="o">());</span>
       <span class="o">});</span>
     <span class="o">}</span>
@@ -430,25 +430,25 @@ Here are the results from my Mac Mini M1:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/loom_scheduling_os.png" alt="loom scheduling os">
+<img src="/images/loom_scheduling_os.png" alt="loom scheduling os"/>
 </div>
 </div>
 <div class="paragraph">
 <p>In wallclock time, it took all the 64 threads roughly 16 seconds to complete.
 The threads are rather equally scheduled between the available cores of my machine.
-I.e. we&#8217;re observing a <em>fair scheduling scheme</em>.
+I.e. we’re observing a <em>fair scheduling scheme</em>.
 Now here are the results using virtual threads (by obtaining the executor via <a href="https://download.java.net/java/early_access/jdk19/docs/api/java.base/java/util/concurrent/Executors.html#newVirtualThreadPerTaskExecutor()"><code>Executors::newVirtualThreadPerTaskExecutor()</code></a>):</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/loom_scheduling_virtual.png" alt="loom scheduling virtual">
+<img src="/images/loom_scheduling_virtual.png" alt="loom scheduling virtual"/>
 </div>
 </div>
 <div class="paragraph">
 <p>That chart looks very differently.
 The first eight threads took a wallclock time of about two seconds to complete,
 the next eight took about four seconds, etc.
-As the executed code doesn&#8217;t hit any of the JDK&#8217;s blocking methods,
+As the executed code doesn’t hit any of the JDK’s blocking methods,
 the threads never yield and thus ursurpate their carrier threads until they have run to completion.
 This represents an <em>unfair scheduling scheme</em> of the threads.
 While they were all started at the same time,
@@ -456,17 +456,17 @@ for the first two seconds only eight of them were actually executed,
 followed by the next eight, and so on.</p>
 </div>
 <div class="paragraph">
-<p>Loom&#8217;s scheduler uses by default as many carrier threads as there are CPU cores available;
+<p>Loom’s scheduler uses by default as many carrier threads as there are CPU cores available;
 There are eight cores in my M1, so processing happens in chunks of eight virtual threads at a time.
 Using the <code>jdk.virtualThreadScheduler.parallelism</code> system property, the number of carrier threads can be adjusted, e.g. to 16:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/loom_scheduling_virtual_16.png" alt="loom scheduling virtual 16">
+<img src="/images/loom_scheduling_virtual_16.png" alt="loom scheduling virtual 16"/>
 </div>
 </div>
 <div class="paragraph">
-<p>For the fun of it, let&#8217;s add a call to <code>Thread::sleep()</code> (i.e. a blocking method) to the processing loop and see what happens:</p>
+<p>For the fun of it, let’s add a call to <code>Thread::sleep()</code> (i.e. a blocking method) to the processing loop and see what happens:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -500,20 +500,20 @@ Using the <code>jdk.virtualThreadScheduler.parallelism</code> system property, t
 </div>
 </div>
 <div class="paragraph">
-<p>Surely enough, we&#8217;re back to a fair scheduling, with all threads completing after the roughly same wallclock time:</p>
+<p>Surely enough, we’re back to a fair scheduling, with all threads completing after the roughly same wallclock time:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/loom_scheduling_virtual_sleep.png" alt="loom scheduling virtual sleep">
+<img src="/images/loom_scheduling_virtual_sleep.png" alt="loom scheduling virtual sleep"/>
 </div>
 </div>
 <div class="paragraph">
-<p>It&#8217;s noteworthy that the actual durations appear more harmonized in comparison to the original results we got from running with 64 OS-level threads.
+<p>It’s noteworthy that the actual durations appear more harmonized in comparison to the original results we got from running with 64 OS-level threads.
 It seems the Loom scheduler can do a slightly better job of distributing the available resources between virtual threads.
-Surprisingly, a call to <a href="https://download.java.net/java/early_access/jdk19/docs/api/java.base/java/lang/Thread.html#yield()"><code>Thread::yield()</code></a> didn&#8217;t have the same result.
-While a scheduler is free to ignore this intend to yield as per the method&#8217;s JavaDoc,
+Surprisingly, a call to <a href="https://download.java.net/java/early_access/jdk19/docs/api/java.base/java/lang/Thread.html#yield()"><code>Thread::yield()</code></a> didn’t have the same result.
+While a scheduler is free to ignore this intend to yield as per the method’s JavaDoc,
 Sundararajan Athijegannathan  <a href="https://twitter.com/sundararajan_a/status/1529796364733136896">indicated</a> that this would be applied by Loom.
-It would surely be interesting to know why that&#8217;s not the case here.</p>
+It would surely be interesting to know why that’s not the case here.</p>
 </div>
 </div>
 </div>
@@ -526,19 +526,19 @@ Ron and Tim had an <a href="https://twitter.com/timfox/status/152980414114026291
 which I recommend you to check out to form an opinion yourself.
 As per Ron,
 support for yielding at points in program execution other than blocking methods has <a href="https://twitter.com/pressron/status/1529816395025764352">been implemented</a> in Loom already,
-but this hasn&#8217;t been merged into the mainline with the initial drop of Loom.
+but this hasn’t been merged into the mainline with the initial drop of Loom.
 It should be easy enough though to bring this back if the current behavior turns out to be problematic.</p>
 </div>
 <div class="paragraph">
-<p>Now there&#8217;s not much point in overcommitting to more threads than physically supported by a given CPU anyways for CPU-bound code (nor in using virtual threads to begin with).
-But in any case it&#8217;s worth pointing out that CPU-bound code may behavior differently with virtual threads than with classic OS-level threads.
+<p>Now there’s not much point in overcommitting to more threads than physically supported by a given CPU anyways for CPU-bound code (nor in using virtual threads to begin with).
+But in any case it’s worth pointing out that CPU-bound code may behavior differently with virtual threads than with classic OS-level threads.
 This may come at a suprise for Java developers, in particular if authors of such code are not in charge of selecting the thread executor/scheduler actually used by an application.</p>
 </div>
 <div class="paragraph">
 <p>Time will tell whether yield support also for CPU-bound code will be required or not,
 either via support for explicit calls to <code>Thread::yield()</code> (which I think should be supported at the very least) or through more implicit means, e.g. by yielding when reaching a <a href="https://shipilev.net/jvm/anatomy-quarks/22-safepoint-polls/">safepoint</a>.
-As I learned, Go&#8217;s goroutines <a href="https://stackoverflow.com/questions/68696886/will-gos-scheduler-yield-control-from-one-goroutine-to-another-for-cpu-intensiv">support yielding</a> in similar scenarios since version 1.14,
-so I wouldn&#8217;t be surprised to see Java and Loom taking the same course eventually.</p>
+As I learned, Go’s goroutines <a href="https://stackoverflow.com/questions/68696886/will-gos-scheduler-yield-control-from-one-goroutine-to-another-for-cpu-intensiv">support yielding</a> in similar scenarios since version 1.14,
+so I wouldn’t be surprised to see Java and Loom taking the same course eventually.</p>
 </div>
 </div>
 </div>

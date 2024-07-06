@@ -20,23 +20,23 @@ based on Java and the Apache Lucene full-text search library,
 compiled into a native binary using the Quarkus framework and GraalVM.
 It is deployed as a Serverless application running on AWS Lambda,
 providing search results without any significant cold start delay.
-If you thought Java wouldn&#8217;t be the right language for this job, keep reading;
-in this post I&#8217;m going to give an overview over the implementation of this feature and my learnings along the way.
+If you thought Java wouldn’t be the right language for this job, keep reading;
+in this post I’m going to give an overview over the implementation of this feature and my learnings along the way.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/how-i-built-a-serverless-search-for-my-blog/" />
+<meta property="og:url" content="https://www.morling.dev/blog/how-i-built-a-serverless-search-for-my-blog/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-07-29T17:30:00+02:00" />
 <meta property="article:modified_time" content="2020-07-29T17:30:00+02:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="How I Built a Serverless Search for My Blog"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="How I Built a Serverless Search for My Blog"/>
 <meta name="twitter:description" content="
 I have built a custom search functionality for this blog,
 based on Java and the Apache Lucene full-text search library,
 compiled into a native binary using the Quarkus framework and GraalVM.
 It is deployed as a Serverless application running on AWS Lambda,
 providing search results without any significant cold start delay.
-If you thought Java wouldn&#8217;t be the right language for this job, keep reading;
-in this post I&#8217;m going to give an overview over the implementation of this feature and my learnings along the way.
+If you thought Java wouldn’t be the right language for this job, keep reading;
+in this post I’m going to give an overview over the implementation of this feature and my learnings along the way.
 "/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
@@ -275,74 +275,74 @@ based on Java and the Apache Lucene full-text search library,
 compiled into a native binary using the Quarkus framework and GraalVM.
 It is deployed as a Serverless application running on AWS Lambda,
 providing search results without any significant cold start delay.
-If you thought Java wouldn&#8217;t be the right language for this job, keep reading;
-in this post I&#8217;m going to give an overview over the implementation of this feature and my learnings along the way.</em></p>
+If you thought Java wouldn’t be the right language for this job, keep reading;
+in this post I’m going to give an overview over the implementation of this feature and my learnings along the way.</em></p>
 </div>
 <div class="paragraph">
 <p>Having a search functionality for my blog has been on my mind for quite some time;
-I&#8217;d like to give users the opportunity to find specific contents on this blog right here on this site, without having to use an external search engine.
-That&#8217;s not only nice in terms of user experience, but also having insight into the kind of information readers look for on this blog should help me to identify interesting things to write about in the future.</p>
+I’d like to give users the opportunity to find specific contents on this blog right here on this site, without having to use an external search engine.
+That’s not only nice in terms of user experience, but also having insight into the kind of information readers look for on this blog should help me to identify interesting things to write about in the future.</p>
 </div>
 <div class="paragraph">
-<p>Now this blog is a static site&#8201;&#8212;&#8201;generated using <a href="https://gohugo.io/">Hugo</a>, hosted on <a href="https://pages.github.com/">GitHub Pages</a>&#8201;&#8212;&#8201;which makes this an interesting challenge.
-I didn&#8217;t want to rely on an external search service
-(see "Why No External Search Service" below for the reasoning),
-and also a purely client-side solution as described in this <a href="https://endler.dev/2019/tinysearch/">excellent blog post</a> didn&#8217;t seem ideal.
-While technically fascinating, I didn&#8217;t like the fact that it requires shipping the entire search index to the client for executing search queries.
-Also things like result highlighting, customized result scoring, word stemming, fuzzy search and more seemed a bit more than I&#8217;d be willing to implement on the client.</p>
+<p>Now this blog is a static site — generated using <a href="https://gohugo.io/">Hugo</a>, hosted on <a href="https://pages.github.com/">GitHub Pages</a> — which makes this an interesting challenge.
+I didn’t want to rely on an external search service
+(see &#34;Why No External Search Service&#34; below for the reasoning),
+and also a purely client-side solution as described in this <a href="https://endler.dev/2019/tinysearch/">excellent blog post</a> didn’t seem ideal.
+While technically fascinating, I didn’t like the fact that it requires shipping the entire search index to the client for executing search queries.
+Also things like result highlighting, customized result scoring, word stemming, fuzzy search and more seemed a bit more than I’d be willing to implement on the client.</p>
 </div>
 <div class="paragraph">
 <p>All these issues have largely been solved on the server-side by libraries such as <a href="https://lucene.apache.org/">Apache Lucene</a> for quite some time.
 Using a library like Lucene means implementing a custom server-side process, though.
 How to deploy such service?
-Operating a VM 24/7 with my search backend for what&#8217;s likely going to be not more than a few dozen queries per month seemed a bit like overkill.</p>
+Operating a VM 24/7 with my search backend for what’s likely going to be not more than a few dozen queries per month seemed a bit like overkill.</p>
 </div>
 <div class="paragraph">
 <p>So after some consideration I decided to implement my own search functionality,
 based on the highly popular Apache Lucene library,
 deployed as a Serverless application,
 which is started on-demand if a user runs a query on my website.
-In the remainder of this post I&#8217;m going to describe the solution I came up with and how it works.</p>
+In the remainder of this post I’m going to describe the solution I came up with and how it works.</p>
 </div>
 <div class="paragraph">
 <p>If you like, you can try it out right now, this post is about this little search input control at the top right of this page!</p>
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
 <div class="title">Why No External Search Service?</div>
 <div class="paragraph">
-<p>When <a href="https://twitter.com/gunnarmorling/status/1284925378868518913">tweeting</a> about my serverless search experiment, one of the questions was "What&#8217;s wrong with <a href="https://www.algolia.com/">Algolia</a>?".
-To be very clear, there&#8217;s nothing wrong with it at all.
+<p>When <a href="https://twitter.com/gunnarmorling/status/1284925378868518913">tweeting</a> about my serverless search experiment, one of the questions was &#34;What’s wrong with <a href="https://www.algolia.com/">Algolia</a>?&#34;.
+To be very clear, there’s nothing wrong with it at all.
 External search services like Algolia, <a href="https://developers.google.com/custom-search">Google Custom Search</a>, or an Elasticsearch provider such as <a href="https://bonsai.io/">Bonsai</a> promise an easy-to-use, turn-key search functionality which can be a great choice for your specific use case.</p>
 </div>
 <div class="paragraph">
 <p>However, I felt that none of these options would provide me the degree of control and customizability I was after.
-I also ruled out any "free" options, as they&#8217;d either mean having ads or paying for the service with the data of myself or that of my readers.
+I also ruled out any &#34;free&#34; options, as they’d either mean having ads or paying for the service with the data of myself or that of my readers.
 And to be honest, I also just fancied the prospect of solving the problem by myself, instead of relying on an off-the-shelf solution.</p>
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="sect1">
 <h2 id="_why_serverless">Why Serverless?</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>First of all, let&#8217;s discuss why I opted for a Serverless solution.
+<p>First of all, let’s discuss why I opted for a Serverless solution.
 It boils down to three reasons:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><em>Security:</em> While it&#8217;d only cost a few EUR per month to set up a VM with a cloud provider like Digital Ocean or Hetzner, having to manage a full operating system installation would require too much of my attention; I don&#8217;t want someone to mine bitcoins or doing other nasty things on a box I run, just because I failed to apply some security patch</p>
+<p><em>Security:</em> While it’d only cost a few EUR per month to set up a VM with a cloud provider like Digital Ocean or Hetzner, having to manage a full operating system installation would require too much of my attention; I don’t want someone to mine bitcoins or doing other nasty things on a box I run, just because I failed to apply some security patch</p>
 </li>
 <li>
-<p><em>Cost:</em> Serverless does not only promise to scale-out (and let&#8217;s be honest, there likely won&#8217;t be millions of search queries on my blog every month), but also scale-to-zero.
+<p><em>Cost:</em> Serverless does not only promise to scale-out (and let’s be honest, there likely won’t be millions of search queries on my blog every month), but also scale-to-zero.
 As Serverless is pay-per-use and there are free tiers in place e.g. for AWS Lambda,
 this service ideally should cost me just a few cents per month</p>
 </li>
@@ -357,23 +357,23 @@ this service ideally should cost me just a few cents per month</p>
 <h2 id="_solution_overview">Solution Overview</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The overall idea is quite simple: there&#8217;s a simple HTTP service which takes a query string,
-runs the query against a Lucene index with my blog&#8217;s contents and returns the search results to the caller.
+<p>The overall idea is quite simple: there’s a simple HTTP service which takes a query string,
+runs the query against a Lucene index with my blog’s contents and returns the search results to the caller.
 This service gets invoked via JavaScript from my static blog pages,
 where results are shown to the user.</p>
 </div>
 <div class="paragraph">
 <p>The Lucene search index is read-only and gets rebuilt whenever I update the blog.
-It&#8217;s baked into the search service deployment package,
+It’s baked into the search service deployment package,
 which that way becomes fully immutable.
 This reduces complexities and the attack surface at runtime.
-Surely that&#8217;s not an approach that&#8217;s viable for more dynamic use cases,
-but for a blog that&#8217;s updated every few weeks, it&#8217;s perfect.
-Here&#8217;s a visualization of the overall flow:</p>
+Surely that’s not an approach that’s viable for more dynamic use cases,
+but for a blog that’s updated every few weeks, it’s perfect.
+Here’s a visualization of the overall flow:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/serverless_search_overview.png" alt="Serverless Search Solution Overview">
+<img src="/images/serverless_search_overview.png" alt="Serverless Search Solution Overview"/>
 </div>
 </div>
 <div class="paragraph">
@@ -385,17 +385,17 @@ the solution should be portable and also be usable with container-based Serverle
 <p>Relying on a Serverless architecture means its start-up time must be a matter of milli-seconds rather than seconds,
 so to not have a user wait for a noticeable amount of time in case of a cold start.
 While <a href="/blog/building-class-data-sharing-archives-with-apache-maven/">substantial improvements</a> have been made in recent Java versions to improve start-up times,
-it&#8217;s still not ideal for this kind of use case.
+it’s still not ideal for this kind of use case.
 Therefore, the application is compiled into a native binary via <a href="https://quarkus.io/">Quarkus</a> and <a href="https://www.graalvm.org/">GraalVM</a>,
 which results in a start-up time of ~30 ms on my laptop, and ~180 ms when deployed to AWS Lambda.
-With that we&#8217;re in a range where a cold start won&#8217;t impact the user experience in any significant way.</p>
+With that we’re in a range where a cold start won’t impact the user experience in any significant way.</p>
 </div>
 <div class="paragraph">
 <p>The Lambda function is exposed to callers via the <a href="https://aws.amazon.com/api-gateway/">AWS API Gateway</a>,
 which takes incoming HTTP requests, maps them to calls of the function and converts its response into an HTTP response which is sent back to the caller.</p>
 </div>
 <div class="paragraph">
-<p>Now let&#8217;s dive down a bit more into the specific parts of the solution.
+<p>Now let’s dive down a bit more into the specific parts of the solution.
 Overall, there are four steps involved:</p>
 </div>
 <div class="ulist">
@@ -421,37 +421,37 @@ Overall, there are four steps involved:</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The first step was to obtain the contents of my blog in an easily processable format.
-Instead of requiring something like a real search engine&#8217;s crawler,
+Instead of requiring something like a real search engine’s crawler,
 I essentially only needed to have a single file in a structured format which then can be passed on to the Lucene indexer.</p>
 </div>
 <div class="paragraph">
 <p>This task proved rather easy with Hugo;
-by means of a <a href="https://gohugo.io/templates/output-formats/#output-formats-for-pages">custom output format</a> it&#8217;s straight-forward to produce a JSON file which contains the text of all my blog pages.
+by means of a <a href="https://gohugo.io/templates/output-formats/#output-formats-for-pages">custom output format</a> it’s straight-forward to produce a JSON file which contains the text of all my blog pages.
 In my <em>config.toml</em> I declared the new output format and activate it for the homepage
 (largely inspired by this <a href="https://xdeb.org/post/2017/06/11/make-hugo-generate-a-json-search-index-and-json-feed/">write-up</a>):</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="toml"><span class="nn">[outputFormats.SearchIndex]</span>
-<span class="py">mediaType</span> <span class="p">=</span> <span class="s">"application/json"</span>
-<span class="py">baseName</span> <span class="p">=</span> <span class="s">"searchindex"</span>
+<span class="py">mediaType</span> <span class="p">=</span> <span class="s">&#34;application/json&#34;</span>
+<span class="py">baseName</span> <span class="p">=</span> <span class="s">&#34;searchindex&#34;</span>
 <span class="py">isPlainText</span> <span class="p">=</span> <span class="kc">true</span>
 <span class="py">notAlternative</span> <span class="p">=</span> <span class="kc">true</span>
 
 <span class="nn">[outputs]</span>
-<span class="py">home</span> <span class="p">=</span> <span class="p">[</span><span class="s">"HTML"</span><span class="p">,</span><span class="s">"RSS"</span><span class="p">,</span> <span class="s">"SearchIndex"</span><span class="p">]</span></code></pre>
+<span class="py">home</span> <span class="p">=</span> <span class="p">[</span><span class="s">&#34;HTML&#34;</span><span class="p">,</span><span class="s">&#34;RSS&#34;</span><span class="p">,</span> <span class="s">&#34;SearchIndex&#34;</span><span class="p">]</span></code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>The template in <em>layouts/_default/list.searchindex.json</em> isn&#8217;t too complex either:</p>
+<p>The template in <em>layouts/_default/list.searchindex.json</em> isn’t too complex either:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code>{{- $.Scratch.Add "searchindex" slice -}}
+<pre class="rouge highlight"><code>{{- $.Scratch.Add &#34;searchindex&#34; slice -}}
 {{- range $index, $element := .Site.Pages -}}
-  {{- $.Scratch.Add "searchindex" (dict "id" $index "title" $element.Title "uri" $element.Permalink "tags" $element.Params.tags "section" $element.Section "content" $element.Plain "summary" $element.Summary "publicationdate" ($element.Date.Format "Jan 2, 2006")) -}}
+  {{- $.Scratch.Add &#34;searchindex&#34; (dict &#34;id&#34; $index &#34;title&#34; $element.Title &#34;uri&#34; $element.Permalink &#34;tags&#34; $element.Params.tags &#34;section&#34; $element.Section &#34;content&#34; $element.Plain &#34;summary&#34; $element.Summary &#34;publicationdate&#34; ($element.Date.Format &#34;Jan 2, 2006&#34;)) -}}
 {{- end -}}
-{{- $.Scratch.Get "searchindex" | jsonify -}}</code></pre>
+{{- $.Scratch.Get &#34;searchindex&#34; | jsonify -}}</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -462,20 +462,20 @@ In my <em>config.toml</em> I declared the new output format and activate it for 
 <pre class="rouge highlight"><code data-lang="json"><span class="p">[</span><span class="w">
   </span><span class="err">...</span><span class="w">
   </span><span class="p">{</span><span class="w">
-    </span><span class="nl">"content"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The JDK Flight Recorder (JFR) is an invaluable tool..."</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"publicationdate"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Jan 29, 2020"</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"section"</span><span class="p">:</span><span class="w"> </span><span class="s2">"blog"</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"summary"</span><span class="p">:</span><span class="w"> </span><span class="s2">"</span><span class="se">\u</span><span class="s2">003cdiv class=</span><span class="se">\"</span><span class="s2">paragraph</span><span class="se">\"\u</span><span class="s2">003e</span><span class="se">\n\u</span><span class="s2">003cp</span><span class="se">\u</span><span class="s2">003eThe </span><span class="se">\u</span><span class="s2">003ca href=</span><span class="se">\"</span><span class="s2">https://openjdk.java.net/jeps/328</span><span class="se">\"\u</span><span class="s2">003eJDK Flight Recorder</span><span class="se">\u</span><span class="s2">003c/a</span><span class="se">\u</span><span class="s2">003e (JFR) is an invaluable tool..."</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"tags"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-      </span><span class="s2">"java"</span><span class="p">,</span><span class="w">
-      </span><span class="s2">"monitoring"</span><span class="p">,</span><span class="w">
-      </span><span class="s2">"microprofile"</span><span class="p">,</span><span class="w">
-      </span><span class="s2">"jakartaee"</span><span class="p">,</span><span class="w">
-      </span><span class="s2">"quarkus"</span><span class="w">
+    </span><span class="nl">&#34;content&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;The JDK Flight Recorder (JFR) is an invaluable tool...&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;id&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;publicationdate&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;Jan 29, 2020&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;section&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;blog&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;summary&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;</span><span class="se">\u</span><span class="s2">003cdiv class=</span><span class="se">\&#34;</span><span class="s2">paragraph</span><span class="se">\&#34;\u</span><span class="s2">003e</span><span class="se">\n\u</span><span class="s2">003cp</span><span class="se">\u</span><span class="s2">003eThe </span><span class="se">\u</span><span class="s2">003ca href=</span><span class="se">\&#34;</span><span class="s2">https://openjdk.java.net/jeps/328</span><span class="se">\&#34;\u</span><span class="s2">003eJDK Flight Recorder</span><span class="se">\u</span><span class="s2">003c/a</span><span class="se">\u</span><span class="s2">003e (JFR) is an invaluable tool...&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;tags&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+      </span><span class="s2">&#34;java&#34;</span><span class="p">,</span><span class="w">
+      </span><span class="s2">&#34;monitoring&#34;</span><span class="p">,</span><span class="w">
+      </span><span class="s2">&#34;microprofile&#34;</span><span class="p">,</span><span class="w">
+      </span><span class="s2">&#34;jakartaee&#34;</span><span class="p">,</span><span class="w">
+      </span><span class="s2">&#34;quarkus&#34;</span><span class="w">
     </span><span class="p">],</span><span class="w">
-    </span><span class="nl">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Monitoring REST APIs with Custom JDK Flight Recorder Events"</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"uri"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://www.morling.dev/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/"</span><span class="w">
+    </span><span class="nl">&#34;title&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;Monitoring REST APIs with Custom JDK Flight Recorder Events&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;uri&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;https://www.morling.dev/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/&#34;</span><span class="w">
   </span><span class="p">},</span><span class="w">
   </span><span class="err">...</span><span class="w">
 </span><span class="p">]</span></code></pre>
@@ -504,7 +504,7 @@ while other Java features like method handles are only supported partly or not a
 <h3 id="_apache_lucene_in_a_graalvm_native_binary">Apache Lucene in a GraalVM Native Binary</h3>
 <div class="paragraph">
 <p>Quarkus enables a wide range of popular Java libraries to be used with GraalVM,
-but at this point there&#8217;s no extension yet which would take care of Lucene.
+but at this point there’s no extension yet which would take care of Lucene.
 So I set out to implement a small Quarkus extension for Lucene.
 Depending on the implementation details of the library in question, this can be a more or less complex and time-consuming endeavor.
 The workflow is like so:</p>
@@ -527,20 +527,20 @@ The workflow is like so:</p>
 </div>
 <div class="paragraph">
 <p>The good thing there is that the <a href="https://code.quarkus.io/">list of Quarkus extensions</a> is constantly growing,
-so that you hopefully don&#8217;t have to go through this by yourself.
+so that you hopefully don’t have to go through this by yourself.
 Or if you do, consider publishing your extension via the Quarkus platform, saving others from the same work.</p>
 </div>
 <div class="paragraph">
 <p>For my particular usage of Lucene, I ran luckily into two issues only.
 The first is the usage of method handles in the <code>AttributeFactory</code> class for dynamically instantiating sub-classes of the <code>AttributeImpl</code> type,
-which isn&#8217;t supported in that form by GraalVM.
+which isn’t supported in that form by GraalVM.
 One way for dealing with this is to define <em>substitutions</em>,
 custom methods or classes which will override a specific original implementation.
-As an example, here&#8217;s one of the substitution classes I had to create:</p>
+As an example, here’s one of the substitution classes I had to create:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="nd">@TargetClass</span><span class="o">(</span><span class="n">className</span> <span class="o">=</span> <span class="s">"org.apache.lucene.util.AttributeFactory$DefaultAttributeFactory"</span><span class="o">)</span>
+<pre class="rouge highlight"><code data-lang="java"><span class="nd">@TargetClass</span><span class="o">(</span><span class="n">className</span> <span class="o">=</span> <span class="s">&#34;org.apache.lucene.util.AttributeFactory$DefaultAttributeFactory&#34;</span><span class="o">)</span>
 <span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">DefaultAttributeFactorySubstitution</span> <span class="o">{</span>
 
   <span class="kd">public</span> <span class="nf">DefaultAttributeFactorySubstitution</span><span class="o">()</span> <span class="o">{}</span>
@@ -557,7 +557,7 @@ As an example, here&#8217;s one of the substitution classes I had to create:</p>
       <span class="o">...</span>
     <span class="o">}</span>
 
-    <span class="k">throw</span> <span class="k">new</span> <span class="nf">UnsupportedOperationException</span><span class="o">(</span><span class="s">"Unknown attribute class: "</span> <span class="o">+</span> <span class="n">attClass</span><span class="o">);</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="nf">UnsupportedOperationException</span><span class="o">(</span><span class="s">&#34;Unknown attribute class: &#34;</span> <span class="o">+</span> <span class="n">attClass</span><span class="o">);</span>
   <span class="o">}</span>
 <span class="o">}</span></code></pre>
 </div>
@@ -568,7 +568,7 @@ As an example, here&#8217;s one of the substitution classes I had to create:</p>
 <div class="paragraph">
 <p>The other problem I ran into was the usage of method handles in the <code>MMapDirectory</code> class,
 which will be used by Lucene by default on Linux when obtaining a file-system backed index directory.
-I didn&#8217;t explore how to circumvent that, instead I opted for using the <code>SimpleFSDirectory</code> implementation which proved to work fine in my native GraalVM binary.</p>
+I didn’t explore how to circumvent that, instead I opted for using the <code>SimpleFSDirectory</code> implementation which proved to work fine in my native GraalVM binary.</p>
 </div>
 <div class="paragraph">
 <p>While this was enough in order to get Lucene going in a native image,
@@ -584,7 +584,7 @@ I recommend you take a look at the extension author guide in order to learn more
 <div class="ulist">
 <ul>
 <li>
-<p>Parse the previously extracted JSON file, build a Lucene index from that and store that index in the file system; that&#8217;s fairly standard Lucene procedure without anything noteworthy; I only had to make sure that the index fields are <em>stored</em> in their original form in the search index, so that they can be accessed at runtime when displaying fragments with the query hits</p>
+<p>Parse the previously extracted JSON file, build a Lucene index from that and store that index in the file system; that’s fairly standard Lucene procedure without anything noteworthy; I only had to make sure that the index fields are <em>stored</em> in their original form in the search index, so that they can be accessed at runtime when displaying fragments with the query hits</p>
 </li>
 <li>
 <p>Register a CDI bean, which allows to obtain the index at runtime via <code>@Inject</code> dependency injection from within the HTTP endpoint class</p>
@@ -597,19 +597,19 @@ creating a native binary for macOS via a locally installed GraalVM SDK takes abo
 For creating a Linux binary to be used with AWS Lambda, I need to run the build in a Linux container,
 which takes about five minutes.
 But typically this task is only done once when actually deploying the application,
-whereas locally I&#8217;d work either with the Quarkus Dev Mode (which does a live reload of the application as its code changes) or test on the JVM.
-In any case it&#8217;s a price worth paying: only with start-up times in the range of milli-seconds on-demand Serverless cold starts with the user waiting for a response become an option.</p>
+whereas locally I’d work either with the Quarkus Dev Mode (which does a live reload of the application as its code changes) or test on the JVM.
+In any case it’s a price worth paying: only with start-up times in the range of milli-seconds on-demand Serverless cold starts with the user waiting for a response become an option.</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_the_search_http_service">The Search HTTP Service</h3>
 <div class="paragraph">
 <p>The actual HTTP service implementation for running queries is rather unspectacular;
-It&#8217;s based on <a href="https://projects.eclipse.org/projects/ee4j.jaxrs">JAX-RS</a> and exposes as simple endpoint which can be invoked with a given query like so:</p>
+It’s based on <a href="https://projects.eclipse.org/projects/ee4j.jaxrs">JAX-RS</a> and exposes as simple endpoint which can be invoked with a given query like so:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash">http <span class="s2">"https://my-search-service/search?q=java"</span>
+<pre class="rouge highlight"><code data-lang="bash">http <span class="s2">&#34;https://my-search-service/search?q=java&#34;</span>
 
 HTTP/1.1 200 OK
 Connection: keep-alive
@@ -618,19 +618,19 @@ Content-Type: application/json
 Date: Tue, 21 Jul 2020 17:05:00 GMT
 
 <span class="o">{</span>
-  <span class="s2">"message"</span>: <span class="s2">"ok"</span>,
-  <span class="s2">"results"</span>: <span class="o">[</span>
+  <span class="s2">&#34;message&#34;</span>: <span class="s2">&#34;ok&#34;</span>,
+  <span class="s2">&#34;results&#34;</span>: <span class="o">[</span>
     <span class="o">{</span>
-      <span class="s2">"fragment"</span>: <span class="s2">"...plug-ins. In this post I&amp;#8217;m going to explore how the &lt;b&gt;Java&lt;/b&gt; Platform Module System's notion of module layers can be leveraged for implementing plug-in architectures on the JVM. We&amp;#8217;ll also discuss how Layrry, a launcher and runtime for layered &lt;b&gt;Java&lt;/b&gt; applications, can help with this task. A key requirement..."</span>,
-      <span class="s2">"publicationdate"</span>: <span class="s2">"Apr 21, 2020"</span>,
-      <span class="s2">"title"</span>: <span class="s2">"Plug-in Architectures With Layrry and the &lt;b&gt;Java&lt;/b&gt; Module System"</span>,
-      <span class="s2">"uri"</span>: <span class="s2">"https://www.morling.dev/blog/plugin-architectures-with-layrry-and-the-java-module-system/"</span>
+      <span class="s2">&#34;fragment&#34;</span>: <span class="s2">&#34;...plug-ins. In this post I&amp;#8217;m going to explore how the &lt;b&gt;Java&lt;/b&gt; Platform Module System&#39;s notion of module layers can be leveraged for implementing plug-in architectures on the JVM. We&amp;#8217;ll also discuss how Layrry, a launcher and runtime for layered &lt;b&gt;Java&lt;/b&gt; applications, can help with this task. A key requirement...&#34;</span>,
+      <span class="s2">&#34;publicationdate&#34;</span>: <span class="s2">&#34;Apr 21, 2020&#34;</span>,
+      <span class="s2">&#34;title&#34;</span>: <span class="s2">&#34;Plug-in Architectures With Layrry and the &lt;b&gt;Java&lt;/b&gt; Module System&#34;</span>,
+      <span class="s2">&#34;uri&#34;</span>: <span class="s2">&#34;https://www.morling.dev/blog/plugin-architectures-with-layrry-and-the-java-module-system/&#34;</span>
     <span class="o">}</span>,
     <span class="o">{</span>
-      <span class="s2">"fragment"</span>: <span class="s2">"...the current behavior indeed is not intended (see JDK-8236597) and in a future &lt;b&gt;Java&lt;/b&gt; version the shorter version of the code shown above should work. Wrap-Up In this blog post we&amp;#8217;ve explored how invariants on &lt;b&gt;Java&lt;/b&gt; 14 record types can be enforced using the Bean Validation API. With just a bit..."</span>,
-      <span class="s2">"publicationdate"</span>: <span class="s2">"Jan 20, 2020"</span>,
-      <span class="s2">"title"</span>: <span class="s2">"Enforcing &lt;b&gt;Java&lt;/b&gt; Record Invariants With Bean Validation"</span>,
-      <span class="s2">"uri"</span>: <span class="s2">"https://www.morling.dev/blog/enforcing-java-record-invariants-with-bean-validation/"</span>
+      <span class="s2">&#34;fragment&#34;</span>: <span class="s2">&#34;...the current behavior indeed is not intended (see JDK-8236597) and in a future &lt;b&gt;Java&lt;/b&gt; version the shorter version of the code shown above should work. Wrap-Up In this blog post we&amp;#8217;ve explored how invariants on &lt;b&gt;Java&lt;/b&gt; 14 record types can be enforced using the Bean Validation API. With just a bit...&#34;</span>,
+      <span class="s2">&#34;publicationdate&#34;</span>: <span class="s2">&#34;Jan 20, 2020&#34;</span>,
+      <span class="s2">&#34;title&#34;</span>: <span class="s2">&#34;Enforcing &lt;b&gt;Java&lt;/b&gt; Record Invariants With Bean Validation&#34;</span>,
+      <span class="s2">&#34;uri&#34;</span>: <span class="s2">&#34;https://www.morling.dev/blog/enforcing-java-record-invariants-with-bean-validation/&#34;</span>
     <span class="o">}</span>,
     ...
   <span class="o">]</span>
@@ -638,15 +638,15 @@ Date: Tue, 21 Jul 2020 17:05:00 GMT
 </div>
 </div>
 <div class="paragraph">
-<p>Internally it&#8217;s using Lucene&#8217;s <a href="https://lucene.apache.org/core/8_6_0/queryparser/org/apache/lucene/queryparser/classic/MultiFieldQueryParser.html"><code>MultiFieldQueryParser</code></a> for parsing the query and running it against the "title" and "content" fields of the index.
+<p>Internally it’s using Lucene’s <a href="https://lucene.apache.org/core/8_6_0/queryparser/org/apache/lucene/queryparser/classic/MultiFieldQueryParser.html"><code>MultiFieldQueryParser</code></a> for parsing the query and running it against the &#34;title&#34; and &#34;content&#34; fields of the index.
 It is set to combine multiple terms using the logical <code>AND</code> operator by default (who ever would want the default of <code>OR</code>?), it supports phrase queries given in quotes, and a number of other query operators.</p>
 </div>
 <div class="paragraph">
 <p>Query hits are highlighted using the <a href="https://lucene.apache.org/core/8_6_0/highlighter/org/apache/lucene/search/vectorhighlight/FastVectorHighlighter.html"><code>FastVectorHighlighter</code></a> highlighter and <a href="https://lucene.apache.org/core/8_6_0/highlighter/org/apache/lucene/search/highlight/SimpleHTMLFormatter.html"><code>SimpleHTMLFormatter</code></a> as a fallback
 (not all kinds of queries can be processed by <code>FastVectorHighlighter</code>).
 The highlighter wraps the matched search terms in the returned fragment in <code>&lt;b&gt;</code> tags,
-which are styled appropriately in my website&#8217;s CSS.
-I was prepared to do some adjustments to result scoring, but this wasn&#8217;t necessary so far.
+which are styled appropriately in my website’s CSS.
+I was prepared to do some adjustments to result scoring, but this wasn’t necessary so far.
 Title matches are implicitly ranked higher than content matches due to the shorter length of the title field values.</p>
 </div>
 <div class="paragraph">
@@ -655,7 +655,7 @@ I can work on the service using the Quarkus Dev Mode and invoke it locally,
 without having to deploy it into some kind of Lambda test environment.
 It also means that should the need arise, I can take this service and run it elsewhere,
 without requiring any code changes.
-As I&#8217;ll discuss in a bit, Quarkus takes care of making this HTTP service runnable within the Lambda environment by means of a single dependency configuration.</p>
+As I’ll discuss in a bit, Quarkus takes care of making this HTTP service runnable within the Lambda environment by means of a single dependency configuration.</p>
 </div>
 </div>
 </div>
@@ -665,19 +665,19 @@ As I&#8217;ll discuss in a bit, Quarkus takes care of making this HTTP service r
 <div class="sectionbody">
 <div class="paragraph">
 <p>Now it was time to hook up the search service into my blog.
-I wouldn&#8217;t want to have the user navigate to the URL of the AWS API Gateway in their browser;
+I wouldn’t want to have the user navigate to the URL of the AWS API Gateway in their browser;
 this means that the form with the search text input field cannot actually be submitted.
 Instead, the default form handling must be disabled, and the search string be sent via JavaScript to the API Gateway URL.</p>
 </div>
 <div class="paragraph">
-<p>This means the search feature won&#8217;t work for users who have JavaScript disabled in their browser.
+<p>This means the search feature won’t work for users who have JavaScript disabled in their browser.
 I deemed this an acceptable limitation; in order to avoid unnecessary confusion and frustration,
 the search text input field is hidden in that case via CSS:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="xml"><span class="nt">&lt;noscript&gt;</span>
-  <span class="nt">&lt;style</span> <span class="na">type=</span><span class="s">"text/css"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;style</span> <span class="na">type=</span><span class="s">&#34;text/css&#34;</span><span class="nt">&gt;</span>
     .search-input { display:none; }
   <span class="nt">&lt;/style&gt;</span>
 <span class="nt">&lt;/noscript&gt;</span></code></pre>
@@ -685,28 +685,28 @@ the search text input field is hidden in that case via CSS:</p>
 </div>
 <div class="paragraph">
 <p>The implementation of the backend call is fairly standard JavaScript business using the <a href="https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest">XMLHttpRequest</a> API,
-so I&#8217;ll spare you the details here.
+so I’ll spare you the details here.
 You can find the <a href="https://github.com/gunnarmorling/ezhil/blob/master/static/js/main.js#L21">complete implementation</a> in my GitHub repo.</p>
 </div>
 <div class="paragraph">
-<p>There&#8217;s one interesting detail to share though in terms of improving the user experience after a cold start.
+<p>There’s one interesting detail to share though in terms of improving the user experience after a cold start.
 As mentioned above, the Quarkus application itself starts up on Lambda in about ~180 ms.
 Together with the initialization of the Lambda execution environment I typically see ~370 ms for a cold start.
 Add to that the network round-trip times,
 and a user will feel a slight delay.
-Nothing dramatical, but it doesn&#8217;t have that snappy instant feeling you get when executing the search with a warm environment.</p>
+Nothing dramatical, but it doesn’t have that snappy instant feeling you get when executing the search with a warm environment.</p>
 </div>
 <div class="paragraph">
 <p>Thinking about the typical user interaction though, the situation can be nicely improved:
 if a visitor puts the focus onto the search text input field,
-it&#8217;s highly likely that they will submit a query shortly thereafter.
-We can take advantage of that and have the website send a small "ping" request right at the point when the input field obtains the focus.
+it’s highly likely that they will submit a query shortly thereafter.
+We can take advantage of that and have the website send a small &#34;ping&#34; request right at the point when the input field obtains the focus.
 This gives us enough headstart to have the Lambda function being started before the actual query comes in.
-Here&#8217;s the request flow of a typical interaction (the "Other" requests are CORS preflight requests):</p>
+Here’s the request flow of a typical interaction (the &#34;Other&#34; requests are CORS preflight requests):</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/serverless_search_warmup.gif" alt="Serverless Search Request Flow">
+<img src="/images/serverless_search_warmup.gif" alt="Serverless Search Request Flow"/>
 </div>
 </div>
 <div class="paragraph">
@@ -723,7 +723,7 @@ To avoid any unneeded warm-up calls, they are only done when entering the input 
 so that the Lambda might have shut down again due to lack of activity.</p>
 </div>
 <div class="paragraph">
-<p>Of course you&#8217;ll be charged for the additional ping requests,
+<p>Of course you’ll be charged for the additional ping requests,
 but for the volume I expect, this makes no relevant difference whatsoever.</p>
 </div>
 </div>
@@ -742,7 +742,7 @@ as things hardly can get any more standard than plain Linux containers.</p>
 <div class="paragraph">
 <p>With Heroku, cold start times proved problematic, though:
 I observed 5 - 6 seconds, which completely ruling it out.
-This wasn&#8217;t a problem with Cloud Run, and it&#8217;d surely work very well overall.
+This wasn’t a problem with Cloud Run, and it’d surely work very well overall.
 In the end I went for AWS Lambda, as its entire package of service runtime, API Gateway and web application firewall seemed more complete and mature to me.</p>
 </div>
 <div class="paragraph">
@@ -750,7 +750,7 @@ In the end I went for AWS Lambda, as its entire package of service runtime, API 
 Together with the warm-up trick described above, this means that a user practically never will get a cold start when executing the search.</p>
 </div>
 <div class="paragraph">
-<p>You shouldn&#8217;t under-estimate the time needed though to get familiar with Lambda itself,
+<p>You shouldn’t under-estimate the time needed though to get familiar with Lambda itself,
 the API Gateway which is needed for routing HTTP requests to your function and the interplay of the two.</p>
 </div>
 <div class="paragraph">
@@ -768,11 +768,11 @@ which is tailored specifically to setting up Serverless apps via Lambda and API 
 <div class="ulist">
 <ul>
 <li>
-<p>You can <a href="https://quarkus.io/guides/amazon-lambda">directly implement</a> Lambda&#8217;s APIs like <code>RequestHandler</code>, which I wanted to avoid though for the sake of portability between different environments and cloud providers</p>
+<p>You can <a href="https://quarkus.io/guides/amazon-lambda">directly implement</a> Lambda’s APIs like <code>RequestHandler</code>, which I wanted to avoid though for the sake of portability between different environments and cloud providers</p>
 </li>
 <li>
 <p>You can use the <a href="https://quarkus.io/guides/funqy-amazon-lambda">Quarkus Funqy API</a> for building portable functions which e.g. can be deployed to AWS, Azure Functions and Google Cloud Functions;
-the API is really straight-forward and it&#8217;s a very attractive option, but right now there&#8217;s <a href="https://github.com/quarkusio/quarkus/pull/10968">no way</a> to use Funqy for implementing an HTTP GET API with request parameters, which ruled out this option for my purposes</p>
+the API is really straight-forward and it’s a very attractive option, but right now there’s <a href="https://github.com/quarkusio/quarkus/pull/10968">no way</a> to use Funqy for implementing an HTTP GET API with request parameters, which ruled out this option for my purposes</p>
 </li>
 <li>
 <p>You can implement your Lambda function <a href="https://quarkus.io/guides/amazon-lambda-http">using the existing and well-known HTTP APIs</a> of Vert.x, RESTEasy (JAX-RS) and Undertow; in this case Quarkus will take care of mapping the incoming function call to the matching HTTP endpoint of the application</p>
@@ -781,11 +781,11 @@ the API is really straight-forward and it&#8217;s a very attractive option, but 
 </div>
 <div class="paragraph">
 <p>Used together with the proxy feature of the AWS API Gateway, the third option is exactly what I was looking for.
-I can implement the search endpoint using the JAX-RS API I&#8217;m familiar with, and the API Gateway proxy integration together with Quarkus' glue code will take care of everything else for running this.
+I can implement the search endpoint using the JAX-RS API I’m familiar with, and the API Gateway proxy integration together with Quarkus&#39; glue code will take care of everything else for running this.
 This is also great in terms of portability:
 I only need to add the <code>io.quarkus:quarkus-amazon-lambda-http</code> dependency to my project,
 and the Quarkus build will emit a <em>function.zip</em> file which can be deployed to AWS Lambda.
-I&#8217;ve put this into a separate Maven build profile,
+I’ve put this into a separate Maven build profile,
 so I can easily switch between creating the Lambda function deployment package and a regular container image with my REST endpoint which I can deploy to Knative and environments like <a href="https://www.openshift.com/learn/topics/serverless">OpenShift Serverless</a>,
 without requiring any code changes whatsoever.</p>
 </div>
@@ -818,13 +818,13 @@ sam deploy <span class="nt">--template-file</span> packaged.yaml <span class="se
 <p>The <code>lambda</code> profile takes care of adding the Quarkus Lambda HTTP extension,
 while the <code>native</code> profile makes sure that a native binary is built instead of a JAR to be run on the JVM.
 As I need to build a Linux binary for the Lambda function while running on macOS locally,
-I&#8217;m using the <code>-Dquarkus.native.container-build=true</code> option,
+I’m using the <code>-Dquarkus.native.container-build=true</code> option,
 which will make the Quarkus build running in a container itself,
 producing a Linux binary no matter which platform this build itself is executed on.</p>
 </div>
 <div class="paragraph">
 <p>The <em>function.zip</em> file produced by the Quarkus build has a size of ~15 MB,
-i.e. it&#8217;s uploaded and deployed to Lambda in a few seconds.
+i.e. it’s uploaded and deployed to Lambda in a few seconds.
 Currently it also contains the Lucene search index,
 meaning I need to run the time-consuming GraalVM build whenever I want to update the index.
 As an optimization I might at some point extract the index into a separate Lambda layer,
@@ -836,103 +836,103 @@ which then could be deployed by itself, if there were no code changes to the sea
 <div class="paragraph">
 <p>A big pain point for me was identity and access management (IAM) for the AWS API Gateway and Lambda.
 While the <a href="https://aws.amazon.com/iam/">AWS IAM</a> is really powerful and flexible,
-there&#8217;s <a href="https://github.com/awslabs/aws-sam-cli/issues/420">unfortunately no documentation</a>,
+there’s <a href="https://github.com/awslabs/aws-sam-cli/issues/420">unfortunately no documentation</a>,
 which would describe the minimum set of required permissions in order to deploy a stack like my search using SAM.</p>
 </div>
 <div class="paragraph">
-<p>Things work nicely if you use a highly-privileged account, but I&#8217;m a strong believer into running things with only the least privileges needed for the job.
-For instance I don&#8217;t want my Lambda deployer to set up the execution role,
+<p>Things work nicely if you use a highly-privileged account, but I’m a strong believer into running things with only the least privileges needed for the job.
+For instance I don’t want my Lambda deployer to set up the execution role,
 but rather have it using one I pre-defined.
 The same goes for other resources like the S3 bucket used for uploading the deployment package.</p>
 </div>
 <div class="paragraph">
-<p>Identifying the set of privileges actually needed is a rather soul-crushing experience of trial and error (please let me know in the comments below if there&#8217;s a better way to do this),
+<p>Identifying the set of privileges actually needed is a rather soul-crushing experience of trial and error (please let me know in the comments below if there’s a better way to do this),
 which gets complicated by the fact that different resources in the AWS stack expose insufficient privileges in inconsistent ways, or sometimes in no really meaningful way at all when configured via SAM.
 I spent hours identifying a lacking S3 privilege when trying to deploy a Lambda layer from the Serverless Application Repository.</p>
 </div>
 <div class="paragraph">
 <p>Hoping to spare others from this tedious work,
-here&#8217;s the policy for my deployment role I came up with:</p>
+here’s the policy for my deployment role I came up with:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="json"><span class="p">{</span><span class="w">
-  </span><span class="nl">"Version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2012-10-17"</span><span class="p">,</span><span class="w">
-  </span><span class="nl">"Statement"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+  </span><span class="nl">&#34;Version&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;2012-10-17&#34;</span><span class="p">,</span><span class="w">
+  </span><span class="nl">&#34;Statement&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
     </span><span class="p">{</span><span class="w">
-      </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Allow"</span><span class="p">,</span><span class="w">
-      </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-        </span><span class="s2">"s3:PutObject"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"s3:GetObject"</span><span class="w">
+      </span><span class="nl">&#34;Effect&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;Allow&#34;</span><span class="p">,</span><span class="w">
+      </span><span class="nl">&#34;Action&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">&#34;s3:PutObject&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;s3:GetObject&#34;</span><span class="w">
       </span><span class="p">],</span><span class="w">
-      </span><span class="nl">"Resource"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-        </span><span class="s2">"arn:aws:s3:::&lt;deployment-bucket&gt;"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"arn:aws:s3:::&lt;deployment-bucket&gt;/*"</span><span class="w">
+      </span><span class="nl">&#34;Resource&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">&#34;arn:aws:s3:::&lt;deployment-bucket&gt;&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;arn:aws:s3:::&lt;deployment-bucket&gt;/*&#34;</span><span class="w">
       </span><span class="p">]</span><span class="w">
     </span><span class="p">},</span><span class="w">
     </span><span class="p">{</span><span class="w">
-      </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Allow"</span><span class="p">,</span><span class="w">
-      </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-        </span><span class="s2">"lambda:CreateFunction"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"lambda:GetFunction"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"lambda:GetFunctionConfiguration"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"lambda:AddPermission"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"lambda:UpdateFunctionCode"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"lambda:ListTags"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"lambda:TagResource"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"lambda:UntagResource"</span><span class="w">
+      </span><span class="nl">&#34;Effect&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;Allow&#34;</span><span class="p">,</span><span class="w">
+      </span><span class="nl">&#34;Action&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">&#34;lambda:CreateFunction&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;lambda:GetFunction&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;lambda:GetFunctionConfiguration&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;lambda:AddPermission&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;lambda:UpdateFunctionCode&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;lambda:ListTags&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;lambda:TagResource&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;lambda:UntagResource&#34;</span><span class="w">
       </span><span class="p">],</span><span class="w">
-      </span><span class="nl">"Resource"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-        </span><span class="s2">"arn:aws:lambda:eu-central-1:&lt;account-id&gt;:function:search-morling-dev-SearchMorlingDev-*"</span><span class="w">
+      </span><span class="nl">&#34;Resource&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">&#34;arn:aws:lambda:eu-central-1:&lt;account-id&gt;:function:search-morling-dev-SearchMorlingDev-*&#34;</span><span class="w">
       </span><span class="p">]</span><span class="w">
     </span><span class="p">},</span><span class="w">
     </span><span class="p">{</span><span class="w">
-      </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Allow"</span><span class="p">,</span><span class="w">
-      </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-        </span><span class="s2">"iam:PassRole"</span><span class="w">
+      </span><span class="nl">&#34;Effect&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;Allow&#34;</span><span class="p">,</span><span class="w">
+      </span><span class="nl">&#34;Action&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">&#34;iam:PassRole&#34;</span><span class="w">
       </span><span class="p">],</span><span class="w">
-      </span><span class="nl">"Resource"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-        </span><span class="s2">"arn:aws:iam::&lt;account-id&gt;:role/&lt;execution-role&gt;"</span><span class="w">
+      </span><span class="nl">&#34;Resource&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">&#34;arn:aws:iam::&lt;account-id&gt;:role/&lt;execution-role&gt;&#34;</span><span class="w">
       </span><span class="p">]</span><span class="w">
     </span><span class="p">},</span><span class="w">
     </span><span class="p">{</span><span class="w">
-      </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Allow"</span><span class="p">,</span><span class="w">
-      </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-        </span><span class="s2">"cloudformation:DescribeStacks"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"cloudformation:DescribeStackEvents"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"cloudformation:CreateChangeSet"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"cloudformation:ExecuteChangeSet"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"cloudformation:DescribeChangeSet"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"cloudformation:GetTemplateSummary"</span><span class="w">
+      </span><span class="nl">&#34;Effect&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;Allow&#34;</span><span class="p">,</span><span class="w">
+      </span><span class="nl">&#34;Action&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">&#34;cloudformation:DescribeStacks&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;cloudformation:DescribeStackEvents&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;cloudformation:CreateChangeSet&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;cloudformation:ExecuteChangeSet&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;cloudformation:DescribeChangeSet&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;cloudformation:GetTemplateSummary&#34;</span><span class="w">
       </span><span class="p">],</span><span class="w">
-      </span><span class="nl">"Resource"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-        </span><span class="s2">"arn:aws:cloudformation:eu-central-1:&lt;account-id&gt;:stack/search-morling-dev/*"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"arn:aws:cloudformation:eu-central-1:aws:transform/Serverless-2016-10-31"</span><span class="w">
+      </span><span class="nl">&#34;Resource&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">&#34;arn:aws:cloudformation:eu-central-1:&lt;account-id&gt;:stack/search-morling-dev/*&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;arn:aws:cloudformation:eu-central-1:aws:transform/Serverless-2016-10-31&#34;</span><span class="w">
       </span><span class="p">]</span><span class="w">
     </span><span class="p">},</span><span class="w">
     </span><span class="p">{</span><span class="w">
-      </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Allow"</span><span class="p">,</span><span class="w">
-      </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-        </span><span class="s2">"apigateway:POST"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"apigateway:PATCH"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"apigateway:GET"</span><span class="w">
+      </span><span class="nl">&#34;Effect&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;Allow&#34;</span><span class="p">,</span><span class="w">
+      </span><span class="nl">&#34;Action&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">&#34;apigateway:POST&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;apigateway:PATCH&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;apigateway:GET&#34;</span><span class="w">
       </span><span class="p">],</span><span class="w">
-      </span><span class="nl">"Resource"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-        </span><span class="s2">"arn:aws:apigateway:eu-central-1::/restapis"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"arn:aws:apigateway:eu-central-1::/restapis/*"</span><span class="w">
+      </span><span class="nl">&#34;Resource&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">&#34;arn:aws:apigateway:eu-central-1::/restapis&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;arn:aws:apigateway:eu-central-1::/restapis/*&#34;</span><span class="w">
       </span><span class="p">]</span><span class="w">
     </span><span class="p">},</span><span class="w">
     </span><span class="p">{</span><span class="w">
-      </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Allow"</span><span class="p">,</span><span class="w">
-      </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-        </span><span class="s2">"apigateway:POST"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"apigateway:GET"</span><span class="w">
+      </span><span class="nl">&#34;Effect&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;Allow&#34;</span><span class="p">,</span><span class="w">
+      </span><span class="nl">&#34;Action&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">&#34;apigateway:POST&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;apigateway:GET&#34;</span><span class="w">
       </span><span class="p">],</span><span class="w">
-      </span><span class="nl">"Resource"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-        </span><span class="s2">"arn:aws:apigateway:eu-central-1::/usageplans"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"arn:aws:apigateway:eu-central-1::/usageplans/*"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"arn:aws:apigateway:eu-central-1::/apikeys"</span><span class="p">,</span><span class="w">
-        </span><span class="s2">"arn:aws:apigateway:eu-central-1::/apikeys/search-morling-dev-apikey"</span><span class="w">
+      </span><span class="nl">&#34;Resource&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">&#34;arn:aws:apigateway:eu-central-1::/usageplans&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;arn:aws:apigateway:eu-central-1::/usageplans/*&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;arn:aws:apigateway:eu-central-1::/apikeys&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="s2">&#34;arn:aws:apigateway:eu-central-1::/apikeys/search-morling-dev-apikey&#34;</span><span class="w">
       </span><span class="p">]</span><span class="w">
     </span><span class="p">}</span><span class="w">
   </span><span class="p">]</span><span class="w">
@@ -941,21 +941,21 @@ here&#8217;s the policy for my deployment role I came up with:</p>
 </div>
 <div class="paragraph">
 <p>Perhaps this could be trimmed down some more,
-but I felt it&#8217;s good enough for my purposes.</p>
+but I felt it’s good enough for my purposes.</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_performance">Performance</h3>
 <div class="paragraph">
-<p>At this point I haven&#8217;t conducted any systematic performance testing yet.
-There&#8217;s definitely a significant difference in terms of latency between running things locally on my (not exactly new) laptop and on AWS Lambda.
-Where the app starts up in ~30 ms locally, it&#8217;s ~180 ms when deployed to Lambda.
+<p>At this point I haven’t conducted any systematic performance testing yet.
+There’s definitely a significant difference in terms of latency between running things locally on my (not exactly new) laptop and on AWS Lambda.
+Where the app starts up in ~30 ms locally, it’s ~180 ms when deployed to Lambda.
 Note this is only the number reported by Quarkus itself,
 the entire cold start duration of the application on Lambda, i.e. including the time required for fetching the code to the execution environment and starting the container, is ~370 ms (with 256 MB RAM assigned).
 Due to the little trick described above, though, a visitor is very unlikely to ever experience this delay when executing a query.</p>
 </div>
 <div class="paragraph">
-<p>Similarly, there&#8217;s a substantial difference in terms of request execution duration.
+<p>Similarly, there’s a substantial difference in terms of request execution duration.
 Still, when running a quick test of the deployed service via <a href="https://github.com/JoeDog/siege">Siege</a>, the vast majority of Lambda executions clocked in well below 100 ms
 (depending on the number of query hits which need result highlighting),
 putting them into the lowest bracket of billed Lambda execution time.
@@ -972,7 +972,7 @@ The service is deployed in the AWS eu-central-1 region (Frankfurt, Germany),
 yielding roundtrip times for me, living a few hundred km away,
 between 50 - 70 ms (again with 512 MB RAM).
 With longer distances, network latencies outweigh the Lambda execution time:
-My good friend Eric Murphy from Seattle in the US reported a roundtrip time of ~240 ms when searching for "Java", which I think is still quite good,
+My good friend Eric Murphy from Seattle in the US reported a roundtrip time of ~240 ms when searching for &#34;Java&#34;, which I think is still quite good,
 given the long distance.</p>
 </div>
 </div>
@@ -980,14 +980,14 @@ given the long distance.</p>
 <h3 id="_cost_control">Cost Control</h3>
 <div class="paragraph">
 <p>The biggest issue for me as a hobbyist when using pay-per-use services like AWS Lambda and API Gateway is cost control.
-Unlike typical enterprise scenarios where you might be willing to accept higher cost for your service in case of growing demand, in my case I&#8217;d rather set up a fixed spending limit and shut down my search service for the rest of the month, once that has been reached.
+Unlike typical enterprise scenarios where you might be willing to accept higher cost for your service in case of growing demand, in my case I’d rather set up a fixed spending limit and shut down my search service for the rest of the month, once that has been reached.
 I absolutely cannot have an attacker doing millions and millions of calls against my API which could cost me a substantial amount of money.</p>
 </div>
 <div class="paragraph">
-<p>Unfortunately, there&#8217;s no easy way on AWS for setting up a maximum spending after which all service consumption would be stopped.
-Merely setting up a budget alert won&#8217;t cut it either,
-as this won&#8217;t help me while sitting on a plane for 12h (whenever that will be possible again&#8230;&#8203;) or being on vacation for three weeks.
-And needless to say, I don&#8217;t have an ops team monitoring my blog infrastructure 24/7 either.</p>
+<p>Unfortunately, there’s no easy way on AWS for setting up a maximum spending after which all service consumption would be stopped.
+Merely setting up a budget alert won’t cut it either,
+as this won’t help me while sitting on a plane for 12h (whenever that will be possible again…​) or being on vacation for three weeks.
+And needless to say, I don’t have an ops team monitoring my blog infrastructure 24/7 either.</p>
 </div>
 <div class="paragraph">
 <p>So what to do to keep costs under control?
@@ -997,20 +997,20 @@ which is pretty much what I need.
 Any calls beyond the quota are rejected by the API Gateway and not charged.</p>
 </div>
 <div class="paragraph">
-<p>There&#8217;s one caveat though: a usage plan is tied to an API key,
+<p>There’s one caveat though: a usage plan is tied to an API key,
 which the caller needs to pass using the <code>X-API-Key</code> HTTP request header.
 The idea being that different usage plans can be put in place for different clients of an API.
 Any calls without the API key are not charged either.
-Unfortunately though this doesn&#8217;t play well with CORS preflight requests as needed in my particular use case.
+Unfortunately though this doesn’t play well with CORS preflight requests as needed in my particular use case.
 Such requests will be sent by the browser before the actual <code>GET</code> calls to validate that the server actually allows for that cross-origin request.
 CORS preflight requests cannot have any custom request headers, though,
 meaning they cannot be part of a usage plan.
 The AWS docs are unclear whether those preflight requests are charged or not,
-and in a way it seems unfair if they were charged given there&#8217;s no way to prevent this situation.
+and in a way it seems unfair if they were charged given there’s no way to prevent this situation.
 But at this point it is fair to assume they <em>are</em> charged and we need a way to prevent having to pay for a gazillion preflight calls by a malicious actor.</p>
 </div>
 <div class="paragraph">
-<p>In good software developer&#8217;s tradition I <a href="https://stackoverflow.com/questions/62745510/how-to-set-quota-for-cors-preflight-requests-with-aws-api-gateway">turned to Stack Overflow</a> for finding help,
+<p>In good software developer’s tradition I <a href="https://stackoverflow.com/questions/62745510/how-to-set-quota-for-cors-preflight-requests-with-aws-api-gateway">turned to Stack Overflow</a> for finding help,
 and indeed I received a nice idea:
 A <a href="https://aws.amazon.com/aws-cost-management/aws-budgets/">budget alert</a> can be linked with an SNS topic, to which a message will be sent once the alert triggers.
 Then another Lambda function can be used to set the allowed rate of API invocations to 0,
@@ -1020,12 +1020,12 @@ Thanks a lot to <a href="https://harishkm.in/2020/07/08/how-to-enforce-a-quota-o
 I implemented this solution and sleep much better now.</p>
 </div>
 <div class="paragraph">
-<p>Note that you should set the alert to a lower value than what you&#8217;re actually willing to spend,
+<p>Note that you should set the alert to a lower value than what you’re actually willing to spend,
 as billing happens asynchronously and requests might come in some more time until the alert triggers:
 <a href="https://twitter.com/QuinnyPig/status/1288183239123689473">as per Corey Quinn</a>,
-there&#8217;s an "8-48 hour lag between 'you incur the charge' and 'it shows up in the billing system where an alert can see it and thus fire'".
-It&#8217;s therefore also a good idea to reduce the allowed request rate.
-E.g. in my case I&#8217;m not expecting really that there&#8217;d be more than let&#8217;s say 25 concurrent requests
+there’s an &#34;8-48 hour lag between &#39;you incur the charge&#39; and &#39;it shows up in the billing system where an alert can see it and thus fire&#39;&#34;.
+It’s therefore also a good idea to reduce the allowed request rate.
+E.g. in my case I’m not expecting really that there’d be more than let’s say 25 concurrent requests
 (unless this post hits the Hackernews front page of course),
 so setting the allowed rate to that value helps to at least slow down the spending until the alert triggers.</p>
 </div>
@@ -1033,7 +1033,7 @@ so setting the allowed rate to that value helps to at least slow down the spendi
 <p>With these measures in place, there should (hopefully!) be no bad surprises at the end of the month.
 Assuming a (very generously estimated) number of 10K search queries per month,
 each returning a payload of 5 KB,
-I&#8217;d be looking at an invoice over EUR 0.04 for the API Gateway,
+I’d be looking at an invoice over EUR 0.04 for the API Gateway,
 while the Lambda executions would be fully covered by the AWS free tier.
 That seems manageable :)</p>
 </div>
@@ -1045,7 +1045,7 @@ That seems manageable :)</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Having rolled out the search feature for this blog a few days ago,
-I&#8217;m really happy with the outcome.
+I’m really happy with the outcome.
 It was a significant amount of work to put everything together,
 but I think a custom search is a great addition to this site which hopefully proves helpful to my readers.
 Serverless is a perfect architecture and deployment option for this use case,
@@ -1062,28 +1062,28 @@ avoiding any kind of lock-in into a specific platform.</p>
 </div>
 <div class="paragraph">
 <p>Enabling libraries for being used in native binaries can be a daunting task,
-but over time I&#8217;d expect either library authors themselves to do the required adjustment to smoothen that experience,
+but over time I’d expect either library authors themselves to do the required adjustment to smoothen that experience,
 and of course the growing number of Quarkus extensions also helps to use more and more Java libraries in native apps.
-I&#8217;m also looking forward to <a href="https://www.infoq.com/news/2020/05/java-leyden/">Project Leyden</a>, which aims at making AOT compilation a part of the Java core platform.</p>
+I’m also looking forward to <a href="https://www.infoq.com/news/2020/05/java-leyden/">Project Leyden</a>, which aims at making AOT compilation a part of the Java core platform.</p>
 </div>
 <div class="paragraph">
 <p>The deployment to AWS Lambda and API Gateway was definitely more involved than I had anticipated;
 things like IAM and budget control are more complex than I think they could and should be.
 That there is no way to set up a hard spend capping is a severe shortcoming;
 hobbyists like myself should be able to explore this platform without having to fear any <a href="https://chrisshort.net/the-aws-bill-heard-around-the-world/">surprise AWS bills</a>.
-It&#8217;s particular bothersome that API usage plans are no 100% safe way to enforce API quotas,
+It’s particular bothersome that API usage plans are no 100% safe way to enforce API quotas,
 as they cannot be applied to unauthorized CORS pref-flight requests and custom scripting is needed in order to close this loophole.</p>
 </div>
 <div class="paragraph">
 <p>But then this experiment also was an interesting learning experience for me;
 working on libraries and integration solutions most of the time during my day job,
-I sincerely enjoyed the experience of designing a service from the ground-up and rolling it out into "production",
+I sincerely enjoyed the experience of designing a service from the ground-up and rolling it out into &#34;production&#34;,
 if I may dare to use that term here.</p>
 </div>
 <div class="paragraph">
 <p>While the search functionality is rolled out on my blog,
 ready for you to use,
-there&#8217;s a few things I&#8217;d like to improve and expand going forward:</p>
+there’s a few things I’d like to improve and expand going forward:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -1091,10 +1091,10 @@ there&#8217;s a few things I&#8217;d like to improve and expand going forward:</
 <p><em>CI pipeline:</em> Automatically re-building and deploying the search service after changes to the contents of my blog; this should hopefully be quite easy using GitHub Actions</p>
 </li>
 <li>
-<p><em>Performance improvements:</em> While the performance of the query service definitely is good enough, I&#8217;d like to see whether and how it could be tuned here and there. Tooling might be challenging there; where I&#8217;d use JDK Flight Recorder and Mission Control with a JVM based application, I&#8217;m much less familiar with equivalent tooling for native binaries. One option I&#8217;d like to explore in particular is taking advantage of Quarkus bytecode recording capability: bytecode instructions for creating the in-memory data structure of the Lucene index could be recorded at build time and then just be executed at application start-up; this might be the fastest option for loading the index in my special use case of a read-only index</p>
+<p><em>Performance improvements:</em> While the performance of the query service definitely is good enough, I’d like to see whether and how it could be tuned here and there. Tooling might be challenging there; where I’d use JDK Flight Recorder and Mission Control with a JVM based application, I’m much less familiar with equivalent tooling for native binaries. One option I’d like to explore in particular is taking advantage of Quarkus bytecode recording capability: bytecode instructions for creating the in-memory data structure of the Lucene index could be recorded at build time and then just be executed at application start-up; this might be the fastest option for loading the index in my special use case of a read-only index</p>
 </li>
 <li>
-<p><em>Serverless comments:</em> Currently I&#8217;m using Disqus for the commenting feature of the blog. It&#8217;s not ideal in terms of privacy and page loading speed, which is why I&#8217;m looking for alternatives. One idea could be a custom Serverless commenting functionality, which would be very interesting to explore, in particular as it shifts the focus from a purely immutable application to a stateful service that&#8217;ll require some means of modifiable, persistent storage</p>
+<p><em>Serverless comments:</em> Currently I’m using Disqus for the commenting feature of the blog. It’s not ideal in terms of privacy and page loading speed, which is why I’m looking for alternatives. One idea could be a custom Serverless commenting functionality, which would be very interesting to explore, in particular as it shifts the focus from a purely immutable application to a stateful service that’ll require some means of modifiable, persistent storage</p>
 </li>
 </ul>
 </div>

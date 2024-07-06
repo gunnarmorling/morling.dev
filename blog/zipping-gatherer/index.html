@@ -16,20 +16,20 @@
 	<meta property="og:title" content="A Zipping Gatherer" />
 <meta property="og:description" content="
 The other day, I was looking for means of zipping two Java streams:
-connecting them element by element&#8212;&#8203;essentially a join based on stream offset position&#8212;&#8203;and emitting an output stream with the results.
+connecting them element by element—​essentially a join based on stream offset position—​and emitting an output stream with the results.
 Unfortunately, there is no zip() method offered by the Java Streams API itself.
 While it was considered for inclusion in early preview versions,
 the method was removed before the API went GA with Java 8 and you have to resort to 3rd party libraries such as Google Guava if you need this functionality.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/zipping-gatherer/" />
+<meta property="og:url" content="https://www.morling.dev/blog/zipping-gatherer/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2024-03-18T18:12:00+01:00" />
 <meta property="article:modified_time" content="2024-03-18T18:12:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="A Zipping Gatherer"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="A Zipping Gatherer"/>
 <meta name="twitter:description" content="
 The other day, I was looking for means of zipping two Java streams:
-connecting them element by element&#8212;&#8203;essentially a join based on stream offset position&#8212;&#8203;and emitting an output stream with the results.
+connecting them element by element—​essentially a join based on stream offset position—​and emitting an output stream with the results.
 Unfortunately, there is no zip() method offered by the Java Streams API itself.
 While it was considered for inclusion in early preview versions,
 the method was removed before the API went GA with Java 8 and you have to resort to 3rd party libraries such as Google Guava if you need this functionality.
@@ -267,7 +267,7 @@ the method was removed before the API went GA with Java 8 and you have to resort
 			<div class="markdown">
 				<div class="paragraph">
 <p>The other day, I was looking for means of <a href="https://twitter.com/gunnarmorling/status/1764305703047438361">zipping two Java streams</a>:
-connecting them element by element&#8212;&#8203;essentially a join based on stream offset position&#8212;&#8203;and emitting an output stream with the results.
+connecting them element by element—​essentially a join based on stream offset position—​and emitting an output stream with the results.
 Unfortunately, there is no <code>zip()</code> method offered by the Java Streams API itself.
 While it was considered for inclusion in early preview versions,
 the method was removed before the API went GA with Java 8 and you have to resort to 3rd party libraries such as <a href="https://guava.dev/releases/snapshot-jre/api/docs/com/google/common/collect/Streams.html#zip(java.util.stream.Stream,java.util.stream.Stream,java.util.function.BiFunction)">Google Guava</a> if you need this functionality.</p>
@@ -281,10 +281,10 @@ Similar to how collectors allow you to implement custom <em>terminal</em> operat
 gatherers let you add custom <em>intermediary</em> operations to a stream pipeline,
 providing an extension point for adding stream operations such as <code>distinct()</code> or <code>window()</code>,
 without having to bake them into the API itself.
-This sounds pretty much like what we need for a <code>zip()</code> method, doesn&#8217;t it?</p>
+This sounds pretty much like what we need for a <code>zip()</code> method, doesn’t it?</p>
 </div>
 <div class="paragraph">
-<p>So I spent some time studying the JEP and here&#8217;s the basic implementation I came up with:</p>
+<p>So I spent some time studying the JEP and here’s the basic implementation I came up with:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -335,14 +335,14 @@ This sounds pretty much like what we need for a <code>zip()</code> method, doesn
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>This gatherer takes the stream to zip with and a function,
 which is applied to pairs of elements of the two streams and returns the zipped result</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td><a href="https://download.java.net/java/early_access/jdk22/docs/api/java.base/java/util/stream/Gatherer.html"><code>Gatherer</code></a> has three type parameters: the element type of the stream the gatherer is applied to, a type for keeping track of intermediary state (in our case, that&#8217;s just the iterator of the second stream), and the output type</td>
+<td><a href="https://download.java.net/java/early_access/jdk22/docs/api/java.base/java/util/stream/Gatherer.html"><code>Gatherer</code></a> has three type parameters: the element type of the stream the gatherer is applied to, a type for keeping track of intermediary state (in our case, that’s just the iterator of the second stream), and the output type</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
@@ -350,22 +350,22 @@ which is applied to pairs of elements of the two streams and returns the zipped 
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td><code>integrator()</code> returns a function which "integrates provided elements, potentially using the provided intermediate state, optionally producing output to the provided <code>Downstream</code>"</td>
+<td><code>integrator()</code> returns a function which &#34;integrates provided elements, potentially using the provided intermediate state, optionally producing output to the provided <code>Downstream</code>&#34;</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>It&#8217;s the first time I have been using this API,
-so I hope I haven&#8217;t done anything too stupid :)
+<p>It’s the first time I have been using this API,
+so I hope I haven’t done anything too stupid :)
 The key part of the gatherer is its <code>Integrator</code> implementation.
 This is where for each element of the stream the gatherer is applied to,
 we take the corresponding element of the given second stream,
-apply the given function, and emit the function&#8217;s return value to the next stage in the stream pipeline.</p>
+apply the given function, and emit the function’s return value to the next stage in the stream pipeline.</p>
 </div>
 <div class="paragraph">
 <p>This particular implementation stops emitting elements as soon as one of the two streams has been exhausted,
-but of course you also could have an implementation with "left join" semantics, or similar.
-With some more <a href="https://github.com/gunnarmorling/zip-gatherer/blob/main/src/main/java/dev/morling/demos/Zippers.java">glue code</a> for instantiating this zipping gatherer "builder style"
+but of course you also could have an implementation with &#34;left join&#34; semantics, or similar.
+With some more <a href="https://github.com/gunnarmorling/zip-gatherer/blob/main/src/main/java/dev/morling/demos/Zippers.java">glue code</a> for instantiating this zipping gatherer &#34;builder style&#34;
 (you can find the complete source code on GitHub),
 this is how it can be used:</p>
 </div>
@@ -385,33 +385,33 @@ this is how it can be used:</p>
 12
 </pre></td><td class="code"><pre><span class="nd">@Test</span>
 <span class="kd">public</span> <span class="kt">void</span> <span class="nf">canZipTwoObjectStreams</span><span class="o">()</span> <span class="o">{</span>
-  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">letters</span> <span class="o">=</span> <span class="nc">List</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">"a"</span><span class="o">,</span> <span class="s">"b"</span><span class="o">,</span> <span class="s">"c"</span><span class="o">,</span> <span class="s">"d"</span><span class="o">,</span> <span class="s">"e"</span><span class="o">);</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">letters</span> <span class="o">=</span> <span class="nc">List</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">&#34;a&#34;</span><span class="o">,</span> <span class="s">&#34;b&#34;</span><span class="o">,</span> <span class="s">&#34;c&#34;</span><span class="o">,</span> <span class="s">&#34;d&#34;</span><span class="o">,</span> <span class="s">&#34;e&#34;</span><span class="o">);</span>
   <span class="nc">Stream</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">numbers</span> <span class="o">=</span> <span class="nc">IntStream</span><span class="o">.</span><span class="na">range</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">letters</span><span class="o">.</span><span class="na">size</span><span class="o">())</span>
       <span class="o">.</span><span class="na">mapToObj</span><span class="o">(</span><span class="n">i</span> <span class="o">-&gt;</span> <span class="n">i</span><span class="o">);</span>
 
   <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">zipped</span> <span class="o">=</span> <span class="n">letters</span><span class="o">.</span><span class="na">stream</span><span class="o">()</span>
-      <span class="o">.</span><span class="na">gather</span><span class="o">(</span><span class="n">zip</span><span class="o">(</span><span class="n">numbers</span><span class="o">).</span><span class="na">with</span><span class="o">((</span><span class="n">letter</span><span class="o">,</span> <span class="n">i</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">i</span> <span class="o">+</span> <span class="s">"-"</span> <span class="o">+</span> <span class="n">letter</span><span class="o">))</span> <i class="conum" data-value="1"></i><b>(1)</b>
+      <span class="o">.</span><span class="na">gather</span><span class="o">(</span><span class="n">zip</span><span class="o">(</span><span class="n">numbers</span><span class="o">).</span><span class="na">with</span><span class="o">((</span><span class="n">letter</span><span class="o">,</span> <span class="n">i</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">i</span> <span class="o">+</span> <span class="s">&#34;-&#34;</span> <span class="o">+</span> <span class="n">letter</span><span class="o">))</span> <i class="conum" data-value="1"></i><b>(1)</b>
       <span class="o">.</span><span class="na">collect</span><span class="o">(</span><span class="nc">Collectors</span><span class="o">.</span><span class="na">toList</span><span class="o">());</span>
 
-  <span class="n">assertThat</span><span class="o">(</span><span class="n">zipped</span><span class="o">).</span><span class="na">containsExactly</span><span class="o">(</span><span class="s">"0-a"</span><span class="o">,</span> <span class="s">"1-b"</span><span class="o">,</span> <span class="s">"2-c"</span><span class="o">,</span> <span class="s">"3-d"</span><span class="o">,</span> <span class="s">"4-e"</span><span class="o">);</span>
+  <span class="n">assertThat</span><span class="o">(</span><span class="n">zipped</span><span class="o">).</span><span class="na">containsExactly</span><span class="o">(</span><span class="s">&#34;0-a&#34;</span><span class="o">,</span> <span class="s">&#34;1-b&#34;</span><span class="o">,</span> <span class="s">&#34;2-c&#34;</span><span class="o">,</span> <span class="s">&#34;3-d&#34;</span><span class="o">,</span> <span class="s">&#34;4-e&#34;</span><span class="o">);</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td><code>gather()</code> applies the given gatherer to each element of the stream</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Et voilà, we have a <code>zip()</code> function which can be used with Java Streams,
 and short of having a <code>zip()</code> method directly on the <code>Stream</code> interface itself,
 the resulting code reads quite nicely.
 In order to avoid the boxing of the int stream,
-I&#8217;ve also built an <code>ObjToIntZipper</code>:</p>
+I’ve also built an <code>ObjToIntZipper</code>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -428,14 +428,14 @@ I&#8217;ve also built an <code>ObjToIntZipper</code>:</p>
 11
 </pre></td><td class="code"><pre><span class="nd">@Test</span>
 <span class="kd">public</span> <span class="kt">void</span> <span class="nf">canZipObjectWithIntStream</span><span class="o">()</span> <span class="o">{</span>
-  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">letters</span> <span class="o">=</span> <span class="nc">List</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">"a"</span><span class="o">,</span> <span class="s">"b"</span><span class="o">,</span> <span class="s">"c"</span><span class="o">,</span> <span class="s">"d"</span><span class="o">,</span> <span class="s">"e"</span><span class="o">);</span>
+  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">letters</span> <span class="o">=</span> <span class="nc">List</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">&#34;a&#34;</span><span class="o">,</span> <span class="s">&#34;b&#34;</span><span class="o">,</span> <span class="s">&#34;c&#34;</span><span class="o">,</span> <span class="s">&#34;d&#34;</span><span class="o">,</span> <span class="s">&#34;e&#34;</span><span class="o">);</span>
   <span class="nc">IntStream</span> <span class="n">numbers</span> <span class="o">=</span> <span class="nc">IntStream</span><span class="o">.</span><span class="na">range</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">letters</span><span class="o">.</span><span class="na">size</span><span class="o">());</span>
 
   <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">zipped</span> <span class="o">=</span> <span class="n">letters</span><span class="o">.</span><span class="na">stream</span><span class="o">()</span>
-      <span class="o">.</span><span class="na">gather</span><span class="o">(</span><span class="n">zip</span><span class="o">(</span><span class="n">numbers</span><span class="o">).</span><span class="na">with</span><span class="o">((</span><span class="n">letter</span><span class="o">,</span> <span class="n">i</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">i</span> <span class="o">+</span> <span class="s">"-"</span> <span class="o">+</span> <span class="n">letter</span><span class="o">))</span>
+      <span class="o">.</span><span class="na">gather</span><span class="o">(</span><span class="n">zip</span><span class="o">(</span><span class="n">numbers</span><span class="o">).</span><span class="na">with</span><span class="o">((</span><span class="n">letter</span><span class="o">,</span> <span class="n">i</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">i</span> <span class="o">+</span> <span class="s">&#34;-&#34;</span> <span class="o">+</span> <span class="n">letter</span><span class="o">))</span>
       <span class="o">.</span><span class="na">collect</span><span class="o">(</span><span class="nc">Collectors</span><span class="o">.</span><span class="na">toList</span><span class="o">());</span>
 
-  <span class="n">assertThat</span><span class="o">(</span><span class="n">zipped</span><span class="o">).</span><span class="na">containsExactly</span><span class="o">(</span><span class="s">"0-a"</span><span class="o">,</span> <span class="s">"1-b"</span><span class="o">,</span> <span class="s">"2-c"</span><span class="o">,</span> <span class="s">"3-d"</span><span class="o">,</span> <span class="s">"4-e"</span><span class="o">);</span>
+  <span class="n">assertThat</span><span class="o">(</span><span class="n">zipped</span><span class="o">).</span><span class="na">containsExactly</span><span class="o">(</span><span class="s">&#34;0-a&#34;</span><span class="o">,</span> <span class="s">&#34;1-b&#34;</span><span class="o">,</span> <span class="s">&#34;2-c&#34;</span><span class="o">,</span> <span class="s">&#34;3-d&#34;</span><span class="o">,</span> <span class="s">&#34;4-e&#34;</span><span class="o">);</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
@@ -449,11 +449,11 @@ But the Gatherer API actually felt quite intuitive to me after just a little whi
 <p>The only real downside is that this gatherer cannot be parallelized.
 While the API itself allows for the creation of parallel-ready gatherers
 (by implementing the optional <a href="https://download.java.net/java/early_access/jdk22/docs/api/java.base/java/util/stream/Gatherer.html#combiner()"><code>combiner()</code></a>) method,
-you don&#8217;t have a handle to the second stream&#8217;s spliterator of a particular subdivision step from within a gatherer implementation.
+you don’t have a handle to the second stream’s spliterator of a particular subdivision step from within a gatherer implementation.
 The only way for doing this is on the spliterator level,
 as shown by Jose Paumard in <a href="https://github.com/JosePaumard/more-spliterators/blob/master/src/main/java/org/paumard/spliterators/ZippingSpliterator.java">here</a>.
 Note that both input streams must have the same length in order for this to work,
-as otherwise you&#8217;d end up zipping elements at different positions in the two input streams.</p>
+as otherwise you’d end up zipping elements at different positions in the two input streams.</p>
 </div>
 <div class="paragraph">
 <p>You can find the complete source code of the proof-of-concept zipping gatherer in <a href="https://github.com/gunnarmorling/zip-gatherer">this GitHub repository</a>.</p>

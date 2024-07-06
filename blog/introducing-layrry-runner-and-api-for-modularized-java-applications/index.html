@@ -19,23 +19,23 @@ One of the biggest changes in recent Java versions has been the introduction of 
 It allows to organize Java applications and their dependencies in strongly encapsulated modules, utilizing explicit and well-defined module APIs and relationships.
 
 
-In this post I&#8217;m going to introduce the Layrry open-source project, a launcher and Java API for executing modularized Java applications.
+In this post I’m going to introduce the Layrry open-source project, a launcher and Java API for executing modularized Java applications.
 Layrry helps Java developers to assemble modularized applications from dependencies using their Maven coordinates and execute them using module layers.
 Layers go beyond the capabilities of the &#34;flat&#34; module path specified via the --module-path parameter of the java command,
 e.g. allowing to use multiple versions of one module within one and the same application.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/introducing-layrry-runner-and-api-for-modularized-java-applications/" />
+<meta property="og:url" content="https://www.morling.dev/blog/introducing-layrry-runner-and-api-for-modularized-java-applications/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-03-29T21:31:00+02:00" />
 <meta property="article:modified_time" content="2020-03-29T21:31:00+02:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Introducing Layrry: A Launcher and API for Modularized Java Applications"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Introducing Layrry: A Launcher and API for Modularized Java Applications"/>
 <meta name="twitter:description" content="
 One of the biggest changes in recent Java versions has been the introduction of the module system in Java 9.
 It allows to organize Java applications and their dependencies in strongly encapsulated modules, utilizing explicit and well-defined module APIs and relationships.
 
 
-In this post I&#8217;m going to introduce the Layrry open-source project, a launcher and Java API for executing modularized Java applications.
+In this post I’m going to introduce the Layrry open-source project, a launcher and Java API for executing modularized Java applications.
 Layrry helps Java developers to assemble modularized applications from dependencies using their Maven coordinates and execute them using module layers.
 Layers go beyond the capabilities of the &#34;flat&#34; module path specified via the --module-path parameter of the java command,
 e.g. allowing to use multiple versions of one module within one and the same application.
@@ -276,28 +276,28 @@ e.g. allowing to use multiple versions of one module within one and the same app
 It allows to organize Java applications and their dependencies in strongly encapsulated modules, utilizing explicit and well-defined module APIs and relationships.</p>
 </div>
 <div class="paragraph">
-<p>In this post I&#8217;m going to introduce the <a href="https://github.com/moditect/layrry">Layrry</a> open-source project, a launcher and Java API for executing modularized Java applications.
+<p>In this post I’m going to introduce the <a href="https://github.com/moditect/layrry">Layrry</a> open-source project, a launcher and Java API for executing modularized Java applications.
 Layrry helps Java developers to assemble modularized applications from dependencies using their Maven coordinates and execute them using module layers.
-Layers go beyond the capabilities of the "flat" module path specified via the <em>--module-path</em> parameter of the <em>java</em> command,
+Layers go beyond the capabilities of the &#34;flat&#34; module path specified via the <em>--module-path</em> parameter of the <em>java</em> command,
 e.g. allowing to use multiple versions of one module within one and the same application.</p>
 </div>
 <div class="sect1">
 <h2 id="_why_layrry">Why Layrry?</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The Java Module System doesn&#8217;t define any means of mapping between modules (e.g. <em>com.acme.crm</em>) and JARs providing such module
+<p>The Java Module System doesn’t define any means of mapping between modules (e.g. <em>com.acme.crm</em>) and JARs providing such module
 (e.g. <em>acme-crm-1.0.0.Final.jar</em>), or retrieving modules from remote repositories using unique identifiers (e.g. <em>com.acme:acme-crm:1.0.0.Final</em>).
-Instead, it&#8217;s the responsibility of the user to obtain all required JARs of a modularized application and provide them via the <em>--module-path</em> parameter.</p>
+Instead, it’s the responsibility of the user to obtain all required JARs of a modularized application and provide them via the <em>--module-path</em> parameter.</p>
 </div>
 <div class="paragraph">
-<p>Furthermore, the module system doesn&#8217;t define any means of module versioning;
-i.e. it&#8217;s the responsibility of the user to obtain all modules in the right version.
-Using the <em>--module-path</em> option, it&#8217;s not possible, though, to assemble an application that uses multiple versions of one and the same module.
+<p>Furthermore, the module system doesn’t define any means of module versioning;
+i.e. it’s the responsibility of the user to obtain all modules in the right version.
+Using the <em>--module-path</em> option, it’s not possible, though, to assemble an application that uses multiple versions of one and the same module.
 This may be desirable for transitive dependencies of an application,
 which might be required in different versions by two separate direct dependencies.</p>
 </div>
 <div class="paragraph">
-<p>This is where Layrry comes in (pronounced <a href="https://en.wikipedia.org/wiki/Larry_Laffer">"Larry"</a>):
+<p>This is where Layrry comes in (pronounced <a href="https://en.wikipedia.org/wiki/Larry_Laffer">&#34;Larry&#34;</a>):
 it provides a declarative approach as well as an API for assembling modularized applications.
 The (modular) JARs to be included are described using Maven GAV (group id, artifact id, version) coordinates,
 solving the issue of retrieving all required JARs from a remote repository,
@@ -314,20 +314,20 @@ which allows to use different versions of one and the same module in different l
 <h2 id="_an_example">An Example</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>As an example, let&#8217;s consider an application made up of the following modules:</p>
+<p>As an example, let’s consider an application made up of the following modules:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/layrry-example.png" alt="layrry example">
+<img src="/images/layrry-example.png" alt="layrry example"/>
 </div>
 </div>
 <div class="paragraph">
-<p>The application&#8217;s main module, <em>com.example:app</em>, depends on two others, <em>com.example:foo</em> and <em>com.example:bar</em>.
+<p>The application’s main module, <em>com.example:app</em>, depends on two others, <em>com.example:foo</em> and <em>com.example:bar</em>.
 They in turn depend on the Log4j API and another module, <em>com.example:greeter</em>.
 The latter is used in two different versions, though.</p>
 </div>
 <div class="paragraph">
-<p>Let&#8217;s take a closer look at the <code>Greeter</code> class in these modules.
+<p>Let’s take a closer look at the <code>Greeter</code> class in these modules.
 Here is the version in <em>com.example:greeter@1.0.0</em>,
 as used by <em>com.example:foo</em>:</p>
 </div>
@@ -342,7 +342,7 @@ as used by <em>com.example:foo</em>:</p>
 </pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Greeter</span> <span class="o">{</span>
 
     <span class="kd">public</span> <span class="nc">String</span> <span class="nf">greet</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="nc">String</span> <span class="n">from</span><span class="o">)</span> <span class="o">{</span>
-        <span class="k">return</span> <span class="s">"Hello, "</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s">" from "</span> <span class="o">+</span> <span class="n">from</span> <span class="o">+</span> <span class="s">" (Greeter 1.0.0)"</span><span class="o">;</span>
+        <span class="k">return</span> <span class="s">&#34;Hello, &#34;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&#34; from &#34;</span> <span class="o">+</span> <span class="n">from</span> <span class="o">+</span> <span class="s">&#34; (Greeter 1.0.0)&#34;</span><span class="o">;</span>
     <span class="o">}</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
@@ -368,12 +368,12 @@ as used by <em>com.example:bar</em>:</p>
 </pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Greeter</span> <span class="o">{</span>
 
     <span class="kd">public</span> <span class="nc">String</span> <span class="nf">hello</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="nc">String</span> <span class="n">from</span><span class="o">)</span> <span class="o">{</span>
-        <span class="k">return</span> <span class="s">"Hello, "</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s">" from "</span> <span class="o">+</span> <span class="n">from</span> <span class="o">+</span> <span class="s">" (Greeter 2.0.0)"</span><span class="o">;</span>
+        <span class="k">return</span> <span class="s">&#34;Hello, &#34;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&#34; from &#34;</span> <span class="o">+</span> <span class="n">from</span> <span class="o">+</span> <span class="s">&#34; (Greeter 2.0.0)&#34;</span><span class="o">;</span>
     <span class="o">}</span>
 
     <span class="kd">public</span> <span class="nc">String</span> <span class="nf">goodBye</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="nc">String</span> <span class="n">from</span><span class="o">)</span> <span class="o">{</span>
-        <span class="k">return</span> <span class="s">"Good bye, "</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s">" from "</span> <span class="o">+</span> <span class="n">from</span> <span class="o">+</span>
-                <span class="s">" (Greeter 2.0.0)"</span><span class="o">;</span>
+        <span class="k">return</span> <span class="s">&#34;Good bye, &#34;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&#34; from &#34;</span> <span class="o">+</span> <span class="n">from</span> <span class="o">+</span>
+                <span class="s">&#34; (Greeter 2.0.0)&#34;</span><span class="o">;</span>
     <span class="o">}</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
@@ -381,17 +381,17 @@ as used by <em>com.example:bar</em>:</p>
 </div>
 <div class="paragraph">
 <p>The <code>Greeter</code> API has evolved in a backwards-incompatible way,
-i.e. it&#8217;s not possible for the <em>foo</em> and <em>bar</em> modules to use the same version.</p>
+i.e. it’s not possible for the <em>foo</em> and <em>bar</em> modules to use the same version.</p>
 </div>
 <div class="paragraph">
-<p>With a "flat" module path (or classpath),
-there&#8217;s no way for dealing with this situation.
-You&#8217;d inevitably end up with a <code>NoSuchMethodError</code>,
+<p>With a &#34;flat&#34; module path (or classpath),
+there’s no way for dealing with this situation.
+You’d inevitably end up with a <code>NoSuchMethodError</code>,
 as either <em>foo</em> or <em>bar</em> would be linked at runtime against a version of the class different from the version it has been compiled against.</p>
 </div>
 <div class="paragraph">
 <p>The lack of support for using multiple module versions when working with the <em>--module-path</em> option might be surprising at first,
-but it&#8217;s an <a href="http://openjdk.java.net/projects/jigsaw/spec/reqs/02#non-requirements">explicit</a> non-requirement of the module system to support multiple module versions or even deal with selecting matching module versions at all.</p>
+but it’s an <a href="http://openjdk.java.net/projects/jigsaw/spec/reqs/02#non-requirements">explicit</a> non-requirement of the module system to support multiple module versions or even deal with selecting matching module versions at all.</p>
 </div>
 <div class="paragraph">
 <p>This means that the module descriptors of both <em>foo</em> and <em>bar</em> require the <em>greeter</em> module without any version information:</p>
@@ -432,17 +432,17 @@ but it&#8217;s an <a href="http://openjdk.java.net/projects/jigsaw/spec/reqs/02#
 <h2 id="_module_layers_to_the_rescue">Module Layers to the Rescue</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>While only one version of a given module is supported when running applications via <em>java --module-path=&#8230;&#8203;</em>,
-there&#8217;s a lesser known feature of the module system which provides a way out: module layers.</p>
+<p>While only one version of a given module is supported when running applications via <em>java --module-path=…​</em>,
+there’s a lesser known feature of the module system which provides a way out: module layers.</p>
 </div>
 <div class="paragraph">
-<p>A <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/ModuleLayer.html">module layer</a> "is created from a graph of modules in a <code>Configuration</code> and a function that maps each module to a <code>ClassLoader</code>."
+<p>A <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/ModuleLayer.html">module layer</a> &#34;is created from a graph of modules in a <code>Configuration</code> and a function that maps each module to a <code>ClassLoader</code>.&#34;
 Using the module layer API,
 multiple versions of a module can be loaded in different layers,
 thus using different classloaders.</p>
 </div>
 <div class="paragraph">
-<p>Note the layers API doesn&#8217;t concern itself with obtaining JARs or modules from remote locations such as the Maven Central repository;
+<p>Note the layers API doesn’t concern itself with obtaining JARs or modules from remote locations such as the Maven Central repository;
 instead, any modules must be provided as <code>Path</code> objects.
 Here is how a layer with the <em>foo</em> and <em>greeter:1.0.0</em> modules could be assembled:</p>
 </div>
@@ -466,15 +466,15 @@ Here is how a layer with the <em>foo</em> and <em>greeter:1.0.0</em> modules cou
 </pre></td><td class="code"><pre><span class="nc">ModuleLayer</span> <span class="n">boot</span> <span class="o">=</span> <span class="nc">ModuleLayer</span><span class="o">.</span><span class="na">boot</span><span class="o">();</span>
 <span class="nc">ClassLoader</span> <span class="n">scl</span> <span class="o">=</span> <span class="nc">ClassLoader</span><span class="o">.</span><span class="na">getSystemClassLoader</span><span class="o">();</span>
 
-<span class="nc">Path</span> <span class="n">foo</span> <span class="o">=</span> <span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"path/to/foo-1.0.0.jar"</span><span class="o">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
-<span class="nc">Path</span> <span class="n">greeter10</span> <span class="o">=</span> <span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"path/to/greeter-1.0.0.jar"</span><span class="o">);</span> <i class="conum" data-value="2"></i><b>(2)</b>
+<span class="nc">Path</span> <span class="n">foo</span> <span class="o">=</span> <span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;path/to/foo-1.0.0.jar&#34;</span><span class="o">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
+<span class="nc">Path</span> <span class="n">greeter10</span> <span class="o">=</span> <span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;path/to/greeter-1.0.0.jar&#34;</span><span class="o">);</span> <i class="conum" data-value="2"></i><b>(2)</b>
 
 <span class="nc">ModuleFinder</span> <span class="n">fooFinder</span> <span class="o">=</span> <span class="nc">ModuleFinder</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">foo</span><span class="o">,</span> <span class="n">greeter10</span><span class="o">);</span>
 <span class="nc">Configuration</span> <span class="n">fooConfig</span> <span class="o">=</span> <span class="n">boot</span><span class="o">.</span><span class="na">configuration</span><span class="o">()</span> <i class="conum" data-value="3"></i><b>(3)</b>
     <span class="o">.</span><span class="na">resolve</span><span class="o">(</span>
           <span class="n">fooFinder</span><span class="o">,</span>
           <span class="nc">ModuleFinder</span><span class="o">.</span><span class="na">of</span><span class="o">(),</span>
-          <span class="nc">Set</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">"com.example.foo"</span><span class="o">,</span> <span class="s">"com.example.greeter"</span><span class="o">)</span>
+          <span class="nc">Set</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">&#34;com.example.foo&#34;</span><span class="o">,</span> <span class="s">&#34;com.example.greeter&#34;</span><span class="o">)</span>
     <span class="o">);</span>
 <span class="nc">ModuleLayer</span> <span class="n">fooLayer</span> <span class="o">=</span> <span class="n">boot</span><span class="o">.</span><span class="na">defineModulesWithOneLoader</span><span class="o">(</span>
         <span class="n">fooConfig</span><span class="o">,</span> <span class="n">scl</span><span class="o">);</span> <i class="conum" data-value="4"></i><b>(4)</b>
@@ -483,7 +483,7 @@ Here is how a layer with the <em>foo</em> and <em>greeter:1.0.0</em> modules cou
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>obtain foo-1.0.0.jar</td>
 </tr>
@@ -493,14 +493,14 @@ Here is how a layer with the <em>foo</em> and <em>greeter:1.0.0</em> modules cou
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Create a configuration derived from the "boot" module of the JVM,
+<td>Create a configuration derived from the &#34;boot&#34; module of the JVM,
 providing a <code>ModuleFinder</code> for the two JARs obtained before, and resolving the two modules</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>Create a module layer using the configuration, loading all contained modules with a single classloader</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Similarly, you could create a layer for <em>bar</em> and <em>greeter:2.0.0</em>,
@@ -510,8 +510,8 @@ But all this flexibility can make using the API direcly a daunting task.</p>
 </div>
 <div class="paragraph">
 <p>Also using an API might not be what you want in the first place:
-wouldn&#8217;t it be nice if there was a CLI tool,
-akin to using <em>java --module-path=&#8230;&#8203;</em>,
+wouldn’t it be nice if there was a CLI tool,
+akin to using <em>java --module-path=…​</em>,
 but with the additional powers of module layers?</p>
 </div>
 </div>
@@ -557,27 +557,27 @@ The layer descriptor for the example above looks like so:</p>
 </pre></td><td class="code"><pre><span class="na">layers</span><span class="pi">:</span>
   <span class="na">log</span><span class="pi">:</span> <i class="conum" data-value="1"></i><b>(1)</b>
     <span class="na">modules</span><span class="pi">:</span> <i class="conum" data-value="2"></i><b>(2)</b>
-      <span class="pi">-</span> <span class="s2">"</span><span class="s">org.apache.logging.log4j:log4j-api:jar:2.13.1"</span>
-      <span class="pi">-</span> <span class="s2">"</span><span class="s">org.apache.logging.log4j:log4j-core:jar:2.13.1"</span>
-      <span class="pi">-</span> <span class="s2">"</span><span class="s">com.example:logconfig:1.0.0"</span>
+      <span class="pi">-</span> <span class="s2">&#34;</span><span class="s">org.apache.logging.log4j:log4j-api:jar:2.13.1&#34;</span>
+      <span class="pi">-</span> <span class="s2">&#34;</span><span class="s">org.apache.logging.log4j:log4j-core:jar:2.13.1&#34;</span>
+      <span class="pi">-</span> <span class="s2">&#34;</span><span class="s">com.example:logconfig:1.0.0&#34;</span>
   <span class="na">foo</span><span class="pi">:</span>
     <span class="na">parents</span><span class="pi">:</span> <i class="conum" data-value="3"></i><b>(3)</b>
-      <span class="pi">-</span> <span class="s2">"</span><span class="s">log"</span>
+      <span class="pi">-</span> <span class="s2">&#34;</span><span class="s">log&#34;</span>
     <span class="na">modules</span><span class="pi">:</span>
-      <span class="pi">-</span> <span class="s2">"</span><span class="s">com.example:greeter:1.0.0"</span>
-      <span class="pi">-</span> <span class="s2">"</span><span class="s">com.example:foo:1.0.0"</span>
+      <span class="pi">-</span> <span class="s2">&#34;</span><span class="s">com.example:greeter:1.0.0&#34;</span>
+      <span class="pi">-</span> <span class="s2">&#34;</span><span class="s">com.example:foo:1.0.0&#34;</span>
   <span class="na">bar</span><span class="pi">:</span>
     <span class="na">parents</span><span class="pi">:</span>
-      <span class="pi">-</span> <span class="s2">"</span><span class="s">log"</span>
+      <span class="pi">-</span> <span class="s2">&#34;</span><span class="s">log&#34;</span>
     <span class="na">modules</span><span class="pi">:</span>
-      <span class="pi">-</span> <span class="s2">"</span><span class="s">com.example:greeter:2.0.0"</span>
-      <span class="pi">-</span> <span class="s2">"</span><span class="s">com.example:bar:1.0.0"</span>
+      <span class="pi">-</span> <span class="s2">&#34;</span><span class="s">com.example:greeter:2.0.0&#34;</span>
+      <span class="pi">-</span> <span class="s2">&#34;</span><span class="s">com.example:bar:1.0.0&#34;</span>
   <span class="na">app</span><span class="pi">:</span>
     <span class="na">parents</span><span class="pi">:</span>
-      <span class="pi">-</span> <span class="s2">"</span><span class="s">foo"</span>
-      <span class="pi">-</span> <span class="s2">"</span><span class="s">bar"</span>
+      <span class="pi">-</span> <span class="s2">&#34;</span><span class="s">foo&#34;</span>
+      <span class="pi">-</span> <span class="s2">&#34;</span><span class="s">bar&#34;</span>
     <span class="na">modules</span><span class="pi">:</span>
-      <span class="pi">-</span> <span class="s2">"</span><span class="s">com.example:app:1.0.0"</span>
+      <span class="pi">-</span> <span class="s2">&#34;</span><span class="s">com.example:app:1.0.0&#34;</span>
 <span class="na">main</span><span class="pi">:</span> <i class="conum" data-value="4"></i><b>(4)</b>
   <span class="na">module</span><span class="pi">:</span> <span class="s">com.example.app</span>
   <span class="na">class</span><span class="pi">:</span> <span class="s">com.example.app.App</span>
@@ -586,7 +586,7 @@ The layer descriptor for the example above looks like so:</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Each layer has a unique name</td>
 </tr>
@@ -597,13 +597,13 @@ The layer descriptor for the example above looks like so:</p>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>A layer can have one or more parent layers, whose modules it can access;
-if no parent is given, the JVM&#8217;s "boot" layer is the implicit parent of a layer</td>
+if no parent is given, the JVM’s &#34;boot&#34; layer is the implicit parent of a layer</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>The given main module and class is the one that will be executed by Layrry</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>The configuration above describes four layers, <em>log</em>, <em>foo</em>, <em>bar</em> and <em>app</em>,
@@ -636,7 +636,7 @@ The file also specifies the main class to execute when running this application.
 <div class="paragraph">
 <p>The log messages show how the two versions of <em>greeter</em> are used by <em>foo</em> and <em>bar</em>, respectively.
 Layrry will download all referenced JARs using the Maven resolver API,
-i.e. you don&#8217;t have to deal with manually obtaining all the JARs and providing them to the <em>java</em> runtime.</p>
+i.e. you don’t have to deal with manually obtaining all the JARs and providing them to the <em>java</em> runtime.</p>
 </div>
 </div>
 </div>
@@ -690,25 +690,25 @@ or for implementing plug-in architectures.</p>
 17
 18
 19
-</pre></td><td class="code"><pre><span class="nc">Layers</span> <span class="n">layers</span> <span class="o">=</span> <span class="nc">Layers</span><span class="o">.</span><span class="na">layer</span><span class="o">(</span><span class="s">"log"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">"org.apache.logging.log4j:log4j-api:jar:2.13.1"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">"org.apache.logging.log4j:log4j-core:jar:2.13.1"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">"com.example:logconfig:1.0.0"</span><span class="o">)</span>
-    <span class="o">.</span><span class="na">layer</span><span class="o">(</span><span class="s">"foo"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">withParent</span><span class="o">(</span><span class="s">"log"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">"com.example:greeter:1.0.0"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">"com.example:foo:1.0.0"</span><span class="o">)</span>
-    <span class="o">.</span><span class="na">layer</span><span class="o">(</span><span class="s">"bar"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">withParent</span><span class="o">(</span><span class="s">"log"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">"com.example:greeter:2.0.0"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">"com.example:bar:1.0.0"</span><span class="o">)</span>
-    <span class="o">.</span><span class="na">layer</span><span class="o">(</span><span class="s">"app"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">withParent</span><span class="o">(</span><span class="s">"foo"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">withParent</span><span class="o">(</span><span class="s">"bar"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">"com.example:app:1.0.0"</span><span class="o">)</span>
+</pre></td><td class="code"><pre><span class="nc">Layers</span> <span class="n">layers</span> <span class="o">=</span> <span class="nc">Layers</span><span class="o">.</span><span class="na">layer</span><span class="o">(</span><span class="s">&#34;log&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">&#34;org.apache.logging.log4j:log4j-api:jar:2.13.1&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">&#34;org.apache.logging.log4j:log4j-core:jar:2.13.1&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">&#34;com.example:logconfig:1.0.0&#34;</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">layer</span><span class="o">(</span><span class="s">&#34;foo&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">withParent</span><span class="o">(</span><span class="s">&#34;log&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">&#34;com.example:greeter:1.0.0&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">&#34;com.example:foo:1.0.0&#34;</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">layer</span><span class="o">(</span><span class="s">&#34;bar&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">withParent</span><span class="o">(</span><span class="s">&#34;log&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">&#34;com.example:greeter:2.0.0&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">&#34;com.example:bar:1.0.0&#34;</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">layer</span><span class="o">(</span><span class="s">&#34;app&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">withParent</span><span class="o">(</span><span class="s">&#34;foo&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">withParent</span><span class="o">(</span><span class="s">&#34;bar&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">withModule</span><span class="o">(</span><span class="s">&#34;com.example:app:1.0.0&#34;</span><span class="o">)</span>
     <span class="o">.</span><span class="na">build</span><span class="o">();</span>
 
-<span class="n">layers</span><span class="o">.</span><span class="na">run</span><span class="o">(</span><span class="s">"com.example.app/com.example.app.App"</span><span class="o">,</span> <span class="s">"Alice"</span><span class="o">);</span>
+<span class="n">layers</span><span class="o">.</span><span class="na">run</span><span class="o">(</span><span class="s">&#34;com.example.app/com.example.app.App&#34;</span><span class="o">,</span> <span class="s">&#34;Alice&#34;</span><span class="o">);</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -720,7 +720,7 @@ or for implementing plug-in architectures.</p>
 <div class="paragraph">
 <p>The Layrry project is still in its infancy.
 Nevertheless it can be a useful tool for application developers wishing to leverage the Java Module System.
-Obtaining modular JARs via Maven coordinates and providing an easy-to-use mechanism for organizing modules in layers enables usages which cannot be addressed using the plain <em>java --module-path &#8230;&#8203;</em> approach.</p>
+Obtaining modular JARs via Maven coordinates and providing an easy-to-use mechanism for organizing modules in layers enables usages which cannot be addressed using the plain <em>java --module-path …​</em> approach.</p>
 </div>
 <div class="paragraph">
 <p>Layrry is open-source (under the Apache License version 2.0).

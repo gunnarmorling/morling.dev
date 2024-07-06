@@ -21,19 +21,19 @@ e.g. databases or Kafka clusters.
 
 For users of JUnit 5, the project provides the @Testcontainers extension, which controls the lifecycle of containers used by a test.
 When testing a Quarkus application though, this is at odds with Quarkus&#39; own @QuarkusTest extension;
-it&#8217;s a recommended best practice to avoid fixed ports for any containers started by Testcontainers.
+it’s a recommended best practice to avoid fixed ports for any containers started by Testcontainers.
 Instead, you should rely on Docker to automatically allocate random free ports.
 This avoids conflicts between concurrently running tests,
 e.g. amongst multiple Postgres containers,
 started up by several parallel job runs in a CI environment, all trying to allocate Postgres&#39; default port 5432.
-Obtaining the randomly assigned port and passing it into the Quarkus bootstrap process isn&#8217;t possible though when combining the two JUnit extensions.
+Obtaining the randomly assigned port and passing it into the Quarkus bootstrap process isn’t possible though when combining the two JUnit extensions.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/quarkus-and-testcontainers/" />
+<meta property="og:url" content="https://www.morling.dev/blog/quarkus-and-testcontainers/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-11-28T17:45:00+01:00" />
 <meta property="article:modified_time" content="2020-11-28T17:45:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Quarkus and Testcontainers"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Quarkus and Testcontainers"/>
 <meta name="twitter:description" content="
 The Testcontainers project is invaluable for spinning up containerized resources during your (JUnit) tests,
 e.g. databases or Kafka clusters.
@@ -41,12 +41,12 @@ e.g. databases or Kafka clusters.
 
 For users of JUnit 5, the project provides the @Testcontainers extension, which controls the lifecycle of containers used by a test.
 When testing a Quarkus application though, this is at odds with Quarkus&#39; own @QuarkusTest extension;
-it&#8217;s a recommended best practice to avoid fixed ports for any containers started by Testcontainers.
+it’s a recommended best practice to avoid fixed ports for any containers started by Testcontainers.
 Instead, you should rely on Docker to automatically allocate random free ports.
 This avoids conflicts between concurrently running tests,
 e.g. amongst multiple Postgres containers,
 started up by several parallel job runs in a CI environment, all trying to allocate Postgres&#39; default port 5432.
-Obtaining the randomly assigned port and passing it into the Quarkus bootstrap process isn&#8217;t possible though when combining the two JUnit extensions.
+Obtaining the randomly assigned port and passing it into the Quarkus bootstrap process isn’t possible though when combining the two JUnit extensions.
 "/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
@@ -285,24 +285,24 @@ e.g. databases or Kafka clusters.</p>
 </div>
 <div class="paragraph">
 <p>For users of JUnit 5, the project provides the <a href="https://www.testcontainers.org/quickstart/junit_5_quickstart/"><code>@Testcontainers</code></a> extension, which controls the lifecycle of containers used by a test.
-When testing a <a href="https://quarkus.io/">Quarkus</a> application though, this is at odds with Quarkus' own <a href="https://quarkus.io/guides/getting-started-testing#recap-of-http-based-testing-in-jvm-mode"><code>@QuarkusTest</code></a> extension;
-it&#8217;s a recommended <a href="https://bsideup.github.io/posts/testcontainers_fixed_ports/">best practice</a> to avoid fixed ports for any containers started by Testcontainers.
+When testing a <a href="https://quarkus.io/">Quarkus</a> application though, this is at odds with Quarkus&#39; own <a href="https://quarkus.io/guides/getting-started-testing#recap-of-http-based-testing-in-jvm-mode"><code>@QuarkusTest</code></a> extension;
+it’s a recommended <a href="https://bsideup.github.io/posts/testcontainers_fixed_ports/">best practice</a> to avoid fixed ports for any containers started by Testcontainers.
 Instead, you should rely on Docker to automatically allocate random free ports.
 This avoids conflicts between concurrently running tests,
 e.g. amongst multiple Postgres containers,
-started up by several parallel job runs in a CI environment, all trying to allocate Postgres' default port 5432.
-Obtaining the randomly assigned port and passing it into the Quarkus bootstrap process isn&#8217;t possible though when combining the two JUnit extensions.</p>
+started up by several parallel job runs in a CI environment, all trying to allocate Postgres&#39; default port 5432.
+Obtaining the randomly assigned port and passing it into the Quarkus bootstrap process isn’t possible though when combining the two JUnit extensions.</p>
 </div>
 <div class="paragraph">
 <p>One work-around you can find described <a href="https://stackoverflow.com/questions/61447252/integration-testing-with-testcontainers-quarkus-mongodb">e.g. on StackOverflow</a> is setting up the database container via a static class initializer block and then propagating the host and port to Quarkus through system properties.
-While this works, it&#8217;s not ideal in terms of lifecycle control (e.g. how to make sure the container is started up once at the beginning of an entire test suite), and in general, it just feels a bit hack-ish.</p>
+While this works, it’s not ideal in terms of lifecycle control (e.g. how to make sure the container is started up once at the beginning of an entire test suite), and in general, it just feels a bit hack-ish.</p>
 </div>
 <div class="paragraph">
-<p>Luckily, there&#8217;s a better alternative, which interestingly isn&#8217;t discussed as much:
-using Quarkus' notion of <em>test resources</em>.
-There&#8217;s just two steps involved.
+<p>Luckily, there’s a better alternative, which interestingly isn’t discussed as much:
+using Quarkus&#39; notion of <em>test resources</em>.
+There’s just two steps involved.
 First, create an implementation of the <code>QuarkusTestResourceLifecycleManager</code> interface,
-which controls your resource&#8217;s lifecycle.
+which controls your resource’s lifecycle.
 In case of a Postgres database, this could look like this:</p>
 </div>
 <div class="listingblock">
@@ -311,16 +311,16 @@ In case of a Postgres database, this could look like this:</p>
         <span class="nc">QuarkusTestResourceLifecycleManager</span> <span class="o">{</span>
 
   <span class="kd">static</span> <span class="nc">PostgreSQLContainer</span><span class="o">&lt;?&gt;</span> <span class="n">db</span> <span class="o">=</span>
-      <span class="k">new</span> <span class="nc">PostgreSQLContainer</span><span class="o">&lt;&gt;(</span><span class="s">"postgres:13"</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
-        <span class="o">.</span><span class="na">withDatabaseName</span><span class="o">(</span><span class="s">"tododb"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">withUsername</span><span class="o">(</span><span class="s">"todouser"</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">withPassword</span><span class="o">(</span><span class="s">"todopw"</span><span class="o">);</span>
+      <span class="k">new</span> <span class="nc">PostgreSQLContainer</span><span class="o">&lt;&gt;(</span><span class="s">&#34;postgres:13&#34;</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="o">.</span><span class="na">withDatabaseName</span><span class="o">(</span><span class="s">&#34;tododb&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">withUsername</span><span class="o">(</span><span class="s">&#34;todouser&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">withPassword</span><span class="o">(</span><span class="s">&#34;todopw&#34;</span><span class="o">);</span>
 
   <span class="nd">@Override</span>
   <span class="kd">public</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="nf">start</span><span class="o">()</span> <span class="o">{</span> <i class="conum" data-value="2"></i><b>(2)</b>
     <span class="n">db</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
     <span class="k">return</span> <span class="nc">Collections</span><span class="o">.</span><span class="na">singletonMap</span><span class="o">(</span>
-        <span class="s">"quarkus.datasource.url"</span><span class="o">,</span> <span class="n">db</span><span class="o">.</span><span class="na">getJdbcUrl</span><span class="o">()</span>
+        <span class="s">&#34;quarkus.datasource.url&#34;</span><span class="o">,</span> <span class="n">db</span><span class="o">.</span><span class="na">getJdbcUrl</span><span class="o">()</span>
     <span class="o">);</span>
   <span class="o">}</span>
 
@@ -333,7 +333,7 @@ In case of a Postgres database, this could look like this:</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Configure the database container, using the Postgres 13 container image, the given database name, and credentials</td>
 </tr>
@@ -345,7 +345,7 @@ In case of a Postgres database, this could look like this:</p>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>Shut down the database after all tests have been executed</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>All you then need to do is to reference that test resource from your test class using the <code>@QuarkusTestResource</code> annotation:</p>
@@ -361,38 +361,38 @@ In case of a Postgres database, this could look like this:</p>
     <span class="n">given</span><span class="o">()</span>
       <span class="o">.</span><span class="na">when</span><span class="o">()</span>
         <span class="o">.</span><span class="na">contentType</span><span class="o">(</span><span class="nc">ContentType</span><span class="o">.</span><span class="na">JSON</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="s">"""
+        <span class="o">.</span><span class="na">body</span><span class="o">(</span><span class="sh">&#34;&#34;&#34;
               {
-                "</span><span class="n">title</span><span class="s">" : "</span><span class="nc">Learn</span> <span class="nc">Quarkus</span><span class="s">",
-                "</span><span class="n">priority</span><span class="s">" : 1,
+                &#34;title&#34; : &#34;Learn Quarkus&#34;,
+                &#34;priority&#34; : 1,
               }
-              """</span><span class="o">)</span>
+              &#34;&#34;&#34;</span><span class="o">)</span>
       <span class="o">.</span><span class="na">then</span><span class="o">()</span>
         <span class="o">.</span><span class="na">statusCode</span><span class="o">(</span><span class="mi">201</span><span class="o">)</span>
         <span class="o">.</span><span class="na">body</span><span class="o">(</span>
             <span class="n">matchesJson</span><span class="o">(</span>
-              <span class="s">"""
+              <span class="sh">&#34;&#34;&#34;
               {
-                "</span><span class="n">id</span><span class="s">" : 1,
-                "</span><span class="n">title</span><span class="s">" : "</span><span class="nc">Learn</span> <span class="nc">Quarkus</span><span class="s">",
-                "</span><span class="n">priority</span><span class="s">" : 1,
-                "</span><span class="n">completed</span><span class="s">" : false,
+                &#34;id&#34; : 1,
+                &#34;title&#34; : &#34;Learn Quarkus&#34;,
+                &#34;priority&#34; : 1,
+                &#34;completed&#34; : false,
               }
-              """</span><span class="o">));</span>
+              &#34;&#34;&#34;</span><span class="o">));</span>
   <span class="o">}</span>
 <span class="o">}</span></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Ensures the Postgres database is started up</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>And that&#8217;s it! Note that <em>all</em> the test resources of the test module are detected and started up,
+<p>And that’s it! Note that <em>all</em> the test resources of the test module are detected and started up,
 before starting the first test.</p>
 </div>
 <div class="sect1">
@@ -400,7 +400,7 @@ before starting the first test.</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>One other subtle issue is the creation of the database schema for the test.
-E.g. for my <a href="https://github.com/gunnarmorling/jfr-custom-events/tree/master/example-service">Todo example application</a>, I&#8217;d like to use a schema named "todo" in the Postgres database:</p>
+E.g. for my <a href="https://github.com/gunnarmorling/jfr-custom-events/tree/master/example-service">Todo example application</a>, I’d like to use a schema named &#34;todo&#34; in the Postgres database:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -411,38 +411,38 @@ E.g. for my <a href="https://github.com/gunnarmorling/jfr-custom-events/tree/mas
 <p>Quarkus supports <a href="https://quarkus.io/guides/hibernate-orm#quarkus-hibernate-orm_quarkus.hibernate-orm.sql-load-script">SQL load scripts</a> for executing SQL scripts when Hibernate ORM starts.
 But this will be executed only <em>after</em> Hibernate ORM has set up all the database objects,
 such as tables, sequences, indexes etc.
-(I&#8217;m using the <code>drop-and-create</code> <a href="https://quarkus.io/guides/hibernate-orm#quarkus-hibernate-orm_quarkus.hibernate-orm.database.generation)">database generation</a> mode during testing).
+(I’m using the <code>drop-and-create</code> <a href="https://quarkus.io/guides/hibernate-orm#quarkus-hibernate-orm_quarkus.hibernate-orm.database.generation)">database generation</a> mode during testing).
 This means that while a load script is great for inserting test data,
-it&#8217;s executed too late for defining the actual database schema itself.</p>
+it’s executed too late for defining the actual database schema itself.</p>
 </div>
 <div class="paragraph">
 <p>Luckily, most database container images themselves support the execution of load scripts right upon database start-up;
 The Postgres image is no exception,
-so it&#8217;s just a matter of exposing that script via Testcontainers.
+so it’s just a matter of exposing that script via Testcontainers.
 All it needs for that is a bit of tweaking of the Quarkus test resource for Postgres:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="java"><span class="kd">static</span> <span class="nc">PostgreSQLContainer</span><span class="o">&lt;?&gt;</span> <span class="n">db</span> <span class="o">=</span>
-        <span class="k">new</span> <span class="nc">PostgreSQLContainer</span><span class="o">&lt;&gt;(</span><span class="s">"postgres:13"</span><span class="o">)</span>
-    <span class="o">.</span><span class="na">withDatabaseName</span><span class="o">(</span><span class="s">"tododb"</span><span class="o">)</span>
-    <span class="o">.</span><span class="na">withUsername</span><span class="o">(</span><span class="s">"todouser"</span><span class="o">)</span>
-    <span class="o">.</span><span class="na">withPassword</span><span class="o">(</span><span class="s">"todopw"</span><span class="o">)</span>
-    <span class="o">.</span><span class="na">withClasspathResourceMapping</span><span class="o">(</span><span class="s">"init.sql"</span><span class="o">,</span> <i class="conum" data-value="1"></i><b>(1)</b>
-        <span class="s">"/docker-entrypoint-initdb.d/init.sql"</span><span class="o">,</span>
+        <span class="k">new</span> <span class="nc">PostgreSQLContainer</span><span class="o">&lt;&gt;(</span><span class="s">&#34;postgres:13&#34;</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">withDatabaseName</span><span class="o">(</span><span class="s">&#34;tododb&#34;</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">withUsername</span><span class="o">(</span><span class="s">&#34;todouser&#34;</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">withPassword</span><span class="o">(</span><span class="s">&#34;todopw&#34;</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">withClasspathResourceMapping</span><span class="o">(</span><span class="s">&#34;init.sql&#34;</span><span class="o">,</span> <i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="s">&#34;/docker-entrypoint-initdb.d/init.sql&#34;</span><span class="o">,</span>
         <span class="nc">BindMode</span><span class="o">.</span><span class="na">READ_ONLY</span><span class="o">);</span></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Expose the file <em>src/main/resources/init.sql</em> as <em>/docker-entrypoint-initdb.d/init.sql</em> within the container</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>With that in place, Postgres will start up and the "todo" schema will be created in the database,
+<p>With that in place, Postgres will start up and the &#34;todo&#34; schema will be created in the database,
 before Quarkus boots Hibernate ORM, which will populate the schema, and finally, all tests can run.</p>
 </div>
 <div class="paragraph">

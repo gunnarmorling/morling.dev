@@ -37,11 +37,11 @@ This is faster than loading the actual class files, resulting in reduced start-u
 When starting multiple JVM processes on the same host, read-only archives of class metadata can also be shared between the VMs, so that less memory is consumed overall.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/building-class-data-sharing-archives-with-apache-maven/" />
+<meta property="og:url" content="https://www.morling.dev/blog/building-class-data-sharing-archives-with-apache-maven/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-06-11T17:30:00+02:00" />
 <meta property="article:modified_time" content="2020-06-11T17:30:00+02:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Building Class Data Sharing Archives with Apache Maven"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Building Class Data Sharing Archives with Apache Maven"/>
 <meta name="twitter:description" content="
 Ahead-of-time compilation (AOT) is the big topic in the Java ecosystem lately:
 by compiling Java code to native binaries, developers and users benefit from vastly improved start-up times and reduced memory usage.
@@ -325,20 +325,20 @@ CDS was completely open-sourced in JDK 10 and got incrementally improved since t
 <ul>
 <li>
 <p><a href="http://openjdk.java.net/jeps/310">JEP 310</a>, Application Class-Data Sharing (AppCDS), in JDK 10:
-"To improve startup and footprint, extend the existing [CDS] feature to allow application classes to be placed in the shared archive"</p>
+&#34;To improve startup and footprint, extend the existing [CDS] feature to allow application classes to be placed in the shared archive&#34;</p>
 </li>
 <li>
 <p><a href="http://openjdk.java.net/jeps/341">JEP 341</a>, Default CDS Archives, in JDK 12:
-"Enhance the JDK build process to generate a class data-sharing (CDS) archive, using the default class list, on 64-bit platforms"</p>
+&#34;Enhance the JDK build process to generate a class data-sharing (CDS) archive, using the default class list, on 64-bit platforms&#34;</p>
 </li>
 <li>
 <p><a href="http://openjdk.java.net/jeps/350">JEP 350</a>, Dynamic CDS Archives, in JDK 13:
-"Extend application class-data sharing to allow the dynamic archiving of classes at the end of Java application execution. The archived classes will include all loaded application classes and library classes that are not present in the default, base-layer CDS archive"</p>
+&#34;Extend application class-data sharing to allow the dynamic archiving of classes at the end of Java application execution. The archived classes will include all loaded application classes and library classes that are not present in the default, base-layer CDS archive&#34;</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>In the remainder of this blog post we&#8217;ll discuss how to automatically create AppCDS archives as part of your (Maven) project build,
+<p>In the remainder of this blog post we’ll discuss how to automatically create AppCDS archives as part of your (Maven) project build,
 based on the improvements made with JEP 350.
 I.e. Java 13 or later is a prerequisite for this.
 To learn more about using CDS with the current LTS release JDK 11 and about CDS in general,
@@ -348,15 +348,15 @@ refer to the excellent blog post <a href="https://blog.codefx.org/java/applicati
 <h2 id="_manually_creating_cds_archives">Manually Creating CDS Archives</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>At first let&#8217;s see what&#8217;s needed to manually create and use an AppCDS archive
-(note I&#8217;m going to use "AppCDS" and "CDS" somewhat interchangeably for the sake of brevity).
-Subsequently, we&#8217;ll discuss how the task can be automated in a Maven project build.</p>
+<p>At first let’s see what’s needed to manually create and use an AppCDS archive
+(note I’m going to use &#34;AppCDS&#34; and &#34;CDS&#34; somewhat interchangeably for the sake of brevity).
+Subsequently, we’ll discuss how the task can be automated in a Maven project build.</p>
 </div>
 <div class="paragraph">
-<p>To have an example to work with which goes beyond a plain "Hello World",
-I&#8217;ve created a <a href="https://github.com/gunnarmorling/quarkus-cds/">small web application</a> for managing personal to-dos,
+<p>To have an example to work with which goes beyond a plain &#34;Hello World&#34;,
+I’ve created a <a href="https://github.com/gunnarmorling/quarkus-cds/">small web application</a> for managing personal to-dos,
 using the <a href="https://quarkus.io/">Quarkus</a> stack.
-If you&#8217;d like to follow along, clone the repo and build the project:</p>
+If you’d like to follow along, clone the repo and build the project:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -391,16 +391,16 @@ Do so by passing the <em>-XX:ArchiveClassesAtExit</em> option:</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Triggers creation of a CDS archive at the given location upon application shutdown</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Only loaded classes will be added to the archive.
 As classloading on the JVM happens lazily, you must invoke some functionality in your application in order to cause all the relevant classes to be loaded.
-For that to happen, open the application&#8217;s API endpoint in a browser or invoke it via <em>curl</em>, <em>httpie</em> or similar:</p>
+For that to happen, open the application’s API endpoint in a browser or invoke it via <em>curl</em>, <em>httpie</em> or similar:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -424,8 +424,8 @@ Also observe the log messages about classes which were skipped from archiving:</
 </div>
 <div class="paragraph">
 <p>Mostly this is about hidden or anonymous classes which cannot be archived;
-there&#8217;s not so much you can do about that
-(apart from using less Lambda expressions perhaps&#8230;&#8203;).</p>
+there’s not so much you can do about that
+(apart from using less Lambda expressions perhaps…​).</p>
 </div>
 <div class="paragraph">
 <p>The hint on old classfile versions is more actionable:
@@ -435,7 +435,7 @@ In the case at hand, the classes from <a href="https://mvnrepository.com/artifac
 Note this also applies to any subclasses, even if they themselves use a newer classfile format version.</p>
 </div>
 <div class="paragraph">
-<p>It&#8217;s thus a good idea to check whether you can upgrade to newer versions of your dependencies, as this may result in more classes becoming available for CDS,
+<p>It’s thus a good idea to check whether you can upgrade to newer versions of your dependencies, as this may result in more classes becoming available for CDS,
 resulting in better start-up times in turn.</p>
 </div>
 </div>
@@ -444,7 +444,7 @@ resulting in better start-up times in turn.</p>
 <h2 id="_using_the_cds_archive">Using the CDS Archive</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Now let&#8217;s run the application again, this time <em>using</em> the previously created CDS archive:</p>
+<p>Now let’s run the application again, this time <em>using</em> the previously created CDS archive:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -456,7 +456,7 @@ resulting in better start-up times in turn.</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>The path to the CDS archive</td>
 </tr>
@@ -468,11 +468,11 @@ resulting in better start-up times in turn.</p>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>While class data sharing is enabled by default on JDK 12 and newer, explicitely enforcing it will ensure an error is raised if something is wrong, e.g. a mismatch of Java versions between building and using the archive</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>When examining the <em>classload.log</em> file,
-you should see how most class metadata is obtained from the CDS archive ("source: shared object file"),
+you should see how most class metadata is obtained from the CDS archive (&#34;source: shared object file&#34;),
 while some classes such as the ancient Antlr classes are loaded just as usual from the corresponding JAR:</p>
 </div>
 <div class="listingblock">
@@ -496,7 +496,7 @@ If you are aware of a way for doing so, please let me know in the comments below
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -511,7 +511,7 @@ This is to avoid a mismatch of class metadata in the CDS archive and classes bro
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 </div>
 </div>
@@ -520,7 +520,7 @@ This is to avoid a mismatch of class metadata in the CDS archive and classes bro
 <div class="sectionbody">
 <div class="paragraph">
 <p>Manually creating a CDS archive is not very efficient nor reliable,
-so let&#8217;s see how the task can be automated as part of your project build.
+so let’s see how the task can be automated as part of your project build.
 The following shows the required configuration when using Apache Maven,
 but of course the same approach could be implemented with Gradle or any other build system.</p>
 </div>
@@ -542,7 +542,7 @@ but of course the same approach could be implemented with Gradle or any other bu
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -551,20 +551,20 @@ but of course the same approach could be implemented with Gradle or any other bu
 <p>It might appear as a compelling idea to produce the CDS archive as part of regular test execution, e.g. via JUnit.
 This will not work though, as the classpath at the time of <em>using</em> the CDS archive must be not miss any entries from the classpath at the time of <em>creating</em> it.
 As during test execution all the test-scoped dependencies will be part of the classpath,
-any CDS archive created that way couldn&#8217;t be used when running the application later on without those test dependencies.</p>
+any CDS archive created that way couldn’t be used when running the application later on without those test dependencies.</p>
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Steps 1. and 3. can be automated with help of the <a href="https://github.com/bazaarvoice/maven-process-plugin">Process-Exec</a> Maven plug-in,
 binding it to the <code>pre-integration-test</code> and <code>post-integration-test</code> build phases, respectively.
 While I was thinking of using the more widely known <a href="https://www.mojohaus.org/exec-maven-plugin/usage.html">Exec</a> plug-in initially,
-this turned out to not be viable as <a href="https://github.com/mojohaus/exec-maven-plugin/issues/18">there&#8217;s no way</a> for stopping any forked process in a later build phase.</p>
+this turned out to not be viable as <a href="https://github.com/mojohaus/exec-maven-plugin/issues/18">there’s no way</a> for stopping any forked process in a later build phase.</p>
 </div>
 <div class="paragraph">
-<p>Here&#8217;s the relevant configuration:</p>
+<p>Here’s the relevant configuration:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -607,7 +607,7 @@ this turned out to not be viable as <a href="https://github.com/mojohaus/exec-ma
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Start up the application in the <code>pre-integration-test</code> build phase</td>
 </tr>
@@ -623,13 +623,13 @@ this turned out to not be viable as <a href="https://github.com/mojohaus/exec-ma
 <td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>Stop the application in the <code>post-integration-test</code> build phase</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>What remains to be done is the automation of step 2,
 the invocation of the required application logic so to trigger the loading of all relevant classes.
 This can be done with help of the <a href="http://maven.apache.org/surefire/maven-surefire-plugin/">Maven Surefire</a> plug-in.
-A simple "integration test" via <a href="http://rest-assured.io/">REST Assured</a> does the trick:</p>
+A simple &#34;integration test&#34; via <a href="http://rest-assured.io/">REST Assured</a> does the trick:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -639,7 +639,7 @@ A simple "integration test" via <a href="http://rest-assured.io/">REST Assured</
   <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getAll</span><span class="o">()</span> <span class="o">{</span>
     <span class="n">given</span><span class="o">()</span>
       <span class="o">.</span><span class="na">when</span><span class="o">()</span>
-        <span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"/api"</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;/api&#34;</span><span class="o">)</span>
       <span class="o">.</span><span class="na">then</span><span class="o">()</span>
         <span class="o">.</span><span class="na">statusCode</span><span class="o">(</span><span class="mi">200</span><span class="o">);</span>
     <span class="o">}</span>
@@ -676,7 +676,7 @@ so to keep them apart from actual integration tests:</p>
 </div>
 </div>
 <div class="paragraph">
-<p>And that&#8217;s all we need; when now building the project via <em>mvn clean verify</em>,
+<p>And that’s all we need; when now building the project via <em>mvn clean verify</em>,
 a CDS archive will be created at <em>target/app-cds.jsa</em>.
 You can find the <a href="https://github.com/gunnarmorling/quarkus-cds/">complete example project</a> and steps for building/running it on GitHub.</p>
 </div>
@@ -688,14 +688,14 @@ You can find the <a href="https://github.com/gunnarmorling/quarkus-cds/">complet
 <div class="paragraph">
 <p>Creating a CDS archive is nice, but is it also worth the effort?
 In order to answer this question,
-I&#8217;ve done some measurements of the "time-to-first-response" metric,
+I’ve done some measurements of the &#34;time-to-first-response&#34; metric,
 following the Quarkus guide on <a href="https://quarkus.io/guides/performance-measure#how-do-we-measure-startup-time">measuring performance</a>.
-I.e. instead of awaiting some rather meaningless "start-up complete" status,
+I.e. instead of awaiting some rather meaningless &#34;start-up complete&#34; status,
 which could arbitrarily be tweaked by means of lazy initialization,
 this measures the time until the application is actually ready to handle the first incoming request after start-up.</p>
 </div>
 <div class="paragraph">
-<p>I&#8217;ve done measurements on OpenJDK 1.8.0_252
+<p>I’ve done measurements on OpenJDK 1.8.0_252
 (<a href="https://adoptopenjdk.net/">AdoptOpenJDK</a> build),
 OpenJDK 14.0.1 (<a href="http://jdk.java.net/14/">upstream build</a>, without and with AppCDS),
 and OpenJDK 15-ea-b26 (<a href="http://jdk.java.net/15/">upstream build</a>, with AppCDS).
@@ -706,7 +706,7 @@ Please see the <a href="https://github.com/gunnarmorling/quarkus-cds/#run-measur
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/app_cds_time_to_first_response.png" alt="app cds time to first response" width="75%">
+<img src="/images/app_cds_time_to_first_response.png" alt="app cds time to first response" width="75%"/>
 </div>
 </div>
 <div class="paragraph">
@@ -714,11 +714,11 @@ Please see the <a href="https://github.com/gunnarmorling/quarkus-cds/#run-measur
 which added an unneccessary overhead
 (thanks a lot to <a href="https://twitter.com/cl4es">Claes Redestad</a> for pointing this out!).
 The numbers and chart have been updated accordingly.
-I&#8217;ve also added numbers for OpenJDK 15-ea.</em></p>
+I’ve also added numbers for OpenJDK 15-ea.</em></p>
 </div>
 <div class="paragraph">
 <p>Time-to-first-response values are 2s 267ms, 2s 162ms, <del>1s 669ms</del> 1s 483ms, and 1s 279ms.
-I.e. on my machine (2014 MacBook Pro), with this specific workload, there&#8217;s an improvement of ~100ms just by upgrading to the current JDK,
+I.e. on my machine (2014 MacBook Pro), with this specific workload, there’s an improvement of ~100ms just by upgrading to the current JDK,
 and of another <del>~500ms</del> ~700ms by using AppCDS.</p>
 </div>
 <div class="paragraph">
@@ -742,21 +742,21 @@ using your own applications and in your own environment.</p>
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
 <div class="title">Addressing Different Workload Profiles</div>
 <div class="paragraph">
-<p>If your application supports different "work modes", e.g. "online" and "batch",
+<p>If your application supports different &#34;work modes&#34;, e.g. &#34;online&#34; and &#34;batch&#34;,
 which work with a largely differing set of classes,
 you also might consider to create different CDS archives for the specific workloads.
 This might give you a good balance between additional size and realized improvements of start-up times, when for instance dealing with at large monolithic application instead of more fine-grained microservices.</p>
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 </div>
 </div>
@@ -770,9 +770,9 @@ For the example discussed, we could observe an improvement of the time-to-first-
 Other users <a href="https://groups.google.com/d/msg/quarkus-dev/c10cGsXriI8/TJvn6QRTAwAJ">reported even bigger improvements</a>.</p>
 </div>
 <div class="paragraph">
-<p>We didn&#8217;t discuss any potential memory improvements due to CDS when sharing class metadata between multiple JVMs on one host.
+<p>We didn’t discuss any potential memory improvements due to CDS when sharing class metadata between multiple JVMs on one host.
 In containerized server applications, with each JVM being packaged in its own container image,
-this won&#8217;t play a role.
+this won’t play a role.
 It could make a difference on desktop systems, though.
 For instance multiple instances of the <a href="https://github.com/redhat-developer/vscode-java">Java language server</a>, as leveraged by VSCode and other editors,
 could benefit from that.</p>
@@ -801,7 +801,7 @@ solely by means of adding a few steps to your build process.</p>
 <p>Eclipse OpenJ9 has its <a href="https://www.eclipse.org/openj9/docs/shrc/">own implementation</a> of class data sharing</p>
 </li>
 <li>
-<p>Alibaba&#8217;s Dragonwell distribution of the OpenJDK comes with <a href="https://www.alibabacloud.com/blog/what-there-is-to-know-about-alibaba-dragonwell-8_595210">JWarmUp</a>, a tool for speeding up initial JIT compilations</p>
+<p>Alibaba’s Dragonwell distribution of the OpenJDK comes with <a href="https://www.alibabacloud.com/blog/what-there-is-to-know-about-alibaba-dragonwell-8_595210">JWarmUp</a>, a tool for speeding up initial JIT compilations</p>
 </li>
 </ul>
 </div>

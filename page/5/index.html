@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<meta name="generator" content="Hugo 0.62.0" />
+	<meta name="generator" content="Hugo 0.121.2">
 	
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
 	<script>
@@ -19,9 +19,8 @@
 <meta property="og:description" content="" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://www.morling.dev/" />
-<meta property="og:updated_time" content="2024-05-13T13:01:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Gunnar Morling"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Gunnar Morling"/>
 <meta name="twitter:description" content=""/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
@@ -257,12 +256,24 @@
 					
 					
 					<div class="post">
+						<div class="meta">Dec 21, 2020</div>
+						<h4 class="summary">ByteBuffer and the Dreaded NoSuchMethodError</h4>
+						<div>
+							<span class="description"> The other day, a user in the Debezium community reported an interesting issue; They were using Debezium with Java 1.8 and got an odd NoSuchMethodError:
+</span>
+						</div>
+						<p>
+							<a href="/blog/bytebuffer-and-the-dreaded-nosuchmethoderror/">Read More...</a>
+						</p>
+					</div>
+					
+					<div class="post">
 						<div class="meta">Dec 16, 2020</div>
 						<h4 class="summary">Towards Continuous Performance Regression Testing</h4>
 						<div>
-							<span class="description">Functional unit and integration tests are a standard tool of any software development organization, helping not only to ensure correctness of newly implemented code, but also to identify regressions — bugs in existing functionality introduced by a code change. The situation looks different though when it comes to regressions related to non-functional requirements, in particular performance-related ones: How to detect increased response times in a web application? How to identify decreased throughput?
- These aspects are typically hard to test in an automated and reliable way in the development workflow, as they are dependent on the underlying hardware and the workload of an application. For instance assertions on the duration of specific requests of a web application typically cannot be run in a meaningful way on a developer laptop, which differs from the actual production hardware (ironically, nowadays both is an option, the developer laptop being less or more powerful than the actual production environment). When run in a virtualized or containerized CI environment, such tests are prone to severe measurement distortions due to concurrent load of other applications and jobs.
- This post introduces the JfrUnit open-source project, which offers a fresh angle to this topic by supporting assertions not on metrics like latency/throughput themselves, but on indirect metrics which may impact those. JfrUnit allows you define expected values for metrics such as memory allocation, database I/O, or number of executed SQL statements, for a given workload and asserts the actual metrics values — which are obtained from JDK Flight Recorder events — against these expected values. Starting off from a defined base line, future failures of such assertions are an indicator for potential performance regressions in an application, as a code change may have introduced higher GC pressure, the retrieval of unneccessary data from the database, or SQL problems commonly induced by ORM tools, like N&#43;1 SELECT statements.
+							<span class="description"> Functional unit and integration tests are a standard tool of any software development organization, helping not only to ensure correctness of newly implemented code, but also to identify regressions — bugs in existing functionality introduced by a code change. The situation looks different though when it comes to regressions related to non-functional requirements, in particular performance-related ones: How to detect increased response times in a web application? How to identify decreased throughput?
+These aspects are typically hard to test in an automated and reliable way in the development workflow, as they are dependent on the underlying hardware and the workload of an application. For instance assertions on the duration of specific requests of a web application typically cannot be run in a meaningful way on a developer laptop, which differs from the actual production hardware (ironically, nowadays both is an option, the developer laptop being less or more powerful than the actual production environment). When run in a virtualized or containerized CI environment, such tests are prone to severe measurement distortions due to concurrent load of other applications and jobs.
+This post introduces the JfrUnit open-source project, which offers a fresh angle to this topic by supporting assertions not on metrics like latency/throughput themselves, but on indirect metrics which may impact those. JfrUnit allows you define expected values for metrics such as memory allocation, database I/O, or number of executed SQL statements, for a given workload and asserts the actual metrics values — which are obtained from JDK Flight Recorder events — against these expected values. Starting off from a defined base line, future failures of such assertions are an indicator for potential performance regressions in an application, as a code change may have introduced higher GC pressure, the retrieval of unneccessary data from the database, or SQL problems commonly induced by ORM tools, like N&#43;1 SELECT statements.
 </span>
 						</div>
 						<p>
@@ -274,8 +285,8 @@
 						<div class="meta">Dec 13, 2020</div>
 						<h4 class="summary">Smaller, Faster-starting Container Images With jlink and AppCDS</h4>
 						<div>
-							<span class="description">A few months ago I wrote about how you could speed up your Java application’s start-up times using application class data sharing (AppCDS), based on the example of a simple Quarkus application. Since then, quite some progress has been made in this area: Quarkus 1.6 brought built-in support for AppCDS, so that now you just need to provide the -Dquarkus.package.create-appcds=true option when building your project, and you’ll find an AppCDS file in the target folder.
- Things get more challenging though when combining AppCDS with custom Java runtime images, as produced using the jlink tool added in Java 9. Combining custom runtime images with AppCDS is very attractive, in particular when looking at the deployment of Java applications via Linux containers. Instead of putting the full Java runtime into the container image, you only add those JDK modules which your application actually requires. (Parts of) what you save in image size by doing so, can be used for adding an AppCDS archive to your container image. The result will be a container image which still is smaller than before — and thus is faster to push to a container registry, distribute to worker nodes in a Kubernetes cluster, etc. — and which starts up significantly faster.
+							<span class="description"> A few months ago I wrote about how you could speed up your Java application’s start-up times using application class data sharing (AppCDS), based on the example of a simple Quarkus application. Since then, quite some progress has been made in this area: Quarkus 1.6 brought built-in support for AppCDS, so that now you just need to provide the -Dquarkus.package.create-appcds=true option when building your project, and you’ll find an AppCDS file in the target folder.
+Things get more challenging though when combining AppCDS with custom Java runtime images, as produced using the jlink tool added in Java 9. Combining custom runtime images with AppCDS is very attractive, in particular when looking at the deployment of Java applications via Linux containers. Instead of putting the full Java runtime into the container image, you only add those JDK modules which your application actually requires. (Parts of) what you save in image size by doing so, can be used for adding an AppCDS archive to your container image. The result will be a container image which still is smaller than before — and thus is faster to push to a container registry, distribute to worker nodes in a Kubernetes cluster, etc. — and which starts up significantly faster.
 </span>
 						</div>
 						<p>
@@ -287,8 +298,8 @@
 						<div class="meta">Nov 28, 2020</div>
 						<h4 class="summary">Quarkus and Testcontainers</h4>
 						<div>
-							<span class="description">The Testcontainers project is invaluable for spinning up containerized resources during your (JUnit) tests, e.g. databases or Kafka clusters.
- For users of JUnit 5, the project provides the @Testcontainers extension, which controls the lifecycle of containers used by a test. When testing a Quarkus application though, this is at odds with Quarkus&#39; own @QuarkusTest extension; it’s a recommended best practice to avoid fixed ports for any containers started by Testcontainers. Instead, you should rely on Docker to automatically allocate random free ports. This avoids conflicts between concurrently running tests, e.g. amongst multiple Postgres containers, started up by several parallel job runs in a CI environment, all trying to allocate Postgres&#39; default port 5432. Obtaining the randomly assigned port and passing it into the Quarkus bootstrap process isn’t possible though when combining the two JUnit extensions.
+							<span class="description"> The Testcontainers project is invaluable for spinning up containerized resources during your (JUnit) tests, e.g. databases or Kafka clusters.
+For users of JUnit 5, the project provides the @Testcontainers extension, which controls the lifecycle of containers used by a test. When testing a Quarkus application though, this is at odds with Quarkus&#39; own @QuarkusTest extension; it’s a recommended best practice to avoid fixed ports for any containers started by Testcontainers. Instead, you should rely on Docker to automatically allocate random free ports. This avoids conflicts between concurrently running tests, e.g. amongst multiple Postgres containers, started up by several parallel job runs in a CI environment, all trying to allocate Postgres&#39; default port 5432. Obtaining the randomly assigned port and passing it into the Quarkus bootstrap process isn’t possible though when combining the two JUnit extensions.
 </span>
 						</div>
 						<p>
@@ -300,9 +311,9 @@
 						<div class="meta">Oct 14, 2020</div>
 						<h4 class="summary">Class Unloading in Layered Java Applications</h4>
 						<div>
-							<span class="description">Layers are sort of the secret sauce of the Java platform module system (JPMS): by providing fine-grained control over how individual JPMS modules and their classes are loaded by the JVM, they enable advanced usages like loading multiple versions of a given module, or dynamically adding and removing modules at application runtime.
- The Layrry API and launcher provides a small plug-in API based on top of layers, which for instance can be used to dynamically add plug-ins contributing new views and widgets to a running JavaFX application. If such plug-in gets removed from the application again, all its classes need to be unloaded by the JVM, avoiding an ever-increasing memory consumption if for instance a plug-in gets updated multiple times.
- In this blog post I’m going to explore how to ensure classes from removed plug-in layers are unloaded in a timely manner, and how to find the culprit in case some class fails to be unloaded.
+							<span class="description"> Layers are sort of the secret sauce of the Java platform module system (JPMS): by providing fine-grained control over how individual JPMS modules and their classes are loaded by the JVM, they enable advanced usages like loading multiple versions of a given module, or dynamically adding and removing modules at application runtime.
+The Layrry API and launcher provides a small plug-in API based on top of layers, which for instance can be used to dynamically add plug-ins contributing new views and widgets to a running JavaFX application. If such plug-in gets removed from the application again, all its classes need to be unloaded by the JVM, avoiding an ever-increasing memory consumption if for instance a plug-in gets updated multiple times.
+In this blog post I’m going to explore how to ensure classes from removed plug-in layers are unloaded in a timely manner, and how to find the culprit in case some class fails to be unloaded.
 </span>
 						</div>
 						<p>
@@ -314,7 +325,7 @@
 						<div class="meta">Oct 5, 2020</div>
 						<h4 class="summary">Building hsdis for OpenJDK 15</h4>
 						<div>
-							<span class="description">Lately I’ve been fascinated by the possibility to analyse the assembly code emitted by the Java JIT (just-in-time) compiler. So far I had only looked only into Java class files using javap; diving into the world of assembly code feels a bit like Alice must have felt when falling down the rabbit whole into wonderland.
+							<span class="description"> Lately I’ve been fascinated by the possibility to analyse the assembly code emitted by the Java JIT (just-in-time) compiler. So far I had only looked only into Java class files using javap; diving into the world of assembly code feels a bit like Alice must have felt when falling down the rabbit whole into wonderland.
 </span>
 						</div>
 						<p>
@@ -326,8 +337,8 @@
 						<div class="meta">Aug 18, 2020</div>
 						<h4 class="summary">Introducing JmFrX: A Bridge From JMX to JDK Flight Recorder</h4>
 						<div>
-							<span class="description">I’m excited to share the news about an open-source utility I’ve been working on lately: JmFrX, a tool for capturing JMX data with JDK Flight Recorder.
- When using JMX (Java Management Extensions), The Java platform’s standard for monitoring and managing applications, JmFrX allows you to periodically record the attributes from any JMX MBean into JDK Flight Recorder (JFR) files, which you then can analyse using JDK Mission Control (JMC).
+							<span class="description"> I’m excited to share the news about an open-source utility I’ve been working on lately: JmFrX, a tool for capturing JMX data with JDK Flight Recorder.
+When using JMX (Java Management Extensions), The Java platform’s standard for monitoring and managing applications, JmFrX allows you to periodically record the attributes from any JMX MBean into JDK Flight Recorder (JFR) files, which you then can analyse using JDK Mission Control (JMC).
 </span>
 						</div>
 						<p>
@@ -339,7 +350,7 @@
 						<div class="meta">Jul 29, 2020</div>
 						<h4 class="summary">How I Built a Serverless Search for My Blog</h4>
 						<div>
-							<span class="description">I have built a custom search functionality for this blog, based on Java and the Apache Lucene full-text search library, compiled into a native binary using the Quarkus framework and GraalVM. It is deployed as a Serverless application running on AWS Lambda, providing search results without any significant cold start delay. If you thought Java wouldn’t be the right language for this job, keep reading; in this post I’m going to give an overview over the implementation of this feature and my learnings along the way.
+							<span class="description"> I have built a custom search functionality for this blog, based on Java and the Apache Lucene full-text search library, compiled into a native binary using the Quarkus framework and GraalVM. It is deployed as a Serverless application running on AWS Lambda, providing search results without any significant cold start delay. If you thought Java wouldn’t be the right language for this job, keep reading; in this post I’m going to give an overview over the implementation of this feature and my learnings along the way.
 </span>
 						</div>
 						<p>
@@ -351,9 +362,9 @@
 						<div class="meta">Jun 11, 2020</div>
 						<h4 class="summary">Building Class Data Sharing Archives with Apache Maven</h4>
 						<div>
-							<span class="description">Ahead-of-time compilation (AOT) is the big topic in the Java ecosystem lately: by compiling Java code to native binaries, developers and users benefit from vastly improved start-up times and reduced memory usage. The GraalVM project made huge progress towards AOT-compiled Java applications, and Project Leyden promises to standardize AOT in a future version of the Java platform.
- This makes it easy to miss out on significant performance improvements which have been made on the JVM in recent Java versions, in particular when it comes to faster start-up times. Besides a range of improvements related to class loading, linking and bytecode verification, substantial work has been done around class data sharing (CDS). Faster start-ups are beneficial in many ways: shorter turnaround times during development, quicker time-to-first-response for users in coldstart scenarios, cost savings when billed by CPU time in the cloud.
- With CDS, class metadata is persisted in an archive file, which during subsequent application starts is mapped into memory. This is faster than loading the actual class files, resulting in reduced start-up times. When starting multiple JVM processes on the same host, read-only archives of class metadata can also be shared between the VMs, so that less memory is consumed overall.
+							<span class="description"> Ahead-of-time compilation (AOT) is the big topic in the Java ecosystem lately: by compiling Java code to native binaries, developers and users benefit from vastly improved start-up times and reduced memory usage. The GraalVM project made huge progress towards AOT-compiled Java applications, and Project Leyden promises to standardize AOT in a future version of the Java platform.
+This makes it easy to miss out on significant performance improvements which have been made on the JVM in recent Java versions, in particular when it comes to faster start-up times. Besides a range of improvements related to class loading, linking and bytecode verification, substantial work has been done around class data sharing (CDS). Faster start-ups are beneficial in many ways: shorter turnaround times during development, quicker time-to-first-response for users in coldstart scenarios, cost savings when billed by CPU time in the cloud.
+With CDS, class metadata is persisted in an archive file, which during subsequent application starts is mapped into memory. This is faster than loading the actual class files, resulting in reduced start-up times. When starting multiple JVM processes on the same host, read-only archives of class metadata can also be shared between the VMs, so that less memory is consumed overall.
 </span>
 						</div>
 						<p>
@@ -365,29 +376,16 @@
 						<div class="meta">May 14, 2020</div>
 						<h4 class="summary">Single Message Transformations - The Swiss Army Knife of Kafka Connect</h4>
 						<div>
-							<span class="description">Do you remember Angus &#34;Mac&#34; MacGyver? The always creative protagonist of the popular 80ies/90ies TV show, who could solve about any problem with nothing more than a Swiss Army knife, duct tape, shoe strings and a paper clip?
- The single message transformations (SMTs) of Kafka Connect are almost as versatile as MacGyver’s Swiss Army knife:
-   How to change the timezone or format of date/time message fields?
-  How to change the topic a specific message gets sent to?
-  How to filter out specific records?
-   SMTs can be the answer to these and many other questions that come up in the context of Kafka Connect. Applied to source or sink connectors, SMTs allow to modify Kafka records before they are sent to Kafka, or after they are consumed from a topic, respectively.
+							<span class="description"> Do you remember Angus &#34;Mac&#34; MacGyver? The always creative protagonist of the popular 80ies/90ies TV show, who could solve about any problem with nothing more than a Swiss Army knife, duct tape, shoe strings and a paper clip?
+The single message transformations (SMTs) of Kafka Connect are almost as versatile as MacGyver’s Swiss Army knife:
+How to change the timezone or format of date/time message fields?
+How to change the topic a specific message gets sent to?
+How to filter out specific records?
+SMTs can be the answer to these and many other questions that come up in the context of Kafka Connect. Applied to source or sink connectors, SMTs allow to modify Kafka records before they are sent to Kafka, or after they are consumed from a topic, respectively.
 </span>
 						</div>
 						<p>
 							<a href="/blog/single-message-transforms-swiss-army-knife-of-kafka-connect/">Read More...</a>
-						</p>
-					</div>
-					
-					<div class="post">
-						<div class="meta">May 4, 2020</div>
-						<h4 class="summary">The Emitter Parameter Pattern for Flexible SPI Contracts</h4>
-						<div>
-							<span class="description">For libraries and frameworks it’s a common requirement to make specific aspects customizeable via service provider interfaces (SPIs): contracts to be implemented by the application developer, which then are invoked by framework code, adding new or replacing existing functionality.
- Often times, the method implementations of such an SPI need to return value(s) to the framework. An alternative to return values are &#34;emitter parameters&#34;: passed by the framework to the SPI method, they offer an API for receiving value(s) via method calls. Certainly not revolutionary or even a new idea, I find myself using emitter parameters more and more in libraries and frameworks I work on. Hence I’d like to discuss some advantages I perceive about the emitter parameter pattern.
-</span>
-						</div>
-						<p>
-							<a href="/blog/emitter-parameter-pattern-for-flexible-spis/">Read More...</a>
 						</p>
 					</div>
 					

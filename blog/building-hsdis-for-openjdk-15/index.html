@@ -15,18 +15,18 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Building hsdis for OpenJDK 15 - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta property="og:title" content="Building hsdis for OpenJDK 15" />
 <meta property="og:description" content="
-Lately I&#8217;ve been fascinated by the possibility to analyse the assembly code emitted by the Java JIT (just-in-time) compiler.
+Lately I’ve been fascinated by the possibility to analyse the assembly code emitted by the Java JIT (just-in-time) compiler.
 So far I had only looked only into Java class files using javap;
 diving into the world of assembly code feels a bit like Alice must have felt when falling down the rabbit whole into wonderland.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/building-hsdis-for-openjdk-15/" />
+<meta property="og:url" content="https://www.morling.dev/blog/building-hsdis-for-openjdk-15/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-10-05T20:30:00+02:00" />
 <meta property="article:modified_time" content="2020-10-05T20:30:00+02:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Building hsdis for OpenJDK 15"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Building hsdis for OpenJDK 15"/>
 <meta name="twitter:description" content="
-Lately I&#8217;ve been fascinated by the possibility to analyse the assembly code emitted by the Java JIT (just-in-time) compiler.
+Lately I’ve been fascinated by the possibility to analyse the assembly code emitted by the Java JIT (just-in-time) compiler.
 So far I had only looked only into Java class files using javap;
 diving into the world of assembly code feels a bit like Alice must have felt when falling down the rabbit whole into wonderland.
 "/>
@@ -262,27 +262,27 @@ diving into the world of assembly code feels a bit like Alice must have felt whe
 
 			<div class="markdown">
 				<div class="paragraph">
-<p>Lately I&#8217;ve been fascinated by the possibility to analyse the assembly code emitted by the Java JIT (just-in-time) compiler.
+<p>Lately I’ve been fascinated by the possibility to analyse the assembly code emitted by the Java JIT (just-in-time) compiler.
 So far I had only looked only into Java class files using <em>javap</em>;
 diving into the world of assembly code feels a bit like Alice must have felt when falling down the rabbit whole into wonderland.</p>
 </div>
 <div class="paragraph">
 <p>My motivation for this exploration was trying to understand what is faster in Java:
 a switch statement over strings, or a lookup in a hash map.
-Solely looking at Java bytecode isn&#8217;t going far enough to answer this question,
+Solely looking at Java bytecode isn’t going far enough to answer this question,
 as the difference lies in the actual assembly statements executed on the CPU.
-I&#8217;ll keep the details around that for another time; in this post I&#8217;m just going quickly to share what I learned in regards to building a tool needed for this exercise, <a href="https://github.com/openjdk/jdk/tree/master/src/utils/hsdis"><em>hsdis</em></a>.</p>
+I’ll keep the details around that for another time; in this post I’m just going quickly to share what I learned in regards to building a tool needed for this exercise, <a href="https://github.com/openjdk/jdk/tree/master/src/utils/hsdis"><em>hsdis</em></a>.</p>
 </div>
 <div class="paragraph">
 <p><em>hsdis</em> is a disassembler library which can be used with the <em>java</em> runtime as well as tools such as JitWatch to analyse the code produced by the Java JIT compiler.
-For licensing reasons though it doesn&#8217;t come as a binary with the JDK.
+For licensing reasons though it doesn’t come as a binary with the JDK.
 Instead, you need it to build yourself from source.
 Instructions for doing so are spread across a few different places,
-but I couldn&#8217;t find any 100% current information, in particular as OpenJDK has moved to git and <a href="https://github.com/openjdk/">GitHub</a> just recently.</p>
+but I couldn’t find any 100% current information, in particular as OpenJDK has moved to git and <a href="https://github.com/openjdk/">GitHub</a> just recently.</p>
 </div>
 <div class="paragraph">
 <p>So here is what you need to do in order to build <em>hsdis</em> for OpenJDK 15;
-in my case I&#8217;m running on macOS, slightly different steps may apply for other platforms.
+in my case I’m running on macOS, slightly different steps may apply for other platforms.
 First, get the OpenJDK source code and check out the version for which you want to build <em>hsdis</em>:</p>
 </div>
 <div class="listingblock">
@@ -300,7 +300,7 @@ git checkout jdk-15+36 <span class="c"># Current stable JDK 15 build</span></cod
 </div>
 </div>
 <div class="paragraph">
-<p>In order to build <em>hsdis</em>, you&#8217;ll need the <a href="https://www.gnu.org/software/binutils/">GNU Binutils</a>, a collection of several binary tools:</p>
+<p>In order to build <em>hsdis</em>, you’ll need the <a href="https://www.gnu.org/software/binutils/">GNU Binutils</a>, a collection of several binary tools:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -317,7 +317,7 @@ git checkout jdk-15+36 <span class="c"># Current stable JDK 15 build</span></cod
 </div>
 </div>
 <div class="paragraph">
-<p>This will take a few minutes; if all goes well, there&#8217;ll be <em>hsdis</em> binary in the <em>build</em> directory,
+<p>This will take a few minutes; if all goes well, there’ll be <em>hsdis</em> binary in the <em>build</em> directory,
 in my case this is <em>build/macosx-amd64/hsdis-amd64.dylib</em>.
 Copy the library to <em>lib/server</em> of our JDK:</p>
 </div>
@@ -328,13 +328,13 @@ Copy the library to <em>lib/server</em> of our JDK:</p>
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
 <div class="paragraph">
-<p>If you&#8217;re on Linux, you also can provide the <em>hsdis</em> tool via the <code>LD_LIBRARY_PATH</code> environment variable:</p>
+<p>If you’re on Linux, you also can provide the <em>hsdis</em> tool via the <code>LD_LIBRARY_PATH</code> environment variable:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -342,15 +342,15 @@ Copy the library to <em>lib/server</em> of our JDK:</p>
 </div>
 </div>
 <div class="paragraph">
-<p>Note this won&#8217;t work on current macOS versions unfortunately due to its <a href="https://help.mulesoft.com/s/article/Variables-LD-LIBRARY-PATH-DYLD-LIBRARY-PATH-are-ignored-on-MAC-OS-if-System-Integrity-Protect-SIP-is-enable">System Integrity Protection</a> feature (SIP). Thanks to Brice Dutheil for this tip!</p>
+<p>Note this won’t work on current macOS versions unfortunately due to its <a href="https://help.mulesoft.com/s/article/Variables-LD-LIBRARY-PATH-DYLD-LIBRARY-PATH-are-ignored-on-MAC-OS-if-System-Integrity-Protect-SIP-is-enable">System Integrity Protection</a> feature (SIP). Thanks to Brice Dutheil for this tip!</p>
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Congrats! You now can use the <a href="https://wiki.openjdk.java.net/display/HotSpot/PrintAssembly"><code>XX:+PrintAssembly</code></a> flag of the <em>java</em> command to examine the assembly code of your Java program.
-Let&#8217;s give it a try.
+Let’s give it a try.
 Create a Java source file with the following contents:</p>
 </div>
 <div class="listingblock">
@@ -366,7 +366,7 @@ Create a Java source file with the following contents:</p>
 
   <span class="kd">private</span> <span class="kt">void</span> <span class="nf">hello</span><span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">)</span> <span class="o">{</span>
     <span class="k">if</span> <span class="o">(</span><span class="n">i</span> <span class="o">%</span> <span class="mi">1_000_000</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
-      <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Hello, "</span> <span class="o">+</span> <span class="n">i</span><span class="o">);</span>
+      <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&#34;Hello, &#34;</span> <span class="o">+</span> <span class="n">i</span><span class="o">);</span>
     <span class="o">}</span>
   <span class="o">}</span>
 <span class="o">}</span></code></pre>
@@ -408,8 +408,8 @@ Compiled method <span class="o">(</span>c2<span class="o">)</span>    1409  106 
 <span class="nt">--------------------------------------------------------------------------------</span>
 
 <span class="o">[</span>Entry Point]
-  <span class="c"># {method} {0x000000010d74c4b0} 'hello' '(I)V' in 'PrintAssemblyTest'</span>
-  <span class="c"># this:     rsi:rsi   = 'PrintAssemblyTest'</span>
+  <span class="c"># {method} {0x000000010d74c4b0} &#39;hello&#39; &#39;(I)V&#39; in &#39;PrintAssemblyTest&#39;</span>
+  <span class="c"># this:     rsi:rsi   = &#39;PrintAssemblyTest&#39;</span>
   <span class="c"># parm0:    rdx       = int</span>
   <span class="c">#           [sp+0x30]  (sp of caller)</span>
   0x000000011e3fd000:   mov    0x8<span class="o">(</span>%rsi<span class="o">)</span>,%r10d

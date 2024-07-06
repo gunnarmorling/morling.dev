@@ -15,20 +15,20 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Reworking Git Branches with git filter-branch - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta property="og:title" content="Reworking Git Branches with git filter-branch" />
 <meta property="og:description" content="
-Within Debezium, the project I&#8217;m working on at Red Hat, we recently encountered an &#34;interesting&#34; situation where we had to resolve a rather difficult merge conflict.
+Within Debezium, the project I’m working on at Red Hat, we recently encountered an &#34;interesting&#34; situation where we had to resolve a rather difficult merge conflict.
 As others where interested in how we addressed the issue, and also for our own future reference,
-I&#8217;m going to give a quick run down of the problem we encountered and how we solved it.
+I’m going to give a quick run down of the problem we encountered and how we solved it.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/reworking-git-branches-with-git-filter-branch/" />
+<meta property="og:url" content="https://www.morling.dev/blog/reworking-git-branches-with-git-filter-branch/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-03-16T00:00:10+01:00" />
 <meta property="article:modified_time" content="2020-03-16T00:00:10+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Reworking Git Branches with git filter-branch"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Reworking Git Branches with git filter-branch"/>
 <meta name="twitter:description" content="
-Within Debezium, the project I&#8217;m working on at Red Hat, we recently encountered an &#34;interesting&#34; situation where we had to resolve a rather difficult merge conflict.
+Within Debezium, the project I’m working on at Red Hat, we recently encountered an &#34;interesting&#34; situation where we had to resolve a rather difficult merge conflict.
 As others where interested in how we addressed the issue, and also for our own future reference,
-I&#8217;m going to give a quick run down of the problem we encountered and how we solved it.
+I’m going to give a quick run down of the problem we encountered and how we solved it.
 "/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
@@ -262,15 +262,15 @@ I&#8217;m going to give a quick run down of the problem we encountered and how w
 
 			<div class="markdown">
 				<div class="paragraph">
-<p>Within <a href="https://debezium.io/">Debezium</a>, the project I&#8217;m working on at Red Hat, we recently encountered an "interesting" situation where we had to resolve a rather difficult merge conflict.
+<p>Within <a href="https://debezium.io/">Debezium</a>, the project I’m working on at Red Hat, we recently encountered an &#34;interesting&#34; situation where we had to resolve a rather difficult merge conflict.
 As others where interested in how we addressed the issue, and also for our own future reference,
-I&#8217;m going to give a quick run down of the problem we encountered and how we solved it.</p>
+I’m going to give a quick run down of the problem we encountered and how we solved it.</p>
 </div>
 <div class="sect1">
 <h2 id="_the_problem">The Problem</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Ideally, we&#8217;d only ever work on a single branch and would never have to deal with porting changes between the <em>master</em> and other branches.
+<p>Ideally, we’d only ever work on a single branch and would never have to deal with porting changes between the <em>master</em> and other branches.
 Oftentimes we cannot get around this, though: specific versions of a software may have to be maintained for some time,
 requiring to backport bugfixes from the current development branch to the branch corresponding to the maintained version.</p>
 </div>
@@ -279,7 +279,7 @@ requiring to backport bugfixes from the current development branch to the branch
 To complicate things, this documentation (written in AsciiDoc) has been largely re-organized between <em>master</em> and the targeted older branch, <em>1.0</em>.
 What used to be one large AsciiDoc file for each of the Debezium connectors,
 got split up into multiple smaller files on <em>master</em> now.
-This split was meant to be applied to <em>1.0</em> too, but due to some miscommunication in the team (these things happen, right) this wasn&#8217;t done, whereas an asorted set of documentation changes had been backported already to the larger, monolithic AsciiDoc files.</p>
+This split was meant to be applied to <em>1.0</em> too, but due to some miscommunication in the team (these things happen, right) this wasn’t done, whereas an asorted set of documentation changes had been backported already to the larger, monolithic AsciiDoc files.</p>
 </div>
 <div class="paragraph">
 <p>So the situation we faced was this:</p>
@@ -293,7 +293,7 @@ This split was meant to be applied to <em>1.0</em> too, but due to some miscommu
 <p>smaller, modularized AsciiDoc files on <em>master</em></p>
 </li>
 <li>
-<p>Documentation updates applied on <em>master</em>, of which only a subset is relevant for <em>1.0</em> (new features shouldn&#8217;t be added to the Debezium 1.0 documentation)</p>
+<p>Documentation updates applied on <em>master</em>, of which only a subset is relevant for <em>1.0</em> (new features shouldn’t be added to the Debezium 1.0 documentation)</p>
 </li>
 <li>
 <p>Some of the documentation updates relevant for the <em>1.0</em> branch already had been backported from <em>master</em>, while others had not</p>
@@ -336,14 +336,14 @@ using this command it should be possible to isolate all the documentation change
 </div>
 <div class="paragraph">
 <p>We then reset the contents of the <em>documentation</em> directory to its state as of the 1.0.0.Final release,
-as that&#8217;s where the <em>1.0</em> and <em>master</em> branches diverged.</p>
+as that’s where the <em>1.0</em> and <em>master</em> branches diverged.</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="shell"><span class="nb">rm</span> <span class="nt">-rf</span> documentation
 git add documentation
 git checkout v1.0.0.Final documentation
-git commit <span class="nt">-m</span> <span class="s2">"Resetting documentation dir to v1.0.0.Final"</span>
+git commit <span class="nt">-m</span> <span class="s2">&#34;Resetting documentation dir to v1.0.0.Final&#34;</span>
 
 <span class="c"># This should yield no differences</span>
 git diff v1.0.0.Final..docs_backport documentation</code></pre>
@@ -368,7 +368,7 @@ git filter-branch <span class="nt">-f</span> <span class="nt">--prune-empty</spa
 </div>
 <div class="paragraph">
 <p>The <code>--subdirectory-filter</code> option also moves the contents of the given directory to the root of the repo, though.
-That&#8217;s not exactly what we need.
+That’s not exactly what we need.
 But another option, <code>--tree-filter</code>, lets us restore the original directory layout.
 It allows to run a set of commands against each of the filtered commits.
 We can use this to move the contents of <em>documentation</em> back to that directory:</p>
@@ -376,9 +376,9 @@ We can use this to move the contents of <em>documentation</em> back to that dire
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="shell">git filter-branch <span class="nt">-f</span> <span class="se">\</span>
-    <span class="nt">--tree-filter</span> <span class="s1">'mkdir -p documentation; \
+    <span class="nt">--tree-filter</span> <span class="s1">&#39;mkdir -p documentation; \
       mv antora.yml documentation 1&gt;/dev/null 2&gt;/dev/null; \
-      mv modules documentation 1&gt;/dev/null 2&gt;/dev/null;'</span> <span class="se">\</span>
+      mv modules documentation 1&gt;/dev/null 2&gt;/dev/null;&#39;</span> <span class="se">\</span>
     v1.0.0.Final..docs_filtered</code></pre>
 </div>
 </div>
@@ -431,19 +431,19 @@ i.e. the following should yield no differences:</p>
 </div>
 </div>
 <div class="paragraph">
-<p>The last and missing step is to do another rebase of all the documentation commits, discarding those that apply to any features that didn&#8217;t get backported to 1.0.</p>
+<p>The last and missing step is to do another rebase of all the documentation commits, discarding those that apply to any features that didn’t get backported to 1.0.</p>
 </div>
 <div class="paragraph">
 <p>Thankfully, my partner-in-crime Jiri Pechanec stepped in here:
 as he had done the original feature backport,
-it didn&#8217;t take him too long to go through the list of documentation commits and identify those which were relevant for the 1.0 code base.
+it didn’t take him too long to go through the list of documentation commits and identify those which were relevant for the 1.0 code base.
 After one more interactive rebase for applying those we finally were in a state, where all the required documentation changes had been backported.</p>
 </div>
 <div class="paragraph">
-<p>Looking at the 1.0 history, you&#8217;d still see some partial documentation changes up to the point, where we decided to start all over and revert these.
+<p>Looking at the 1.0 history, you’d still see some partial documentation changes up to the point, where we decided to start all over and revert these.
 Theoretically we could do another git filter run to exclude those,
 but we decided against that,
-as we already had done releases off of the 1.0 branch and didn&#8217;t want to alter the commit history of a released branch after the fact.</p>
+as we already had done releases off of the 1.0 branch and didn’t want to alter the commit history of a released branch after the fact.</p>
 </div>
 </div>
 </div>

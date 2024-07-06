@@ -24,11 +24,11 @@ JFR continues to become better and better with every new release,
 with one recent addition being support for native memory tracking (NMT).
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/tracking-java-native-memory-with-jdk-flight-recorder/" />
+<meta property="og:url" content="https://www.morling.dev/blog/tracking-java-native-memory-with-jdk-flight-recorder/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2023-12-17T19:29:00+01:00" />
 <meta property="article:modified_time" content="2023-12-17T19:29:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Tracking Java Native Memory With JDK Flight Recorder"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Tracking Java Native Memory With JDK Flight Recorder"/>
 <meta name="twitter:description" content="
 Update Dec 18: This post is discussed on Hacker News 🍊
 
@@ -288,7 +288,7 @@ To learn more about NMT, I highly recommend to read the excellent post <a href="
 </div>
 <div class="paragraph">
 <p>Until recently, in order to access NMT,
-you&#8217;d have to use the <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/jcmd.html"><em>jcmd</em></a> command line tool for capturing the values of a running JVM in an ad-hoc way.
+you’d have to use the <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/jcmd.html"><em>jcmd</em></a> command line tool for capturing the values of a running JVM in an ad-hoc way.
 Whereas since Java 20,
 you can record NMT data continuously with JFR,
 thanks to two new JFR event types added for this purpose.
@@ -298,30 +298,30 @@ for instance for integration with dashboards and monitoring solutions.</p>
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
 <div class="paragraph">
 <p>The list of JFR event types grows with every release.
-If you&#8217;d like to learn which event types are available in which Java version, take a look at the <a href="https://sap.github.io/SapMachine/jfrevents/">JFR Events</a> list compiled by <a href="https://twitter.com/parttimen3rd">Johannes Bechberger</a> from the <a href="https://sapmachine.io">Java team at SAP</a>.
+If you’d like to learn which event types are available in which Java version, take a look at the <a href="https://sap.github.io/SapMachine/jfrevents/">JFR Events</a> list compiled by <a href="https://twitter.com/parttimen3rd">Johannes Bechberger</a> from the <a href="https://sapmachine.io">Java team at SAP</a>.
 It also shows you the events added in a particular version, for instance <a href="https://sap.github.io/SapMachine/jfrevents/21.html">here</a> for the new events in Java 21.</p>
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="sect1">
 <h2 id="_an_example">An Example</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>So let&#8217;s see how NMT data is reported via JFR.
-Here&#8217;s a simple example program which allocates some off heap memory,
+<p>So let’s see how NMT data is reported via JFR.
+Here’s a simple example program which allocates some off heap memory,
 once using a good old <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/nio/ByteBuffer.html#direct-vs-non-direct-buffers-heading">direct byte buffer</a>,
 and once using the new <a href="https://openjdk.org/jeps/454">Foreign Memory API</a>,
 finalized in Java 22 with JEP 454
-(it feels <em>so</em> nice to be able to allocate 4GB at once, something you couldn&#8217;t do before):</p>
+(it feels <em>so</em> nice to be able to allocate 4GB at once, something you couldn’t do before):</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -356,21 +356,21 @@ finalized in Java 22 with JEP 454
 <span class="kn">import</span> <span class="nn">static</span> <span class="n">java</span><span class="o">.</span><span class="na">time</span><span class="o">.</span><span class="na">LocalDateTime</span><span class="o">.</span><span class="na">now</span><span class="o">;</span>
 
 <span class="kd">public</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
-  <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="no">STR</span><span class="o">.</span><span class="s">"\{ now() } Started"</span><span class="o">);</span>
+  <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="no">STR</span><span class="o">.</span><span class="s">&#34;\{ now() } Started&#34;</span><span class="o">);</span>
   <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">5000</span><span class="o">);</span>
 
   <span class="nc">ByteBuffer</span> <span class="n">buffer</span> <span class="o">=</span> <span class="nc">ByteBuffer</span><span class="o">.</span><span class="na">allocateDirect</span><span class="o">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="o">);</span>
-  <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="no">STR</span><span class="o">.</span><span class="s">"\{ now() } Allocated (Direct)"</span><span class="o">);</span>
+  <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="no">STR</span><span class="o">.</span><span class="s">&#34;\{ now() } Allocated (Direct)&#34;</span><span class="o">);</span>
   <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">5000</span><span class="o">);</span>
 
   <span class="k">try</span> <span class="o">(</span><span class="nc">Arena</span> <span class="n">arena</span> <span class="o">=</span> <span class="nc">Arena</span><span class="o">.</span><span class="na">ofConfined</span><span class="o">())</span> <span class="o">{</span>
     <span class="nc">MemorySegment</span> <span class="n">segment</span> <span class="o">=</span> <span class="n">arena</span><span class="o">.</span><span class="na">allocate</span><span class="o">(</span><span class="mi">4L</span> <span class="o">*</span> <span class="mi">1024L</span> <span class="o">*</span> <span class="mi">1024L</span> <span class="o">*</span> <span class="mi">1024L</span><span class="o">);</span>
-    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="no">STR</span><span class="o">.</span><span class="s">"\{ now() } Allocated (FMI)"</span><span class="o">);</span>
+    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="no">STR</span><span class="o">.</span><span class="s">&#34;\{ now() } Allocated (FMI)&#34;</span><span class="o">);</span>
     <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">5000</span><span class="o">);</span>
   <span class="o">}</span>
 
   <span class="n">buffer</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
-  <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="no">STR</span><span class="o">.</span><span class="s">"\{ now() } Deallocated"</span><span class="o">);</span>
+  <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="no">STR</span><span class="o">.</span><span class="s">&#34;\{ now() } Deallocated&#34;</span><span class="o">);</span>
   <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">5000</span><span class="o">);</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
@@ -378,12 +378,12 @@ finalized in Java 22 with JEP 454
 </div>
 <div class="paragraph">
 <p>JFR records NMT events every second by default,
-so I&#8217;ve sprinkled in some <code>sleep()</code> calls to make sure the program runs long enough and the different allocations are spread out a bit.
-Just for the fun of it, I&#8217;m also using a top-level main method—as supported by <a href="https://openjdk.org/jeps/463">JEP 463</a>—and string templates for the log messages (<a href="https://openjdk.org/jeps/459">JEP 459</a>).</p>
+so I’ve sprinkled in some <code>sleep()</code> calls to make sure the program runs long enough and the different allocations are spread out a bit.
+Just for the fun of it, I’m also using a top-level main method—as supported by <a href="https://openjdk.org/jeps/463">JEP 463</a>—and string templates for the log messages (<a href="https://openjdk.org/jeps/459">JEP 459</a>).</p>
 </div>
 <div class="paragraph">
-<p>Let&#8217;s run this and see how those off-heap allocations are tracked by JFR.
-Somewhat surprisingly, NMT in JFR is controlled via the <code>gc</code> setting, which must be set to a value of "normal", "detailed", "high", or "all" for recording NMT data.
+<p>Let’s run this and see how those off-heap allocations are tracked by JFR.
+Somewhat surprisingly, NMT in JFR is controlled via the <code>gc</code> setting, which must be set to a value of &#34;normal&#34;, &#34;detailed&#34;, &#34;high&#34;, or &#34;all&#34; for recording NMT data.
 This is the case for the <em>default</em> and <em>profile</em> JFR configurations which ship with the SDK,
 so using either configuration will give you the NMT data.
 Note though that in addition, NMT itself must be enabled using the <code>-XX:NativeMemoryTracking</code> JVM option:</p>
@@ -414,14 +414,14 @@ Note though that in addition, NMT itself must be enabled using the <code>-XX:Nat
 </div>
 </div>
 <div class="paragraph">
-<p>Let&#8217;s open the recording in JDK Mission Control and see what we find.
-As of version 8.3, JMC doesn&#8217;t have a bespoke view for displaying NMT data,
+<p>Let’s open the recording in JDK Mission Control and see what we find.
+As of version 8.3, JMC doesn’t have a bespoke view for displaying NMT data,
 but the NMT events show up in the generic event browser view.
-There are two event types, the first one being <a href="https://sap.github.io/SapMachine/jfrevents/#nativememoryusagetotal">"Total Native Memory Usage"</a>:</p>
+There are two event types, the first one being <a href="https://sap.github.io/SapMachine/jfrevents/#nativememoryusagetotal">&#34;Total Native Memory Usage&#34;</a>:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/nmt_jfr_total.png" alt="nmt jfr total">
+<img src="/images/nmt_jfr_total.png" alt="nmt jfr total"/>
 </div>
 </div>
 <div class="paragraph">
@@ -429,21 +429,21 @@ There are two event types, the first one being <a href="https://sap.github.io/Sa
 We also see one of the advantages of the new Foreign Memory API:
 the memory is deallocated as soon as the <code>Arena</code> object is closed,
 whereas the JVM holds on to the memory of the byte buffer also after discarding the reference.
-There&#8217;s no control over when this memory will be released exactly,
+There’s no control over when this memory will be released exactly,
 it will be done via a <a href="https://stackoverflow.com/questions/36077641/java-when-does-direct-buffer-released">phantom-reference-based cleaner</a> some time after the GC has removed the associated buffer object.</p>
 </div>
 <div class="paragraph">
-<p>The second new event type, <a href="https://sap.github.io/SapMachine/jfrevents/#nativememoryusage">"Native Memory Usage Per Type"</a>, provides a more fine grained view (when setting <code>-XX:NativeMemoryTracking</code> to <code>detail</code> rather than <code>summary</code>).
-The off-heap allocations show up under the "Other" category there:</p>
+<p>The second new event type, <a href="https://sap.github.io/SapMachine/jfrevents/#nativememoryusage">&#34;Native Memory Usage Per Type&#34;</a>, provides a more fine grained view (when setting <code>-XX:NativeMemoryTracking</code> to <code>detail</code> rather than <code>summary</code>).
+The off-heap allocations show up under the &#34;Other&#34; category there:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/nmt_jfr_per_type.png" alt="nmt jfr per type">
+<img src="/images/nmt_jfr_per_type.png" alt="nmt jfr per type"/>
 </div>
 </div>
 <div class="paragraph">
 <p><em>Update Dec 18:</em> As OpenJDK developer Eric Gahlin <a href="https://twitter.com/ErikGahlin/status/1736530559231201484">pointed out</a>,
-you also can take a high-level view at the NMT events of a recording using the JDK&#8217;s <em>jfr</em> tool,
+you also can take a high-level view at the NMT events of a recording using the JDK’s <em>jfr</em> tool,
 which provides two <a href="https://egahlin.github.io/2023/05/30/views.html">built-in views</a> for committed and reserved memory:</p>
 </div>
 <div class="listingblock">
@@ -525,12 +525,12 @@ Thread Stack                          0 bytes   0 bytes       0 bytes   0 bytes
 <div class="paragraph">
 <p>As per the docs, NMT will cause a performance overhead of 5% - 10%
 (how large the overhead actually is, <a href="https://stackoverflow.com/questions/73126185/what-is-overhead-of-java-native-memory-tracking-in-summary-mode/73167790">depends a lot</a> on the specific workload),
-so it&#8217;s probably not something you&#8217;d want to do permanently in a production setting.
-Luckily, Java 21 adds another JFR event type, <a href="https://sap.github.io/SapMachine/jfrevents/#residentsetsize">"Resident Set Size"</a> (RSS), which allows you to track the overall memory consumption of your application on an ongoing basis:</p>
+so it’s probably not something you’d want to do permanently in a production setting.
+Luckily, Java 21 adds another JFR event type, <a href="https://sap.github.io/SapMachine/jfrevents/#residentsetsize">&#34;Resident Set Size&#34;</a> (RSS), which allows you to track the overall memory consumption of your application on an ongoing basis:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/nmt_jfr_rss.png" alt="nmt jfr rss">
+<img src="/images/nmt_jfr_rss.png" alt="nmt jfr rss"/>
 </div>
 </div>
 <div class="paragraph">
@@ -542,7 +542,7 @@ and also allows you to correlate it with other relevant JFR events, for instance
 <p>With JFR event streaming, you could also expose a live feed of the value to remote monitoring clients,
 allowing you to keep track visually using a dashboard.
 But you also could apply some kind of pattern matching to this time series of values,
-triggering an alert when it continues to grow also after the application&#8217;s warm-up phase.</p>
+triggering an alert when it continues to grow also after the application’s warm-up phase.</p>
 </div>
 <div class="paragraph">
 <p>I am planning to explore how to do this with a bit of SQL using <a href="https://github.com/moditect/jfr-analytics">JFR Analytics</a> in a future blog post.</p>

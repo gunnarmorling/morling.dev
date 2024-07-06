@@ -18,7 +18,7 @@
 Unit testing, for performance
 
 
-It&#8217;s with great pleasure that I&#8217;m announcing the first official release of JfrUnit today!
+It’s with great pleasure that I’m announcing the first official release of JfrUnit today!
 
 
 JfrUnit is an extension to JUnit which allows you to assert JDK Flight Recorder events in your unit tests.
@@ -38,16 +38,16 @@ You can use JfrUnit together with JMC Agent for whitebox tests of your applicati
 
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/introducing-jfrunit-1-0-0-alpha1/" />
+<meta property="og:url" content="https://www.morling.dev/blog/introducing-jfrunit-1-0-0-alpha1/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2021-08-04T19:10:00+02:00" />
 <meta property="article:modified_time" content="2021-08-04T19:10:00+02:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Introducing JfrUnit 1.0.0.Alpha1"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Introducing JfrUnit 1.0.0.Alpha1"/>
 <meta name="twitter:description" content="
 Unit testing, for performance
 
 
-It&#8217;s with great pleasure that I&#8217;m announcing the first official release of JfrUnit today!
+It’s with great pleasure that I’m announcing the first official release of JfrUnit today!
 
 
 JfrUnit is an extension to JUnit which allows you to assert JDK Flight Recorder events in your unit tests.
@@ -301,7 +301,7 @@ You can use JfrUnit together with JMC Agent for whitebox tests of your applicati
 <p><em>Unit testing, for performance</em></p>
 </div>
 <div class="paragraph">
-<p>It&#8217;s with great pleasure that I&#8217;m announcing the first official release of JfrUnit today!</p>
+<p>It’s with great pleasure that I’m announcing the first official release of JfrUnit today!</p>
 </div>
 <div class="paragraph">
 <p><a href="https://github.com/moditect/jfrunit">JfrUnit</a> is an extension to JUnit which allows you to assert <a href="https://openjdk.java.net/jeps/328">JDK Flight Recorder</a> events in your unit tests.
@@ -326,7 +326,7 @@ This capability opens up a number of interesting use cases in the field of testi
 <div class="paragraph">
 <p>JfrUnit is available on Maven Central
 (a big shout-out to <a href="https://twitter.com/aalmiray">Andres Almiray</a> for setting up a fully automated release pipeline using the excellent <a href="https://jreleaser.org/">JReleaser</a> project!).
-If you&#8217;re working with Apache Maven, add the following dependency to your <em>pom.xml</em> file:</p>
+If you’re working with Apache Maven, add the following dependency to your <em>pom.xml</em> file:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -342,11 +342,11 @@ If you&#8217;re working with Apache Maven, add the following dependency to your 
 </div>
 <div class="paragraph">
 <p>Alternatively, you can of course build JfrUnit from source yourself,
-<a href="https://github.com/moditect/jfrunit#build">as described</a> in the project&#8217;s README file.</p>
+<a href="https://github.com/moditect/jfrunit#build">as described</a> in the project’s README file.</p>
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
@@ -364,7 +364,7 @@ Besides JfrUnit, the following project are currently developed under the ModiTec
 <p><strong><a href="https://github.com/moditect/moditect">ModiTect</a></strong>: this eponymous project provides tooling for the Java Module System, e.g. for adding module descriptors while building with Java 8, creating jlink images, etc.</p>
 </li>
 <li>
-<p><strong><a href="https://github.com/moditect/layrry">Layrry</a></strong>: a Runner and API for layered Java applications, which lets you use the module system&#8217;s notion of module layers for implementing plug-in architectures, loading multiple versions of one dependency into your application, etc.</p>
+<p><strong><a href="https://github.com/moditect/layrry">Layrry</a></strong>: a Runner and API for layered Java applications, which lets you use the module system’s notion of module layers for implementing plug-in architectures, loading multiple versions of one dependency into your application, etc.</p>
 </li>
 <li>
 <p><strong><a href="https://github.com/moditect/deptective">Deptective</a></strong> 🕵️: a plug-in for the javac compiler for analysing, validating and enforcing well-defined relationships between the packages of a Java application</p>
@@ -373,7 +373,7 @@ Besides JfrUnit, the following project are currently developed under the ModiTec
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>With that dependency in place, the steps of using JfrUnit are the following:</p>
@@ -392,13 +392,13 @@ Besides JfrUnit, the following project are currently developed under the ModiTec
 </ul>
 </div>
 <div class="paragraph">
-<p>To make things more tangible, here&#8217;s an example that asserts the memory allocation done by a Quarkus-based web application for a specific use case:</p>
+<p>To make things more tangible, here’s an example that asserts the memory allocation done by a Quarkus-based web application for a specific use case:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="java"><span class="nd">@Test</span>
-<span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">"jdk.ObjectAllocationInNewTLAB"</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
-<span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">"jdk.ObjectAllocationOutsideTLAB"</span><span class="o">)</span>
+<span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">&#34;jdk.ObjectAllocationInNewTLAB&#34;</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
+<span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">&#34;jdk.ObjectAllocationOutsideTLAB&#34;</span><span class="o">)</span>
 <span class="kd">public</span> <span class="kt">void</span> <span class="nf">retrieveTodoShouldYieldExpectedAllocation</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
     <span class="nc">Random</span> <span class="n">r</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Random</span><span class="o">();</span>
 
@@ -437,7 +437,7 @@ Besides JfrUnit, the following project are currently developed under the ModiTec
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Enable the <code>jdk.ObjectAllocationInNewTLAB</code> and <code>jdk.ObjectAllocationOutsideTLAB</code> JFR event types; on Java 16 and beyond, you could also use the new <code>jdk.ObjectAllocationSample</code> type instead</td>
 </tr>
@@ -459,13 +459,13 @@ Besides JfrUnit, the following project are currently developed under the ModiTec
 </tr>
 <tr>
 <td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>Run assertions against the JFR events, in this case summing up all memory allocations and asserting that the value per REST call isn&#8217;t larger than 33K (the exact threshold has been determined upfront)</td>
+<td>Run assertions against the JFR events, in this case summing up all memory allocations and asserting that the value per REST call isn’t larger than 33K (the exact threshold has been determined upfront)</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>The general idea behind this testing approach is that a regression in regards to metrics like memory allocation or I/O&#8201;&#8212;&#8201;e.g. with a database&#8201;&#8212;&#8201;can be a hint for a performance degredation.
-Allocating more memory than anticipated may be an indicator that your application started to do something which it hadn&#8217;t done before, and which may impact its latency and through-put characteristics.</p>
+<p>The general idea behind this testing approach is that a regression in regards to metrics like memory allocation or I/O — e.g. with a database — can be a hint for a performance degredation.
+Allocating more memory than anticipated may be an indicator that your application started to do something which it hadn’t done before, and which may impact its latency and through-put characteristics.</p>
 </div>
 <div class="paragraph">
 <p>To learn more about this approach for identifying potential performance regressions,
@@ -481,7 +481,7 @@ please refer to <a href="/blog/towards-continuous-performance-regression-testing
 instead of the Java-based API,
 you can also use Groovy and the <a href="https://spockframework.org/">Spock framework</a> for your JfrUnit tests,
 which makes for very compact and nicely readable tests.
-Here&#8217;s an example for asserting two JFR events using the Spock integration:</p>
+Here’s an example for asserting two JFR events using the Spock integration:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -489,23 +489,23 @@ Here&#8217;s an example for asserting two JFR events using the Spock integration
 
     <span class="n">JfrEvents</span> <span class="n">jfrEvents</span> <span class="o">=</span> <span class="k">new</span> <span class="n">JfrEvents</span><span class="o">()</span>
 
-    <span class="nd">@EnableEvent</span><span class="o">(</span><span class="s1">'jdk.GarbageCollection'</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
-    <span class="nd">@EnableEvent</span><span class="o">(</span><span class="s1">'jdk.ThreadSleep'</span><span class="o">)</span>
-    <span class="kt">def</span> <span class="s1">'should Have GC And Sleep Events'</span><span class="o">()</span> <span class="o">{</span>
+    <span class="nd">@EnableEvent</span><span class="o">(</span><span class="s1">&#39;jdk.GarbageCollection&#39;</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="nd">@EnableEvent</span><span class="o">(</span><span class="s1">&#39;jdk.ThreadSleep&#39;</span><span class="o">)</span>
+    <span class="kt">def</span> <span class="s1">&#39;should Have GC And Sleep Events&#39;</span><span class="o">()</span> <span class="o">{</span>
         <span class="nl">when:</span> <i class="conum" data-value="2"></i><b>(2)</b>
         <span class="n">System</span><span class="o">.</span><span class="na">gc</span><span class="o">()</span>
         <span class="n">sleep</span><span class="o">(</span><span class="mi">1000</span><span class="o">)</span>
 
         <span class="nl">then:</span> <i class="conum" data-value="3"></i><b>(3)</b>
-        <span class="n">jfrEvents</span><span class="o">[</span><span class="s1">'jdk.GarbageCollection'</span><span class="o">]</span>
-        <span class="n">jfrEvents</span><span class="o">[</span><span class="s1">'jdk.ThreadSleep'</span><span class="o">].</span><span class="na">withTime</span><span class="o">(</span><span class="n">Duration</span><span class="o">.</span><span class="na">ofMillis</span><span class="o">(</span><span class="mi">1000</span><span class="o">))</span>
+        <span class="n">jfrEvents</span><span class="o">[</span><span class="s1">&#39;jdk.GarbageCollection&#39;</span><span class="o">]</span>
+        <span class="n">jfrEvents</span><span class="o">[</span><span class="s1">&#39;jdk.ThreadSleep&#39;</span><span class="o">].</span><span class="na">withTime</span><span class="o">(</span><span class="n">Duration</span><span class="o">.</span><span class="na">ofMillis</span><span class="o">(</span><span class="mi">1000</span><span class="o">))</span>
     <span class="o">}</span>
 <span class="o">}</span></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Enable the <code>jdk.GarbageCollection</code> and <code>jdk.ThreadSleep</code> event types</td>
 </tr>
@@ -517,7 +517,7 @@ Here&#8217;s an example for asserting two JFR events using the Spock integration
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>Assert the events; thanks to the integration with Spock, no explicit barrier for awaiting all events is needed</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>To learn more about the Spock-based approach of using JfrUnit,
@@ -536,11 +536,11 @@ which shows some common usages the project.</p>
 <div class="paragraph">
 <p>This first Alpha release is an important milestone for the JfrUnit project.
 Since its inception in the December of last year,
-I&#8217;ve received tons of invaluable feedback, and the project has matured quite a bit.</p>
+I’ve received tons of invaluable feedback, and the project has matured quite a bit.</p>
 </div>
 <div class="paragraph">
 <p>In terms of next steps, apart from further expanding and honing the API,
-one area I&#8217;d like to explore with JfrUnit is keeping track of and analysing historical event data from multiple test runs over a longer period of time.</p>
+one area I’d like to explore with JfrUnit is keeping track of and analysing historical event data from multiple test runs over a longer period of time.</p>
 </div>
 <div class="paragraph">
 <p>For instance, consider a case where your REST call allocates 33 KB today, 40 KB next month, 50 KB the month after, etc.
@@ -549,11 +549,11 @@ For identifying and analysing such trends,
 loading JfrUnit result data into a time series database, or repository systems like <a href="https://github.com/Hyperfoil/Horreum">Hyperfoil Horreum</a>, may be a very interesting feature.</p>
 </div>
 <div class="paragraph">
-<p>On a related note, <a href="https://twitter.com/JohnnyDoItAll">John O&#8217;Hara</a> has <a href="https://github.com/moditect/jfrunit/issues/71">started work</a> towards automated event analysis using the rules system of JDK Mission Control,
+<p>On a related note, <a href="https://twitter.com/JohnnyDoItAll">John O’Hara</a> has <a href="https://github.com/moditect/jfrunit/issues/71">started work</a> towards automated event analysis using the rules system of JDK Mission Control,
 so stay tuned for some really exciting developments in this area!</p>
 </div>
 <div class="paragraph">
-<p>Last but not least, I&#8217;d like say thank you to all the folks helping with the work on JfrUnit,
+<p>Last but not least, I’d like say thank you to all the folks helping with the work on JfrUnit,
 be it through discussions, raising feature requests or bug reports, or code changes,
 including the following fine folks who have contributed to the JfrUnit repository at this point:
 <a href="https://github.com/aalmiray">Andres Almiray</a>,

@@ -15,22 +15,22 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Is your Blocking Queue... Blocking? - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta property="og:title" content="Is your Blocking Queue... Blocking?" />
 <meta property="og:description" content="
-Java&#8217;s BlockingQueue hierarchy is widely used for coordinating work between different producer and consumer threads.
+Java’s BlockingQueue hierarchy is widely used for coordinating work between different producer and consumer threads.
 When set up with a maximum capacity (i.e. a bounded queue), no more elements can be added by producers to the queue once it is full, until a consumer has taken at least one element.
 For scenarios where new work may arrive more quickly than it can be consumed, this applies means of back-pressure,
-ensuring the application doesn&#8217;t run out of memory eventually, while enqueuing more and more work items.
+ensuring the application doesn’t run out of memory eventually, while enqueuing more and more work items.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/is-your-blocking-queue-blocking/" />
+<meta property="og:url" content="https://www.morling.dev/blog/is-your-blocking-queue-blocking/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2023-01-03T22:10:00+01:00" />
 <meta property="article:modified_time" content="2023-01-03T22:10:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Is your Blocking Queue... Blocking?"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Is your Blocking Queue... Blocking?"/>
 <meta name="twitter:description" content="
-Java&#8217;s BlockingQueue hierarchy is widely used for coordinating work between different producer and consumer threads.
+Java’s BlockingQueue hierarchy is widely used for coordinating work between different producer and consumer threads.
 When set up with a maximum capacity (i.e. a bounded queue), no more elements can be added by producers to the queue once it is full, until a consumer has taken at least one element.
 For scenarios where new work may arrive more quickly than it can be consumed, this applies means of back-pressure,
-ensuring the application doesn&#8217;t run out of memory eventually, while enqueuing more and more work items.
+ensuring the application doesn’t run out of memory eventually, while enqueuing more and more work items.
 "/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
@@ -264,21 +264,21 @@ ensuring the application doesn&#8217;t run out of memory eventually, while enque
 
 			<div class="markdown">
 				<div class="paragraph">
-<p>Java&#8217;s <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/BlockingQueue.html"><code>BlockingQueue</code></a> hierarchy is widely used for coordinating work between different producer and consumer threads.
+<p>Java’s <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/BlockingQueue.html"><code>BlockingQueue</code></a> hierarchy is widely used for coordinating work between different producer and consumer threads.
 When set up with a maximum capacity (i.e. a <em>bounded queue</em>), no more elements can be added by producers to the queue once it is full, until a consumer has taken at least one element.
 For scenarios where new work may arrive more quickly than it can be consumed, this applies means of back-pressure,
-ensuring the application doesn&#8217;t run out of memory eventually, while enqueuing more and more work items.</p>
+ensuring the application doesn’t run out of memory eventually, while enqueuing more and more work items.</p>
 </div>
 <div class="admonitionblock note">
 <table>
-<tr>
+<tbody><tr>
 <td class="icon">
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
 <div class="paragraph">
 <p>One interesting usage of blocking queues is to buffer writes to a database.
-Let&#8217;s take <a href="https://www.sqlite.org/index.html">SQLite</a>, an embedded RDBMS, as an example;
+Let’s take <a href="https://www.sqlite.org/index.html">SQLite</a>, an embedded RDBMS, as an example;
 SQLite only allows for a single writer at any given time,
 and it tends to yield a sub-optimal write through-put when executing many small transactions.</p>
 </div>
@@ -293,16 +293,16 @@ executing one single transaction for all work items of a batch.</p>
 <div class="paragraph">
 <p>This results in a much better performance compared to each thread executing its own individual write transaction,
 in particular when keeping those open for the entire duration of web requests,
-as it&#8217;s commonly the case with most web frameworks.
+as it’s commonly the case with most web frameworks.
 More on that architecture, in particular in regards to failure handling, in a future blog post.</p>
 </div>
 </td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>How do you find out though when a producer actually is blocked while trying to add items to a <code>BlockingQueue</code>?
-After all, this is an indicator that the through-put of your system isn&#8217;t as high as it would need to be in order to fully satisfy the workload submitted by the producers.</p>
+After all, this is an indicator that the through-put of your system isn’t as high as it would need to be in order to fully satisfy the workload submitted by the producers.</p>
 </div>
 <div class="paragraph">
 <p>If you have the means of running a profiler against the system,
@@ -313,37 +313,37 @@ as is the case here.</p>
 </div>
 <div class="paragraph">
 <p>But what when connecting with a wall-clock profiler is not an option?
-In this case, <a href="https://openjdk.org/jeps/328">JDK Flight Recorder</a>, Java&#8217;s go-to tool for all kinds of performance analyses,
+In this case, <a href="https://openjdk.org/jeps/328">JDK Flight Recorder</a>, Java’s go-to tool for all kinds of performance analyses,
 and its accompanying client, JDK Mission Control (JMC),
 can be of help to you.
-JFR specifically has been designed as an "always-on" event recording engine for usage in production environment.
-It doesn&#8217;t provide bespoke support for identifying blocked queue producers, though.
-<code>BlockingQueue</code> implementations such as <code>ArrayBlockingQueue</code> don&#8217;t use Java intrinsic locks
-(i.e. what you&#8217;d get when using the <code>synchronized</code> keyword),
+JFR specifically has been designed as an &#34;always-on&#34; event recording engine for usage in production environment.
+It doesn’t provide bespoke support for identifying blocked queue producers, though.
+<code>BlockingQueue</code> implementations such as <code>ArrayBlockingQueue</code> don’t use Java intrinsic locks
+(i.e. what you’d get when using the <code>synchronized</code> keyword),
 but rather locks based on the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/locks/LockSupport.html"><code>LockSupport</code></a> primitives.
-These <a href="https://bugs.openjdk.org/browse/JMC-3619">don&#8217;t show up</a> in the "Lock Instances" view in JMC at this point.</p>
+These <a href="https://bugs.openjdk.org/browse/JMC-3619">don’t show up</a> in the &#34;Lock Instances&#34; view in JMC at this point.</p>
 </div>
 <div class="sect1">
 <h2 id="_emitting_custom_events">Emitting Custom Events</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>One possible solution is to emit <a href="/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/">custom JFR events</a> from within your own code whenever you&#8217;re trying to submit an item to a bounded queue at its maximum capacity.
-For this, you couldn&#8217;t use the <code>put()</code> method of the <code>BlockingQueue</code> interface, though,
-as it actually is blocking and you&#8217;d have no way to react to that.</p>
+<p>One possible solution is to emit <a href="/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/">custom JFR events</a> from within your own code whenever you’re trying to submit an item to a bounded queue at its maximum capacity.
+For this, you couldn’t use the <code>put()</code> method of the <code>BlockingQueue</code> interface, though,
+as it actually is blocking and you’d have no way to react to that.</p>
 </div>
 <div class="paragraph">
-<p>Instead, you&#8217;d have to rely on either <code>offer()</code> (which returns <code>false</code> when it cannot submit an item) or <code>add()</code> (which raises an exception).
-When the queue is full and you can&#8217;t submit another item, you&#8217;d instantiate your custom JFR event type, retry to submit the item for as long as it&#8217;s needed,
+<p>Instead, you’d have to rely on either <code>offer()</code> (which returns <code>false</code> when it cannot submit an item) or <code>add()</code> (which raises an exception).
+When the queue is full and you can’t submit another item, you’d instantiate your custom JFR event type, retry to submit the item for as long as it’s needed,
 and finally commit the JFR event.
 Needless to say that this kind of busy waiting is not only rather inefficient,
-you&#8217;d also have to remember to implement this pattern in all your blocking queue producers of your program.</p>
+you’d also have to remember to implement this pattern in all your blocking queue producers of your program.</p>
 </div>
 <div class="paragraph">
 <p>A better option, at least in theory, would be to use the <a href="https://github.com/openjdk/jmc/blob/master/agent/README.md">JMC Agent</a>.
 Part of the JDK Mission Control project, this Java agent allows you to instrument the byte code of existing methods,
 so that a JFR event will be emitted whenever they are invoked.
 The configuration of JMC Agent happens via an XML file and is rather straightforward.
-Here&#8217;s how instrumenting the <code>put()</code> method of the <code>ArrayBlockingQueue</code> type would look like:</p>
+Here’s how instrumenting the <code>put()</code> method of the <code>ArrayBlockingQueue</code> type would look like:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -370,7 +370,7 @@ Here&#8217;s how instrumenting the <code>put()</code> method of the <code>ArrayB
 21
 22
 23
-</pre></td><td class="code"><pre><span class="cp">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+</pre></td><td class="code"><pre><span class="cp">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
 <span class="nt">&lt;jfragent&gt;</span>
   <span class="nt">&lt;config&gt;</span>
     <span class="nt">&lt;classprefix&gt;</span>__JFREvent<span class="nt">&lt;/classprefix&gt;</span>
@@ -379,7 +379,7 @@ Here&#8217;s how instrumenting the <code>put()</code> method of the <code>ArrayB
   <span class="nt">&lt;/config&gt;</span>
 
   <span class="nt">&lt;events&gt;</span>
-    <span class="nt">&lt;event</span> <span class="na">id=</span><span class="s">"queue.Put"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;event</span> <span class="na">id=</span><span class="s">&#34;queue.Put&#34;</span><span class="nt">&gt;</span>
       <span class="nt">&lt;label&gt;</span>Put<span class="nt">&lt;/label&gt;</span>
       <span class="nt">&lt;description&gt;</span>Queue Put<span class="nt">&lt;/description&gt;</span>
       <span class="nt">&lt;path&gt;</span>Queues<span class="nt">&lt;/path&gt;</span>
@@ -397,16 +397,16 @@ Here&#8217;s how instrumenting the <code>put()</code> method of the <code>ArrayB
 </div>
 </div>
 <div class="paragraph">
-<p>With this agent configuration in place, you&#8217;d get an event for <em>every</em> invocation of <code>put()</code> though,
+<p>With this agent configuration in place, you’d get an event for <em>every</em> invocation of <code>put()</code> though,
 no matter whether it actually is blocking or not.
 While you might be able to make some educated guess based on the duration of these events,
-that&#8217;s not totally reliable.
-For instance, you couldn&#8217;t be quite sure whether a "long" event actually is caused by blocking on the queue or by some GC activity.</p>
+that’s not totally reliable.
+For instance, you couldn’t be quite sure whether a &#34;long&#34; event actually is caused by blocking on the queue or by some GC activity.</p>
 </div>
 <div class="paragraph">
 <p>So how about going one level deeper then?
 If you look at the <a href="https://github.com/openjdk/jdk/blob/jdk-17%2B35/src/java.base/share/classes/java/util/concurrent/ArrayBlockingQueue.java#L370">implementation</a> of <code>ArrayBlockingQueue::put()</code>,
-you&#8217;ll find that the actual blocking call happens through the <code>await()</code> method on the <code>notFull</code> <code>Condition</code> object.
+you’ll find that the actual blocking call happens through the <code>await()</code> method on the <code>notFull</code> <code>Condition</code> object.
 You could use JMC Agent to instrument that <code>await()</code> method,
 but this would give you events for <em>every</em> <code>Condition</code> instance,
 also for those not used by <code>BlockingQueue</code> implementations.</p>
@@ -414,38 +414,38 @@ also for those not used by <code>BlockingQueue</code> implementations.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_filtering_thread_park_events">Filtering "Thread Park" Events</h2>
+<h2 id="_filtering_thread_park_events">Filtering &#34;Thread Park&#34; Events</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>But this finally hints us into the right direction:
 <code>await()</code> is implemented on top of <a href="https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/locks/LockSupport.html#park()"><code>LockSupport::park()</code></a>,
 and the JVM itself <a href="https://bestsolution-at.github.io/jfr-doc/openjdk-17.html#jdk.ThreadPark">emits a JFR event</a> whenever a thread is parked.
-How to identify though those "Java Thread Park" events actually triggered by blocking on a queue?
+How to identify though those &#34;Java Thread Park&#34; events actually triggered by blocking on a queue?
 If there only was a way to query and filter JFR events in a structured query language!</p>
 </div>
 <div class="paragraph">
 <p>Turns out there is.
 <a href="https://github.com/moditect/jfr-analytics">JFR Analytics</a> lets you do exactly that:
 analysing JFR recording files using standard SQL.
-I haven&#8217;t worked that much on this project over the last year,
+I haven’t worked that much on this project over the last year,
 but extending it for the use case at hand was easy enough.
 By means of the new <code>HAS_MATCHING_FRAME()</code> function it becomes trivial to identify the relevant events.</p>
 </div>
 <div class="paragraph">
-<p>JFR Analytics hasn&#8217;t been released to Maven Central yet, so you need to check out its source code and build it from source yourself.
+<p>JFR Analytics hasn’t been released to Maven Central yet, so you need to check out its source code and build it from source yourself.
 You then can use the SQLLine command line interface for examining your recordings:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
-</pre></td><td class="code"><pre>java <span class="nt">--class-path</span> <span class="s2">"target/lib/*:target/jfr-analytics-1.0.0-SNAPSHOT.jar"</span> <span class="se">\</span>
+</pre></td><td class="code"><pre>java <span class="nt">--class-path</span> <span class="s2">&#34;target/lib/*:target/jfr-analytics-1.0.0-SNAPSHOT.jar&#34;</span> <span class="se">\</span>
   sqlline.SqlLine
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Then, within the CLI tool, "connect" to a recording file and change the output format to "vertical" for better readability of stack traces:</p>
+<p>Then, within the CLI tool, &#34;connect&#34; to a recording file and change the output format to &#34;vertical&#34; for better readability of stack traces:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -460,7 +460,7 @@ You then can use the SQLLine command line interface for examining your recording
 <p>If you need a recording file to play with, check out <a href="https://github.com/gunnarmorling/jfr-blocking-analysis">this example project</a>.
 It has a very simple main class with two threads:
 a producer thread which inserts 20 items per second to a blocking queue, and a consumer thread, which takes those items at a rate of ten items per second.
-Once the queue&#8217;s capacity has been reached, the producer will regularly block, as it can only insert ten items per second instead of 20.
+Once the queue’s capacity has been reached, the producer will regularly block, as it can only insert ten items per second instead of 20.
 With JFR Analytics, the affected <code>put()</code> calls can be identified via the following query:</p>
 </div>
 <div class="listingblock">
@@ -474,13 +474,13 @@ With JFR Analytics, the affected <code>put()</code> calls can be identified via 
 7
 8
 </pre></td><td class="code"><pre><span class="k">SELECT</span>
-  <span class="nv">"startTime"</span><span class="p">,</span>
-  <span class="nv">"duration"</span> <span class="o">/</span> <span class="mi">1000000</span> <span class="k">AS</span> <span class="nv">"duration"</span><span class="p">,</span>
-  <span class="nv">"eventThread"</span><span class="p">,</span>
-  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="nv">"stackTrace"</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span> <span class="k">as</span> <span class="nv">"stack trace"</span>
-<span class="k">FROM</span> <span class="nv">"jdk.ThreadPark"</span>
+  <span class="nv">&#34;startTime&#34;</span><span class="p">,</span>
+  <span class="nv">&#34;duration&#34;</span> <span class="o">/</span> <span class="mi">1000000</span> <span class="k">AS</span> <span class="nv">&#34;duration&#34;</span><span class="p">,</span>
+  <span class="nv">&#34;eventThread&#34;</span><span class="p">,</span>
+  <span class="n">TRUNCATE_STACKTRACE</span><span class="p">(</span><span class="nv">&#34;stackTrace&#34;</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span> <span class="k">as</span> <span class="nv">&#34;stack trace&#34;</span>
+<span class="k">FROM</span> <span class="nv">&#34;jdk.ThreadPark&#34;</span>
 <span class="k">WHERE</span>
-  <span class="n">HAS_MATCHING_FRAME</span><span class="p">(</span><span class="nv">"stackTrace"</span><span class="p">,</span> <span class="s1">'.*ArrayBlockingQueue</span><span class="se">\.</span><span class="s1">put.*'</span><span class="p">);</span>
+  <span class="n">HAS_MATCHING_FRAME</span><span class="p">(</span><span class="nv">&#34;stackTrace&#34;</span><span class="p">,</span> <span class="s1">&#39;.*ArrayBlockingQueue</span><span class="se">\.</span><span class="s1">put.*&#39;</span><span class="p">);</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -579,13 +579,13 @@ indicating the need for intervention with a much lower delay than possible with 
 </div>
 <div class="paragraph">
 <p>Taking things even further, streaming queries could even enable <em>predictive</em> analytics;
-Flink&#8217;s <a href="https://nightlies.apache.org/flink/flink-docs-release-1.16/docs/dev/table/sql/queries/match_recognize/">pattern matching</a> capabilities and the <code>MATCH_RECOGNIZE</code> clause could be used for instance to identify specific sequences of events which indicate that a full garbage collection is going to happen very soon.
+Flink’s <a href="https://nightlies.apache.org/flink/flink-docs-release-1.16/docs/dev/table/sql/queries/match_recognize/">pattern matching</a> capabilities and the <code>MATCH_RECOGNIZE</code> clause could be used for instance to identify specific sequences of events which indicate that a full garbage collection is going to happen very soon.
 This information could be exposed via a health check,
 signalling to the load balancer in front of a clustered web application that affected nodes should not receive any more requests for some time,
 so as to shield users from long GC-induced response times.</p>
 </div>
 <div class="paragraph">
-<p>If this sounds interesting to you, please let me know; I&#8217;d love to collaborate with the open-source community on this effort.</p>
+<p>If this sounds interesting to you, please let me know; I’d love to collaborate with the open-source community on this effort.</p>
 </div>
 <div class="paragraph">
 <p><em>Many thanks to <a href="https://www.linkedin.com/in/richard-startin-a20798236/">Richard Startin</a> for his feedback while working on this post!</em></p>

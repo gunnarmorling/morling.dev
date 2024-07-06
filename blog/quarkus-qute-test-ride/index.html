@@ -21,11 +21,11 @@ This has changed with Quarkus 1.1: it comes with a brand-new template engine nam
 which allows to build web applications using server-side templates.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/quarkus-qute-test-ride/" />
+<meta property="og:url" content="https://www.morling.dev/blog/quarkus-qute-test-ride/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2020-01-03T10:00:00+01:00" />
 <meta property="article:modified_time" content="2020-01-03T10:00:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Quarkus Qute – A Test Ride"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Quarkus Qute – A Test Ride"/>
 <meta name="twitter:description" content="
 One of the long-awaited features in Quarkus was support for server-side templating:
 until recently, Quarkus supported only client-side web frameworks which obtain there data by calling a REST API on the backend.
@@ -270,7 +270,7 @@ This has changed with <a href="https://quarkus.io/blog/quarkus-1-1-0-final-relea
 which allows to build web applications using server-side templates.</p>
 </div>
 <div class="paragraph">
-<p>When looking at frameworks for building web applications, there&#8217;s two large categories:</p>
+<p>When looking at frameworks for building web applications, there’s two large categories:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -283,24 +283,24 @@ which allows to build web applications using server-side templates.</p>
 </ul>
 </div>
 <div class="paragraph">
-<p>Both have their indivdual strengths and weaknesses and it&#8217;d be not very wise to always prefer one over the other.
+<p>Both have their indivdual strengths and weaknesses and it’d be not very wise to always prefer one over the other.
 Instead, the choice should be based on specific requirements
 (e.g. what kind of interactivity is needed)
 and prerequisites (e.g. the skillset of the team building the application).</p>
 </div>
 <div class="paragraph">
 <p>Being mostly experienced with Java, server-side solutions are appealing to me,
-as they allow me to use the language I know and tooling (build tools, IDEs) I&#8217;m familiar and most productive with.
+as they allow me to use the language I know and tooling (build tools, IDEs) I’m familiar and most productive with.
 So when Qute was announced, it instantly caught my attention and I had to give it a test ride.
 In this post I want to share some of the experiences I made.</p>
 </div>
 <div class="paragraph">
-<p>Note this isn&#8217;t a comprehensive tutorial for building web apps with Qute,
-instead, I&#8217;d like to discuss a few things that stuck out to me.
+<p>Note this isn’t a comprehensive tutorial for building web apps with Qute,
+instead, I’d like to discuss a few things that stuck out to me.
 You can find a complete working example here on <a href="https://github.com/gunnarmorling/quarkus-qute">GitHub</a>.
 It implements a basic CRUD application for managing personal todos,
 persisted in a Postgres database.
-Here&#8217;s a video that shows the demo in action:</p>
+Here’s a video that shows the demo in action:</p>
 </div>
 <div class="paragraph">
 
@@ -317,7 +317,7 @@ Here&#8217;s a video that shows the demo in action:</p>
 As such, Qute web applications are implemented by defining resource types with methods answering to specific HTTP verbs and accept headers.
 The only difference being, that HTML pages are returned instead of JSON as in your typical REST-ful data API.
 The individual pages are created by processing template files.
-Here&#8217;s a basic example for returning all the Todo records in our application:</p>
+Here’s a basic example for returning all the Todo records in our application:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -334,7 +334,7 @@ Here&#8217;s a basic example for returning all the Todo records in our applicati
 11
 12
 13
-</pre></td><td class="code"><pre><span class="nd">@Path</span><span class="o">(</span><span class="s">"/todo"</span><span class="o">)</span>
+</pre></td><td class="code"><pre><span class="nd">@Path</span><span class="o">(</span><span class="s">&#34;/todo&#34;</span><span class="o">)</span>
 <span class="kd">public</span> <span class="kd">class</span> <span class="nc">TodoResource</span> <span class="o">{</span>
 
     <span class="nd">@Inject</span>
@@ -344,7 +344,7 @@ Here&#8217;s a basic example for returning all the Todo records in our applicati
     <span class="nd">@Consumes</span><span class="o">(</span><span class="nc">MediaType</span><span class="o">.</span><span class="na">TEXT_HTML</span><span class="o">)</span>                         <i class="conum" data-value="2"></i><b>(2)</b>
     <span class="nd">@Produces</span><span class="o">(</span><span class="nc">MediaType</span><span class="o">.</span><span class="na">TEXT_HTML</span><span class="o">)</span>
     <span class="kd">public</span> <span class="nc">TemplateInstance</span> <span class="nf">listTodos</span><span class="o">()</span> <span class="o">{</span>
-        <span class="k">return</span> <span class="n">todos</span><span class="o">.</span><span class="na">data</span><span class="o">(</span><span class="s">"todos"</span><span class="o">,</span> <span class="nc">Todo</span><span class="o">.</span><span class="na">findAll</span><span class="o">().</span><span class="na">list</span><span class="o">());</span> <i class="conum" data-value="3"></i><b>(3)</b>
+        <span class="k">return</span> <span class="n">todos</span><span class="o">.</span><span class="na">data</span><span class="o">(</span><span class="s">&#34;todos&#34;</span><span class="o">,</span> <span class="nc">Todo</span><span class="o">.</span><span class="na">findAll</span><span class="o">().</span><span class="na">list</span><span class="o">());</span> <i class="conum" data-value="3"></i><b>(3)</b>
     <span class="o">}</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
@@ -352,7 +352,7 @@ Here&#8217;s a basic example for returning all the Todo records in our applicati
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Processes HTTP GET requests for /todo</td>
 </tr>
@@ -364,7 +364,7 @@ Here&#8217;s a basic example for returning all the Todo records in our applicati
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>Obtain all todos from the database and feed them to the <code>todos</code> template</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>The <code>Todo</code> class is as JPA entity implemented via <a href="https://quarkus.io/guides/hibernate-orm-panache">Hibernate Panache</a>:</p>
@@ -391,7 +391,7 @@ Here&#8217;s a basic example for returning all the Todo records in our applicati
 <div class="paragraph">
 <p>Panache is a perfect fit for this kind of CRUD applications.
 It helps with common tasks such as id mapping,
-and by means of the <a href="https://en.wikipedia.org/wiki/Active_record_pattern">active record pattern</a> you get query methods like <code>findAll()</code> "for free".</p>
+and by means of the <a href="https://en.wikipedia.org/wiki/Active_record_pattern">active record pattern</a> you get query methods like <code>findAll()</code> &#34;for free&#34;.</p>
 </div>
 <div class="paragraph">
 <p>To produce an HTML page for displaying the result list,
@@ -457,38 +457,38 @@ It could look like this:</p>
 51
 52
 </pre></td><td class="code"><pre><span class="cp">&lt;!doctype html&gt;</span>
-<span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">"en"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">&#34;en&#34;</span><span class="nt">&gt;</span>
   <span class="nt">&lt;head&gt;</span>
-    <span class="nt">&lt;meta</span> <span class="na">charset=</span><span class="s">"utf-8"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;meta</span> <span class="na">charset=</span><span class="s">&#34;utf-8&#34;</span><span class="nt">&gt;</span>
 
     <span class="c">&lt;!-- CSS ... --&gt;</span>
-    <span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">"stylesheet"</span> <span class="na">href=</span><span class="s">"..."</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&#34;stylesheet&#34;</span> <span class="na">href=</span><span class="s">&#34;...&#34;</span><span class="nt">&gt;</span>
 
     <span class="nt">&lt;title&gt;</span>My Todos<span class="nt">&lt;/title&gt;</span>
   <span class="nt">&lt;/head&gt;</span>
   <span class="nt">&lt;body&gt;</span>
-    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"container"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&#34;container&#34;</span><span class="nt">&gt;</span>
       <span class="nt">&lt;h1&gt;</span>My Todos<span class="nt">&lt;/h1&gt;</span>
 
-      <span class="nt">&lt;table</span> <span class="na">class=</span><span class="s">"table table-striped table-bordered"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;table</span> <span class="na">class=</span><span class="s">&#34;table table-striped table-bordered&#34;</span><span class="nt">&gt;</span>
         <span class="nt">&lt;thead&gt;</span>
           <span class="nt">&lt;tr&gt;</span>
-            <span class="nt">&lt;th</span> <span class="na">scope=</span><span class="s">"col"</span> <span class="na">class=</span><span class="s">"fit"</span><span class="nt">&gt;</span>Id<span class="nt">&lt;/th&gt;</span>
-            <span class="nt">&lt;th</span> <span class="na">scope=</span><span class="s">"col"</span> <span class="nt">&gt;</span>Title<span class="nt">&lt;/th&gt;</span>
-            <span class="nt">&lt;th</span> <span class="na">scope=</span><span class="s">"col"</span> <span class="na">class=</span><span class="s">"fit"</span><span class="nt">&gt;</span>Priority<span class="nt">&lt;/th&gt;</span>
-            <span class="nt">&lt;th</span> <span class="na">scope=</span><span class="s">"col"</span> <span class="na">class=</span><span class="s">"fit"</span><span class="nt">&gt;</span>Completed<span class="nt">&lt;/th&gt;</span>
+            <span class="nt">&lt;th</span> <span class="na">scope=</span><span class="s">&#34;col&#34;</span> <span class="na">class=</span><span class="s">&#34;fit&#34;</span><span class="nt">&gt;</span>Id<span class="nt">&lt;/th&gt;</span>
+            <span class="nt">&lt;th</span> <span class="na">scope=</span><span class="s">&#34;col&#34;</span> <span class="nt">&gt;</span>Title<span class="nt">&lt;/th&gt;</span>
+            <span class="nt">&lt;th</span> <span class="na">scope=</span><span class="s">&#34;col&#34;</span> <span class="na">class=</span><span class="s">&#34;fit&#34;</span><span class="nt">&gt;</span>Priority<span class="nt">&lt;/th&gt;</span>
+            <span class="nt">&lt;th</span> <span class="na">scope=</span><span class="s">&#34;col&#34;</span> <span class="na">class=</span><span class="s">&#34;fit&#34;</span><span class="nt">&gt;</span>Completed<span class="nt">&lt;/th&gt;</span>
           <span class="nt">&lt;/tr&gt;</span>
         <span class="nt">&lt;/thead&gt;</span>
 
         {#if todos.size == 0} <i class="conum" data-value="1"></i><b>(1)</b>
         <span class="nt">&lt;tr&gt;</span>
-          <span class="nt">&lt;td</span> <span class="na">colspan=</span><span class="s">"4"</span><span class="nt">&gt;</span>No data found.<span class="nt">&lt;/td&gt;</span>
+          <span class="nt">&lt;td</span> <span class="na">colspan=</span><span class="s">&#34;4&#34;</span><span class="nt">&gt;</span>No data found.<span class="nt">&lt;/td&gt;</span>
         <span class="nt">&lt;/tr&gt;</span>
         {#else}
 
         {#for todo in todos}  <i class="conum" data-value="2"></i><b>(2)</b>
         <span class="nt">&lt;tr&gt;</span>
-          <span class="nt">&lt;th</span> <span class="na">scope=</span><span class="s">"row"</span><span class="nt">&gt;</span>#{todo.id}<span class="nt">&lt;/th&gt;</span>
+          <span class="nt">&lt;th</span> <span class="na">scope=</span><span class="s">&#34;row&#34;</span><span class="nt">&gt;</span>#{todo.id}<span class="nt">&lt;/th&gt;</span>
           <span class="nt">&lt;td&gt;</span>
             {todo.title}      <i class="conum" data-value="3"></i><b>(3)</b>
           <span class="nt">&lt;/td&gt;</span>
@@ -496,9 +496,9 @@ It could look like this:</p>
             {todo.priority}   <i class="conum" data-value="4"></i><b>(4)</b>
           <span class="nt">&lt;/td&gt;</span>
           <span class="nt">&lt;td&gt;</span> <i class="conum" data-value="5"></i><b>(5)</b>
-            <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"custom-control custom-checkbox"</span><span class="nt">&gt;</span>
-              <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"checkbox"</span> <span class="na">class=</span><span class="s">"custom-control-input"</span> <span class="na">disabled</span> <span class="na">id=</span><span class="s">"completed-{todo.id}"</span> <span class="err">{</span><span class="na">#if</span> <span class="na">todo</span><span class="err">.</span><span class="na">completed</span><span class="err">}</span><span class="na">checked</span><span class="err">{/</span><span class="na">if</span><span class="err">}</span><span class="nt">&gt;</span>
-              <span class="nt">&lt;label</span> <span class="na">class=</span><span class="s">"custom-control-label"</span> <span class="na">for=</span><span class="s">"completed-{todo.id}"</span><span class="nt">&gt;&lt;/label&gt;</span>
+            <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&#34;custom-control custom-checkbox&#34;</span><span class="nt">&gt;</span>
+              <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#34;checkbox&#34;</span> <span class="na">class=</span><span class="s">&#34;custom-control-input&#34;</span> <span class="na">disabled</span> <span class="na">id=</span><span class="s">&#34;completed-{todo.id}&#34;</span> <span class="err">{</span><span class="na">#if</span> <span class="na">todo.completed</span><span class="err">}</span><span class="na">checked</span><span class="err">{/</span><span class="na">if</span><span class="err">}</span><span class="nt">&gt;</span>
+              <span class="nt">&lt;label</span> <span class="na">class=</span><span class="s">&#34;custom-control-label&#34;</span> <span class="na">for=</span><span class="s">&#34;completed-{todo.id}&#34;</span><span class="nt">&gt;&lt;/label&gt;</span>
             <span class="nt">&lt;/div&gt;</span>
           <span class="nt">&lt;/td&gt;</span>
         <span class="nt">&lt;/tr&gt;</span>
@@ -513,7 +513,7 @@ It could look like this:</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>If the injected <code>todos</code> list is empty, display a placeholder row</td>
 </tr>
@@ -533,17 +533,17 @@ It could look like this:</p>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
 <td>Table cell for completion status, rendered as a checkbox</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>If you&#8217;ve worked with other templating engine before, this will look very familiar to you.
+<p>If you’ve worked with other templating engine before, this will look very familiar to you.
 You can refer to injected objects and their properties to display their values, have conditional logic, iterate over collections etc.
-A very nice aspect about Qute templates is that they are processed at build time, following the Quarkus notion of "compile-time boot".
-This means if there is an error in a template such as unbalanced control keywords, you&#8217;ll find out about this at build time instead of only at runtime.</p>
+A very nice aspect about Qute templates is that they are processed at build time, following the Quarkus notion of &#34;compile-time boot&#34;.
+This means if there is an error in a template such as unbalanced control keywords, you’ll find out about this at build time instead of only at runtime.</p>
 </div>
 <div class="paragraph">
 <p>The <a href="https://quarkus.io/guides/qute-reference">reference documentation</a> describes the syntax and all options in depth.
-Note that things are still in flux here, e.g. I couldn&#8217;t work with boolean operators in conditions.</p>
+Note that things are still in flux here, e.g. I couldn’t work with boolean operators in conditions.</p>
 </div>
 </div>
 </div>
@@ -552,7 +552,7 @@ Note that things are still in flux here, e.g. I couldn&#8217;t work with boolean
 <div class="sectionbody">
 <div class="paragraph">
 <p>Thanks to HTTP content negotiation, you can easily combine resource methods for returning HTML and JSON for API-style consumers in a single endpoint.
-Just add another resource method for handling the required media type, e.g. "application/json":</p>
+Just add another resource method for handling the required media type, e.g. &#34;application/json&#34;:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -572,8 +572,8 @@ Just add another resource method for handling the required media type, e.g. "app
 </div>
 </div>
 <div class="paragraph">
-<p>A standard HTTP request issued by a web browser would now be answered with the HTML page, whereas an AJAX request with the "application/json" accept header (or a manual invocation via <em>curl</em>) would yield the JSON representation.
-I really like that idea of considering HTML and JSON-based representations as two different "views" of the same API essentially.</p>
+<p>A standard HTTP request issued by a web browser would now be answered with the HTML page, whereas an AJAX request with the &#34;application/json&#34; accept header (or a manual invocation via <em>curl</em>) would yield the JSON representation.
+I really like that idea of considering HTML and JSON-based representations as two different &#34;views&#34; of the same API essentially.</p>
 </div>
 </div>
 </div>
@@ -581,13 +581,13 @@ I really like that idea of considering HTML and JSON-based representations as tw
 <h2 id="_template_organization">Template Organization</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>If a web application has multiple pages or "views", chances are there are many similarities between those.
+<p>If a web application has multiple pages or &#34;views&#34;, chances are there are many similarities between those.
 E.g. there might be a common header and footer for all pages,
 or one and the same form is used on multiple pages.</p>
 </div>
 <div class="paragraph">
 <p>To avoid duplication in the templates in such cases, Qute supports the notion of includes.
-E.g. let&#8217;s say there&#8217;s a common form for creating new and editing existing todos.
+E.g. let’s say there’s a common form for creating new and editing existing todos.
 This can be put into its own template:</p>
 </div>
 <div class="listingblock">
@@ -625,35 +625,35 @@ This can be put into its own template:</p>
 31
 32
 </pre></td><td class="code"><pre><i class="conum" data-value="1"></i><b>(1)</b>
-<span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">"/todo/{#if update}{todo.id}/edit{#else}new{/if}"</span> <span class="na">method=</span><span class="s">"POST"</span> <span class="na">name=</span><span class="s">"todoForm"</span> <span class="na">enctype=</span><span class="s">"multipart/form-data"</span><span class="nt">&gt;</span>
-  <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"form-row align-items-center"</span><span class="nt">&gt;</span>
-    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"col-sm-3 my-1"</span><span class="nt">&gt;</span>
-      <span class="nt">&lt;label</span> <span class="na">class=</span><span class="s">"sr-only"</span> <span class="na">for=</span><span class="s">"title"</span><span class="nt">&gt;</span>Title<span class="nt">&lt;/label&gt;</span>
+<span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">&#34;/todo/{#if update}{todo.id}/edit{#else}new{/if}&#34;</span> <span class="na">method=</span><span class="s">&#34;POST&#34;</span> <span class="na">name=</span><span class="s">&#34;todoForm&#34;</span> <span class="na">enctype=</span><span class="s">&#34;multipart/form-data&#34;</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&#34;form-row align-items-center&#34;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&#34;col-sm-3 my-1&#34;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;label</span> <span class="na">class=</span><span class="s">&#34;sr-only&#34;</span> <span class="na">for=</span><span class="s">&#34;title&#34;</span><span class="nt">&gt;</span>Title<span class="nt">&lt;/label&gt;</span>
       <i class="conum" data-value="2"></i><b>(2)</b>
-      <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">name=</span><span class="s">"title"</span> <span class="na">class=</span><span class="s">"form-control"</span> <span class="na">id=</span><span class="s">"title"</span> <span class="na">placeholder=</span><span class="s">"Title"</span> <span class="na">required</span> <span class="na">autofocus</span> <span class="err">{</span><span class="na">#if</span> <span class="na">update</span><span class="err">}</span><span class="na">value=</span><span class="s">"{todo.title}"</span><span class="err">{/</span><span class="na">if</span><span class="err">}</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#34;text&#34;</span> <span class="na">name=</span><span class="s">&#34;title&#34;</span> <span class="na">class=</span><span class="s">&#34;form-control&#34;</span> <span class="na">id=</span><span class="s">&#34;title&#34;</span> <span class="na">placeholder=</span><span class="s">&#34;Title&#34;</span> <span class="na">required</span> <span class="na">autofocus</span> <span class="err">{</span><span class="na">#if</span> <span class="na">update</span><span class="err">}</span><span class="na">value=</span><span class="s">&#34;{todo.title}&#34;</span><span class="err">{/</span><span class="na">if</span><span class="err">}</span><span class="nt">&gt;</span>
     <span class="nt">&lt;/div&gt;</span>
 
-    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"col-auto my-1"</span><span class="nt">&gt;</span>
-      <span class="nt">&lt;select</span> <span class="na">class=</span><span class="s">"custom-select"</span>  <span class="na">name=</span><span class="s">"priority"</span><span class="nt">&gt;</span>
-        <span class="nt">&lt;option</span> <span class="na">disabled</span> <span class="na">value=</span><span class="s">""</span><span class="nt">&gt;</span>Priority<span class="nt">&lt;/option&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&#34;col-auto my-1&#34;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;select</span> <span class="na">class=</span><span class="s">&#34;custom-select&#34;</span>  <span class="na">name=</span><span class="s">&#34;priority&#34;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;option</span> <span class="na">disabled</span> <span class="na">value=</span><span class="s">&#34;&#34;</span><span class="nt">&gt;</span>Priority<span class="nt">&lt;/option&gt;</span>
         {#for prio in priorities}
-        <span class="nt">&lt;option</span> <span class="na">value=</span><span class="s">"{prio}"</span> <span class="err">{</span><span class="na">#if</span> <span class="na">todo.priority =</span><span class="s">=</span> <span class="na">prio</span><span class="err">}</span><span class="na">selected</span><span class="err">{/</span><span class="na">if</span><span class="err">}</span><span class="nt">&gt;</span>{prio}<span class="nt">&lt;/option&gt;</span>
+        <span class="nt">&lt;option</span> <span class="na">value=</span><span class="s">&#34;{prio}&#34;</span> <span class="err">{</span><span class="na">#if</span> <span class="na">todo.priority =</span><span class="s">=</span> <span class="na">prio</span><span class="err">}</span><span class="na">selected</span><span class="err">{/</span><span class="na">if</span><span class="err">}</span><span class="nt">&gt;</span>{prio}<span class="nt">&lt;/option&gt;</span>
         {/for}
       <span class="nt">&lt;/select&gt;</span>
     <span class="nt">&lt;/div&gt;</span>
 
     <i class="conum" data-value="3"></i><b>(3)</b>
     {#if update}
-    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"col-auto my-1"</span><span class="nt">&gt;</span>
-      <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"form-check"</span><span class="nt">&gt;</span>
-        <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"checkbox"</span> <span class="na">name=</span><span class="s">"completed"</span> <span class="na">class=</span><span class="s">"form-check-input"</span> <span class="na">id=</span><span class="s">"completed"</span> <span class="err">{</span><span class="na">#if</span> <span class="na">todo</span><span class="err">.</span><span class="na">completed</span><span class="err">}</span><span class="na">checked</span><span class="err">{/</span><span class="na">if</span><span class="err">}</span><span class="nt">&gt;</span>
-        <span class="nt">&lt;label</span> <span class="na">class=</span><span class="s">"form-check-label"</span> <span class="na">for=</span><span class="s">"completed"</span><span class="nt">&gt;</span>Completed<span class="nt">&lt;/label&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&#34;col-auto my-1&#34;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&#34;form-check&#34;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#34;checkbox&#34;</span> <span class="na">name=</span><span class="s">&#34;completed&#34;</span> <span class="na">class=</span><span class="s">&#34;form-check-input&#34;</span> <span class="na">id=</span><span class="s">&#34;completed&#34;</span> <span class="err">{</span><span class="na">#if</span> <span class="na">todo.completed</span><span class="err">}</span><span class="na">checked</span><span class="err">{/</span><span class="na">if</span><span class="err">}</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;label</span> <span class="na">class=</span><span class="s">&#34;form-check-label&#34;</span> <span class="na">for=</span><span class="s">&#34;completed&#34;</span><span class="nt">&gt;</span>Completed<span class="nt">&lt;/label&gt;</span>
       <span class="nt">&lt;/div&gt;</span>
     <span class="nt">&lt;/div&gt;</span>
     {/if}
 
     <i class="conum" data-value="4"></i><b>(4)</b>
-    <span class="nt">&lt;button</span> <span class="na">type=</span><span class="s">"submit"</span> <span class="na">class=</span><span class="s">"btn btn-primary"</span><span class="nt">&gt;</span>{#if update}Update{#else}Create{/if}<span class="nt">&lt;/button&gt;</span>
+    <span class="nt">&lt;button</span> <span class="na">type=</span><span class="s">&#34;submit&#34;</span> <span class="na">class=</span><span class="s">&#34;btn btn-primary&#34;</span><span class="nt">&gt;</span>{#if update}Update{#else}Create{/if}<span class="nt">&lt;/button&gt;</span>
   <span class="nt">&lt;/div&gt;</span>
 <span class="nt">&lt;/form&gt;</span>
 </pre></td></tr></tbody></table></code></pre>
@@ -661,7 +661,7 @@ This can be put into its own template:</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Post to different path for update and create</td>
 </tr>
@@ -677,7 +677,7 @@ This can be put into its own template:</p>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>Choose button caption depending on use case</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>In order to display this form right under the table with all todos,
@@ -693,7 +693,7 @@ the template can simply be included like so:</p>
 </div>
 </div>
 <div class="paragraph">
-<p>It&#8217;s also possible to extract the outer shell of multiple pages into a shared template ("template inheritance").
+<p>It’s also possible to extract the outer shell of multiple pages into a shared template (&#34;template inheritance&#34;).
 This allows to extract common headers and footers into one single template with placeholders for the inner parts.</p>
 </div>
 <div class="paragraph">
@@ -720,17 +720,17 @@ This allows to extract common headers and footers into one single template with 
 17
 18
 </pre></td><td class="code"><pre><span class="cp">&lt;!doctype html&gt;</span>
-<span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">"en"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">&#34;en&#34;</span><span class="nt">&gt;</span>
   <span class="nt">&lt;head&gt;</span>
-    <span class="nt">&lt;meta</span> <span class="na">charset=</span><span class="s">"utf-8"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;meta</span> <span class="na">charset=</span><span class="s">&#34;utf-8&#34;</span><span class="nt">&gt;</span>
 
     <span class="c">&lt;!-- CSS ... --&gt;</span>
-    <span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">"stylesheet"</span> <span class="na">href=</span><span class="s">"..."</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&#34;stylesheet&#34;</span> <span class="na">href=</span><span class="s">&#34;...&#34;</span><span class="nt">&gt;</span>
 
     <span class="nt">&lt;title&gt;</span>{#insert title}Default Title{/}<span class="nt">&lt;/title&gt;</span> <i class="conum" data-value="1"></i><b>(1)</b>
   <span class="nt">&lt;/head&gt;</span>
   <span class="nt">&lt;body&gt;</span>
-    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"container"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&#34;container&#34;</span><span class="nt">&gt;</span>
       <span class="nt">&lt;h1&gt;</span>{#insert title}Default Title{/}<span class="nt">&lt;/h1&gt;</span>     <i class="conum" data-value="1"></i><b>(1)</b>
 
       {#insert contents}No contents!{/}            <i class="conum" data-value="2"></i><b>(2)</b>
@@ -742,7 +742,7 @@ This allows to extract common headers and footers into one single template with 
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Derived templates define a section <code>title</code> which will be inserted here</td>
 </tr>
@@ -750,11 +750,11 @@ This allows to extract common headers and footers into one single template with 
 <td><i class="conum" data-value="2"></i><b>2</b></td>
 <td>Derived templates define a section <code>contents</code> which will be inserted here</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>Other templates can then extend the base one,
-e.g. like so for the "Edit Todo" page:</p>
+e.g. like so for the &#34;Edit Todo&#34; page:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -775,7 +775,7 @@ e.g. like so for the "Edit Todo" page:</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Include the base template</td>
 </tr>
@@ -791,7 +791,7 @@ e.g. like so for the "Edit Todo" page:</p>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>Include the template for displaying the todo form</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>As so often, a balance needs to be found between extracting common parts and still being able to comprehend the overall structure without having to pursue a large number of template references.
@@ -804,9 +804,9 @@ But in any case with includes and inserts Qute puts the neccessary tools into yo
 <div class="sectionbody">
 <div class="paragraph">
 <p>For a great user experience robust error handling is a must.
-E.g. might happen that a user loads the "Edit Todo" dialog and while they&#8217;re in the process of editing, that record gets deleted by someone else.
+E.g. might happen that a user loads the &#34;Edit Todo&#34; dialog and while they’re in the process of editing, that record gets deleted by someone else.
 When saving, a proper error message should be displayed to the first user.
-Here&#8217;s the resource method implementation for that:</p>
+Here’s the resource method implementation for that:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -833,21 +833,21 @@ Here&#8217;s the resource method implementation for that:</p>
 </pre></td><td class="code"><pre><span class="nd">@POST</span>
 <span class="nd">@Consumes</span><span class="o">(</span><span class="nc">MediaType</span><span class="o">.</span><span class="na">MULTIPART_FORM_DATA</span><span class="o">)</span>
 <span class="nd">@Transactional</span>
-<span class="nd">@Path</span><span class="o">(</span><span class="s">"/{id}/edit"</span><span class="o">)</span>
+<span class="nd">@Path</span><span class="o">(</span><span class="s">&#34;/{id}/edit&#34;</span><span class="o">)</span>
 <span class="kd">public</span> <span class="nc">Object</span> <span class="nf">updateTodo</span><span class="o">(</span>
-    <span class="nd">@PathParam</span><span class="o">(</span><span class="s">"id"</span><span class="o">)</span> <span class="kt">long</span> <span class="n">id</span><span class="o">,</span>
+    <span class="nd">@PathParam</span><span class="o">(</span><span class="s">&#34;id&#34;</span><span class="o">)</span> <span class="kt">long</span> <span class="n">id</span><span class="o">,</span>
     <span class="nd">@MultipartForm</span> <span class="nc">TodoForm</span> <span class="n">todoForm</span><span class="o">)</span> <span class="o">{</span>
 
     <span class="nc">Todo</span> <span class="n">loaded</span> <span class="o">=</span> <span class="nc">Todo</span><span class="o">.</span><span class="na">findById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>      <i class="conum" data-value="1"></i><b>(1)</b>
 
     <span class="k">if</span> <span class="o">(</span><span class="n">loaded</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>                 <i class="conum" data-value="2"></i><b>(2)</b>
-        <span class="k">return</span> <span class="n">error</span><span class="o">.</span><span class="na">data</span><span class="o">(</span><span class="s">"error"</span><span class="o">,</span> <span class="s">"Todo with id "</span> <span class="o">+</span> <span class="n">id</span> <span class="o">+</span> <span class="s">" has been deleted after loading this form."</span><span class="o">);</span>
+        <span class="k">return</span> <span class="n">error</span><span class="o">.</span><span class="na">data</span><span class="o">(</span><span class="s">&#34;error&#34;</span><span class="o">,</span> <span class="s">&#34;Todo with id &#34;</span> <span class="o">+</span> <span class="n">id</span> <span class="o">+</span> <span class="s">&#34; has been deleted after loading this form.&#34;</span><span class="o">);</span>
     <span class="o">}</span>
 
     <span class="n">loaded</span> <span class="o">=</span> <span class="n">todoForm</span><span class="o">.</span><span class="na">updateTodo</span><span class="o">(</span><span class="n">loaded</span><span class="o">);</span> <i class="conum" data-value="3"></i><b>(3)</b>
 
     <span class="k">return</span> <span class="nc">Response</span><span class="o">.</span><span class="na">status</span><span class="o">(</span><span class="mi">301</span><span class="o">)</span>           <i class="conum" data-value="4"></i><b>(4)</b>
-        <span class="o">.</span><span class="na">location</span><span class="o">(</span><span class="no">URI</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="s">"/todo"</span><span class="o">))</span>
+        <span class="o">.</span><span class="na">location</span><span class="o">(</span><span class="no">URI</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="s">&#34;/todo&#34;</span><span class="o">))</span>
         <span class="o">.</span><span class="na">build</span><span class="o">();</span>
 <span class="o">}</span>
 </pre></td></tr></tbody></table></code></pre>
@@ -855,13 +855,13 @@ Here&#8217;s the resource method implementation for that:</p>
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Load the todo record to be updated</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>If it doesn&#8217;t exist, render the "error" template</td>
+<td>If it doesn’t exist, render the &#34;error&#34; template</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
@@ -871,10 +871,10 @@ Here&#8217;s the resource method implementation for that:</p>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>redirect the user to the main page, avoiding issues with reloading etc. (<a href="https://en.wikipedia.org/wiki/Post/Redirect/Get">post-redirect-get</a> pattern)</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
-<p>Note that <code>TemplateInstance</code> as returned from the <code>Template#data()</code> method doesn&#8217;t extend the JAX-RS <code>Response</code> class.
+<p>Note that <code>TemplateInstance</code> as returned from the <code>Template#data()</code> method doesn’t extend the JAX-RS <code>Response</code> class.
 Therefore the return type of the method must be declared as <code>Object</code> in this case.</p>
 </div>
 </div>
@@ -883,7 +883,7 @@ Therefore the return type of the method must be declared as <code>Object</code> 
 <h2 id="_search">Search</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Thanks to Hibernate Panache it&#8217;s quite simple to refine the todo list and only return those whose title matches a given search term.
+<p>Thanks to Hibernate Panache it’s quite simple to refine the todo list and only return those whose title matches a given search term.
 Also ordering the list in some meaningful way would be nice.
 All we need is an optional query parameter for specifying the search term and a custom query method:</p>
 </div>
@@ -918,24 +918,24 @@ All we need is an optional query parameter for specifying the search term and a 
 </pre></td><td class="code"><pre><span class="nd">@GET</span>
 <span class="nd">@Consumes</span><span class="o">(</span><span class="nc">MediaType</span><span class="o">.</span><span class="na">TEXT_HTML</span><span class="o">)</span>
 <span class="nd">@Produces</span><span class="o">(</span><span class="nc">MediaType</span><span class="o">.</span><span class="na">TEXT_HTML</span><span class="o">)</span>
-<span class="kd">public</span> <span class="nc">TemplateInstance</span> <span class="nf">listTodos</span><span class="o">(</span><span class="nd">@QueryParam</span><span class="o">(</span><span class="s">"filter"</span><span class="o">)</span> <span class="nc">String</span> <span class="n">filter</span><span class="o">)</span> <span class="o">{</span>
-    <span class="k">return</span> <span class="n">todos</span><span class="o">.</span><span class="na">data</span><span class="o">(</span><span class="s">"todos"</span><span class="o">,</span> <span class="n">find</span><span class="o">(</span><span class="n">filter</span><span class="o">));</span>
+<span class="kd">public</span> <span class="nc">TemplateInstance</span> <span class="nf">listTodos</span><span class="o">(</span><span class="nd">@QueryParam</span><span class="o">(</span><span class="s">&#34;filter&#34;</span><span class="o">)</span> <span class="nc">String</span> <span class="n">filter</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="n">todos</span><span class="o">.</span><span class="na">data</span><span class="o">(</span><span class="s">&#34;todos&#34;</span><span class="o">,</span> <span class="n">find</span><span class="o">(</span><span class="n">filter</span><span class="o">));</span>
 <span class="o">}</span>
 
 <span class="nd">@GET</span>
 <span class="nd">@Produces</span><span class="o">(</span><span class="nc">MediaType</span><span class="o">.</span><span class="na">APPLICATION_JSON</span><span class="o">)</span>
 <span class="nd">@Consumes</span><span class="o">(</span><span class="nc">MediaType</span><span class="o">.</span><span class="na">APPLICATION_JSON</span><span class="o">)</span>
-<span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Todo</span><span class="o">&gt;</span> <span class="nf">listTodosJson</span><span class="o">(</span><span class="nd">@QueryParam</span><span class="o">(</span><span class="s">"filter"</span><span class="o">)</span> <span class="nc">String</span> <span class="n">filter</span><span class="o">)</span> <span class="o">{</span>
+<span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Todo</span><span class="o">&gt;</span> <span class="nf">listTodosJson</span><span class="o">(</span><span class="nd">@QueryParam</span><span class="o">(</span><span class="s">&#34;filter&#34;</span><span class="o">)</span> <span class="nc">String</span> <span class="n">filter</span><span class="o">)</span> <span class="o">{</span>
     <span class="k">return</span> <span class="nf">find</span><span class="o">(</span><span class="n">filter</span><span class="o">);</span>
 <span class="o">}</span>
 
 <span class="kd">private</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Todo</span><span class="o">&gt;</span> <span class="nf">find</span><span class="o">(</span><span class="nc">String</span> <span class="n">filter</span><span class="o">)</span> <span class="o">{</span>
-    <span class="nc">Sort</span> <span class="n">sort</span> <span class="o">=</span> <span class="nc">Sort</span><span class="o">.</span><span class="na">ascending</span><span class="o">(</span><span class="s">"completed"</span><span class="o">)</span>    <i class="conum" data-value="1"></i><b>(1)</b>
-        <span class="o">.</span><span class="na">and</span><span class="o">(</span><span class="s">"priority"</span><span class="o">,</span> <span class="nc">Direction</span><span class="o">.</span><span class="na">Descending</span><span class="o">)</span>
-        <span class="o">.</span><span class="na">and</span><span class="o">(</span><span class="s">"title"</span><span class="o">,</span> <span class="nc">Direction</span><span class="o">.</span><span class="na">Ascending</span><span class="o">);</span>
+    <span class="nc">Sort</span> <span class="n">sort</span> <span class="o">=</span> <span class="nc">Sort</span><span class="o">.</span><span class="na">ascending</span><span class="o">(</span><span class="s">&#34;completed&#34;</span><span class="o">)</span>    <i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="o">.</span><span class="na">and</span><span class="o">(</span><span class="s">&#34;priority&#34;</span><span class="o">,</span> <span class="nc">Direction</span><span class="o">.</span><span class="na">Descending</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">and</span><span class="o">(</span><span class="s">&#34;title&#34;</span><span class="o">,</span> <span class="nc">Direction</span><span class="o">.</span><span class="na">Ascending</span><span class="o">);</span>
 
     <span class="k">if</span> <span class="o">(</span><span class="n">filter</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">filter</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span> <i class="conum" data-value="2"></i><b>(2)</b>
-        <span class="k">return</span> <span class="nc">Todo</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="s">"LOWER(title) LIKE LOWER(?1)"</span><span class="o">,</span> <span class="n">sort</span><span class="o">,</span> <span class="s">"%"</span> <span class="o">+</span> <span class="n">filter</span> <span class="o">+</span> <span class="s">"%"</span><span class="o">).</span><span class="na">list</span><span class="o">();</span>
+        <span class="k">return</span> <span class="nc">Todo</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="s">&#34;LOWER(title) LIKE LOWER(?1)&#34;</span><span class="o">,</span> <span class="n">sort</span><span class="o">,</span> <span class="s">&#34;%&#34;</span> <span class="o">+</span> <span class="n">filter</span> <span class="o">+</span> <span class="s">&#34;%&#34;</span><span class="o">).</span><span class="na">list</span><span class="o">();</span>
     <span class="o">}</span>
     <span class="k">else</span> <span class="o">{</span>
         <span class="k">return</span> <span class="nc">Todo</span><span class="o">.</span><span class="na">findAll</span><span class="o">(</span><span class="n">sort</span><span class="o">).</span><span class="na">list</span><span class="o">();</span>      <i class="conum" data-value="3"></i><b>(3)</b>
@@ -946,7 +946,7 @@ All we need is an optional query parameter for specifying the search term and a 
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>First sort by completion status, then priority, then by title</td>
 </tr>
@@ -958,7 +958,7 @@ All we need is an optional query parameter for specifying the search term and a 
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>Otherwise, return all todos</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>To enter the search term, a form is added next to the table of todos:</p>
@@ -980,17 +980,17 @@ All we need is an optional query parameter for specifying the search term and a 
 13
 14
 </pre></td><td class="code"><pre><i class="conum" data-value="1"></i><b>(1)</b>
-<span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">"/todo"</span> <span class="na">method=</span><span class="s">"GET"</span> <span class="na">name=</span><span class="s">"search"</span><span class="nt">&gt;</span>
-  <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"form-row align-items-center"</span><span class="nt">&gt;</span>
-    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"col-sm-3 my-1"</span><span class="nt">&gt;</span>
-      <span class="nt">&lt;label</span> <span class="na">class=</span><span class="s">"sr-only"</span> <span class="na">for=</span><span class="s">"filter"</span><span class="nt">&gt;</span>Search<span class="nt">&lt;/label&gt;</span>
+<span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">&#34;/todo&#34;</span> <span class="na">method=</span><span class="s">&#34;GET&#34;</span> <span class="na">name=</span><span class="s">&#34;search&#34;</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&#34;form-row align-items-center&#34;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&#34;col-sm-3 my-1&#34;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;label</span> <span class="na">class=</span><span class="s">&#34;sr-only&#34;</span> <span class="na">for=</span><span class="s">&#34;filter&#34;</span><span class="nt">&gt;</span>Search<span class="nt">&lt;/label&gt;</span>
       <i class="conum" data-value="2"></i><b>(2)</b>
-      <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">name=</span><span class="s">"filter"</span> <span class="na">class=</span><span class="s">"form-control"</span> <span class="na">id=</span><span class="s">"filter"</span> <span class="na">placeholder=</span><span class="s">"Search By Title"</span> <span class="na">required</span> <span class="err">{</span><span class="na">#if</span> <span class="na">filtered</span><span class="err">}</span><span class="na">value=</span><span class="s">"{filter}"</span><span class="err">{/</span><span class="na">if</span><span class="err">}</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#34;text&#34;</span> <span class="na">name=</span><span class="s">&#34;filter&#34;</span> <span class="na">class=</span><span class="s">&#34;form-control&#34;</span> <span class="na">id=</span><span class="s">&#34;filter&#34;</span> <span class="na">placeholder=</span><span class="s">&#34;Search By Title&#34;</span> <span class="na">required</span> <span class="err">{</span><span class="na">#if</span> <span class="na">filtered</span><span class="err">}</span><span class="na">value=</span><span class="s">&#34;{filter}&#34;</span><span class="err">{/</span><span class="na">if</span><span class="err">}</span><span class="nt">&gt;</span>
     <span class="nt">&lt;/div&gt;</span>
 
     <i class="conum" data-value="3"></i><b>(3)</b>
-    <span class="nt">&lt;input</span> <span class="na">class=</span><span class="s">"btn btn-primary"</span> <span class="na">value=</span><span class="s">"Search"</span> <span class="na">type=</span><span class="s">"submit"</span><span class="nt">&gt;</span><span class="ni">&amp;nbsp;</span>
-    <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">"btn btn-secondary {#if !filtered}disabled{/if}"</span> <span class="na">href=</span><span class="s">"/todo"</span> <span class="na">role=</span><span class="s">"button"</span><span class="nt">&gt;</span>Clear Filter<span class="nt">&lt;/a&gt;</span>
+    <span class="nt">&lt;input</span> <span class="na">class=</span><span class="s">&#34;btn btn-primary&#34;</span> <span class="na">value=</span><span class="s">&#34;Search&#34;</span> <span class="na">type=</span><span class="s">&#34;submit&#34;</span><span class="nt">&gt;</span><span class="ni">&amp;nbsp;</span>
+    <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">&#34;btn btn-secondary {#if !filtered}disabled{/if}&#34;</span> <span class="na">href=</span><span class="s">&#34;/todo&#34;</span> <span class="na">role=</span><span class="s">&#34;button&#34;</span><span class="nt">&gt;</span>Clear Filter<span class="nt">&lt;/a&gt;</span>
   <span class="nt">&lt;/div&gt;</span>
 <span class="nt">&lt;/form&gt;</span>
 </pre></td></tr></tbody></table></code></pre>
@@ -998,7 +998,7 @@ All we need is an optional query parameter for specifying the search term and a 
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Invoke this page with the entered search as query parameter</td>
 </tr>
@@ -1010,7 +1010,7 @@ All we need is an optional query parameter for specifying the search term and a 
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>A button for clearing the result list if a search term has been entered; otherwise the button will be disabled</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 </div>
 </div>
@@ -1025,14 +1025,14 @@ just parts of the document object model tree in the browser will be replaced e.g
 resulting in a much smoother and faster user experience.</p>
 </div>
 <div class="paragraph">
-<p>Does this mean we have to give up on server-side rendering altogether if we&#8217;re after this kind of UX?
+<p>Does this mean we have to give up on server-side rendering altogether if we’re after this kind of UX?
 Luckily not, as small helper libraries such as <a href="https://unpoly.com/">Unpoly</a>, <a href="https://intercoolerjs.org/">Intercooler</a> or <a href="https://github.com/turbolinks/turbolinks">Turbolinks</a> can be leveraged to replace just page fragments instead of requiring full page loads.
 This results in a smooth SPA-like user experience without having to opt into the full client-side programming model.
-For the Todo example I&#8217;ve obtained great results using Unpoly.
-After importing its JavaScript file, all that&#8217;s needed is to add the <code>up-target</code> attribute to links or forms.</p>
+For the Todo example I’ve obtained great results using Unpoly.
+After importing its JavaScript file, all that’s needed is to add the <code>up-target</code> attribute to links or forms.</p>
 </div>
 <div class="paragraph">
-<p>E.g. here&#8217;s the form for entering the search term with that modification:</p>
+<p>E.g. here’s the form for entering the search term with that modification:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1051,17 +1051,17 @@ After importing its JavaScript file, all that&#8217;s needed is to add the <code
 13
 14
 </pre></td><td class="code"><pre><i class="conum" data-value="1"></i><b>(1)</b>
-<span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">"/todo"</span> <span class="na">method=</span><span class="s">"GET"</span> <span class="na">name=</span><span class="s">"search"</span> <span class="na">up-target=</span><span class="s">".container"</span><span class="nt">&gt;</span>
-  <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"form-row align-items-center"</span><span class="nt">&gt;</span>
-    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"col-sm-3 my-1"</span><span class="nt">&gt;</span>
-      <span class="nt">&lt;label</span> <span class="na">class=</span><span class="s">"sr-only"</span> <span class="na">for=</span><span class="s">"filter"</span><span class="nt">&gt;</span>Search<span class="nt">&lt;/label&gt;</span>
-      <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">name=</span><span class="s">"filter"</span> <span class="na">class=</span><span class="s">"form-control"</span> <span class="na">id=</span><span class="s">"filter"</span> <span class="na">placeholder=</span><span class="s">"Search By Title"</span> <span class="na">required</span> <span class="err">{</span><span class="na">#if</span> <span class="na">filtered</span><span class="err">}</span><span class="na">value=</span><span class="s">"{filter}"</span><span class="err">{/</span><span class="na">if</span><span class="err">}</span><span class="nt">&gt;</span>
+<span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">&#34;/todo&#34;</span> <span class="na">method=</span><span class="s">&#34;GET&#34;</span> <span class="na">name=</span><span class="s">&#34;search&#34;</span> <span class="na">up-target=</span><span class="s">&#34;.container&#34;</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&#34;form-row align-items-center&#34;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&#34;col-sm-3 my-1&#34;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;label</span> <span class="na">class=</span><span class="s">&#34;sr-only&#34;</span> <span class="na">for=</span><span class="s">&#34;filter&#34;</span><span class="nt">&gt;</span>Search<span class="nt">&lt;/label&gt;</span>
+      <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#34;text&#34;</span> <span class="na">name=</span><span class="s">&#34;filter&#34;</span> <span class="na">class=</span><span class="s">&#34;form-control&#34;</span> <span class="na">id=</span><span class="s">&#34;filter&#34;</span> <span class="na">placeholder=</span><span class="s">&#34;Search By Title&#34;</span> <span class="na">required</span> <span class="err">{</span><span class="na">#if</span> <span class="na">filtered</span><span class="err">}</span><span class="na">value=</span><span class="s">&#34;{filter}&#34;</span><span class="err">{/</span><span class="na">if</span><span class="err">}</span><span class="nt">&gt;</span>
     <span class="nt">&lt;/div&gt;</span>
 
-    <span class="nt">&lt;input</span> <span class="na">class=</span><span class="s">"btn btn-primary"</span> <span class="na">value=</span><span class="s">"Search"</span> <span class="na">type=</span><span class="s">"submit"</span><span class="nt">&gt;</span><span class="ni">&amp;nbsp;</span>
+    <span class="nt">&lt;input</span> <span class="na">class=</span><span class="s">&#34;btn btn-primary&#34;</span> <span class="na">value=</span><span class="s">&#34;Search&#34;</span> <span class="na">type=</span><span class="s">&#34;submit&#34;</span><span class="nt">&gt;</span><span class="ni">&amp;nbsp;</span>
 
     <i class="conum" data-value="2"></i><b>(2)</b>
-    <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">"btn btn-secondary {#if !filtered}disabled{/if}"</span> <span class="na">href=</span><span class="s">"/todo"</span> <span class="na">role=</span><span class="s">"button"</span> <span class="na">up-target=</span><span class="s">".container"</span><span class="nt">&gt;</span>Clear Filter<span class="nt">&lt;/a&gt;</span>
+    <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">&#34;btn btn-secondary {#if !filtered}disabled{/if}&#34;</span> <span class="na">href=</span><span class="s">&#34;/todo&#34;</span> <span class="na">role=</span><span class="s">&#34;button&#34;</span> <span class="na">up-target=</span><span class="s">&#34;.container&#34;</span><span class="nt">&gt;</span>Clear Filter<span class="nt">&lt;/a&gt;</span>
   <span class="nt">&lt;/div&gt;</span>
 <span class="nt">&lt;/form&gt;</span>
 </pre></td></tr></tbody></table></code></pre>
@@ -1069,15 +1069,15 @@ After importing its JavaScript file, all that&#8217;s needed is to add the <code
 </div>
 <div class="colist arabic">
 <table>
-<tr>
+<tbody><tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>When receiving the result of the form submission, replace the <code>&lt;div&gt;</code> with CSS class <code>container</code> of the current page with the one from the response</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Do the same when following the "Clear Filter" link</td>
+<td>Do the same when following the &#34;Clear Filter&#34; link</td>
 </tr>
-</table>
+</tbody></table>
 </div>
 <div class="paragraph">
 <p>The magic trick of Unpoly is that links and forms with the <code>up-target</code> attribute are intercepted by Unpoly and executed via AJAX calls.
@@ -1090,16 +1090,16 @@ allowing to remain on the same page also when showing forms such as the one for 
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/qute_modal.png" alt="qute modal">
+<img src="/images/qute_modal.png" alt="qute modal"/>
 </div>
 </div>
 <div class="paragraph">
 <p>Note that if JavaScript is disabled, the application gracefully falls back to full page loads. I.e. it will still be fully functional, just with a slightly degraded user experience.
-The same would happen when accessing the edit dialog directly via its URL or when opening the "Edit" link in a new tab or window:</p>
+The same would happen when accessing the edit dialog directly via its URL or when opening the &#34;Edit&#34; link in a new tab or window:</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="/images/qute_tab.png" alt="qute tab">
+<img src="/images/qute_tab.png" alt="qute tab"/>
 </div>
 </div>
 </div>
@@ -1144,7 +1144,7 @@ The same would happen when accessing the edit dialog directly via its URL or whe
 </pre></td><td class="code"><pre>...
 <span class="nt">&lt;head&gt;</span>
   ...
-  <span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">"stylesheet"</span> <span class="na">href=</span><span class="s">"/webjars/bootstrap/4.4.1/css/bootstrap.min.css"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&#34;stylesheet&#34;</span> <span class="na">href=</span><span class="s">&#34;/webjars/bootstrap/4.4.1/css/bootstrap.min.css&#34;</span><span class="nt">&gt;</span>
   ...
 <span class="nt">&lt;/head&gt;</span>
 ...
@@ -1152,7 +1152,7 @@ The same would happen when accessing the edit dialog directly via its URL or whe
 </div>
 </div>
 <div class="paragraph">
-<p>This is all that&#8217;s needed in order to use Bootstrap via WebJars.
+<p>This is all that’s needed in order to use Bootstrap via WebJars.
 Note this will work on the JVM and also with a native binary via <a href="https://www.graalvm.org/">GraalVM</a>:
 WebJars resources are located under <em>META-INF/resources</em>, and Quarkus <a href="https://quarkus.io/guides/writing-native-applications-tips#including-resources">automatically adds</a> all resources from there when building a native image.</p>
 </div>
@@ -1166,8 +1166,8 @@ WebJars resources are located under <em>META-INF/resources</em>, and Quarkus <a 
 Where only web applications based on REST APIs called by client-side web applications were supported before, Qute is a great addition to the list of Quarkus extensions, allowing to choose different architecture styles based on your needs and preferences.</p>
 </div>
 <div class="paragraph">
-<p>Note that Qute currently is in "Experimental" state, i.e. it&#8217;s a great time to give it a try and share your feedback, but be prepared for possible immaturities and potential changes down the road.
-E.g. I noticed that complex boolean expressions in template conditions <a href="https://github.com/quarkusio/quarkus/issues/6369">aren&#8217;t support yet</a>.
+<p>Note that Qute currently is in &#34;Experimental&#34; state, i.e. it’s a great time to give it a try and share your feedback, but be prepared for possible immaturities and potential changes down the road.
+E.g. I noticed that complex boolean expressions in template conditions <a href="https://github.com/quarkusio/quarkus/issues/6369">aren’t support yet</a>.
 Also it would be great to get build-time feedback upon <a href="https://github.com/quarkusio/quarkus/issues/6391">invalid variable references</a> in templates.</p>
 </div>
 <div class="paragraph">

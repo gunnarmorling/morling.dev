@@ -17,20 +17,20 @@
 <meta property="og:description" content="
 As part of my new job at Decodable,
 I am also planning to contribute to the Apache Flink project
-(as Decodable&#8217;s fully-managed stream processing platform is based on Flink).
+(as Decodable’s fully-managed stream processing platform is based on Flink).
 Right now, I am in the process of familiarizing myself with the Flink code base,
 and as such I am of course building the project from source, too.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/maven-what-are-you-waiting-for/" />
+<meta property="og:url" content="https://www.morling.dev/blog/maven-what-are-you-waiting-for/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2022-12-18T13:45:00+01:00" />
 <meta property="article:modified_time" content="2022-12-18T13:45:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Maven, What Are You Waiting For?!"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Maven, What Are You Waiting For?!"/>
 <meta name="twitter:description" content="
 As part of my new job at Decodable,
 I am also planning to contribute to the Apache Flink project
-(as Decodable&#8217;s fully-managed stream processing platform is based on Flink).
+(as Decodable’s fully-managed stream processing platform is based on Flink).
 Right now, I am in the process of familiarizing myself with the Flink code base,
 and as such I am of course building the project from source, too.
 "/>
@@ -268,7 +268,7 @@ and as such I am of course building the project from source, too.
 				<div class="paragraph">
 <p>As part of my <a href="/blog/why-i-joined-decodable/">new job</a> at Decodable,
 I am also planning to contribute to the <a href="https://flink.apache.org/">Apache Flink</a> project
-(as Decodable&#8217;s fully-managed <a href="https://www.decodable.co/product">stream processing platform</a> is based on Flink).
+(as Decodable’s fully-managed <a href="https://www.decodable.co/product">stream processing platform</a> is based on Flink).
 Right now, I am in the process of familiarizing myself with the Flink code base,
 and as such I am of course building the project from source, too.</p>
 </div>
@@ -276,9 +276,9 @@ and as such I am of course building the project from source, too.</p>
 <p>Flink uses Apache Maven as its build tool.
 It comes with the <a href="https://maven.apache.org/wrapper/">Maven Wrapper</a>,
 simplifying the onboarding experience for new contributors,
-who don&#8217;t need to have Maven installed upfront.
+who don’t need to have Maven installed upfront.
 The configured Maven version is quite old though, 3.2.5 from 2014.
-Not even coloured output on the CLI yet&#8201;&#8212;&#8201;<em>Boo!</em>
+Not even coloured output on the CLI yet — <em>Boo!</em>
 So I tried to build Flink with the latest stable version of Maven, 3.8.6 at the time of writing,
 but ran into some issues doing so.</p>
 </div>
@@ -292,7 +292,7 @@ as Maven since version 3.8.1 <a href="https://maven.apache.org/docs/3.8.1/releas
 This means that your build will fail if any dependency pulls in an HTTP repository.</p>
 </div>
 <div class="paragraph">
-<p>Dealing with this is a bit cumbersome, as it&#8217;s not always obvious which dependency is causing that issue.
+<p>Dealing with this is a bit cumbersome, as it’s not always obvious which dependency is causing that issue.
 For Flink, I encountered two instances of that problem.
 First, a transitive dependency of the <a href="https://github.com/apache/flink/tree/master/flink-connectors/flink-connector-hive"><em>flink-connector-hive_2.12</em></a> module
 (message slightly adapted for readability):</p>
@@ -327,17 +327,17 @@ First, a transitive dependency of the <a href="https://github.com/apache/flink/t
 </div>
 </div>
 <div class="paragraph">
-<p>There&#8217;s three non-HTTPS repositories involved here which got blocked by Maven.
+<p>There’s three non-HTTPS repositories involved here which got blocked by Maven.
 Note that those are <em>all</em> the unsecure repositories found in the dependency chain, they are not necessarily related to that particular error.</p>
 </div>
 <div class="paragraph">
-<p>Unfortunately, there&#8217;s no good way for identifying which dependency exactly is pulling them into the build and which repository is the problem here.
+<p>Unfortunately, there’s no good way for identifying which dependency exactly is pulling them into the build and which repository is the problem here.
 Instead, you need to analyse all the dependencies from the project root to the flagged dependency, including any potential parent POM(s).
-In the case at hand, the problematic repo is the "conjars" one, as defined in the parent POM of the <a href="https://repo1.maven.org/maven2/org/apache/hive/hive-exec/2.3.9/"><em>org:apache:hive:hive-exec</em></a> artifact, <em>org:apache:hive</em>.</p>
+In the case at hand, the problematic repo is the &#34;conjars&#34; one, as defined in the parent POM of the <a href="https://repo1.maven.org/maven2/org/apache/hive/hive-exec/2.3.9/"><em>org:apache:hive:hive-exec</em></a> artifact, <em>org:apache:hive</em>.</p>
 </div>
 <div class="paragraph">
-<p>As far as I am aware, there&#8217;s no way for overriding such dependency-defined repositories in a downstream build;
-the only way I&#8217;ve found is to define a repository with the same id in a custom <em>settings.xml</em> file, redefining its URL to make use of HTTPS:</p>
+<p>As far as I am aware, there’s no way for overriding such dependency-defined repositories in a downstream build;
+the only way I’ve found is to define a repository with the same id in a custom <em>settings.xml</em> file, redefining its URL to make use of HTTPS:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -355,10 +355,10 @@ the only way I&#8217;ve found is to define a repository with the same id in a cu
 12
 13
 14
-</pre></td><td class="code"><pre><span class="cp">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
-<span class="nt">&lt;settings</span> <span class="na">xmlns=</span><span class="s">"http://maven.apache.org/SETTINGS/1.0.0"</span>
-  <span class="na">xmlns:xsi=</span><span class="s">"http://www.w3.org/2001/XMLSchema-instance"</span>
-  <span class="na">xsi:schemaLocation=</span><span class="s">"http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd"</span><span class="nt">&gt;</span>
+</pre></td><td class="code"><pre><span class="cp">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
+<span class="nt">&lt;settings</span> <span class="na">xmlns=</span><span class="s">&#34;http://maven.apache.org/SETTINGS/1.0.0&#34;</span>
+  <span class="na">xmlns:xsi=</span><span class="s">&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span>
+  <span class="na">xsi:schemaLocation=</span><span class="s">&#34;http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd&#34;</span><span class="nt">&gt;</span>
 
   <span class="nt">&lt;mirrors&gt;</span>
     <span class="nt">&lt;mirror&gt;</span>
@@ -376,8 +376,8 @@ the only way I&#8217;ve found is to define a repository with the same id in a cu
 <p>Building Flink with this <em>settings.xml</em> file gets us beyond that error.
 As far as the other two repositories are concerned,
 the JBoss one is actually defined in the root POM of Apache Flink itself.
-I&#8217;m not sure whether it&#8217;s actually needed, but I have created a <a href="https://github.com/apache/flink/pull/21524">pull request</a> for changing it to HTTPS, just in case.
-The "apache.snapshots" repo is defined in the parent POM of <em>org:apache:hive</em> and seems also not needed.
+I’m not sure whether it’s actually needed, but I have created a <a href="https://github.com/apache/flink/pull/21524">pull request</a> for changing it to HTTPS, just in case.
+The &#34;apache.snapshots&#34; repo is defined in the parent POM of <em>org:apache:hive</em> and seems also not needed.
 You could override it in your <em>settings.xml</em> using its <a href="https://repository.apache.org/content/groups/snapshots/">HTTPS URL</a> as a measure of good practice, though.</p>
 </div>
 <div class="paragraph">
@@ -402,15 +402,15 @@ Downloading from maven-default-http-blocker: http://0.0.0.0/net/minidev/json-sma
 </div>
 </div>
 <div class="paragraph">
-<p>The build wouldn&#8217;t fail, though: after exactly 75 seconds, it continues and runs to completion.
-So what&#8217;s causing this stall?
+<p>The build wouldn’t fail, though: after exactly 75 seconds, it continues and runs to completion.
+So what’s causing this stall?
 Again, a non-HTTPS repository is the culprit, but in a slightly more confusing way.
 As it turns out, that transitive dependency to the <em>net.minidev:json-smart</em> library is declared using a version range by the artifact <a href="https://mvnrepository.com/artifact/com.nimbusds/nimbus-jose-jwt/4.41.1"><em>com.nimbusds:nimbus-jose-jwt</em></a>: <code>[1.3.1,2.3]</code>.</p>
 </div>
 <div class="paragraph">
 <p>So Maven reaches out to all configured repositories in order to identify the latest version within that range.
 Now the <em>hadoop-auth</em> dependency (via its parent <em>hadoop-main</em>) pulls in the <a href="http://repository.jboss.org/nexus/content/groups/public/">JBoss HTTP repository</a>;
-and while access to this is prevented via Maven&#8217;s HTTP blocker, for some reason it still tries to connect to that blocker&#8217;s pseudo URL 0.0.0.0.
+and while access to this is prevented via Maven’s HTTP blocker, for some reason it still tries to connect to that blocker’s pseudo URL 0.0.0.0.
 After 75 seconds, this request eventually times out and the build continues.
 Go figure.</p>
 </div>
@@ -455,7 +455,7 @@ Go figure.</p>
 </div>
 </div>
 <div class="paragraph">
-<p>This approach has the advantage that it can be done in a persistent way as part of the Maven POM itself, there&#8217;s no need for a custom <em>settings.xml</em> or build time parameters like the offline flag.</p>
+<p>This approach has the advantage that it can be done in a persistent way as part of the Maven POM itself, there’s no need for a custom <em>settings.xml</em> or build time parameters like the offline flag.</p>
 </div>
 </li>
 </ul>
@@ -464,27 +464,27 @@ Go figure.</p>
 <p>In any case, the build will now skip that 75 seconds pause.
 I.e. less time for drinking a coffee while the build is running, which is a good thing of course.
 Now you might wonder why exactly 75 seconds,
-and I have to admit it&#8217;s not fully clear to me.</p>
+and I have to admit it’s not fully clear to me.</p>
 </div>
 <div class="paragraph">
 <p>When running the build with a debugger attached
-(I know, I know, it&#8217;s <a href="https://twitter.com/gunnarmorling/status/1603291378166992898">not en-vogue</a> these days),
-I didn&#8217;t see any timeout configuration for establishing that HTTP connection.
+(I know, I know, it’s <a href="https://twitter.com/gunnarmorling/status/1603291378166992898">not en-vogue</a> these days),
+I didn’t see any timeout configuration for establishing that HTTP connection.
 Some default TCP connection timeout on macOS perhaps?
 Interestingly, when trying with the latest Alpha of Maven 4,
 the build would only stall for ten seconds when trying to resolve that version range;
-Maven&#8217;s HTTP client is configured with a timeout of ten seconds as of this release.</p>
+Maven’s HTTP client is configured with a timeout of ten seconds as of this release.</p>
 </div>
 <div class="paragraph">
 <p>The moral of the story?
-Don&#8217;t put repository information into published Maven POMs.
+Don’t put repository information into published Maven POMs.
 If you publish something to Maven Central, all its dependencies should be resolvable from there, too.
 Luckily, Maven 4 will make this problem an issue of the past,
 bringing the long-awaited <a href="https://maarten.mulders.it/talks/#whats-cooking-in-maven">separation of build and consumer POMs</a>.</p>
 </div>
 <div class="paragraph">
-<p>I&#8217;d also advise caution when it comes to adding version ranges to dependency definitions,
-it can have unexpected consequences as demonstrated above, and it&#8217;s probably not worth the hassle.</p>
+<p>I’d also advise caution when it comes to adding version ranges to dependency definitions,
+it can have unexpected consequences as demonstrated above, and it’s probably not worth the hassle.</p>
 </div>
 			</div>
 

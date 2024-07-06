@@ -15,19 +15,19 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Last Updated Columns With Postgres - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta property="og:title" content="Last Updated Columns With Postgres" />
 <meta property="og:description" content="
-In many applications it&#8217;s a requirement to keep track of when a record was created and updated the last time.
+In many applications it’s a requirement to keep track of when a record was created and updated the last time.
 Often, this is implemented by having columns such as created_at and updated_at within each table.
 To make things as simple as possible for application developers,
 the database itself should take care of maintaining these values automatically when a record gets inserted or updated.
 " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/last-updated-columns-with-postgres/" />
+<meta property="og:url" content="https://www.morling.dev/blog/last-updated-columns-with-postgres/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2024-02-20T09:15:00+01:00" />
 <meta property="article:modified_time" content="2024-02-20T09:15:00+01:00" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Last Updated Columns With Postgres"/>
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Last Updated Columns With Postgres"/>
 <meta name="twitter:description" content="
-In many applications it&#8217;s a requirement to keep track of when a record was created and updated the last time.
+In many applications it’s a requirement to keep track of when a record was created and updated the last time.
 Often, this is implemented by having columns such as created_at and updated_at within each table.
 To make things as simple as possible for application developers,
 the database itself should take care of maintaining these values automatically when a record gets inserted or updated.
@@ -264,35 +264,35 @@ the database itself should take care of maintaining these values automatically w
 
 			<div class="markdown">
 				<div class="paragraph">
-<p>In many applications it&#8217;s a requirement to keep track of when a record was created and updated the last time.
+<p>In many applications it’s a requirement to keep track of when a record was created and updated the last time.
 Often, this is implemented by having columns such as <code>created_at</code> and <code>updated_at</code> within each table.
 To make things as simple as possible for application developers,
 the database itself should take care of maintaining these values automatically when a record gets inserted or updated.</p>
 </div>
 <div class="paragraph">
-<p>For the creation timestamp, that&#8217;s as simple as specifying a column default value of <code>current_timestamp</code>.
+<p>For the creation timestamp, that’s as simple as specifying a column default value of <code>current_timestamp</code>.
 When omitting the value from an <code>INSERT</code> statement,
 the field will be populated automatically with the current timestamp.
 What about the update timestamp though?</p>
 </div>
 <div class="paragraph">
-<p>Solely relying on the default value won&#8217;t cut it, as the field already has a value when a row gets updated.
-You also shouldn&#8217;t set the value from within your application code.
+<p>Solely relying on the default value won’t cut it, as the field already has a value when a row gets updated.
+You also shouldn’t set the value from within your application code.
 Otherwise, create and update timestamps would have different sources,
 potentially leading to anomalies if there are clock differences between application and database server,
-such as a row&#8217;s <code>created_at</code> timestamp being younger than it&#8217;s <code>updated_at</code> timestamp.</p>
+such as a row’s <code>created_at</code> timestamp being younger than it’s <code>updated_at</code> timestamp.</p>
 </div>
 <div class="paragraph">
 <p>For MySQL, the <a href="https://dev.mysql.com/doc/refman/8.0/en/timestamp-initialization.html"><code>ON UPDATE</code></a> clause can be used to set the current timestamp when a row gets updated.
 Postgres does not support this feature, unfortunately.
 If you search for a solution,
 <a href="https://stackoverflow.com/questions/2362871/postgresql-current-timestamp-on-update">most</a> <a href="https://stackoverflow.com/questions/1035980/update-timestamp-when-row-is-updated-in-postgresql">folks</a> <a href="https://www.reddit.com/r/PostgreSQL/comments/10shxej/how_to_update_a_timestamp_automatically/">suggest</a> defining an <code>ON UPDATE</code> trigger for setting the update timestamp.
-This also is what I&#8217;d have done until recently;
+This also is what I’d have done until recently;
 it works, but having to declare such a trigger for every table can quickly become a bit cumbersome.</p>
 </div>
 <div class="paragraph">
-<p>But as I&#8217;ve just learned from a colleague, there&#8217;s actually a much simpler solution:
-Postgres lets you explicitly set a field&#8217;s value to its default value when <a href="https://www.postgresql.org/docs/current/sql-update.html">updating a row</a>.
+<p>But as I’ve just learned from a colleague, there’s actually a much simpler solution:
+Postgres lets you explicitly set a field’s value to its default value when <a href="https://www.postgresql.org/docs/current/sql-update.html">updating a row</a>.
 So given this table and row:</p>
 </div>
 <div class="listingblock">
@@ -314,7 +314,7 @@ So given this table and row:</p>
   <span class="n">updated_at</span> <span class="nb">TIMESTAMP</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="k">current_timestamp</span>
 <span class="p">);</span>
 
-<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">movie</span> <span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">score</span><span class="p">)</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'North by Northwest'</span><span class="p">,</span> <span class="mi">9</span><span class="p">.</span><span class="mi">2</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">movie</span> <span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">score</span><span class="p">)</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">&#39;North by Northwest&#39;</span><span class="p">,</span> <span class="mi">9</span><span class="p">.</span><span class="mi">2</span><span class="p">);</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -340,7 +340,7 @@ So given this table and row:</p>
 </div>
 <div class="paragraph">
 <p>The value will be retrieved by the database when executing the statement, so there is no potential for inconsistencies with the <code>created_at</code> value.
-It is not quite as elegant as MySQL&#8217;s <code>ON UPDATE</code>,
+It is not quite as elegant as MySQL’s <code>ON UPDATE</code>,
 as you must make sure to set the value to <code>DEFAULT</code> in each <code>UPDATE</code> statement your application issues.
 But pretty handy nevertheless, and certainly more convenient than defining triggers for all tables.
 If you need to retrieve the value from within your application as well,
