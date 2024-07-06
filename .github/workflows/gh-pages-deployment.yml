@@ -15,7 +15,8 @@ jobs:
 
     - name: Build
       run: docker run --rm -v $PWD:/src quay.io/gunnarmorling/hugo-builder bash -c "cd /src && /hugo/hugo -F"
-
+      env:
+        DOCKER_ENABLE_DEPRECATED_PULL_SCHEMA_1_IMAGE: true
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v2
       env:
