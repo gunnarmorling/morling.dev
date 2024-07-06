@@ -1,0 +1,191 @@
+---
+title: "Shell Spell: Extracting and Propagating Multiple Values With jq"
+date: 2024-07-06T11:20:00+02:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+In my day job at https://www.decodable.co/[Decodable],
+I am currently in the process of terraforming some cloud infrastructure for an upcoming hands-on lab.
+Part of this set-up is a Postgres database on Amazon RDS,
+which I am creating using the https://developer.hashicorp.com/terraform/tutorials/aws/aws-rds[Terraform AWS modules].
+Now, once my database was up and running,
+I wanted to extract two dynamically generated values from Terraform:
+the random password created for the root user, and the database host URL.
+On my way down the rabbit hole for finding a CLI command for doing this efficiently,
+I learned a few interesting shell details which I'd like to share. 
+
+<!--more-->
+
+The basic idea is to fetch the current Terraform state via `terraform show -json` and then extract the two values we're after from there.
+The JSON output of Terraform looks like this
+(shortened for readability, and no, those aren't the actual values from my database instance 😉):
+
+[source,json,linenums=true]
+----
+{
+  "format_version": "1.0",
+  "terraform_version": "1.5.4",
+  "values": {
+    "root_module": {
+      "resources": [
+        ...
+      ],
+      "child_modules": [
+        {
+          "resources": [
+            {
+              "address": "module.lab-001.aws_db_instance.lab_001_db",
+              "mode": "managed",
+              "type": "aws_db_instance",
+              "name": "lab_001_db",
+              "provider_name": "registry.terraform.io/hashicorp/aws",
+              "schema_version": 2,
+              "values": {
+                "address": "lab-001-db.a4dadf981fgh.us-east-1.rds.amazonaws.com",
+                ...
+              },
+              "sensitive_values": {
+                ...
+              },
+              "depends_on": [
+                "module.lab-001.random_password.this",
+                ...
+              ]
+            },
+
+            {
+              "address": "module.lab-001.random_password.this",
+              "mode": "managed",
+              "type": "random_password",
+              "name": "this",
+              "provider_name": "registry.terraform.io/hashicorp/random",
+              "schema_version": 3,
+              "values": {
+                "result": "5adCpQc]$s3pQ=a",
+                ...        
+              },
+              "sensitive_values": {
+                ...
+              }
+            }
+          ],
+          "address": "module.lab-001"
+        }
+      ]
+    }
+  }
+}
+----
+
+Extracting the two values is relatively simple using jq.
+But I wanted to get both values at once, with a single Terraform call--which is a remote and thus slow operation--so I could pass them on to psql and get a database session.
+All that without storing the Terraform output in a file (which would taint my workspace), and as a copy/paste friendly snippet which I can add to the README of the project for documentation purposes.
+
+After fiddling around for a little while, I asked for help in our internal Slack,
+where my fellow Decoder Jared Breeden came up with this really cool solution
+(thanks again, mate!):
+
+[source,bash,linenums=true]
+----
+({
+  read -r host
+  read -r password
+} < <(terraform show -json | jq -r '
+  .values.root_module.child_modules[]
+  | select(.address=="module.lab-001")
+  | .resources[]
+  | (select(.address=="module.lab-001.random_password.this") | .values.result),
+    (select(.address=="module.lab-001.aws_db_instance.lab_001_db") | .values.address)')
+psql "postgresql://root:${password}@${host}:5432/labdb")
+----
+
+This does exactly what I want:
+retrieving the password and database host from the current Terraform state and using them to open a session with the database via psql.
+
+So let's dissect this little gem to understand how it works.
+
+[source,bash,linenums=true]
+----
+terraform show -json
+----
+
+`terraform show -json` retrieves the full JSON description of the Terraform state shown above.
+The resulting JSON is piped to https://jqlang.github.io/jq/[jq] for extracting the values of password and host:
+
+[source,bash,linenums=true]
+----
+jq -r '
+  .values.root_module.child_modules[]
+  | select(.address=="module.lab-001")
+  | .resources[]
+  | (select(.address=="module.lab-001.random_password.this") | .values.result),
+    (select(.address=="module.lab-001.aws_db_instance.lab_001_db") | .values.address)'
+----
+
+jq is invaluable for handling JSON and I highly recommend spending some time with its reference documentation to learn about it.
+In the case at hand, the https://jqlang.github.io/jq/manual/#select[`select()`] function is used within a https://jqlang.github.io/jq/manual/#pipe[pipeline] for finding the right elements within the array of Terraform child modules and extracting the required values.
+Putting the two inner `select()` calls into parenthesis makes them two separate expressions whose output will go onto separate lines.
+
+At this point, the value of host and password are passed to stdout
+(the order is determined by the order of resource definitions in the input _main.tf_ file and thus stable):
+
+[source,bash,linenums=true]
+----
+lab-001-db.a4dadf981fgh.us-east-1.rds.amazonaws.com
+5adCpQc]$s3pQ=a
+----
+
+How to pass on the two values to `psql`?
+This is where the https://www.gnu.org/software/bash/manual/html_node/Command-Grouping.html[grouping command] in curly braces comes in:
+
+[source,bash,linenums=true]
+----
+{
+  read -r host
+  read -r password
+} < <(...)
+----
+
+The list of commands between curly braces will be executed in the current shell context as one unit;
+in particular any https://www.gnu.org/software/bash/manual/html_node/Redirections.html[input/output redirections] will be applied to all the commands.
+Here we redirect the input (using the `<` operator, the counterpart to the more commonly used `>` operator for redirecting a command's output) of the grouping command to the output of the jq invocation with the help of https://www.gnu.org/software/bash/manual/html_node/Process-Substitution.html[process substitution] (`<(\...)`),
+about which I link:/blog/filtering-process-output-with-tee/[wrote recently].
+
+[NOTE]
+====
+You might wonder why input redirection and process substitution are used here,
+instead of simply piping the output of jq to the grouping command.
+Indeed this would work when using zsh as a shell.
+Other shells such as bash execute each command of a pipeline in https://relentlesscoding.com/posts/bash-commands-in-pipelines-subshells/[its own subshell], though.
+This means that the two variables wouldn't be available any longer once the grouping command has completed.
+The input redirection approach thus increases portability of the solution across shells.
+====
+
+Within the grouping command, the two lines on stdin are https://www.gnu.org/software/bash/manual/html_node/Bash-Builtins.html#index-read[read] and stored under the names `host` and `password` in the shell context, respectively.
+
+That way, they can be referenced in the subsequent command for opening our database session:
+
+[source,bash,linenums=true]
+----
+psql "postgresql://root:${password}@${host}:5432/labdb"
+----
+
+There's one remaining problem,
+and that is that the `host` and `password` variables are still around after closing the database session,
+which may pose a security issue.
+We could call `unset` to remove them,
+but it's even easier to make everything another grouping command,
+using `(\...)` this time.
+This ensures a sub-shell is created for the commands which will be destroyed after closing the database session.
+
+Learning some new shell tricks will never be boring to me.
+Do you have another solution for solving this little problem?
+Let me know in the comments below!
