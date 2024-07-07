@@ -13,7 +13,7 @@ ifdef::env-github[]
 endif::[]
 
 In my day job at https://www.decodable.co/[Decodable],
-I am currently in the process of terraforming some cloud infrastructure for an upcoming hands-on lab.
+I am currently working with Terraform to provision some cloud infrastructure for an upcoming hands-on lab.
 Part of this set-up is a Postgres database on Amazon RDS,
 which I am creating using the https://developer.hashicorp.com/terraform/tutorials/aws/aws-rds[Terraform AWS modules].
 Now, once my database was up and running,
@@ -24,8 +24,9 @@ I learned a few interesting shell details which I'd like to share.
 
 <!--more-->
 
-The basic idea is to fetch the current Terraform state via `terraform show -json` and then extract the two values we're after from there.
-The JSON output of Terraform looks like this
+The basic idea is to fetch the current Terraform state via `terraform show -json` and then extract the two values we're after from that.
+The JSON output of Terraform looks like follows.
+The values I am after are on lines 20 and 40, respectively
 (shortened for readability, and no, those aren't the actual values from my database instance 😉):
 
 [source,json,linenums=true]
@@ -90,7 +91,7 @@ But I wanted to get both values at once, with a single Terraform call--which is 
 All that without storing the Terraform output in a file (which would taint my workspace), and as a copy/paste friendly snippet which I can add to the README of the project for documentation purposes.
 
 After fiddling around for a little while, I asked for help in our internal Slack,
-where my fellow Decoder Jared Breeden came up with this really cool solution
+where my fellow Decoder Jared Breeden took the bits I already had and morphed them into this really cool solution
 (thanks again, mate!):
 
 [source,bash,linenums=true]
@@ -108,16 +109,16 @@ psql "postgresql://root:${password}@${host}:5432/labdb")
 ----
 
 This does exactly what I want:
-retrieving the password and database host from the current Terraform state and using them to open a session with the database via psql.
-
+retrieving the password and database host from the current Terraform state in one go and using them to open a session with the database via psql.
 So let's dissect this little gem to understand how it works.
+
+`terraform show -json` retrieves the full JSON description of the Terraform state shown above:
 
 [source,bash,linenums=true]
 ----
 terraform show -json
 ----
 
-`terraform show -json` retrieves the full JSON description of the Terraform state shown above.
 The resulting JSON is piped to https://jqlang.github.io/jq/[jq] for extracting the values of password and host:
 
 [source,bash,linenums=true]
@@ -131,7 +132,7 @@ jq -r '
 ----
 
 jq is invaluable for handling JSON and I highly recommend spending some time with its reference documentation to learn about it.
-In the case at hand, the https://jqlang.github.io/jq/manual/#select[`select()`] function is used within a https://jqlang.github.io/jq/manual/#pipe[pipeline] for finding the right elements within the array of Terraform child modules and extracting the required values.
+For the case at hand, the https://jqlang.github.io/jq/manual/#select[`select()`] function is used within a https://jqlang.github.io/jq/manual/#pipe[pipeline] for finding the right elements within the array of Terraform child modules and extracting the required values.
 Putting the two inner `select()` calls into parenthesis makes them two separate expressions whose output will go onto separate lines.
 
 At this point, the value of host and password are passed to stdout
@@ -171,7 +172,7 @@ The input redirection approach thus increases portability of the solution across
 
 Within the grouping command, the two lines on stdin are https://www.gnu.org/software/bash/manual/html_node/Bash-Builtins.html#index-read[read] and stored under the names `host` and `password` in the shell context, respectively.
 
-That way, they can be referenced in the subsequent command for opening our database session:
+That way, they can be referenced in the subsequent command for opening a database session:
 
 [source,bash,linenums=true]
 ----
