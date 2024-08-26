@@ -52,7 +52,9 @@ The lock file can be a simple JSON structure like this:
 
 The `expired` attribute is used for releasing a lock after use (more on that below).
 The leader epoch, a strictly increasing numeric value, is part of the file name, e.g. _lock_0000000001.json_.
-This allows you to determine the current epoch by listing all lock files and finding the one with the highest epoch value.
+This allows you to determine the current epoch by listing all lock files and finding the one with the highest epoch value
+(all lock files but the latest one can be removed by a background process,
+thus keeping the cost for the listing call constant).
 
 Here's the overall leader election algorithm:
 
