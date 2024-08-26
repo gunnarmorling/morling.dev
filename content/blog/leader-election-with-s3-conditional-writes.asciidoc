@@ -165,6 +165,16 @@ As Martin Kleppmann describes in https://martin.kleppmann.com/2016/02/08/how-to-
 no matter how hard you try (for instance, think of unexpected GC pauses).
 So you'll always need to be prepared to detect and fence off work done by a previous leader.
 
+[NOTE]
+.Minimizing Clock Drift
+====
+While you never should rely on clock consistency across systems from a correctness point of view,
+it does make sense to keep clocks synchronous on a best-effort basis,
+thus reducing the aforementioned throughput impact.
+To do so, nodes could create a temporary file on S3 and compare its creation time on S3 with their local time.
+Alternatively, you could use the Amazon Time Sync Service, which https://aws.amazon.com/about-aws/whats-new/2023/11/amazon-time-sync-service-microsecond-accurate-time/[offers micro-second time accuracy].
+====
+
 == Fencing Off Zombies
 
 As a solution, Kleppmann suggests using the leader epoch as a fencing token.
