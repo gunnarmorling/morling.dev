@@ -335,7 +335,7 @@ This allows you to determine the current epoch by listing all lock files and fin
 <h2 id="_obtaining_the_lock">Obtaining the Lock</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>To obtain the lock, put a file for the next epoch.
+<p>To obtain the lock (step 3.), put a file for the next epoch.
 The key thing is to pass the <code>If-None-Match</code> header and handle the potential <code>412 Precondition failed</code> response.
 Using the AWS Java SDK, this could look like so:</p>
 </div>
@@ -471,7 +471,7 @@ While this may impact throughput of the system, both cases are not a correctness
 or if a non-leader determines prematurely that the current lock has expired (because its clock is ahead) and thus picks up leadership.</p>
 </div>
 <div class="paragraph">
-<p>In both cases, there’s more than node which assumes to be the leader, which is exactly what we want to avoid with leadership election.
+<p>In both cases, there’s more than one node which assumes to be the leader, which is exactly what we want to avoid with leadership election.
 But as it turns out, this is just the nature of the beast:
 leader election <a href="https://ocheselandrei.github.io/2022/06/01/leader-election-vs-consensus.html">will only ever be eventually correct</a>.
 As Martin Kleppmann describes in <a href="https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html">this excellent post</a>, checking lock validity and performing the leader’s actual work is not atomic,
