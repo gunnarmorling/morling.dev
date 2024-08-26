@@ -70,7 +70,7 @@ Here's the overall leader election algorithm:
 
 == Obtaining the Lock
 
-To obtain the lock, put a file for the next epoch.
+To obtain the lock (step 3.), put a file for the next epoch.
 The key thing is to pass the `If-None-Match` header and handle the potential `412 Precondition failed` response.
 Using the AWS Java SDK, this could look like so:
 
@@ -158,7 +158,7 @@ While this may impact throughput of the system, both cases are not a correctness
 Things look different if the current leader relies on a lock after it has expired (because its clock is behind) and another leader has been elected already,
 or if a non-leader determines prematurely that the current lock has expired (because its clock is ahead) and thus picks up leadership.
 
-In both cases, there's more than node which assumes to be the leader, which is exactly what we want to avoid with leadership election.
+In both cases, there's more than one node which assumes to be the leader, which is exactly what we want to avoid with leadership election.
 But as it turns out, this is just the nature of the beast:
 leader election https://ocheselandrei.github.io/2022/06/01/leader-election-vs-consensus.html[will only ever be eventually correct].
 As Martin Kleppmann describes in https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html[this excellent post], checking lock validity and performing the leader's actual work is not atomic,
