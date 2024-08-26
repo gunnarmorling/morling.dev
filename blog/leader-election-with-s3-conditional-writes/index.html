@@ -478,6 +478,25 @@ As Martin Kleppmann describes in <a href="https://martin.kleppmann.com/2016/02/0
 no matter how hard you try (for instance, think of unexpected GC pauses).
 So you’ll always need to be prepared to detect and fence off work done by a previous leader.</p>
 </div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Minimizing Clock Drift</div>
+<div class="paragraph">
+<p>While you never should rely on clock consistency across systems from a correctness point of view,
+it does make sense to keep clocks synchronous on a best-effort basis,
+thus reducing the aforementioned throughput impact.
+To do so, nodes could create a temporary file on S3 and compare its creation time on S3 with their local time.
+Alternatively, you could use the Amazon Time Sync Service, which <a href="https://aws.amazon.com/about-aws/whats-new/2023/11/amazon-time-sync-service-microsecond-accurate-time/">offers micro-second time accuracy</a>.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
 </div>
 </div>
 <div class="sect1">
