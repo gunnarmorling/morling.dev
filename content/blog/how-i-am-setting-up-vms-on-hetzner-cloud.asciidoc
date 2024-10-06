@@ -1,0 +1,384 @@
+---
+title: "How I Am Setting Up VMs On Hetzner Cloud"
+date: 2024-10-06T20:25:00+02:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+Whenever I've need a Linux box for some testing or experimentation,
+or projects like the link:/blog/1brc-results-are-in/[One Billion Row Challenge] a few months back,
+my go-to solution is https://www.hetzner.com/[Hetzner Online], a data center operator here in Europe.
+
+Their prices for VMs are unbeatable, starting with 3,92 €/month for two shared vCPUs (either x64 or AArch64), four GB of RAM, and 20 TB of network traffic
+(these are prices for their German data centers, they vary between regions).
+four dedicated cores with 16 GB, e.g. for running a small web server, will cost you 28.55 €/month.
+Getting a box with similar specs on AWS would set you back a multiple of that, with the (outbound) network cost being the largest chunk.
+So it's not a big surprise that more and more people realize the advantages of this offering,
+most notably Ruby on Rails creator https://x.com/dhh/[David Heinemeier Hansson],
+who has been singing the praise for Hetzner's dedicated servers, but also their VM instances, quite a bit on https://x.com/search?q=from%3Adhh%20hetzner&src=typed_query&f=live[Twitter] lately.
+
+<!--more-->
+
+So I thought I'd share the automated process I've been using over the last few years for spinning up new boxes on Hetzner Cloud,
+hoping it's gonna be helpful to other folks out there eager to explore this world of cheap compute.
+I've had that set-up in a https://github.com/gunnarmorling/cloud-boxes/[GitHub repo] for quite a while and meant to write about it,
+with the recent attention on Hetzner being a nice motivator for finally doing so.
+Note I am not affiliated with Hetzner in any way or form,
+I just like their offering and think more people should be aware of it and benefit from it.
+
+## Creating Instances
+
+To create new VMs, I am using https://www.terraform.io/[Terraform], which shouldn't be a big surprise.
+The https://registry.terraform.io/providers/hetznercloud/hcloud/latest/docs[Hetzner Terraform provider] is very mature and reflects the latest product features pretty quickly,
+as far as I can tell
+(alternatively, there's a https://github.com/hetznercloud/cli[CLI tool], and of course an https://docs.hetzner.cloud/[API] as well).
+Here's my complete Terraform definition for launching one VM instance and a firewall to control access to it:
+
+[source,terraform,linenums=true]
+----
+terraform {
+  required_providers {
+    hcloud = {
+      source  = "hetznercloud/hcloud"
+      version = "~> 1.45"
+    }
+  }
+}
+
+variable "hcloud_token" {
+  sensitive = true
+}
+
+variable "firewall_source_ip" {
+  default = "0.0.0.0"
+}
+
+# Configure the Hetzner Cloud Provider
+provider "hcloud" {
+  token = "${var.hcloud_token}" <1>
+}
+
+resource "hcloud_firewall" "common-firewall" { <2>
+  name = "common-firewall"
+
+  rule {
+    direction = "in"
+    protocol  = "tcp"
+    port      = "14625" <3>
+    source_ips = [
+      "${var.firewall_source_ip}/32" <4>
+    ]
+  }
+
+  rule {
+    direction = "in"
+    protocol  = "icmp"
+    source_ips = [
+      "${var.firewall_source_ip}/32"
+    ]
+  }
+}
+
+resource "hcloud_server" "control" { <5>
+  name        = "control"
+  image       = "fedora-40"
+  location    = "nbg1"
+  server_type = "cx22" <6>
+  keep_disk   = true
+  ssh_keys    = ["some key"] <7>
+  firewall_ids = [hcloud_firewall.common-firewall.id]
+}
+
+output "control_public_ip4" {
+  value = "${hcloud_server.control.ipv4_address}"
+}
+----
+<1> https://docs.hetzner.cloud/#authentication[Hetzner Cloud API token], defined in _.tfvars_
+<2> Setting up a firewall for limiting access to the instance
+<3> Using a random non-standard SSH port; take that, script kiddies! And no, this is not the one I am actually using
+<4> If I don't need public access, allowing to connect only from my own local machine
+<5> The VM to set up
+<6> The instance size, in this case the smallest one they have with 2 vCPUs and 4 GB of RAM
+<7> SSH access key, to be set up in the web console before
+
+Bringing up the VM is as easy as running the following command:
+
+[source,shell,linenums=true]
+----
+TF_VAR_firewall_source_ip=`dig +short txt ch whoami.cloudflare @1.0.0.1 | tr -d '"'` terraform apply -var-file=.tfvars
+----
+
+Note how I am injecting my own public IP as a variable, allowing the firewall configuration to be trimmed down to grant access only from that IP.
+That's my standard set-up for test and dev boxes which don't require public access.
+After just a little bit, your new cloud VM will be up and running,
+with Terraform reporting the IP address of the new box in its output.
+The cool thing is that you can rescale this box later on as needed.
+If you set `keep_disk` to `true` as above,
+the box will keep its initial disk size, allowing you to scale back down later on, too.
+
+So I'll always start with the smallest configuration, which costs not even four Euros per month.
+Then, when I am actually going to make use of the box for something which requires a bit more juice,
+I'll update the `server_type` line as needed, e.g. to "ccx33" for eight dedicated vCPUs and 32 GB of RAM.
+This configuration would then cost 9,2 cents per hour, until I scale it back down again to cx22.
+Rescaling just takes a minute or two and is done by re-running Terraform as shown above.
+So it's something which you can easily do whenever starting or stopping to work on some project.
+Of course, this makes sense for ad-hoc usage scenarios like mine, not so much for more permanently running workloads.
+
+## Configuring SSH
+
+After the box has been set up via Terraform,
+I am using https://github.com/ansible/ansible[Ansible] for provisioning, i.e. the installation of software
+(yepp, my Red Hat past is shining through here).
+That way, the process is fully automated, and I can set up and provision new machines with the same configuration with ease at any time.
+My Ansible set-up is made up of two parts:
+one for configuring SSH, one for installing whatever packages are needed.
+
+Here's the playbook for the SSH configuration,
+applying some best practices such as enforcing key-based authentication and disabling remote root access:
+
+[source,yaml,linenums=true]
+----
+---
+- name: Create user <1>
+  hosts: all
+  remote_user: root
+  gather_facts: false
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+  - name: have {{ user }} user
+    user:
+      name: "{{ user }}"
+      shell: /bin/bash
+
+  - name: add wheel group
+    group:
+      name: wheel
+      state: present
+  - name: Allow wheel group to have passwordless sudo
+    lineinfile:
+      dest: /etc/sudoers
+      state: present
+      regexp: '^%wheel'
+      line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+      validate: visudo -cf %s
+
+  - name: add user
+    user: name={{ user }} groups=wheel state=present append=yes
+
+  - name: Add authorized key
+    authorized_key:
+      user: "{{ user }}"
+      state: present
+      key: "{{ lookup('file', '{{ ssh_public_key_file }}') }}" <2>
+
+- name: Set up SSH <3>
+  hosts: all
+  remote_user: "build"
+  become: true
+  become_user: root
+  gather_facts: false
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+  - name: Disable root login over SSH
+    lineinfile: dest=/etc/ssh/sshd_config regexp="^PermitRootLogin" line="PermitRootLogin no" state=present
+    notify:
+      - restart sshd
+
+  - name: Disable password login
+    lineinfile: dest=/etc/ssh/sshd_config regexp="^PasswordAuthentication" line="PasswordAuthentication no" state=present
+    notify:
+      - restart sshd
+
+  - name: Change SSH port
+    lineinfile: dest=/etc/ssh/sshd_config regexp="^#Port 22" line="Port 14625" state=present
+    notify:
+      - restart sshd
+
+  handlers:
+  - name: restart sshd
+    service:
+      name: sshd
+      state: restarted
+
+----
+<1> Adding a user "build" (name defined _vars.yml_) with sudo permissions
+<2> The SSH key to add for the user
+<3> Configuring SSH: disabling remote root login, disabling password login, and changing the SSH port to a non-standard value.
+
+Before running Ansible, I need to put the IP reported by Terraform into the _hosts_ file, along with the path of private and public SSH key:
+
+[source,yaml,linenums=true]
+----
+[hetzner]
+<IP of the box>:14625 ansible_ssh_private_key_file=path/to/my-key ssh_public_key_file=/path/to/my-key.pub
+----
+
+Then this playbook can be run like so:
+
+[source,bash,linenums=true]
+----
+ansible-playbook -i hosts --limit=hetzner init-ssh.yml
+----
+
+Note this can be executed only exactly once.
+Afterwards, the root user cannot connect anymore via SSH.
+Purists out there might say that the non-standard SSH port smells a bit like security by obscurity,
+and they wouldn't be wrong.
+But it does help to prevent lots of entries about failed log-in attempts in the log, as most folks just randomly looking for machines to hack won't bother trying with ports other than 22.
+
+## Provisioning Software
+
+With the SSH configuration hardened a bit,
+it's time to install some software onto the machine.
+What you'll install depends on your specific requirements of course.
+For my purposes, I have two roles for installing some commonly required things and Docker,
+which both are incorporated via a playbook to be executed by the `build` user set up in the step before:
+
+[source,yaml,linenums=true]
+----
+---
+- hosts: all
+  remote_user: build
+  roles:
+     - base
+     - docker
+
+  vars_files:
+    - vars.yml
+----
+
+Here's the `base` role's task definitions:
+
+[source,yaml,linenums=true]
+----
+- name: upgrade all packages
+  become: true
+  become_user: root
+  dnf: name="*" state=latest
+- name: Have common tools
+  become: true
+  become_user: root
+  dnf: name={{item}} state=latest
+  with_items:
+     - git
+     - wget
+     - the_silver_searcher
+     - htop
+     - acl
+     - dnf-plugins-core
+     - bash-completion
+     - jq
+     - gnupg
+     - haveged
+     - vim-enhanced
+     - entr
+     - zip
+     - fail2ban
+     - httpie
+     - hyperfine
+
+- name: Have SDKMan
+  become: no
+  shell: "curl -s 'https://get.sdkman.io' | bash"
+  args:
+    executable: /bin/bash
+    creates: /home/build/.sdkman/bin/sdkman-init.sh
+
+- name: Have .bashrc
+  copy:
+    src: user_bashrc
+    dest: /home/{{ user }}/.bashrc
+    mode: 0644
+----
+
+I used to install Java via a separate role, allowing me to switch versions via `update-alternatives`,
+but this became a bit of a hassle, so I am doing this via the amazing https://sdkman.io/[SDKMan] tool now.
+Finally, for the sake of completeness, here are the tasks for installing Docker.
+It's a bit more complex than I'd like it to be,
+due to the fact that a separate DNF repo must be configured first:
+
+[source,yaml,linenums=true]
+----
+- name: Have docker repo
+  become: true
+  become_user: root
+  shell:  'dnf config-manager \
+    --add-repo \
+    https://download.docker.com/linux/fedora/docker-ce.repo'
+- name: Have dnf cache updated
+  become: true
+  become_user: root
+  shell: 'dnf makecache'
+
+- name: Have Docker
+  become: true
+  become_user: root
+  dnf: name={{item}} state=latest
+  with_items:
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+    - docker-compose
+    - docker-buildx-plugin
+
+- name: add docker group
+  group: name=docker state=present
+  become: true
+  become_user: root
+
+- name: Have /etc/docker
+  file: path=/etc/docker state=directory
+  become: true
+  become_user: root
+
+- name: Have daemon.json
+  become: true
+  become_user: root
+  copy:
+    src: docker_daemon.json
+    dest: /etc/docker/daemon.json
+
+- name: Ensure Docker is started
+  become: true
+  become_user: root
+  systemd:
+    state: started
+    enabled: yes
+    name: docker
+
+- name: add user
+  become: true
+  become_user: root
+  user: name={{ user}} groups=docker state=present append=yes
+----
+
+## Try It Out Yourself
+
+Thanks to Terraform and Ansible,
+spinning up a box for testing and development on Hetzner Cloud can be fully automated,
+letting you go from zero to a running VM--set up for safe SSH access, and provisioned with the software you need--within a few minutes.
+Once your VM is running, you can scale it up, and back down,
+based on your specific workloads.
+This allows you to stay on a really, really cheap configuration when you don't actually need it, and then scale up and pay a bit more just for the hours you actually require the additional power.
+
+You can find my complete Terraform and Ansible set-up for Hetzner Cloud in this https://github.com/gunnarmorling/cloud-boxes/[GitHub repository].
+Note this is purely a side project I am using for personal projects, such as ad-hoc experimentation with new Java versions.
+I am not a Linux sysadmin by profession, so make sure to examine all the details and use it at your own risk.
+In case you do want to run this on a publicly reachable box and not behind a firewall,
+I recommend you install https://github.com/fail2ban/fail2ban[fail2ban] as an additional measure of caution.
+
+If you have any suggestions for improving this set-up, in particular for further improving security,
+please let me know in the comments below.
