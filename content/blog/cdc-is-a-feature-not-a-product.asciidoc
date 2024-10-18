@@ -1,0 +1,56 @@
+---
+title: "CDC Is a Feature Not a Product"
+date: 2024-10-18T15:55:00+02:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+During and after my time as the lead of https://debezium.io/[Debezium],
+a widely used open-source platform for Change Data Capture (CDC) for a variety of database,
+I got repeatedly asked whether I'd be interested in creating a company around CDC.
+VCs, including wellknown household names, did and do reach out to me,
+pitching this idea.
+
+<!--more-->
+
+On the surface, this sounds tempting.
+CDC, and Debezium in particular, are widely used in the data sphere.
+So taking a few million seed capital and building CDC-as-a-Service sounds like an attractive idea, doesn't it?
+Living the start-up life and creating a unicorn-to-be, oh what a sweet dream.
+But having worked on CDC for quite a few years now,
+I am convinced that this wouldn't the right thing to do.
+
+The reason being that CDC is a feature, not a product.
+
+By that I mean that CDC is an incredibly powerful tool,
+a https://x.com/gunnarmorling/status/1123191912800845825[huge enabler] for working with your data in real-time,
+enabling a wide range of use cases such replication, cache and search index updates,
+auditing, microservice data exchange, and many others.
+Liberty for your data--rejoice!
+
+But it's that, an enabler.
+CDC isn't really that useful on its own.
+You ingest data change events into Kafka, and then what?
+At the very least, you want to have sink connectors which take that data and put it elsewhere,
+be it a DWH, S3, a search index, or something else.
+Very often, you also want to put some processing to your change event streams,
+e.g. to filter, transform, denormalize, or aggregate them.
+
+In my opinion, CDC makes sense as part of a cohesive data platform which integrates all these things.
+These, and more: also data governance, schema management, observability, quality management, etc.
+Another angle for CDC productization could be to marry it closely with a database.
+Imagine Postgres provided out of the box a Kafka broker endpoint to which you can subscribe for getting Debezium-formatted data change events.
+How cool would that be?
+But again, that's a feature, not a product.
+
+Now, there have been a few start-ups focused on CDC lately.
+Two that stuck out to me were Arcion and PeerDB:
+They got acquired quickly by Databricks and Clickhouse, respectively.
+As I suppose with the goal of turning them--you'll guess it--into features of their data offerings.
