@@ -1,0 +1,106 @@
+---
+title: "Building OpenJDK From Source On macOS"
+date: 2024-11-16T15:25:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+Every now and then, it can come in very handy to build OpenJDK from source yourself,
+for instance if you want to explore a feature which is under development on a branch for which no builds are published.
+For some reason I always thought that building OpenJDK is a very complex processing,
+requiring the installation of arcane tool chains etc.
+But as it turns out, this actually not true:
+the project does a great job of documenting what's needed and only a few steps are necessary to build your very own JDK.
+
+<!--more-->
+
+The following is a run-down of what I had to do to build JDK 24 from source on macOS 14.7.1.
+This is mostly for my own reference,
+check out the https://github.com/openjdk/jdk/blob/master/doc/building.md[upstream documentation] for a comprehensive description of the OpenJDK build,
+all requirements, build options, etc.
+
+First, install the required tools:
+
+* A boot JDK, typically the previous version; I highly recommend to use SDKMan to do so:
++
+[source,bash,linenums=true]
+----
+sdk install java 23.0.1-tem
+----
++
+* https://developer.apple.com/xcode/[XCode], Apple's development environment for macOS; the easiest way is to get it from the https://apps.apple.com/app/xcode/id497799835[App Store]. Unfortunately though, the current release 16.1 ships a broken version of clang which https://bugs.openjdk.org/browse/JDK-8340341[makes the JDK build fail]. So you should either install 15.4 from https://developer.apple.com/download/all/?q=xcode%2015[Apple Developer], or apply the following patch before building OpenJDK which sidesteps that issue (at the price of building with fewer compiler optimizations):
++
+[source,bash,linenums=true]
+----
+git apply << EOF
+--- a/make/autoconf/flags-cflags.m4
++++ b/make/autoconf/flags-cflags.m4
+@@ -337,9 +337,9 @@ AC_DEFUN([FLAGS_SETUP_OPTIMIZATION],
+       C_O_FLAG_HIGHEST="-O3 -finline-functions"
+       C_O_FLAG_HI="-O3 -finline-functions"
+     else
+-      C_O_FLAG_HIGHEST_JVM="-O3"
+-      C_O_FLAG_HIGHEST="-O3"
+-      C_O_FLAG_HI="-O3"
++      C_O_FLAG_HIGHEST_JVM="-O1"
++      C_O_FLAG_HIGHEST="-O1"
++      C_O_FLAG_HI="-O1"
+     fi
+     C_O_FLAG_NORM="-O2"
+     C_O_FLAG_DEBUG_JVM="-O0"
+EOF
+----
++
+* https://www.gnu.org/software/autoconf/[Autoconf]:
++
+[source,bash,linenums=true]
+----
+brew install autoconf
+----
+
+With that, you should have everything in place for building OpenJDK:
+
+* Clone the project:
++
+[source,bash,linenums=true]
+----
+git clone https://git.openjdk.org/jdk
+cd jdk
+----
+
+* Run configure:
++
+[source,bash,linenums=true]
+----
+bash configure
+----
+
+* Run the actual build:
++
+[source,bash,linenums=true]
+----
+make images
+----
+
+* Rejoice:
++
+[source,bash,linenums=true]
+----
+./build/macosx-aarch64-server-release/jdk/bin/java --version
+openjdk 24-internal 2025-03-18
+OpenJDK Runtime Environment (build 24-internal-adhoc.gunnarmorling.jdk)
+OpenJDK 64-Bit Server VM (build 24-internal-adhoc.gunnarmorling.jdk, mixed mode)
+----
+
+And that's it, you now have your own JDK build you can use for testing.
+Pretty easy, right?
+That said, if you still don't feel like running this build by yourself,
+you also can check out the https://builds.shipilev.net/[OpenJDK builds] provided by Aleksey Shipilëv,
+which are provided for a variety of OpenJDK projects as well as target platforms.
