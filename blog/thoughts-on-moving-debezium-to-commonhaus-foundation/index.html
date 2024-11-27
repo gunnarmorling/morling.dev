@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Thoughts On Moving Debezium to the Commonhaus Foundation - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Thoughts On Moving Debezium to the Commonhaus Foundation" />
+<meta property="og:description" content="
+If you are following the news around Debezium—​an open-source platform for Change Data Capture (CDC) for a variety of databases—​you may have seen the announcement that the project is in the process of moving to the Commonhaus Foundation. I think this is excellent news for the Debezium project, its community, and open-source CDC at large. In this post I’d like to share some more context on why I am so excited about this development.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/thoughts-on-moving-debezium-to-commonhaus-foundation/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2024-11-27T17:25:00+01:00" />
+<meta property="article:modified_time" content="2024-11-27T17:25:00+01:00" />
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Thoughts On Moving Debezium to the Commonhaus Foundation"/>
+<meta name="twitter:description" content="
+If you are following the news around Debezium—​an open-source platform for Change Data Capture (CDC) for a variety of databases—​you may have seen the announcement that the project is in the process of moving to the Commonhaus Foundation. I think this is excellent news for the Debezium project, its community, and open-source CDC at large. In this post I’d like to share some more context on why I am so excited about this development.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Thoughts On Moving Debezium to the Commonhaus Foundation</h1>
+				<div class="meta">Posted at Nov 27, 2024</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>If you are following the news around Debezium—​an open-source platform for Change Data Capture (CDC) for a variety of databases—​you may have seen the announcement that the project is in the process of <a href="https://debezium.io/blog/2024/11/04/debezium-moving-to-commonhaus/">moving to the Commonhaus Foundation</a>. I think this is excellent news for the Debezium project, its community, and open-source CDC at large. In this post I’d like to share some more context on why I am so excited about this development.</p>
+</div>
+<div class="paragraph">
+<p>Debezium was founded in 2016 by Randall Hauch, back then a software engineer at Red Hat. Pretty much from the get go, the Apache-licensed project attracted a very diverse community not only of users, but also of contributors.
+The Debezium development team has been doing an amazing job of fostering a welcoming and open environment, establishing a level playing field for contributors from Red Hat—​who funded and continues to fund the salaries of the core team working on the project, including mine, while leading Debezium between 2017 and 2022—​as well as other organizations alike. Companies such as Google, IBM, Stripe, Slack, WePay, SugarCRM, Instaclustr, Bolt, and many others have put substantial resources into the project. More than 650 individuals have contributed to the project at this point, ranging from small fixes and improvements, over developing complete features in the Debezium core framework, all the way up to driving the work and roadmap of specific connectors.</p>
+</div>
+<div class="paragraph">
+<p>Of course I am biased, but I think it’s fair to say that when it comes to &#34;vendor-owned&#34; open-source, Debezium has been a tremendous success. When the project website <a href="https://debezium.io/community/contribute/">says the following</a>, it’s truly meant like that and not just empty words:</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>The Debezium project is operated as a community-centric open source project. While Red Hat product management has a voice, it is akin to the same voice of any member of the community, whether they contribute code, bug reports, bug fixes or documentation.</p>
+</div>
+</blockquote>
+</div>
+<div class="paragraph">
+<p>The community has truly lived up to this aspiration and the project has always managed to align the interests of the different parties involved (I only remember a single time where there was a continued discussion about a specific feature and its implementation between the core team and the contributing team, with the idea of forking the project being floated shortly). Nevertheless, ultimately the Debezium project was controlled by a single entity, Red Hat. They owned the name, the domain, the GitHub organization, social media channels, etc. Despite the continued demonstration of best intentions, some folks may have had reservations to contribute to a project managed like that.</p>
+</div>
+<div class="paragraph">
+<p>That’s why I was thrilled to learn that several other projects sponsored and managed by Red Hat, for instance Quarkus and Hibernate, announced their move to the <a href="https://www.commonhaus.org/">Commonhaus Foundation</a> earlier this year. This foundation acts as a 100% neutral home of open-source projects, addressing any potential concerns around ownership which contributors may have. I was hoping for Debezium to make the move to Commonhaus as well, and I could not have been any happier when learning a few weeks back that it actually is going to happen.</p>
+</div>
+<div class="paragraph">
+<p>The Commonhaus Foundation is a particularly interesting instance of an open-source foundation, as it provides its projects with an extensive degree of freedom. Quoting their FAQ, what Commonhaus differentiates from other foundations such as Apache Software Foundation, Eclipse Foundation, or Linux Foundation, is this (check out the <a href="https://www.commonhaus.org/about/faq.html">full FAQ</a> for comparisons with specific foundations):</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>The Commonhaus Foundation sets itself apart by providing open source projects with a unique combination of autonomy and tailored support, adapted to their specific stages of development and needs. By simplifying access to funding and offering a stable, long-term home for their assets, the Foundation enables projects to govern themselves and leverage collective resources for greater visibility and impact.</p>
+</div>
+<div class="paragraph">
+<p>Unlike the structured environments and specific licensing and infrastructure requirements characteristic of foundations like the Apache and Eclipse Foundations, Commonhaus allows projects to maintain their established brand, community identity, infrastructure, and governance practices. It also supports a broader array of OSI-approved licenses.</p>
+</div>
+</blockquote>
+</div>
+<div class="paragraph">
+<p>The way I perceive it, Commonhaus is a &#34;No frills&#34; foundation, a neutral project home which acts as the owner of IP such as <a href="https://www.commonhaus.org/trademarks/">project trademarks</a>, helps projects with financial management, provides them with infrastructure for receiving donations (something we always struggled with during my time leading the project), and more. But it stays out of projects day-to-day operations as much as possible. I believe it’s a perfect fit for a project like Debezium, with a strong existing community, brand, and established processes. Debezium is going to join the ranks of other popular projects under the Commonhaus umbrella, such as SDKMan, OpenRewrite, and Jackson. Also <a href="https://slatedb.io/">SlateDB</a>, a recently open-sourced embedded database built on object storage just moved to Commonhaus, which goes to show that the foundation also is a great home for young projects, relatively early in their lifecycle.</p>
+</div>
+<div class="paragraph">
+<p>As such, I think moving to Commonhaus is an outstanding milestone for the Debezium project, ensuring its ongoing success in the future. Big kudos to the Debezium team for making this move, and massive props to Red Hat for supporting this step. It shows a deep understanding of and belief into open-source and its unique advantages, not paralleled by many other organizations. Now, some folks might wonder whether this is about dumping a project to an open-source foundation and then quickly pulling resources after that. Needless to say that I am not a spokesperson for Red Hat and I can’t predict what’s going to happen in the future. But personally, this is not something I am worried about. Historically, this isn’t something the company has been doing (with the exception of the Ceylon programming language perhaps, which got discontinued pretty quickly after moving to the Eclipse Foundation). Case in point, they just published a <a href="https://redhat.wd5.myworkdayjobs.com/en-US/jobs/details/Principal-Software-Engineer---Debezium—​Remote—​Czech-Republic-_R-043535-2?q=debezium">job posting for a Principal Software Engineer</a> working on Debezium.</p>
+</div>
+<div class="paragraph">
+<p>To wrap things up, I think the future is looking really bright for Debezium. The need for CDC and the interest in Debezium as the leading open-source implementation is unbroken. At the same time, it’s a very active space, with new projects popping up frequently, so it’s vital for Debezium and its community to keep moving and innovating. The move to Commonhaus lays an excellent foundation for this next chapter of Debezium’s success. With the team currently discussing the <a href="https://github.com/debezium/debezium.github.io/pull/1088/files">project roadmap for 2025</a>, it’s a perfect time for getting involved and becoming a part of the journey.</p>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2024 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
