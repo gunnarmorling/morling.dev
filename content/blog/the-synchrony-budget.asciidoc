@@ -1,0 +1,60 @@
+---
+title: "The Synchrony Budget"
+date: 2024-09-18T18:12:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+When building any kind of distributed services, one concept I like to keep in mind is what I call the "synchrony budget":
+as much as possible, a system should minimize the number of synchronous requests which it makes to other systems.
+The reasoning behind it is two-fold: synchronous calls are costly, the more synchronous requests your are doing, the longer it will take to process inbound requests to your own system.
+Also, they impact the availability of your system, because all the invoked services must be up and running in order for your system to work.
+The more systems you rely on that way, the lower the availability of your service will be.
+In that sense, the idea of the synchrony budget is not about a literal budget which you can spend,
+but rather about being mindful how you implement communication:
+as asynchronous as possible, as synchronous as needed.
+
+Let's make things a bit more tangible by looking at an example.
+Consider an e-commerce website where users can place purchase orders.
+When an order comes in, the order entry system needs to interact with a couple of other services in order to process that order:
+
+* a payment service for processing the payment of the customer
+* an inventory system for allocating stock of the purchased item
+* a shipment system for triggering the fulfillment of the order
+
+Let's start with the last one, the shipment system.
+Does it matter for the customer placing an order when exactly this activity happens?
+Not at all.
+So notifying the shipment system synchronously from within the order entry request handler would be a waste of our synchrony budget.
+Not only would it cause that inbound request to take longer than it has to,
+also it would cause the order entry request to fail when the shipment system isn't available,
+for instance due to maintance, a network split, or some other kind of failure.
+Also, we don't need report any response from the shipment service back to the client making the inbound order placement request.
+This makes this call a perfect candidate for asynchronous execution,
+for instance by having the order service send a message to a Kafka topic,
+which gets consumed by the shipment service.
+That way, the order service request isn't slowed down by awaiting a response from the shipment service,
+also a downtime of the shipment service won't affect the order service's availability.
+It will just process any pending messages from the Kafka topic when it is up again.
+In general, whenever one service solely needs to notify another serivce about something that happened,
+asynchronous communication should and can be the default.
+
+Now, what if our messaging infrastructure, such as Kafka, can't be reached?
+
+TODO
+
+
+
+
+deuplicate streams
+
+
+
+
