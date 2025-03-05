@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Let&#39;s Take a Look at... KIP-932: Queues for Kafka! - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Let&#39;s Take a Look at... KIP-932: Queues for Kafka!" />
+<meta property="og:description" content="
+In the &#34;Let’s Take a Look at…!&#34; blog series I am going to explore interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, open-source projects, services, and more. The idea is to get some hands-on experience, learn about potential use cases and applications, and understand the trade-offs involved. If you think there’s a specific subject I should take a look at, let me know in the comments below!
+
+
+
+
+
+That guy above? Yep, that’s me, whenever someone says &#34;Kafka queue&#34;. Because, that’s not what Apache Kafka is. At its core, Kafka is a distributed durable event log. Producers write events to a topic, organized in partitions which are distributed amongst the brokers of a Kafka cluster. Consumers, organized in groups, divide the partitions they process amongst themselves, so that each partition of a topic is read by exactly one consumer in the group.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/kip-932-queues-for-kafka/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2025-03-05T12:35:00+01:00" />
+<meta property="article:modified_time" content="2025-03-05T12:35:00+01:00" />
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Let&#39;s Take a Look at... KIP-932: Queues for Kafka!"/>
+<meta name="twitter:description" content="
+In the &#34;Let’s Take a Look at…!&#34; blog series I am going to explore interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, open-source projects, services, and more. The idea is to get some hands-on experience, learn about potential use cases and applications, and understand the trade-offs involved. If you think there’s a specific subject I should take a look at, let me know in the comments below!
+
+
+
+
+
+That guy above? Yep, that’s me, whenever someone says &#34;Kafka queue&#34;. Because, that’s not what Apache Kafka is. At its core, Kafka is a distributed durable event log. Producers write events to a topic, organized in partitions which are distributed amongst the brokers of a Kafka cluster. Consumers, organized in groups, divide the partitions they process amongst themselves, so that each partition of a topic is read by exactly one consumer in the group.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Let&#39;s Take a Look at... KIP-932: Queues for Kafka!</h1>
+				<div class="meta">Posted at Mar 5, 2025</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p><em>In the &#34;Let’s Take a Look at…!&#34; blog series I am going to explore interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, open-source projects, services, and more. The idea is to get some hands-on experience, learn about potential use cases and applications, and understand the trade-offs involved. If you think there’s a specific subject I should take a look at, let me know in the comments below!</em></p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="/images/kip_932_1.jpg" alt="kip 932 1" width="333px"/></span></p>
+</div>
+<div class="paragraph">
+<p>That guy above? Yep, that’s me, whenever someone says &#34;Kafka queue&#34;. Because, that’s not what Apache Kafka is. At its core, Kafka is a distributed durable event log. Producers write events to a topic, organized in partitions which are distributed amongst the brokers of a Kafka cluster. Consumers, organized in groups, divide the partitions they process amongst themselves, so that each partition of a topic is read by exactly one consumer in the group.</p>
+</div>
+<div class="paragraph">
+<p>This partition-based design defines two of Kafka’s key characteristics:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The maximum degree of consumer parallelism: Each partition is processed by not more than one consumer; in order to increase the number of consumers processing a topic, it needs to be split up into more partitions, which implies a potentially costly repartitioning operation for existing topics with a large amount of data.</p>
+</li>
+<li>
+<p>Ordered processing of messages: All messages with the same partitioning key will be sent to the same partition which is processed by a single consumer.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>These semantics make Kafka a great foundation for a large variety of high volume data streaming use cases such as click stream processing, metrics and log ingestion, real-time ETL and analytics, microservices data exchange, fraud detection, and many more. On the flip side, Kafka, as is, is not a good fit for use cases requiring queuing semantics, where you’d like to process messages one by one, potentially scaling out consumers way beyond the number of partitions in a topic. In particular, consumers as of today commit the progress they’ve made within a partition by means of persisting the offset of the last message they’ve processed. It is not possible to acknowledge or reject individual messages. This leads to a problem known as &#34;<a href="https://x.com/gunnarmorling/status/1541809606384652295">head-of-line blocking</a>&#34;: if a given message can’t be consumed for whatever reason, or if it just takes very long to do so, that consumer can’t easily move beyond of that message.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>In Kafka terminology, the elements of a topic are referred to as &#34;record&#34;, with &#34;message&#34; oftentimes being used interchangeably. Personally, I am using the former when referring to the technical concept of an entry of a log, whereas I’m using &#34;message&#34; (or &#34;event&#34;, depending on the specific use case) when discussing the semantic entity which is represented by a record.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>One common example for this is job queueing: you’d like to submit unrelated work items to a queue, from where they are picked up and processed as quickly as possible by a set of independent workers. Each item should be processed in isolation, i.e. while one worker is consuming an item from the queue, another worker should be able to pick up the next one in parallel, without having to await successful handling of the first one. If there’s many work items, or if they take a longer time to process, it should be able to add more workers to ensure a reasonable overall throughput of the system. A work item which cannot be processed for some reason should not hold up the processing of subsequent items.</p>
+</div>
+<div class="paragraph">
+<p>While some efforts were made to support this kind of use case when using Kafka, for instance in the form of <a href="https://github.com/confluentinc/parallel-consumer">Confluent’s parallel consumer</a>, actual queue implementations such as <a href="https://activemq.apache.org/components/artemis/">ActiveMQ Artemis</a> or <a href="https://www.rabbitmq.com/">RabbitMQ</a> were traditionally better suited for this. To learn more about the fundamental differences between event logs and queues, and why it can be interesting to implement the latter on top of the former, refer to <a href="https://jack-vanlightly.com/blog/2023/10/2/the-advantages-of-queues-on-logs">this excellent blog post</a> by Jack Vanlightly.</p>
+</div>
+<div class="paragraph">
+<p>As of Kafka 4.0—​due in a couple of weeks—​things will change though: after two years of work, an Early Access of <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-932%3A+Queues+for+Kafka">KIP-932: Queues for Kafka</a> is part of this release. It promises to add queue-like semantics to Kafka. Let’s take a look!</p>
+</div>
+<div class="sect1">
+<h2 id="_towards_queue_support_in_kafkaintroducing_share_groups">Towards Queue Support in Kafka—​Introducing Share Groups</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>At the core of KIP-932 are so-called <em>share groups</em> : expanding the existing notion of Kafka consumer groups, a share group is a set of cooperative consumers processing the messages from a topic. Unlike consumer groups though, multiple members of a share group can process the messages on one and the same partition. This means that there can be more (active) members in a share group than there are partitions, and a high degree of consumer parallelism can be achieved also when having just a few or even only a single partition. Membership in a share group is coordinated using the new consumer rebalance protocol introduced in Kafka 4.0 via <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-848%3A+The+Next+Generation+of+the+Consumer+Rebalance+Protocol">KIP-898</a>. A partition consumed by a share group is called a <em>share partition</em>.</p>
+</div>
+<div class="paragraph">
+<p>Messages can be acknowledged individually, allowing for much more flexibility than the offset-based approach of consumer groups. A broker-side component called the <em>share-partition leader</em> manages the state of in-flight messages, distributing them to the members of the share group. The share-partition leader is co-located with the leader of the partition, i.e. it’s currently not supported to use share groups and thus Kafka queues when reading from a follower node in the Kafka cluster.</p>
+</div>
+<div class="paragraph">
+<p>The messages in a share-partition go through a life cycle of distinct states as shown below:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/kip_932_2.png" alt="kip 932 2"/>
+</div>
+</div>
+<div class="paragraph">
+<p>The share-partition leader processes messages which are eligible for consumption on a share-partition via a sliding window, demarcated by a lower offset called the <em>share-partition start offset (SPSO)</em> and a higher offset called the <em>share-partition end offset (SPEO)</em> . All messages before the SPSO are in the <code>Archived</code> state, all messages after the SPEO are in <code>Available</code> state. The messages within the window are called <em>in-flight messages</em>. When a consumer fetches messages, the leader will search for available messages in the in-flight window, mark them as acquired, and return them in a batch to the consumer. To limit memory consumption on the broker, the maximum number of messages in <code>Acquired</code> state can be controlled via the <code>group.share.partition.max.record.locks</code> configuration setting. When processing a message, a consumer may</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>acknowledge it as successfully consumed, transitioning it to <code>Acknowledged</code> state,</p>
+</li>
+<li>
+<p>release it, transitioning it back to <code>Available</code> state and thus making it available for redelivery, or</p>
+</li>
+<li>
+<p>reject it, transitioning it to <code>Archived</code> state, marking it as unprocessable.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Every message has a delivery counter, which gets increased each time it gets acquired. The maximum number of deliveries is limited using the <code>group.share.delivery.attempt.limit</code> broker option, preventing an infinite retry loop of consuming some unprocessable message (&#34;poison pill&#34;).</p>
+</div>
+<div class="paragraph">
+<p>One key aspect to understand is that the specific message states exist exclusively within the scope of a specific share group; this means that for instance a message may be rejected by one share group but be processed successfully by another. A share group may also be reset, allowing it to reprocess all the messages of a topic, or all the messages after a given timestamp. The Kafka distribution provides a new script, <em>bin/kafka-share-groups.sh</em> , for this purpose.</p>
+</div>
+<div class="paragraph">
+<p>As the available messages on a share-partition are distributed amongst the members of the share group, there’s no guarantee in regards to the order of processing. Depending on specific timing behaviors, potential retries, etc., messages with higher offsets may be consumed before messages with lower offsets in the same partition. This is in stark contrast to how traditional Kafka consumer groups work, where the messages in one partition are always consumed in order of increasing offset. The KIP mentions that ordering of messages within a single batch is guaranteed to be in increasing offset order, but I’m not sure how useful this is going to be in practice, given consumers lack control over which messages end up in a given batch.</p>
+</div>
+<div class="paragraph">
+<p>On the other hand it could be very useful for certain use cases to have guaranteed ordering for the messages with one and the same key. Consider for instance an ETL use case consuming data change events produced by a CDC tool such as Debezium. The source record’s primary key is used as the Kafka message key in this scenario, ensuring all change events for a given record are written to the same partition of the corresponding Kafka topic. With regular consumer groups, ordering of events for the same key is ensured, which is vital to make sure that the destination of such a pipeline receives the change events in the correct order, for instance when considering two subsequent updates to a record.</p>
+</div>
+<div class="paragraph">
+<p>But arguably, the partition-based ordering is too coarse-grained in this scenario, as the order of events across keys typically doesn’t matter (and where it does matter, it would have to be global for the entire topic, not just a single partition). This comes at the price of reduced flexibility to parallelize and scale out the consumer, as described above. In contrast, share groups essentially don’t provide strong ordering guarantees, making them not suitable for this use case. If there was support for strong key-based ordering, that’d be a very useful middle ground between scalability and the provided semantics. It would be great to see this in a future version of queue support for Apache Kafka.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_share_groups_in_action">Share Groups in Action</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let’s shift gears a bit and take a look at how share groups can be used from within a Java application. At the time of writing, there’s no preview build of Apache Kafka 4.0 available yet, so I’ve built Kafka and its client libraries from source, which luckily is as straight forward as running the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>./gradlew releaseTarGz publishToMavenLocal
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will yield a Kafka distribution archive under <em>core/build/distributions/kafka_2.13-4.1.0-SNAPSHOT</em> and install the client libraries into the local Maven repository.</p>
+</div>
+<div class="paragraph">
+<p>As of the Kafka 4.0 release, share groups are an early access feature, not meant for production usage yet. As such, the feature needs to be enabled explicitly. To do so, add the following settings to your broker configuration file (for more details, see the release notes as well as the KIP, which provides a list of <a href="https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=255070434#KIP932:QueuesforKafka-Brokerconfiguration">all new configuration options</a> added for share group support):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre>unstable.api.versions.enable<span class="o">=</span><span class="nb">true
+</span>group.coordinator.rebalance.protocols<span class="o">=</span>classic,consumer,share
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The Kafka client library contains a new API, <code>KafkaShareConsumer</code>, which exposes the new queue and share group semantics. Its overall programming model is very similar to the existing <code>KafkaConsumer</code> API, simplifying the transition from one to the other. For console-based access, the Kafka distribution contains a new shell script, <em>kafka-console-share-consumer.sh</em> , similar to <em>kafka-console-consumer.sh</em> known from previous Kafka versions.</p>
+</div>
+<div class="paragraph">
+<p>The share consumer supports two working modes: <em>implicit</em> and <em>explicit</em> acknowledgement of messages. When using implicit mode, message acknowledgements will be committed automatically for the entire batch of messages processed by the consumer. In the simplest case, this happens for the previous batch when calling <code>poll()</code> again:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+</pre></td><td class="code"><pre><span class="nc">Properties</span> <span class="n">props</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Properties</span><span class="o">();</span>
+<span class="n">props</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">&#34;bootstrap.servers&#34;</span><span class="o">,</span> <span class="s">&#34;localhost:9092&#34;</span><span class="o">);</span>
+<span class="n">props</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">&#34;group.id&#34;</span><span class="o">,</span> <span class="s">&#34;my-share-group&#34;</span><span class="o">);</span>
+
+<span class="nc">KafkaShareConsumer</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">consumer</span> <span class="o">=</span>
+    <span class="k">new</span> <span class="nc">KafkaShareConsumer</span><span class="o">&lt;&gt;(</span>
+        <span class="n">props</span><span class="o">,</span> <span class="k">new</span> <span class="nc">StringDeserializer</span><span class="o">(),</span> <span class="k">new</span> <span class="nc">StringDeserializer</span><span class="o">());</span>
+<span class="n">consumer</span><span class="o">.</span><span class="na">subscribe</span><span class="o">(</span><span class="nc">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="s">&#34;my-topic&#34;</span><span class="o">));</span>
+
+<span class="k">while</span> <span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
+  <span class="nc">ConsumerRecords</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">records</span> <span class="o">=</span> <span class="n">consumer</span><span class="o">.</span><span class="na">poll</span><span class="o">(</span>
+    <span class="nc">Duration</span><span class="o">.</span><span class="na">ofMillis</span><span class="o">(</span><span class="mi">100</span><span class="o">));</span> <i class="conum" data-value="1"></i><b>(1)</b>
+
+  <span class="k">for</span> <span class="o">(</span><span class="nc">ConsumerRecord</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">record</span> <span class="o">:</span> <span class="n">records</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">process</span><span class="o">(</span><span class="n">record</span><span class="o">);</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Fetch the next batch of messages, implicitly acknowledging the messages of the previous batch</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>This approach lacks fine-grained control over acknowledgements, but it can be interesting if your primary interest in using share groups is to increase the number of workers in a consumer group beyond the partition count. For a typical queueing use case however, you’ll want message-level acknowledgements. This can be achieved via the <code>ShareConsumer::acknowledge()</code> method. It takes a record and an acknowledge type:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+</pre></td><td class="code"><pre><span class="k">while</span> <span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
+  <span class="nc">ConsumerRecords</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">records</span> <span class="o">=</span> <span class="n">consumer</span><span class="o">.</span><span class="na">poll</span><span class="o">(</span>
+      <span class="nc">Duration</span><span class="o">.</span><span class="na">ofMillis</span><span class="o">(</span><span class="mi">100</span><span class="o">));</span>
+
+  <span class="k">for</span> <span class="o">(</span><span class="nc">ConsumerRecord</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">record</span> <span class="o">:</span> <span class="n">records</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">isProcessable</span><span class="o">(</span><span class="n">record</span><span class="o">))</span> <span class="o">{</span>
+      <span class="n">process</span><span class="o">(</span><span class="n">record</span><span class="o">);</span>
+      <span class="n">consumer</span><span class="o">.</span><span class="na">acknowledge</span><span class="o">(</span><span class="n">record</span><span class="o">,</span> <span class="nc">AcknowledgeType</span><span class="o">.</span><span class="na">ACCEPT</span><span class="o">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="o">}</span>
+    <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">isRetriable</span><span class="o">(</span><span class="n">record</span><span class="o">))</span> <span class="o">{</span>
+      <span class="n">consumer</span><span class="o">.</span><span class="na">acknowledge</span><span class="o">(</span><span class="n">record</span><span class="o">,</span> <span class="nc">AcknowledgeType</span><span class="o">.</span><span class="na">RELEASE</span><span class="o">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="o">}</span>
+    <span class="k">else</span> <span class="o">{</span>
+      <span class="n">consumer</span><span class="o">.</span><span class="na">acknowledge</span><span class="o">(</span><span class="n">record</span><span class="o">,</span> <span class="nc">AcknowledgeType</span><span class="o">.</span><span class="na">REJECT</span><span class="o">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="o">}</span>
+  <span class="o">}</span>
+
+  <span class="n">consumer</span><span class="o">.</span><span class="na">commitSync</span><span class="o">();</span> <i class="conum" data-value="2"></i><b>(2)</b>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Acknowledge a message</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Synchronously commit the acknowledgement state of all messages of the batch</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>The acknowledge type can be one of the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>ACCEPT</code>, if the message could be processed successfully</p>
+</li>
+<li>
+<p><code>RELEASE</code>, if the message cannot be processed due to some transient error, i.e. it may be processed successfully when retrying later on</p>
+</li>
+<li>
+<p><code>REJECT</code>, if the the message cannot be processed and also is not retriable</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The acknowledgement status for a given message will only be actually committed by calling <code>commitSync()</code>. If the consumer crashes after calling <code>acknowledge()</code> but before the commit happens, all messages from the batch will be presented to a consumer of the group again. When not calling <code>commitSync()</code>, the next invocation of <code>poll()</code> will commit automatically. This happens asynchronously though, which means you might receive a new batch of messages while the commit of the acknowledgement status of a previous batch fails.</p>
+</div>
+<div class="paragraph">
+<p>When releasing a message for retrying, it will be part of a subsequent batch until the maximum delivery count for the message has been reached, in which case it will transition to <code>Archived</code> state, without having been processed. If required, a messages delivery count can be obtained from the <code>ConsumerRecord</code>. This allows you for instance to log a record when it hits the retry limit before archiving it.</p>
+</div>
+<div class="paragraph">
+<p>Newly created share groups start processing from the latest offset by default. If you want it to start from the beginning of the input topic(s) instead, you need to set the newly added configuration property <code>share.auto.offset.reset</code> to <code>earliest</code>. Unlike the well-known <code>auto.offset.reset</code> option, this is not a consumer configuration option, but a <em>group</em> configuration option. You can use the AdminClient API for setting it:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="k">try</span> <span class="o">(</span><span class="nc">AdminClient</span> <span class="n">client</span> <span class="o">=</span> <span class="nc">AdminClient</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="n">adminProperties</span><span class="o">))</span> <span class="o">{</span>
+  <span class="nc">ConfigEntry</span> <span class="n">entry</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ConfigEntry</span><span class="o">(</span><span class="s">&#34;share.auto.offset.reset&#34;</span><span class="o">,</span>
+      <span class="s">&#34;earliest&#34;</span><span class="o">);</span>
+  <span class="nc">AlterConfigOp</span> <span class="n">op</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">AlterConfigOp</span><span class="o">(</span><span class="n">entry</span><span class="o">,</span> <span class="nc">AlterConfigOp</span><span class="o">.</span><span class="na">OpType</span><span class="o">.</span><span class="na">SET</span><span class="o">);</span>
+
+  <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">ConfigResource</span><span class="o">,</span> <span class="nc">Collection</span><span class="o">&lt;</span><span class="nc">AlterConfigOp</span><span class="o">&gt;&gt;</span> <span class="n">configs</span> <span class="o">=</span> <span class="nc">Map</span><span class="o">.</span><span class="na">of</span><span class="o">(</span>
+      <span class="k">new</span> <span class="nf">ConfigResource</span><span class="o">(</span>
+          <span class="nc">ConfigResource</span><span class="o">.</span><span class="na">Type</span><span class="o">.</span><span class="na">GROUP</span><span class="o">,</span> <span class="no">SHARE_GROUP</span><span class="o">),</span> <span class="nc">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="n">op</span><span class="o">));</span>
+
+  <span class="k">try</span> <span class="o">(</span><span class="nc">Admin</span> <span class="n">admin</span> <span class="o">=</span> <span class="nc">AdminClient</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="n">adminProperties</span><span class="o">))</span> <span class="o">{</span>
+    <span class="n">admin</span><span class="o">.</span><span class="na">incrementalAlterConfigs</span><span class="o">(</span><span class="n">configs</span><span class="o">).</span><span class="na">all</span><span class="o">().</span><span class="na">get</span><span class="o">();</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Message-level acknowledgement is a key improvement to Kafka, enabling use cases like job queuing which were not well supported before. At the same time, the feature still feels relatively basic at this point.</p>
+</div>
+<div class="paragraph">
+<p>Most importantly, there’s no notion of a dead letter queue (DLQ) as of the Apache Kafka 4.0 release. Once an unprocessable message has been archived, there’s no way of identifying it. For many use cases it will be required to either have means for retrieving the unprocessable messages with an offset smaller than the SPSO or, better yet, to have bespoke DLQ support, i.e. a dedicated topic to which unprocessable messages are sent automatically.
+In scenarios where there’s a dependency between messages with the same key, it would also be desirable to send all subsequent messages to the DLQ once one message with a given key got DLQ-ed, until that issue has been resolved. As of today, this is something you’d have to build entirely yourself.</p>
+</div>
+<div class="paragraph">
+<p>Another useful enhancement would be more flexible retrying behaviors. In the current form of Kafka queues, a released message will be retried immediately; there’s no support for delaying retries (e.g. via exponential back-off) or configure a scheduled redelivery. This means that all available retry attempts will happen very quickly, which isn’t ideal for dealing with transient failures such as not being able to connect to an external service. Retrying within a short period of time may not be useful in this situation, while retrying after 30 or 60 minutes could.</p>
+</div>
+<div class="paragraph">
+<p>All that being said, the support for queue semantics in Kafka 4.0 is an early access feature after all, and I’m sure all kinds of improvements can and will be made in subsequent releases.
+In particular, DLQ support is explicitly being mentioned in the KIP as a future extension.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_retry_behavior_and_state_management">Retry Behavior and State Management</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let’s dig a bit deeper and explore how retries are currently handled by the share group API. To do so, I’ve built a share consumer which processes some messages as shown in the <a href="https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=255070434#KIP932:QueuesforKafka-In-flightrecordsexample">in-flight records example</a> in the KIP:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/kip_932_3.png" alt="kip 932 3"/>
+</div>
+</div>
+<div class="paragraph">
+<p>The messages on the topic have a String value which matches their offset: &#34;0&#34;, &#34;1&#34;, &#34;2&#34;, etc. The process logic looks like follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+</pre></td><td class="code"><pre><span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&#34;Record | Status | Delivery Count&#34;</span><span class="o">);</span>
+<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&#34;--------------------------------&#34;</span><span class="o">);</span>
+
+<span class="k">while</span> <span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
+  <span class="nc">ConsumerRecords</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">records</span> <span class="o">=</span> <span class="n">consumer</span><span class="o">.</span><span class="na">poll</span><span class="o">(</span>
+      <span class="nc">Duration</span><span class="o">.</span><span class="na">ofMillis</span><span class="o">(</span><span class="mi">100</span><span class="o">));</span>
+
+  <span class="k">for</span> <span class="o">(</span><span class="nc">ConsumerRecord</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">record</span> <span class="o">:</span> <span class="n">records</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">String</span> <span class="n">status</span> <span class="o">=</span> <span class="k">switch</span><span class="o">(</span><span class="n">record</span><span class="o">.</span><span class="na">value</span><span class="o">())</span> <span class="o">{</span>
+      <span class="k">case</span> <span class="s">&#34;1&#34;</span><span class="o">,</span> <span class="s">&#34;5&#34;</span> <span class="o">-&gt;</span> <span class="o">{</span>
+        <span class="n">consumer</span><span class="o">.</span><span class="na">acknowledge</span><span class="o">(</span><span class="n">record</span><span class="o">,</span> <span class="nc">AcknowledgeType</span><span class="o">.</span><span class="na">ACCEPT</span><span class="o">);</span>
+        <span class="n">yield</span> <span class="s">&#34;ACKED&#34;</span><span class="o">;</span>
+      <span class="o">}</span>
+      <span class="k">case</span> <span class="s">&#34;3&#34;</span><span class="o">,</span> <span class="s">&#34;7&#34;</span><span class="o">,</span> <span class="s">&#34;8&#34;</span><span class="o">,</span> <span class="s">&#34;9&#34;</span> <span class="o">-&gt;</span> <span class="o">{</span>
+        <span class="n">consumer</span><span class="o">.</span><span class="na">acknowledge</span><span class="o">(</span><span class="n">record</span><span class="o">,</span> <span class="nc">AcknowledgeType</span><span class="o">.</span><span class="na">RELEASE</span><span class="o">);</span>
+        <span class="n">yield</span> <span class="s">&#34;AVAIL&#34;</span><span class="o">;</span>
+      <span class="o">}</span>
+      <span class="k">case</span> <span class="s">&#34;6&#34;</span> <span class="o">-&gt;</span> <span class="o">{</span>
+        <span class="n">consumer</span><span class="o">.</span><span class="na">acknowledge</span><span class="o">(</span><span class="n">record</span><span class="o">,</span> <span class="nc">AcknowledgeType</span><span class="o">.</span><span class="na">REJECT</span><span class="o">);</span>
+        <span class="n">yield</span> <span class="s">&#34;ARCHV&#34;</span><span class="o">;</span>
+      <span class="o">}</span>
+      <span class="c1">// doing nothing, i.e. remain in Acquired state</span>
+      <span class="k">default</span> <span class="o">-&gt;</span> <span class="o">{</span>
+        <span class="n">yield</span> <span class="s">&#34;ACQRD&#34;</span><span class="o">;</span>
+      <span class="o">}</span>
+    <span class="o">};</span>
+
+    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="nc">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="s">&#34;%s      | %s  | %s&#34;</span><span class="o">,</span>
+        <span class="n">record</span><span class="o">.</span><span class="na">value</span><span class="o">(),</span> <span class="n">status</span><span class="o">,</span> <span class="n">record</span><span class="o">.</span><span class="na">deliveryCount</span><span class="o">().</span><span class="na">get</span><span class="o">()));</span>
+  <span class="o">}</span>
+
+  <span class="n">consumer</span><span class="o">.</span><span class="na">commitSync</span><span class="o">();</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Starting from the beginning of the topic, here’s the output of the first polling iteration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+</pre></td><td class="code"><pre>Record | Status | Delivery Count
+--------------------------------
+0      | ACKED  | 1
+1      | ACKED  | 1
+2      | ACQRD  | 1
+3      | AVAIL  | 1
+4      | ACQRD  | 1
+5      | ACKED  | 1
+6      | ARCHV  | 1
+7      | AVAIL  | 1
+8      | AVAIL  | 1
+9      | AVAIL  | 1
+2      | ACQRD  | 1
+4      | ACQRD  | 1
+2      | ACQRD  | 1
+4      | ACQRD  | 1
+2      | ACQRD  | 1
+4      | ACQRD  | 1
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The first ten lines—​corresponding to the first batch returned by the <code>poll()</code> call—​are not too surprising: all messages are processed as expected. But then something interesting is happening: messages 2 and 4 (but not messages 3, 7, 8, 9 in <code>Available</code> state) are retrieved again and again. As it turns out, messages in <code>Acquired</code> status are returned indefinitely by <code>poll()</code> until they are acknowledged. This happens purely client-side, i.e. reaching the broker-side maximum lock duration (configured via <code>group.share.record.lock.duration.ms</code>, defaulting to 30s) does not cause an interruption here, which may be surprising. Also note that the delivery count is not increased in this case. After speaking to the engineering team working on this team I learned that exact behaviors and semantics are still in flux here—​the API is marked as unstable at this point—​so you probably are going to see some changes here with the 4.1 release.</p>
+</div>
+<div class="paragraph">
+<p>Only when actually acknowledging a message and trying to commit after the maximum lock duration has been reached, an exception is triggered. It is not actually <em>raised</em> though; instead you need to examine the partition-exception map returned by <code>commitSync()</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre><span class="nc">Map</span><span class="o">&lt;</span><span class="nc">TopicIdPartition</span><span class="o">,</span> <span class="nc">Optional</span><span class="o">&lt;</span><span class="nc">KafkaException</span><span class="o">&gt;&gt;</span> <span class="n">syncResult</span> <span class="o">=</span> <span class="n">consumer</span><span class="o">.</span><span class="na">commitSync</span><span class="o">();</span>
+
+<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">syncResult</span><span class="o">);</span>
+
+<span class="c1">// output adjusted for readability:</span>
+<span class="c1">// { [.underline]#oj_vK_XvQeSrL58aI81r1g:my-topic-0=Optional[org.apache.kafka.common.errors.InvalidRecordStateException# :</span>
+<span class="c1">// The record state is invalid. The acknowledgement of delivery could not be completed.]}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that this affects all the messages on that share partition whose acknowledgement you tried to commit. I.e. also a message which you acknowledged would be retried again in this case.</p>
+</div>
+<div class="paragraph">
+<p>When running another consumer in the same share group—​or when restarting the consumer above—​it’ll receive the available messages 3, 7, 8, and 9. Whether it’ll also receive 2 and 4 depends on whether the acknowledgement lock already has expired or not.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_share_group_state_persistence">Share Group State Persistence</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The state of inflight messages needs to be made durable by the share-partition coordinator. This responsibility is handled through a component called the <em>share-group state persister</em> ; While the KIP mentions that his could be a pluggable component eventually, there’s only a single persister implementation right now. It stores the state of share groups in a special Kafka topic named <code>__share_group_state</code>.</p>
+</div>
+<div class="paragraph">
+<p>There are two kinds of records on that topic, <code>ShareSnapshot</code> and <code>ShareUpdate</code> records. The former represents a complete self-contained snapshot of the persistent state of a share-group, whereas the latter represents an incremental update to that state. An epoch field in the records is used to fence off writes by zombie share-partition leaders. Upon start-up, the coordinator reads the entire topic and builds up the state for a given share-partition. It does so by finding the latest snapshot record and then applying all subsequent updates. As such, the share group state topic isn’t suitable for Kafka topic compaction (i.e. keeping only the latest record with a given message key). Instead, the coordinator itself deletes all records for a share partition before the latest snapshot record.</p>
+</div>
+<div class="paragraph">
+<p>To take a look at the <code>__share_group_state</code> topic, you can use the standard Kafka console consumer; just make sure to use the class <code>o.a.k.t.c.g.s.ShareGroupStateMessageFormatter</code> as a formatter:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>bin/kafka-console-consumer.sh <span class="se">\</span>
+  <span class="nt">--bootstrap-server</span> localhost:9092 <span class="se">\</span>
+  <span class="nt">--property</span> print.key<span class="o">=</span><span class="nb">true</span> <span class="se">\</span>
+  <span class="nt">--topic</span> __share_group_state <span class="se">\</span>
+  <span class="nt">--from-beginning</span> <span class="se">\</span>
+ <span class="nt">--formatter</span><span class="o">=</span>org.apache.kafka.tools.consumer.group.share.ShareGroupStateMessageFormatter
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Here’s a message describing the state of the inflight messages shown above:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+</pre></td><td class="code"><pre><span class="p">{</span><span class="w">
+  </span><span class="nl">&#34;key&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">&#34;version&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> <i class="conum" data-value="1"></i><b>(1)</b>
+    </span><span class="nl">&#34;data&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="nl">&#34;groupId&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;my-share-group&#34;</span><span class="p">,</span><span class="w">
+      </span><span class="nl">&#34;topicId&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;YrHYV-TdRrqvUkvejYQ8Gw&#34;</span><span class="p">,</span><span class="w">
+      </span><span class="nl">&#34;partition&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">&#34;value&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">&#34;version&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;data&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="nl">&#34;snapshotEpoch&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+      </span><span class="nl">&#34;leaderEpoch&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+      </span><span class="nl">&#34;startOffset&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> <i class="conum" data-value="2"></i><b>(2)</b>
+
+      </span><span class="nl">&#34;stateBatches&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+          </span><span class="nl">&#34;firstOffset&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+          </span><span class="nl">&#34;lastOffset&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+          </span><span class="nl">&#34;deliveryState&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> <i class="conum" data-value="3"></i><b>(3)</b>
+          </span><span class="nl">&#34;deliveryCount&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w">
+        </span><span class="p">},</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+          </span><span class="nl">&#34;firstOffset&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w">
+          </span><span class="nl">&#34;lastOffset&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w">
+          </span><span class="nl">&#34;deliveryState&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> <i class="conum" data-value="4"></i><b>(4)</b>
+          </span><span class="nl">&#34;deliveryCount&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w">
+        </span><span class="p">},</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+          </span><span class="nl">&#34;firstOffset&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w">
+          </span><span class="nl">&#34;lastOffset&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w">
+          </span><span class="nl">&#34;deliveryState&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> <i class="conum" data-value="3"></i><b>(3)</b>
+          </span><span class="nl">&#34;deliveryCount&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w">
+        </span><span class="p">},</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+          </span><span class="nl">&#34;firstOffset&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w">
+          </span><span class="nl">&#34;lastOffset&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w">
+          </span><span class="nl">&#34;deliveryState&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> <i class="conum" data-value="5"></i><b>(5)</b>
+          </span><span class="nl">&#34;deliveryCount&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w">
+        </span><span class="p">},</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+          </span><span class="nl">&#34;firstOffset&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w">
+          </span><span class="nl">&#34;lastOffset&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">9</span><span class="p">,</span><span class="w">
+          </span><span class="nl">&#34;deliveryState&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> <i class="conum" data-value="4"></i><b>(4)</b>
+          </span><span class="nl">&#34;deliveryCount&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+      </span><span class="p">]</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Indicates this is a <code>ShareUpdate</code> record)</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The current share-partition start offset</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Status <code>ACKED</code></td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Status <code>AVAIL</code></td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Status <code>ARCHV</code></td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>To manage the state of share groups, the aforementioned script <em>bin/kafka-share-groups.sh</em> can be used. It allows you to list and describe existing share groups and their members, reset and delete their offsets, and more:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre>bin/kafka-share-groups.sh <span class="se">\</span>
+  <span class="nt">--bootstrap-server</span> localhost:9092 <span class="se">\</span>
+  <span class="nt">--describe</span> <span class="se">\</span>
+  <span class="nt">--group</span> my-share-group <span class="se">\</span>
+  <span class="nt">--verbose</span>
+
+GROUP           TOPIC        PARTITION  LEADER-EPOCH  START-OFFSET
+
+my-share-group	my-topic-2   0          -             2
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary_and_outlook">Summary and Outlook</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-932%3A+Queues+for+Kafka">KIP-932: Queues for Kafka</a> adds a long awaited capability to the Apache Kafka project: queue-like semantics, including the ability to acknowledge messages on a one-by-one basis. This positions Kafka for use cases such as job queuing, for which it hasn’t been a good fit historically. As multiple members of a share group can process the messages from a single topic partition, the partition count does not limit the degree of consumer parallelism any longer. The number of consumers in a group can quickly be increased and decreased as needed, without requiring to repartition the topic.</p>
+</div>
+<div class="paragraph">
+<p>Built on top of Kafka’s event log semantics, Kafka queues provide some interesting characteristics typically not found in other queue implementations, such as the ability to retain the messages on a queue for an indefinite period of time, reprocess some or all of them, and have multiple independent groups of consumers, with each group processing all the messages on the topic. For instance, you could have two share groups applying slightly different variants of some processing logic in an A/B testing scenario.</p>
+</div>
+<div class="paragraph">
+<p>One aspect which I couldn’t explore due to time constraints are the performance characteristics of Kafka’s queue support. It would be interesting to see how the overall throughput increases as more consumers are added to a share group—​without increasing the number of partitions—​how message-level acknowledgements impact performance, or what the impact of, say, rejecting and retrying every 10th message would be. This would be a highly interesting topic for a follow-up post.</p>
+</div>
+<div class="paragraph">
+<p>Available as an early access feature as of the Kafka 4.0 release, Kafka queues are not recommended for production usage yet, and there are several limitations worth calling out: most importantly, the lack of DLQ support. More control over retry timing would be desirable, too. As such, I don’t think Kafka queues in their current form will make users of established queue solutions such as Artemis or RabbitMQ migrate to Kafka. It is a very useful addition to the Kafka feature set nevertheless, coming in handy for instance for teams already running Kafka and who look for a solution for simple queuing use cases, avoiding to stand up and operate a separate solution just for these. This story will become even more compelling if the feature gets built out and improved in future Kafka releases.</p>
+</div>
+<div class="paragraph">
+<p>Voting for the release 4.0.0. RC1 of Apache Kafka just <a href="https://lists.apache.org/thread/n57qtmjpqnlmy0hox8svslz91vmg6vh7">started earlier today</a>, so it shouldn’t be much longer until you can give queue support a try yourself with an official release.
+To discuss any feedback you may have, reach out to the Kafka developer <a href="https://kafka.apache.org/contact">mailing list</a>.</p>
+</div>
+<div class="paragraph">
+<p><em>Many thanks to Andrew Schofield for his input and feedback while writing this post!</em></p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2024 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
