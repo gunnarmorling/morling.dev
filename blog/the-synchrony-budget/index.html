@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>The Synchrony Budget - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="The Synchrony Budget" />
+<meta property="og:description" content="
+For building a system of distributed services, one concept I think is very valuable to keep in mind is what I call the synchrony budget:
+as much as possible, a service should minimize the number of synchronous requests which it makes to other services.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/the-synchrony-budget/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2025-03-18T14:00:00+01:00" />
+<meta property="article:modified_time" content="2025-03-18T14:00:00+01:00" />
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="The Synchrony Budget"/>
+<meta name="twitter:description" content="
+For building a system of distributed services, one concept I think is very valuable to keep in mind is what I call the synchrony budget:
+as much as possible, a service should minimize the number of synchronous requests which it makes to other services.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">The Synchrony Budget</h1>
+				<div class="meta">Posted at Mar 18, 2025</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>For building a system of distributed services, one concept I think is very valuable to keep in mind is what I call the <em>synchrony budget</em>:
+as much as possible, a service should minimize the number of synchronous requests which it makes to other services.</p>
+</div>
+<div class="paragraph">
+<p>The reasoning behind this is two-fold: synchronous calls are costly.
+The more synchronous requests you are doing, the longer it will take to process inbound requests to your own service;
+users don’t like to wait and might decide to take their business elsewhere if things take too long.
+Secondly, synchronous requests impact the availability of your service, because all the invoked services must be up and running in order for your service to work.
+The more services you rely on in a synchronous manner, the lower the availability of your service will be.</p>
+</div>
+<div class="paragraph">
+<p>Synchronous calls are tools that can help assure consistency, but by design they block progression until complete.
+In that sense, the idea of the synchrony budget is not about a literal budget which you can spend,
+but rather about being mindful how you implement communication flows between services:
+as asynchronous as possible, as synchronous as necessary.</p>
+</div>
+<div class="paragraph">
+<p>Let’s make things a bit more tangible by looking at an example.
+Consider an e-commerce website where users can place purchase orders.
+When an order comes in, the order entry service needs to interact with a couple of other services in order to process that order:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>a payment service for processing the payment of the customer</p>
+</li>
+<li>
+<p>an inventory service for allocating stock of the purchased item</p>
+</li>
+<li>
+<p>a shipment service for triggering the fulfillment of the order</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Let’s start with the last one, the shipment service.
+Does it matter to the customer who is placing an order when exactly the shipment service receives that notification?
+Not at all.
+Hence, notifying the shipment service synchronously from within the order entry request handler would be a waste of our synchrony budget.
+Not only would it cause that inbound request to take longer than it has to,
+it would also cause the order entry request to fail when the shipment service isn’t available,
+for instance due to maintenance, a network split, or some other kind of failure.
+Also, we don’t need to report any response from the shipment service back to the client making the inbound order placement request.
+This makes this call a perfect candidate for asynchronous execution,
+for instance by having the order service send a message to a Kafka topic,
+which then gets consumed by the shipment service.
+That way, the order service request isn’t slowed down by awaiting a response from the shipment service,
+also a downtime of the shipment service won’t affect the order service’s availability.
+It will just process any pending messages from the Kafka topic when it is up again.
+In general, whenever one service solely needs to notify another service about something that happened,
+defaulting to asynchronous communication makes a lot of sense.</p>
+</div>
+<div class="paragraph">
+<p>In a similar spirit, if any changed data should be propagated from an OLTP data store to an OLAP system,
+this should be done asynchronously.
+By definition, analytical queries issued against the latter don’t require instantaneous visibility into each single data change as it is occurring in the OLTP system.
+So sending synchronous requests to an OLAP store would be another good example for unnecessarily your synchrony budget.</p>
+</div>
+<div class="paragraph">
+<p>Now, what if our messaging infrastructure, such as Kafka, can’t be reached?
+Aren’t we back to square one?
+We might envision some means of buffering for that case,
+such as storing the messages to be sent in some local state store and sending them out once connectivity to Kafka has been restored.
+Luckily, we don’t have to reinvent the wheel here:
+the <a href="https://debezium.io/blog/2019/02/19/reliable-microservices-data-exchange-with-the-outbox-pattern/">outbox pattern</a> is a well-established approach for channeling outgoing messages through a service’s data store,
+transactionally consistent with any other data changes that need to be done at the same time.
+Tools for log-based change data capture (CDC), such as <a href="https://debezium.io/">Debezium</a>, can be used for extracting the messages from an outbox table with low overhead and high performance.
+That way, the only stateful resource which is required by a service to process incoming requests is its own database.</p>
+</div>
+<div class="paragraph">
+<p>Let’s look at the communication with the inventory service next.
+When the order service processes an incoming request,
+it will require the information whether the specified item is available in the desired quantity.
+This differs from the notification semantics used for communicating with the shipment service,
+as we do need data from the inventory service in order to process the inbound request.
+So should we make a synchronous call in this case?
+It certainly could be an option, but again it would eat into our synchrony budget:
+there’d be an impact on our response times, and what should we do in case the inventory service isn’t available?
+Should the incoming request be failed?
+But not accepting customer requests because of some internal technical hick-up doesn’t sound that desirable.</p>
+</div>
+<div class="paragraph">
+<p>Reversing the communication flow can be a way out:
+the inventory service could publish a feed of inventory changes,
+pushing a message to Kafka whenever there’s an inventory update.
+The order service could subscribe to this feed and materialize a view of this data in its own local data store.
+That way, no synchronous calls between services are required when processing an order request,
+this can solely be done by querying the order service’s database.
+The change feed of the inventory service could again be implemented via the outbox pattern;
+another option would be to use CDC for capturing changes in the actual business tables in the inventory database and then leverage stream processing, for instance with <a href="https://flink.apache.org/">Apache Flink</a>,
+to establish a <a href="https://www.youtube.com/watch?v=8PycG-dOwDE">stable data contract for that data stream</a>.
+That way, consumers like the order service are shielded from any potentially disruptive changes to the shipment service’s data model and the stream processor can handle denormalizing relational tables to provide consumers with fully contextualized events.</p>
+</div>
+<div class="paragraph">
+<p>Of course, there is a trade-off here:
+as updates to the order service’s view of the inventory data happen asynchronously,
+we might run into a situation where that view is outdated and a request for an item gets accepted,
+while it actually is not in stock any more.
+In practice, Debezium and Kafka can propagate data changes with sub-second latency end-to-end,
+so the time window for errors will be very small during normal operation.
+But it also helps to take a step back and look at things from a business perspective:
+reality isn’t transactional to begin with.
+I remember a birthday party a few years back where one of my friends was on call and had to patch the inventory table of an e-commerce application after a rack of flowers had been tossed over in the warehouse.
+In other words, a business needs to have means of dealing with situations like this in any case.
+In all likelihood, we’ll be better off sending a customer a $10 voucher as an apology in the rare case of accepting an order for an item without inventory, instead of spending our synchrony budget and establishing a synchronous call flow for this process.</p>
+</div>
+<div class="paragraph">
+<p>Now, let’s look at the communication with the payment service.
+Depending on the specifics,
+this one actually may be a case where a synchronous call is justified.
+When for instance building a flight booking system, you really want to be 100% sure that the credit card of the customer can be charged successfully,
+before acknowledging a booking request.
+Replicating the data of all credit cards and bank accounts in the world obviously isn’t possible,
+so the call flow can’t be reversed either.
+It’s for a reason that payment processor APIs are built with extremely high availability in mind.
+And this is what the notion of the synchrony budget is about:
+implement inter-service calls asynchronously whenever it’s possible,
+so you have the room to make synchronous calls if and when it’s absolutely required.
+That being said, for an e-commerce application it may be actually feasible to make synchronous calls to the payment service by default,
+but fall back to asynchronous processing in case of failures.
+As the contract to sell typically only gets accepted when an item gets shipped,
+you still have the room to cancel an order if a payment falls through on the asynchronous processing path.</p>
+</div>
+<div class="paragraph">
+<p>Finally, here’s how our overall solution of the data flows relevant to the order service could look like, applying the mental model of a synchrony budget:</p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="/images/synchrony_budget.png" alt="Synchronous and Asynchronous Data Flows in an E-Commerce System"/></span></p>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
