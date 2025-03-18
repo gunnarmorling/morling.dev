@@ -17,7 +17,7 @@ jobs:
       run: export PRNUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH") && echo 'baseURL = "https://gunnarmorling-morling-dev-preview-pr-'"$PRNUMBER"'.surge.sh/"' >> config/staging/config.toml
 
     - name: Build
-      run: docker run --rm -v $PWD:/src gunnarmorling/hugo-builder:20240706 bash -c "cd /src && /hugo/hugo -F --environment staging"
+      run: docker run --rm -v $PWD:/src gunnarmorling/hugo-builder:20240706 bash -c "cd /src && hugo -F --environment staging"
 
     - name: Preview
       uses: afc163/surge-preview@v1
