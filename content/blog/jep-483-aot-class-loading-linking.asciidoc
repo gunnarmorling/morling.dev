@@ -1,0 +1,287 @@
+---
+title: "Let's Take a Look at... JEP 483: Ahead-of-Time Class Loading & Linking!"
+date: 2025-03-27T14:00:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+_In the "Let's Take a Look at...!" blog series I am exploring interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, open-source projects, services, relevant improvements to Java and the JVM, and more. The idea is to get some hands-on experience, learn about potential use cases and applications, and understand the trade-offs involved. If you think there's a specific subject I should take a look at, let me know in the comments below._
+
+https://openjdk.org/projects/jdk/24/[Java 24] got released last week,
+and what a meaty release it is:
+more than twenty Java Enhancement Proposals (JEPs) have been shipped,
+including highlights such as compact object headers (https://openjdk.org/jeps/450[JEP 450], I hope to spend some time diving into that one some time soon),
+a new class-file API (https://openjdk.org/jeps/484[JEP 484]),
+and more flexible constructor bodies (https://openjdk.org/jeps/492[JEP 492], third preview).
+One other JEP which might fly a bit under the radar is https://openjdk.org/jeps/483[JEP 483] ("Ahead-of-Time Class Loading & Linking").
+It promises to reduce the start-up time of Java applications without requiring any modifications to the application itself,
+what's not to be liked about that?
+Let's take a closer look!
+
+<!--more-->
+
+JEP 483 is part of a broader OpenJDK initiative called https://openjdk.org/projects/leyden/[Project Leyden],
+whose objective is to reduce the overall footprint of Java programs,
+including startup time and time to peak performance.
+Eventually, its goal is to enable https://openjdk.org/jeps/8335368[ahead-of-time compilation] of Java applications,
+as such providing an alternative to https://www.graalvm.org/[GraalVM] and its support for AOT native image compilation, which has seen tremendous success and uptake recently.
+AOT class loading and linking is the first step towards this goal within Project Leyden.
+It builds upon of the link:/blog/smaller-faster-starting-container-images-with-jlink-and-appcds/[Application Class Data Sharing] (AppCDS) feature available in earlier Java versions.
+While AppCDS only reads and parses the class files referenced by an application and dumps them into an archive file,
+JEP 483 also loads and links the classes and caches that data.
+I.e. even more work is moved from application runtime to build time,
+thus resulting in further reduced start-up times.
+
+Like the case with AppCDS, a training run is required for creating the AOT cache file.
+During that run, you should make sure that the right set of classes gets loaded:
+when not loading all the classes required by an application,
+the AOT cache is not utilized to the fullest extent and the JVM will fall back to loading them on demand at runtime.
+On the other hand, when loading classes actually not used by an application at runtime (for instance classes of a testing framework),
+the size of the cache file gets bloated without any benefit.
+The classpath must be consistent between training run and actual application run:
+the same JAR files must be present, in the same order.
+The runtime classpath may be amended with additional JARs though,
+which naturally will not feed into the AOT cache.
+
+Let's put AOT class loading and linking into action using Apache Kafka as an example.
+While the start-up overhead of a long-running component like a Kafka broker typically may not be that relevant,
+it absolutely can make a difference when for instance frequently starting and stopping brokers during development and testing.
+
+## Building an AOT Cache for Apache Kafka
+
+Coincidentally, Apache Kafka 4.0 was https://kafka.apache.org/blog#apache_kafka_400_release_announcement[released last week], too.
+So let's https://kafka.apache.org/downloads[download] it and use it for our experiments.
+Unpack the distribution and format a directory for the Kafka files:
+
+[source,shell,linenums=true]
+----
+tar xvf kafka_2.13-4.0.0.tgz
+KAFKA_CLUSTER_ID="$(bin/kafka-storage.sh random-uuid)"
+bin/kafka-storage.sh format --standalone -t $KAFKA_CLUSTER_ID -c config/server.properties
+----
+
+Building an AOT cache is a two-step process.
+First, a list of all the classes which should go into the archive needs to be generated.
+This list is then used for creating the archive itself.
+This feels a bit more convoluted than it should be, and indeed the JEP mentions that simplifying this is on the roadmap.
+
+Create the class list like so:
+
+[source,shell,linenums=true]
+----
+export EXTRA_ARGS="-XX:AOTMode=record -XX:AOTConfiguration=kafka.aotconf" # <1>
+bin/kafka-server-start.sh config/server.properties
+----
+<1> The `EXTRA_ARGS` variable can be used to pass any additional arguments to the JVM when launching Kafka, in this case to specify that the list of classes for the AOT cache should be recorded in the file _kafka.aotconf_
+
+As an aside, Kafka has completely parted ways with ZooKeeper as of the 4.0 release and  exclusively supports KRaft for cluster coordination. 
+By using the _server.properties_ file,
+our single broker runs in the so-called "combined" mode,
+so it has both the "broker" and "controller" roles.
+Very nice to see how simple things have become here over the years!
+
+Once Kafka has started, open a separate shell window.
+Create a topic in Kafka, then produce and consume a couple of messages like so:
+
+[source,shell,linenums=true]
+----
+bin/kafka-topics.sh --create --topic my-topic --bootstrap-server localhost:9092
+
+Created topic my-topic.
+
+bin/kafka-console-producer.sh --topic my-topic --bootstrap-server localhost:9092
+>hello
+>world
+<Ctrl + C>
+
+bin/kafka-console-consumer.sh --topic my-topic --from-beginning --bootstrap-server localhost:9092
+hello
+world
+<Ctrl + C>
+Processed a total of 2 messages
+----
+
+This shows the trade-off involved when creating AOT cache files:
+we don't _have_ to produce and consume messages here,
+but in all likelihood this will trigger the loading of classes which otherwise would be loaded and linked at runtime only.
+It may be a good idea to monitor which classes get loaded via link:/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/[JDK Flight Recorder],
+thus making sure you are indeed capturing the relevant set when creating the AOT cache file.
+
+Stop the broker by hitting `<Ctrl + C>` in the session where you started it.
+If you take a look at the _kafka.aotconf_ file, you'll see that it essentially is a long list of classes to be cached,
+as well as other class-related metadata.
+The comment at the top still hints at the history of Leyden's AOT support being built on top of CDS:
+
+[source,linenums=true]
+----
+# NOTE: Do not modify this file.
+#
+# This file is generated via the -XX:DumpLoadedClassList=<class_list_file> option
+# and is used at CDS archive dump time (see -Xshare:dump).
+#
+java/lang/Object id: 0
+java/io/Serializable id: 1
+java/lang/Comparable id: 2
+java/lang/CharSequence id: 3
+java/lang/constant/Constable id: 4
+java/lang/constant/ConstantDesc id: 5
+java/lang/String id: 6
+java/lang/reflect/AnnotatedElement id: 7
+java/lang/reflect/GenericDeclaration id: 8
+java/lang/reflect/Type id: 9
+java/lang/invoke/TypeDescriptor id: 10
+...
+----
+
+Next, let's try and create the actual AOT cache file.
+To do so, specify the `-XX:AOTMode=create` option.
+Note that the application is not actually executed during this process,
+instead the JVM will only create the AOT cache file and exit again:
+
+[source,shell,linenums=true]
+----
+export EXTRA_ARGS="-XX:AOTMode=create -XX:AOTConfiguration=kafka.aotconf -XX:AOTCache=kafka.aot" # <1>
+bin/kafka-server-start.sh config/server.properties
+----
+<1> Create the AOT cache using the previously created configuration file
+
+Uh, oh, something isn't quite working as expected:
+
+[source,shell,linenums=true]
+----
+java.lang.IllegalArgumentException: javax.management.NotCompliantMBeanException: com.sun.management.UnixOperatingSystemMXBean: During -Xshare:dump, module system cannot be modified after it's initialized
+	at java.management/javax.management.StandardMBean.<init>(StandardMBean.java:270)
+	at java.management/java.lang.management.ManagementFactory.addMXBean(ManagementFactory.java:882)
+	at java.management/java.lang.management.ManagementFactory.lambda$getPlatformMBeanServer$1(ManagementFactory.java:474)
+    ...
+----
+
+This message was a bit confusing to me--I don't think I'm interacting with the Java module system in any way?
+So I sent https://mail.openjdk.org/pipermail/leyden-dev/2025-March/001699.html[a message] to the leyden-dev mailing list, where I learned that this may be triggered by starting the JMX agent of the JVM.
+While I was not actively doing that, indeed https://github.com/apache/kafka/blob/trunk/bin/kafka-run-class.sh#L201-L204[this is the case by default] as per the _run-class.sh_ launcher script coming with the Kafka distribution.
+So let's disable JMX diagnostics and try again:
+
+[source,shell,linenums=true]
+----
+export KAFKA_JMX_OPTS=" "
+bin/kafka-server-start.sh config/server.properties
+----
+
+Some of the classes are skipped for different reasons, but overall, things look much better this time:
+
+[source,shell,linenums=true]
+----
+[0.908s][warning][cds] Preload Warning: Verification failed for org.apache.logging.log4j.core.async.AsyncLoggerContext
+[2.307s][warning][cds] Skipping org/slf4j/Logger: Old class has been linked
+[2.307s][warning][cds,resolve] Cannot aot-resolve Lambda proxy because org.slf4j.Logger is excluded
+[2.613s][warning][cds        ] Skipping jdk/internal/event/Event: JFR event class
+[2.615s][warning][cds        ] Skipping org/apache/logging/slf4j/Log4jLogger: Unlinked class not supported by AOTClassLinking
+[2.615s][warning][cds        ] Skipping org/apache/logging/slf4j/Log4jLoggerFactory: Unlinked class not supported by AOTClassLinking
+...
+AOTCache creation is complete: kafka.aot
+----
+
+A tad concerning that Log4j's `AsyncLoggerContext` class fails verification, but we'll leave analysis of that for another time.
+The AOT cache file has a size of 66 MB in this case.
+It is considered an implementation detail and as such is subject to change between Java versions.
+Now let's see what's the impact of using the AOT cache on Kafka's start-up time.
+To do so, simply specify the name of the cache file when running the application:
+
+[source,shell,linenums=true]
+----
+export EXTRA_ARGS="-XX:AOTCache=kafka.aot"
+bin/kafka-server-start.sh config/server.properties
+----
+
+I've measured the start-up time by comparing the timestamp of the very first log message emitted by Kafka to the timestamp of the message saying "Kafka Server started",
+always starting from a freshly formatted Kafka logs directory and flushing the page cache in between runs.
+Averaged over five runs, this took 285 ms on my machine (a 2023 MacBook Pro with M3 Max processor and 48 GB shared memory).
+In comparison, Kafka took 690 ms to start without the archive, i.e. the AOT cache makes for a whopping 59% reduction of start-up time in this scenario.
+
+When building the AOT cache, you can also disable AOT class loading and linking by specifying the `-XX:-AOTClassLinking` option,
+effectively resulting in the same behavior you'd get when using AppCDS on earlier Java versions.
+This would result an Kafka start-up time of 327 ms on my laptop,
+i.e. the lion share of the improvement in the case at hand indeed originates from reading and parsing the class files ahead of time,
+with AOT loading and linking them only yielding a relatively small improvement in addition.
+Finally, I've also measured how long it takes to start the https://hub.docker.com/r/apache/kafka-native[Kafka native binary] in a Docker container (see https://cwiki.apache.org/confluence/display/KAFKA/KIP-974%3A+Docker+Image+for+GraalVM+based+Native+Kafka+Broker[KIP 974]),
+which took 118 ms, i.e. less than half of the time it took with the AOT cache.
+Keep in mind though that this image is considered experimental and not ready for production,
+whereas there shouldn't be any concern of that kind when running Kafka with the AOT cache on the JVM.
+
+## AOT Caching With Apache Flink
+
+As mentioned before, apart from testing scenarios, Kafka typically is a long-running workload,
+and as such, start-up times don't matter that much in the grand scheme of things.
+To add another data point, I've also tested how beneficial AOT class-loading and linking is for a simple Apache Flink job.
+
+Now, Flink jobs usually are deployed by uploading them as a JAR to a Flink cluster,
+after which their code is loaded with a https://nightlies.apache.org/flink/flink-docs-master/docs/ops/debugging/debugging_classloading/[custom classloader].
+As of today, JEP 483 doesn't support AOT class loading and linking with user-defined class loaders, though
+(the JEP suggests that this limitation may be lifted in a future Java version).
+This means that only Flink's built-in classes would benefit from AOT, while any classes of a Flink job and its dependencies would be excluded.
+For my experimentation I've therefore decided to go with Flink's https://nightlies.apache.org/flink/flink-docs-stable/api/java/org/apache/flink/runtime/minicluster/MiniCluster.html[mini-cluster deployment],
+a simplified mode of using Flink in a non-distributed manner, just by running the job's main class.
+
+The test job uses the Flink connector for Apache Kafka to read a message from a Kafka topic.
+I measured the time-to-first-message after starting the job:
+without the AOT cache (again averaged over five runs), this took 1.875 seconds on my machine, vs. 0.913 seconds with the AOT cache.
+A 51% reduction of time-to-first-message in this scenario, very nice!
+Using the AOT cache without loading and linking classes yielded a 40% improvement over the default behavior (1.118 seconds).
+I couldn't test Flink as a GraalVM native binary;
+if you are aware of any work towards making that a reality, I'd love to hear from you!
+
+## Summary
+
+AOT class loading and linking is a very welcomed addition to Java.
+Built upon the previously existing concepts of CDS and AppCDS, it helps to further cut down the start-up time of JVM-based applications, by moving the process of loading and linking classes ahead to build time.
+The actual impact will vary between specific applications, for Kafka and a basic Flink job I could observe a reduction of 59% and 51% of start-up time, respectively.
+
+image::jep_483_results.png[]
+
+While start-up times don't matter that much for long running workloads,
+they can make a huge difference in cloud-native scenarios where applications are dynamically scaled out, spinning up new instances on demand as the load of incoming requests increases.
+Also think of scale-to-zero deployments, preview jobs for real-time queries in a cloud-based stream processing solution,
+CLI utilities,
+starting up resources such as Kafka for integration tests,
+and many more--whenever a human is waiting for a process to come up and provide a response,
+every bit of time you can save will result in a better user experience immediately.
+
+The great thing about the AOT machinery provided by Project Leyden and JEP 483 is that it requires no modifications whatsoever to your application code.
+It can be used with any Java application, providing potentially significant reductions to start-up times essentially for free.
+The required training run feels a bit cumbersome in its current form,
+but the JEP suggests that improvements in that area will be done in future revisions.
+In fact, there's a https://openjdk.org/jeps/8350022[draft JEP] already which provides some more details on how this might look like.
+In general, the requirement of a training run can be challenging from a software development lifecycle perspective,
+in particular when considering (immutable) container images, for instance when deploying to Kubernetes.
+The application will have to be executed at image build time, also performing some work to trigger loading and linking all relevant classes,
+potentially requiring remote resources such as a database, too.
+This may not always be trivial to do.
+
+The big elephant in the room is how Project Leyden compares to GraalVM,
+the other Java AOT technology developed by Oracle.
+As far as I can say, there's quite a bit of overlap between the goals of the two projects.
+At this point, GraalVM is much more advanced than Leyden,
+with full support for AOT compilation, not only providing even more impressive improvements to start-up times
+(a Java application can start in a few milli-seconds when compiled into a native binary using GraalVM) but also yielding a significant reduction of memory usage.
+On the downside, applications and their dependencies typically need adjustment and more or less complex configuration in order to make use of GraalVM's AOT compilation (frameworks like https://quarkus.io/[Quarkus] can help with this task).
+Furthermore, the closed-world assumption underlying GraalVM prevents the dynamism the JVM is known for, such as loading classes at application runtime for plug-in use cases, modifying or even generating classes on the fly, etc.
+
+In that regard it will be interesting to see what Project Leyden will come up with in this space.
+It also seeks to support AOT compilation eventually,
+but is https://www.jfokus.se/jfokus24-preso/Project-Leyden--Capturing-Lightning-in-a-Bottle.pdf[exploring a middle ground] between a highly constrained closed-world assumption and full dynamism,
+for instance by providing means to developers for specifying which modules of their application may be target to class redefinitions and which ones are not.
+Besides faster start-up times,
+another goal here is faster warm-up, i.e. a faster time to peak performance.
+
+Having been https://mail.openjdk.org/pipermail/discuss/2020-April/005429.html[kicked off in 2020], it got silent around Leyden for quite some time,
+but it has picked up steam again more recently,
+with JEP 483 being one of the first actual deliverables.
+It'll definitely be worth keeping your eyes open for the other Leyden JEPs, https://openjdk.org/jeps/8335368[AOT code compilation] and https://openjdk.org/jeps/8325147[AOT method profiling].
+Currently in draft state, there's no target Java version known for those, but https://jdk.java.net/leyden/[early access builds] can already be obtained from the OpenJDK website.
