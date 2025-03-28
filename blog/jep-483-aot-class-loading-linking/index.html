@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Let&#39;s Take a Look at... JEP 483: Ahead-of-Time Class Loading &amp; Linking! - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Let&#39;s Take a Look at... JEP 483: Ahead-of-Time Class Loading &amp; Linking!" />
+<meta property="og:description" content="
+In the &#34;Let’s Take a Look at…​!&#34; blog series I am exploring interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, open-source projects, services, relevant improvements to Java and the JVM, and more. The idea is to get some hands-on experience, learn about potential use cases and applications, and understand the trade-offs involved. If you think there’s a specific subject I should take a look at, let me know in the comments below.
+
+
+Java 24 got released last week,
+and what a meaty release it is:
+more than twenty Java Enhancement Proposals (JEPs) have been shipped,
+including highlights such as compact object headers (JEP 450, I hope to spend some time diving into that one some time soon),
+a new class-file API (JEP 484),
+and more flexible constructor bodies (JEP 492, third preview).
+One other JEP which might fly a bit under the radar is JEP 483 (&#34;Ahead-of-Time Class Loading &amp; Linking&#34;).
+It promises to reduce the start-up time of Java applications without requiring any modifications to the application itself,
+what’s not to be liked about that?
+Let’s take a closer look!
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/jep-483-aot-class-loading-linking/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2025-03-27T14:00:00+01:00" />
+<meta property="article:modified_time" content="2025-03-27T14:00:00+01:00" />
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Let&#39;s Take a Look at... JEP 483: Ahead-of-Time Class Loading &amp; Linking!"/>
+<meta name="twitter:description" content="
+In the &#34;Let’s Take a Look at…​!&#34; blog series I am exploring interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, open-source projects, services, relevant improvements to Java and the JVM, and more. The idea is to get some hands-on experience, learn about potential use cases and applications, and understand the trade-offs involved. If you think there’s a specific subject I should take a look at, let me know in the comments below.
+
+
+Java 24 got released last week,
+and what a meaty release it is:
+more than twenty Java Enhancement Proposals (JEPs) have been shipped,
+including highlights such as compact object headers (JEP 450, I hope to spend some time diving into that one some time soon),
+a new class-file API (JEP 484),
+and more flexible constructor bodies (JEP 492, third preview).
+One other JEP which might fly a bit under the radar is JEP 483 (&#34;Ahead-of-Time Class Loading &amp; Linking&#34;).
+It promises to reduce the start-up time of Java applications without requiring any modifications to the application itself,
+what’s not to be liked about that?
+Let’s take a closer look!
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Let&#39;s Take a Look at... JEP 483: Ahead-of-Time Class Loading &amp; Linking!</h1>
+				<div class="meta">Posted at Mar 27, 2025</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p><em>In the &#34;Let’s Take a Look at…​!&#34; blog series I am exploring interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, open-source projects, services, relevant improvements to Java and the JVM, and more. The idea is to get some hands-on experience, learn about potential use cases and applications, and understand the trade-offs involved. If you think there’s a specific subject I should take a look at, let me know in the comments below.</em></p>
+</div>
+<div class="paragraph">
+<p><a href="https://openjdk.org/projects/jdk/24/">Java 24</a> got released last week,
+and what a meaty release it is:
+more than twenty Java Enhancement Proposals (JEPs) have been shipped,
+including highlights such as compact object headers (<a href="https://openjdk.org/jeps/450">JEP 450</a>, I hope to spend some time diving into that one some time soon),
+a new class-file API (<a href="https://openjdk.org/jeps/484">JEP 484</a>),
+and more flexible constructor bodies (<a href="https://openjdk.org/jeps/492">JEP 492</a>, third preview).
+One other JEP which might fly a bit under the radar is <a href="https://openjdk.org/jeps/483">JEP 483</a> (&#34;Ahead-of-Time Class Loading &amp; Linking&#34;).
+It promises to reduce the start-up time of Java applications without requiring any modifications to the application itself,
+what’s not to be liked about that?
+Let’s take a closer look!</p>
+</div>
+<div class="paragraph">
+<p>JEP 483 is part of a broader OpenJDK initiative called <a href="https://openjdk.org/projects/leyden/">Project Leyden</a>,
+whose objective is to reduce the overall footprint of Java programs,
+including startup time and time to peak performance.
+Eventually, its goal is to enable <a href="https://openjdk.org/jeps/8335368">ahead-of-time compilation</a> of Java applications,
+as such providing an alternative to <a href="https://www.graalvm.org/">GraalVM</a> and its support for AOT native image compilation, which has seen tremendous success and uptake recently.
+AOT class loading and linking is the first step towards this goal within Project Leyden.
+It builds upon of the <a href="/blog/smaller-faster-starting-container-images-with-jlink-and-appcds/">Application Class Data Sharing</a> (AppCDS) feature available in earlier Java versions.
+While AppCDS only reads and parses the class files referenced by an application and dumps them into an archive file,
+JEP 483 also loads and links the classes and caches that data.
+I.e. even more work is moved from application runtime to build time,
+thus resulting in further reduced start-up times.</p>
+</div>
+<div class="paragraph">
+<p>Like the case with AppCDS, a training run is required for creating the AOT cache file.
+During that run, you should make sure that the right set of classes gets loaded:
+when not loading all the classes required by an application,
+the AOT cache is not utilized to the fullest extent and the JVM will fall back to loading them on demand at runtime.
+On the other hand, when loading classes actually not used by an application at runtime (for instance classes of a testing framework),
+the size of the cache file gets bloated without any benefit.
+The classpath must be consistent between training run and actual application run:
+the same JAR files must be present, in the same order.
+The runtime classpath may be amended with additional JARs though,
+which naturally will not feed into the AOT cache.</p>
+</div>
+<div class="paragraph">
+<p>Let’s put AOT class loading and linking into action using Apache Kafka as an example.
+While the start-up overhead of a long-running component like a Kafka broker typically may not be that relevant,
+it absolutely can make a difference when for instance frequently starting and stopping brokers during development and testing.</p>
+</div>
+<div class="sect1">
+<h2 id="_building_an_aot_cache_for_apache_kafka">Building an AOT Cache for Apache Kafka</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Coincidentally, Apache Kafka 4.0 was <a href="https://kafka.apache.org/blog#apache_kafka_400_release_announcement">released last week</a>, too.
+So let’s <a href="https://kafka.apache.org/downloads">download</a> it and use it for our experiments.
+Unpack the distribution and format a directory for the Kafka files:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="nb">tar </span>xvf kafka_2.13-4.0.0.tgz
+<span class="nv">KAFKA_CLUSTER_ID</span><span class="o">=</span><span class="s2">&#34;</span><span class="si">$(</span>bin/kafka-storage.sh random-uuid<span class="si">)</span><span class="s2">&#34;</span>
+bin/kafka-storage.sh format <span class="nt">--standalone</span> <span class="nt">-t</span> <span class="nv">$KAFKA_CLUSTER_ID</span> <span class="nt">-c</span> config/server.properties
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Building an AOT cache is a two-step process.
+First, a list of all the classes which should go into the archive needs to be generated.
+This list is then used for creating the archive itself.
+This feels a bit more convoluted than it should be, and indeed the JEP mentions that simplifying this is on the roadmap.</p>
+</div>
+<div class="paragraph">
+<p>Create the class list like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre><span class="nb">export </span><span class="nv">EXTRA_ARGS</span><span class="o">=</span><span class="s2">&#34;-XX:AOTMode=record -XX:AOTConfiguration=kafka.aotconf&#34;</span> <i class="conum" data-value="1"></i><b>(1)</b>
+bin/kafka-server-start.sh config/server.properties
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The <code>EXTRA_ARGS</code> variable can be used to pass any additional arguments to the JVM when launching Kafka, in this case to specify that the list of classes for the AOT cache should be recorded in the file <em>kafka.aotconf</em></td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>As an aside, Kafka has completely parted ways with ZooKeeper as of the 4.0 release and  exclusively supports KRaft for cluster coordination.
+By using the <em>server.properties</em> file,
+our single broker runs in the so-called &#34;combined&#34; mode,
+so it has both the &#34;broker&#34; and &#34;controller&#34; roles.
+Very nice to see how simple things have become here over the years!</p>
+</div>
+<div class="paragraph">
+<p>Once Kafka has started, open a separate shell window.
+Create a topic in Kafka, then produce and consume a couple of messages like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+</pre></td><td class="code"><pre>bin/kafka-topics.sh <span class="nt">--create</span> <span class="nt">--topic</span> my-topic <span class="nt">--bootstrap-server</span> localhost:9092
+
+Created topic my-topic.
+
+bin/kafka-console-producer.sh <span class="nt">--topic</span> my-topic <span class="nt">--bootstrap-server</span> localhost:9092
+<span class="o">&gt;</span>hello
+<span class="o">&gt;</span>world
+&lt;Ctrl + C&gt;
+
+bin/kafka-console-consumer.sh <span class="nt">--topic</span> my-topic <span class="nt">--from-beginning</span> <span class="nt">--bootstrap-server</span> localhost:9092
+hello
+world
+&lt;Ctrl + C&gt;
+Processed a total of 2 messages
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This shows the trade-off involved when creating AOT cache files:
+we don’t <em>have</em> to produce and consume messages here,
+but in all likelihood this will trigger the loading of classes which otherwise would be loaded and linked at runtime only.
+It may be a good idea to monitor which classes get loaded via <a href="/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/">JDK Flight Recorder</a>,
+thus making sure you are indeed capturing the relevant set when creating the AOT cache file.</p>
+</div>
+<div class="paragraph">
+<p>Stop the broker by hitting <code>&lt;Ctrl + C&gt;</code> in the session where you started it.
+If you take a look at the <em>kafka.aotconf</em> file, you’ll see that it essentially is a long list of classes to be cached,
+as well as other class-related metadata.
+The comment at the top still hints at the history of Leyden’s AOT support being built on top of CDS:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+</pre></td><td class="code"><pre># NOTE: Do not modify this file.
+#
+# This file is generated via the -XX:DumpLoadedClassList=&lt;class_list_file&gt; option
+# and is used at CDS archive dump time (see -Xshare:dump).
+#
+java/lang/Object id: 0
+java/io/Serializable id: 1
+java/lang/Comparable id: 2
+java/lang/CharSequence id: 3
+java/lang/constant/Constable id: 4
+java/lang/constant/ConstantDesc id: 5
+java/lang/String id: 6
+java/lang/reflect/AnnotatedElement id: 7
+java/lang/reflect/GenericDeclaration id: 8
+java/lang/reflect/Type id: 9
+java/lang/invoke/TypeDescriptor id: 10
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Next, let’s try and create the actual AOT cache file.
+To do so, specify the <code>-XX:AOTMode=create</code> option.
+Note that the application is not actually executed during this process,
+instead the JVM will only create the AOT cache file and exit again:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre><span class="nb">export </span><span class="nv">EXTRA_ARGS</span><span class="o">=</span><span class="s2">&#34;-XX:AOTMode=create -XX:AOTConfiguration=kafka.aotconf -XX:AOTCache=kafka.aot&#34;</span> <i class="conum" data-value="1"></i><b>(1)</b>
+bin/kafka-server-start.sh config/server.properties
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Create the AOT cache using the previously created configuration file</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>Uh, oh, something isn’t quite working as expected:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>java.lang.IllegalArgumentException: javax.management.NotCompliantMBeanException: com.sun.management.UnixOperatingSystemMXBean: During <span class="nt">-Xshare</span>:dump, module system cannot be modified after it<span class="s1">&#39;s initialized
+	at java.management/javax.management.StandardMBean.&lt;init&gt;(StandardMBean.java:270)
+	at java.management/java.lang.management.ManagementFactory.addMXBean(ManagementFactory.java:882)
+	at java.management/java.lang.management.ManagementFactory.lambda$getPlatformMBeanServer$1(ManagementFactory.java:474)
+    ...</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This message was a bit confusing to me—​I don’t think I’m interacting with the Java module system in any way?
+So I sent <a href="https://mail.openjdk.org/pipermail/leyden-dev/2025-March/001699.html">a message</a> to the leyden-dev mailing list, where I learned that this may be triggered by starting the JMX agent of the JVM.
+While I was not actively doing that, indeed <a href="https://github.com/apache/kafka/blob/trunk/bin/kafka-run-class.sh#L201-L204">this is the case by default</a> as per the <em>run-class.sh</em> launcher script coming with the Kafka distribution.
+So let’s disable JMX diagnostics and try again:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre><span class="nb">export </span><span class="nv">KAFKA_JMX_OPTS</span><span class="o">=</span><span class="s2">&#34; &#34;</span>
+bin/kafka-server-start.sh config/server.properties
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Some of the classes are skipped for different reasons, but overall, things look much better this time:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre><span class="o">[</span>0.908s][warning][cds] Preload Warning: Verification failed <span class="k">for </span>org.apache.logging.log4j.core.async.AsyncLoggerContext
+<span class="o">[</span>2.307s][warning][cds] Skipping org/slf4j/Logger: Old class has been linked
+<span class="o">[</span>2.307s][warning][cds,resolve] Cannot aot-resolve Lambda proxy because org.slf4j.Logger is excluded
+<span class="o">[</span>2.613s][warning][cds        <span class="o">]</span> Skipping jdk/internal/event/Event: JFR event class
+<span class="o">[</span>2.615s][warning][cds        <span class="o">]</span> Skipping org/apache/logging/slf4j/Log4jLogger: Unlinked class not supported by AOTClassLinking
+<span class="o">[</span>2.615s][warning][cds        <span class="o">]</span> Skipping org/apache/logging/slf4j/Log4jLoggerFactory: Unlinked class not supported by AOTClassLinking
+...
+AOTCache creation is <span class="nb">complete</span>: kafka.aot
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A tad concerning that Log4j’s <code>AsyncLoggerContext</code> class fails verification, but we’ll leave analysis of that for another time.
+The AOT cache file has a size of 66 MB in this case.
+It is considered an implementation detail and as such is subject to change between Java versions.
+Now let’s see what’s the impact of using the AOT cache on Kafka’s start-up time.
+To do so, simply specify the name of the cache file when running the application:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre><span class="nb">export </span><span class="nv">EXTRA_ARGS</span><span class="o">=</span><span class="s2">&#34;-XX:AOTCache=kafka.aot&#34;</span>
+bin/kafka-server-start.sh config/server.properties
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>I’ve measured the start-up time by comparing the timestamp of the very first log message emitted by Kafka to the timestamp of the message saying &#34;Kafka Server started&#34;,
+always starting from a freshly formatted Kafka logs directory and flushing the page cache in between runs.
+Averaged over five runs, this took 285 ms on my machine (a 2023 MacBook Pro with M3 Max processor and 48 GB shared memory).
+In comparison, Kafka took 690 ms to start without the archive, i.e. the AOT cache makes for a whopping 59% reduction of start-up time in this scenario.</p>
+</div>
+<div class="paragraph">
+<p>When building the AOT cache, you can also disable AOT class loading and linking by specifying the <code>-XX:-AOTClassLinking</code> option,
+effectively resulting in the same behavior you’d get when using AppCDS on earlier Java versions.
+This would result an Kafka start-up time of 327 ms on my laptop,
+i.e. the lion share of the improvement in the case at hand indeed originates from reading and parsing the class files ahead of time,
+with AOT loading and linking them only yielding a relatively small improvement in addition.
+Finally, I’ve also measured how long it takes to start the <a href="https://hub.docker.com/r/apache/kafka-native">Kafka native binary</a> in a Docker container (see <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-974%3A+Docker+Image+for+GraalVM+based+Native+Kafka+Broker">KIP 974</a>),
+which took 118 ms, i.e. less than half of the time it took with the AOT cache.
+Keep in mind though that this image is considered experimental and not ready for production,
+whereas there shouldn’t be any concern of that kind when running Kafka with the AOT cache on the JVM.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_aot_caching_with_apache_flink">AOT Caching With Apache Flink</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As mentioned before, apart from testing scenarios, Kafka typically is a long-running workload,
+and as such, start-up times don’t matter that much in the grand scheme of things.
+To add another data point, I’ve also tested how beneficial AOT class-loading and linking is for a simple Apache Flink job.</p>
+</div>
+<div class="paragraph">
+<p>Now, Flink jobs usually are deployed by uploading them as a JAR to a Flink cluster,
+after which their code is loaded with a <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/ops/debugging/debugging_classloading/">custom classloader</a>.
+As of today, JEP 483 doesn’t support AOT class loading and linking with user-defined class loaders, though
+(the JEP suggests that this limitation may be lifted in a future Java version).
+This means that only Flink’s built-in classes would benefit from AOT, while any classes of a Flink job and its dependencies would be excluded.
+For my experimentation I’ve therefore decided to go with Flink’s <a href="https://nightlies.apache.org/flink/flink-docs-stable/api/java/org/apache/flink/runtime/minicluster/MiniCluster.html">mini-cluster deployment</a>,
+a simplified mode of using Flink in a non-distributed manner, just by running the job’s main class.</p>
+</div>
+<div class="paragraph">
+<p>The test job uses the Flink connector for Apache Kafka to read a message from a Kafka topic.
+I measured the time-to-first-message after starting the job:
+without the AOT cache (again averaged over five runs), this took 1.875 seconds on my machine, vs. 0.913 seconds with the AOT cache.
+A 51% reduction of time-to-first-message in this scenario, very nice!
+Using the AOT cache without loading and linking classes yielded a 40% improvement over the default behavior (1.118 seconds).
+I couldn’t test Flink as a GraalVM native binary;
+if you are aware of any work towards making that a reality, I’d love to hear from you!</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary">Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>AOT class loading and linking is a very welcomed addition to Java.
+Built upon the previously existing concepts of CDS and AppCDS, it helps to further cut down the start-up time of JVM-based applications, by moving the process of loading and linking classes ahead to build time.
+The actual impact will vary between specific applications, for Kafka and a basic Flink job I could observe a reduction of 59% and 51% of start-up time, respectively.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/jep_483_results.png" alt="jep 483 results"/>
+</div>
+</div>
+<div class="paragraph">
+<p>While start-up times don’t matter that much for long running workloads,
+they can make a huge difference in cloud-native scenarios where applications are dynamically scaled out, spinning up new instances on demand as the load of incoming requests increases.
+Also think of scale-to-zero deployments, preview jobs for real-time queries in a cloud-based stream processing solution,
+CLI utilities,
+starting up resources such as Kafka for integration tests,
+and many more—​whenever a human is waiting for a process to come up and provide a response,
+every bit of time you can save will result in a better user experience immediately.</p>
+</div>
+<div class="paragraph">
+<p>The great thing about the AOT machinery provided by Project Leyden and JEP 483 is that it requires no modifications whatsoever to your application code.
+It can be used with any Java application, providing potentially significant reductions to start-up times essentially for free.
+The required training run feels a bit cumbersome in its current form,
+but the JEP suggests that improvements in that area will be done in future revisions.
+In fact, there’s a <a href="https://openjdk.org/jeps/8350022">draft JEP</a> already which provides some more details on how this might look like.
+In general, the requirement of a training run can be challenging from a software development lifecycle perspective,
+in particular when considering (immutable) container images, for instance when deploying to Kubernetes.
+The application will have to be executed at image build time, also performing some work to trigger loading and linking all relevant classes,
+potentially requiring remote resources such as a database, too.
+This may not always be trivial to do.</p>
+</div>
+<div class="paragraph">
+<p>The big elephant in the room is how Project Leyden compares to GraalVM,
+the other Java AOT technology developed by Oracle.
+As far as I can say, there’s quite a bit of overlap between the goals of the two projects.
+At this point, GraalVM is much more advanced than Leyden,
+with full support for AOT compilation, not only providing even more impressive improvements to start-up times
+(a Java application can start in a few milli-seconds when compiled into a native binary using GraalVM) but also yielding a significant reduction of memory usage.
+On the downside, applications and their dependencies typically need adjustment and more or less complex configuration in order to make use of GraalVM’s AOT compilation (frameworks like <a href="https://quarkus.io/">Quarkus</a> can help with this task).
+Furthermore, the closed-world assumption underlying GraalVM prevents the dynamism the JVM is known for, such as loading classes at application runtime for plug-in use cases, modifying or even generating classes on the fly, etc.</p>
+</div>
+<div class="paragraph">
+<p>In that regard it will be interesting to see what Project Leyden will come up with in this space.
+It also seeks to support AOT compilation eventually,
+but is <a href="https://www.jfokus.se/jfokus24-preso/Project-Leyden—​Capturing-Lightning-in-a-Bottle.pdf">exploring a middle ground</a> between a highly constrained closed-world assumption and full dynamism,
+for instance by providing means to developers for specifying which modules of their application may be target to class redefinitions and which ones are not.
+Besides faster start-up times,
+another goal here is faster warm-up, i.e. a faster time to peak performance.</p>
+</div>
+<div class="paragraph">
+<p>Having been <a href="https://mail.openjdk.org/pipermail/discuss/2020-April/005429.html">kicked off in 2020</a>, it got silent around Leyden for quite some time,
+but it has picked up steam again more recently,
+with JEP 483 being one of the first actual deliverables.
+It’ll definitely be worth keeping your eyes open for the other Leyden JEPs, <a href="https://openjdk.org/jeps/8335368">AOT code compilation</a> and <a href="https://openjdk.org/jeps/8325147">AOT method profiling</a>.
+Currently in draft state, there’s no target Java version known for those, but <a href="https://jdk.java.net/leyden/">early access builds</a> can already be obtained from the OpenJDK website.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
