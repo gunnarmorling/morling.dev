@@ -1,0 +1,135 @@
+---
+title: "Building a Native Binary for Apache Kafka on macOS"
+date: 2025-04-07T12:25:00+02:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+_With help of the GraalVM configuration developed for KIP-974 (Docker Image for GraalVM based Native Kafka Broker),
+you can easily build a self-contained native binary for Apache Kafka.
+Read on to learn how to you can build a native Kafka executable yourself,
+starting in milli-seconds, making it a perfect fit for development and testing purposes_.
+
+When I wrote about link:/blog/jep-483-aot-class-loading-linking/[ahead-of-time class loading and linking in Java 24] recently,
+I also published the start-up time for Apache Kafka as a native binary for comparison.
+This was done via Docker, as there's no pre-built native binary of Kafka available for the operating system I'm running on, macOS.
+But there is a native Kafka container image, so this is what I chose for the sake convenience.
+
+Now, running in a container adds a little bit of overhead of course,
+so it wasn't a surprise when Thomas Würthinger, lead of the GraalVM project at Oracle,
+https://bsky.app/profile/thomaswue.dev/post/3lloypreatk2s[brought up the question] what the value would be when running Kafka natively on macOS.
+Needless to say I can't leave this kind of nice nerd snipe pass,
+so I set out to learn how to build a native Kafka binary on macOS, using GraalVM.
+
+<!--more-->
+
+## KIP-974: Docker Image for GraalVM based Native Kafka Broker
+
+The container image for Kafka as a native binary based on GraalVM was added via https://cwiki.apache.org/confluence/display/KAFKA/KIP-974%3A+Docker+Image+for+GraalVM+based+Native+Kafka+Broker[KIP-974],
+available since Kafka 3.8.0.
+And while the container image, https://hub.docker.com/r/apache/kafka-native[available on DockerHub],
+is the only official release artifact for a native Kafka binary,
+the tooling and infrastructure for creating that image can be used for producing a native binary for macOS as well.
+You can find it in the https://github.com/apache/kafka/tree/trunk/docker/native[_docker/native_] sub-directory of the Kafka source tree.
+
+For creating a native binary,
+you'll need to have GraalVM installed first of all.
+The simplest way for doing so is via https://sdkman.io/[SDKMan]:
+
+[source,shell,linenums=true]
+----
+sdk install java 21.0.6-graal
+----
+
+This will also install GraalVM's https://www.graalvm.org/latest/reference-manual/native-image/[_native-image_ tool], which is needed for creating native application binaries.
+The build requires all the Kafka libraries (JARs) as an input.
+Either download the latest Kafka distribution,
+or just build it yourself from source:
+
+[source,shell,linenums=true]
+----
+git clone git@github.com:apache/kafka.git
+cd kafka
+./gradlew releaseTarGz
+----
+
+This will give you a Kafka distribution under _core/build/distributions/kafka_2.13-4.1.0-SNAPSHOT.tgz_.
+GraalVM binary image builds require a fair bit of configuration,
+for instance to specify which classes should be subject to reflection,
+which interfaces should be available for the creation of dynamic proxies,
+and more.
+All the required configuration files are provided under https://github.com/apache/kafka/tree/trunk/docker/native/native-image-configs[_docker/native/native-image-configs_].
+Using those configuration files and the JARs from the Kafka distribution,
+you can build a Kafka native binary like so
+(there's a ready-made script https://github.com/apache/kafka/blob/trunk/docker/native/native_command.sh[_native_command.sh_] wrapping this invocation):
+
+[source,shell,linenums=true]
+----
+native-image --no-fallback \
+  --enable-http \
+  --enable-https \
+  --allow-incomplete-classpath \
+  --report-unsupported-elements-at-runtime \
+  --install-exit-handlers \
+  --enable-monitoring=jmxserver,jmxclient,heapdump,jvmstat \
+  -H:+ReportExceptionStackTraces \
+  -H:+EnableAllSecurityServices \
+  -H:EnableURLProtocols=http,https \
+  -H:AdditionalSecurityProviders=sun.security.jgss.SunProvider \
+  -H:ReflectionConfigurationFiles=docker/native/native-image-configs/reflect-config.json \
+  -H:JNIConfigurationFiles=docker/native/native-image-configs/jni-config.json \
+  -H:ResourceConfigurationFiles=docker/native/native-image-configs/resource-config.json \
+  -H:SerializationConfigurationFiles=docker/native/native-image-configs/serialization-config.json \
+  -H:PredefinedClassesConfigurationFiles=docker/native/native-image-configs/predefined-classes-config.json \
+  -H:DynamicProxyConfigurationFiles=docker/native/native-image-configs/proxy-config.json \
+  --verbose \
+  -march=compatibility \
+  -cp "core/build/distributions/kafka_2.13-4.1.0-SNAPSHOT/libs/*" kafka.docker.KafkaDockerWrapper \
+  -o "native-kafka"; say "Enjoy native Kafka"
+----
+
+This takes about 1m 36s on my machine (2023 MacBook Pro M3 Max with 48 GB of shared RAM),
+after which there is a fully self-contained macOS/AArch64 binary _native-kafka_.
+To see how this one is used, refer to the https://github.com/apache/kafka/blob/trunk/docker/native/launch[_launch_] script.
+
+The binary supports two modes, `setup` and `start`.
+The former formats a Kafka log directory.
+As the primary use case is in containers, the set-up mode supports the overlay of a set of default configuration files with user-provided configuration provided via a volume mount, which is merged and then written out to another directory.
+For a quick test run we can overlay the default configuration from the Kafka distribution with https://github.com/apache/kafka/blob/trunk/docker/server.properties[the one] from the container image for setting up a single node Kafka cluster and write the result to a new directory:
+
+[source,shell,linenums=true]
+----
+mkdir native-conf
+export CLUSTER_ID="5L6g3nShT-eMCtK--X86sw" # Obtain a unique id via "$(bin/kafka-storage.sh random-uuid)"
+
+./native-kafka setup \
+  --default-configs-dir core/build/distributions/kafka_2.13-4.1.0-SNAPSHOT/config \
+  --mounted-configs-dir docker \
+  --final-configs-dir native-conf
+
+Formatting metadata directory /tmp/kraft-combined-logs with metadata.version 4.0-IV3
+----
+
+With the log directory being formatted, the actual Kafka broker can be run using the `start` mode like so:
+
+[source,shell,linenums=true]
+----
+./native-kafka start \
+  --config docker/server.properties \
+  -Dlog4j2.configurationFile=/Users/gunnarmorling/Applications/kafka_2.13-4.0.0/config/log4j2.yaml
+----
+
+Now, interestingly, this actually takes a fair bit longer to start than when run via Docker as in the previous post:
+about 220 ms from the first log message emitted by Kafka to the "Kafka Server started" message,
+vs the 120 ms I had observed via Docker.
+Which is kinda puzzling, considering that Linux containers are running in a virtual machine on macOS.
+It would be very interesting to learn why that's the case, perhaps some more efficient library implementation in Linux when running in a container?
+That being said, starting up the container itself takes about 340 ms on my machine (time from starting Docker up to the first Kafka log message),
+so running the native binary directly on macOS still is the fastest way to launch a Kafka broker.
