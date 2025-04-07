@@ -14,13 +14,13 @@ endif::[]
 
 _With help of the GraalVM configuration developed for KIP-974 (Docker Image for GraalVM based Native Kafka Broker),
 you can easily build a self-contained native binary for Apache Kafka.
-Read on to learn how to you can build a native Kafka executable yourself,
+Read on to learn how you can build a native Kafka executable yourself,
 starting in milli-seconds, making it a perfect fit for development and testing purposes_.
 
 When I wrote about link:/blog/jep-483-aot-class-loading-linking/[ahead-of-time class loading and linking in Java 24] recently,
 I also published the start-up time for Apache Kafka as a native binary for comparison.
 This was done via Docker, as there's no pre-built native binary of Kafka available for the operating system I'm running on, macOS.
-But there is a native Kafka container image, so this is what I chose for the sake convenience.
+But there is a native Kafka container image, so this is what I chose for the sake of convenience.
 
 Now, running in a container adds a little bit of overhead of course,
 so it wasn't a surprise when Thomas Würthinger, lead of the GraalVM project at Oracle,
@@ -131,5 +131,6 @@ about 220 ms from the first log message emitted by Kafka to the "Kafka Server st
 vs the 120 ms I had observed via Docker.
 Which is kinda puzzling, considering that Linux containers are running in a virtual machine on macOS.
 It would be very interesting to learn why that's the case, perhaps some more efficient library implementation in Linux when running in a container?
+
 That being said, starting up the container itself takes about 340 ms on my machine (time from starting Docker up to the first Kafka log message),
-so running the native binary directly on macOS still is the fastest way to launch a Kafka broker.
+so running the native executable directly on macOS still is the fastest way to launch a Kafka broker.
