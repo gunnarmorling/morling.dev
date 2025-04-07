@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Building a Native Binary for Apache Kafka on macOS - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Building a Native Binary for Apache Kafka on macOS" />
+<meta property="og:description" content="
+With help of the GraalVM configuration developed for KIP-974 (Docker Image for GraalVM based Native Kafka Broker),
+you can easily build a self-contained native binary for Apache Kafka.
+Read on to learn how to you can build a native Kafka executable yourself,
+starting in milli-seconds, making it a perfect fit for development and testing purposes.
+
+
+When I wrote about ahead-of-time class loading and linking in Java 24 recently,
+I also published the start-up time for Apache Kafka as a native binary for comparison.
+This was done via Docker, as there’s no pre-built native binary of Kafka available for the operating system I’m running on, macOS.
+But there is a native Kafka container image, so this is what I chose for the sake convenience.
+
+
+Now, running in a container adds a little bit of overhead of course,
+so it wasn’t a surprise when Thomas Würthinger, lead of the GraalVM project at Oracle,
+brought up the question what the value would be when running Kafka natively on macOS.
+Needless to say I can’t leave this kind of nice nerd snipe pass,
+so I set out to learn how to build a native Kafka binary on macOS, using GraalVM.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/building-native-binary-for-apache-kafka-macos/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2025-04-07T12:25:00+02:00" />
+<meta property="article:modified_time" content="2025-04-07T12:25:00+02:00" />
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Building a Native Binary for Apache Kafka on macOS"/>
+<meta name="twitter:description" content="
+With help of the GraalVM configuration developed for KIP-974 (Docker Image for GraalVM based Native Kafka Broker),
+you can easily build a self-contained native binary for Apache Kafka.
+Read on to learn how to you can build a native Kafka executable yourself,
+starting in milli-seconds, making it a perfect fit for development and testing purposes.
+
+
+When I wrote about ahead-of-time class loading and linking in Java 24 recently,
+I also published the start-up time for Apache Kafka as a native binary for comparison.
+This was done via Docker, as there’s no pre-built native binary of Kafka available for the operating system I’m running on, macOS.
+But there is a native Kafka container image, so this is what I chose for the sake convenience.
+
+
+Now, running in a container adds a little bit of overhead of course,
+so it wasn’t a surprise when Thomas Würthinger, lead of the GraalVM project at Oracle,
+brought up the question what the value would be when running Kafka natively on macOS.
+Needless to say I can’t leave this kind of nice nerd snipe pass,
+so I set out to learn how to build a native Kafka binary on macOS, using GraalVM.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Building a Native Binary for Apache Kafka on macOS</h1>
+				<div class="meta">Posted at Apr 7, 2025</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p><em>With help of the GraalVM configuration developed for KIP-974 (Docker Image for GraalVM based Native Kafka Broker),
+you can easily build a self-contained native binary for Apache Kafka.
+Read on to learn how to you can build a native Kafka executable yourself,
+starting in milli-seconds, making it a perfect fit for development and testing purposes</em>.</p>
+</div>
+<div class="paragraph">
+<p>When I wrote about <a href="/blog/jep-483-aot-class-loading-linking/">ahead-of-time class loading and linking in Java 24</a> recently,
+I also published the start-up time for Apache Kafka as a native binary for comparison.
+This was done via Docker, as there’s no pre-built native binary of Kafka available for the operating system I’m running on, macOS.
+But there is a native Kafka container image, so this is what I chose for the sake convenience.</p>
+</div>
+<div class="paragraph">
+<p>Now, running in a container adds a little bit of overhead of course,
+so it wasn’t a surprise when Thomas Würthinger, lead of the GraalVM project at Oracle,
+<a href="https://bsky.app/profile/thomaswue.dev/post/3lloypreatk2s">brought up the question</a> what the value would be when running Kafka natively on macOS.
+Needless to say I can’t leave this kind of nice nerd snipe pass,
+so I set out to learn how to build a native Kafka binary on macOS, using GraalVM.</p>
+</div>
+<div class="sect1">
+<h2 id="_kip_974_docker_image_for_graalvm_based_native_kafka_broker">KIP-974: Docker Image for GraalVM based Native Kafka Broker</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The container image for Kafka as a native binary based on GraalVM was added via <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-974%3A+Docker+Image+for+GraalVM+based+Native+Kafka+Broker">KIP-974</a>,
+available since Kafka 3.8.0.
+And while the container image, <a href="https://hub.docker.com/r/apache/kafka-native">available on DockerHub</a>,
+is the only official release artifact for a native Kafka binary,
+the tooling and infrastructure for creating that image can be used for producing a native binary for macOS as well.
+You can find it in the <a href="https://github.com/apache/kafka/tree/trunk/docker/native"><em>docker/native</em></a> sub-directory of the Kafka source tree.</p>
+</div>
+<div class="paragraph">
+<p>For creating a native binary,
+you’ll need to have GraalVM installed first of all.
+The simplest way for doing so is via <a href="https://sdkman.io/">SDKMan</a>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>sdk <span class="nb">install </span>java 21.0.6-graal
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will also install GraalVM’s <a href="https://www.graalvm.org/latest/reference-manual/native-image/"><em>native-image</em> tool</a>, which is needed for creating native application binaries.
+The build requires all the Kafka libraries (JARs) as an input.
+Either download the latest Kafka distribution,
+or just build it yourself from source:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre>git clone git@github.com:apache/kafka.git
+<span class="nb">cd </span>kafka
+./gradlew releaseTarGz
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will give you a Kafka distribution under <em>core/build/distributions/kafka_2.13-4.1.0-SNAPSHOT.tgz</em>.
+GraalVM binary image builds require a fair bit of configuration,
+for instance to specify which classes should be subject to reflection,
+which interfaces should be available for the creation of dynamic proxies,
+and more.
+All the required configuration files are provided under <a href="https://github.com/apache/kafka/tree/trunk/docker/native/native-image-configs"><em>docker/native/native-image-configs</em></a>.
+Using those configuration files and the JARs from the Kafka distribution,
+you can build a Kafka native binary like so
+(there’s a ready-made script <a href="https://github.com/apache/kafka/blob/trunk/docker/native/native_command.sh"><em>native_command.sh</em></a> wrapping this invocation):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+</pre></td><td class="code"><pre>native-image <span class="nt">--no-fallback</span> <span class="se">\</span>
+  <span class="nt">--enable-http</span> <span class="se">\</span>
+  <span class="nt">--enable-https</span> <span class="se">\</span>
+  <span class="nt">--allow-incomplete-classpath</span> <span class="se">\</span>
+  <span class="nt">--report-unsupported-elements-at-runtime</span> <span class="se">\</span>
+  <span class="nt">--install-exit-handlers</span> <span class="se">\</span>
+  <span class="nt">--enable-monitoring</span><span class="o">=</span>jmxserver,jmxclient,heapdump,jvmstat <span class="se">\</span>
+  <span class="nt">-H</span>:+ReportExceptionStackTraces <span class="se">\</span>
+  <span class="nt">-H</span>:+EnableAllSecurityServices <span class="se">\</span>
+  <span class="nt">-H</span>:EnableURLProtocols<span class="o">=</span>http,https <span class="se">\</span>
+  <span class="nt">-H</span>:AdditionalSecurityProviders<span class="o">=</span>sun.security.jgss.SunProvider <span class="se">\</span>
+  <span class="nt">-H</span>:ReflectionConfigurationFiles<span class="o">=</span>docker/native/native-image-configs/reflect-config.json <span class="se">\</span>
+  <span class="nt">-H</span>:JNIConfigurationFiles<span class="o">=</span>docker/native/native-image-configs/jni-config.json <span class="se">\</span>
+  <span class="nt">-H</span>:ResourceConfigurationFiles<span class="o">=</span>docker/native/native-image-configs/resource-config.json <span class="se">\</span>
+  <span class="nt">-H</span>:SerializationConfigurationFiles<span class="o">=</span>docker/native/native-image-configs/serialization-config.json <span class="se">\</span>
+  <span class="nt">-H</span>:PredefinedClassesConfigurationFiles<span class="o">=</span>docker/native/native-image-configs/predefined-classes-config.json <span class="se">\</span>
+  <span class="nt">-H</span>:DynamicProxyConfigurationFiles<span class="o">=</span>docker/native/native-image-configs/proxy-config.json <span class="se">\</span>
+  <span class="nt">--verbose</span> <span class="se">\</span>
+  <span class="nt">-march</span><span class="o">=</span>compatibility <span class="se">\</span>
+  <span class="nt">-cp</span> <span class="s2">&#34;core/build/distributions/kafka_2.13-4.1.0-SNAPSHOT/libs/*&#34;</span> kafka.docker.KafkaDockerWrapper <span class="se">\</span>
+  <span class="nt">-o</span> <span class="s2">&#34;native-kafka&#34;</span><span class="p">;</span> say <span class="s2">&#34;Enjoy native Kafka&#34;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This takes about 1m 36s on my machine (2023 MacBook Pro M3 Max with 48 GB of shared RAM),
+after which there is a fully self-contained macOS/AArch64 binary <em>native-kafka</em>.
+To see how this one is used, refer to the <a href="https://github.com/apache/kafka/blob/trunk/docker/native/launch"><em>launch</em></a> script.</p>
+</div>
+<div class="paragraph">
+<p>The binary supports two modes, <code>setup</code> and <code>start</code>.
+The former formats a Kafka log directory.
+As the primary use case is in containers, the set-up mode supports the overlay of a set of default configuration files with user-provided configuration provided via a volume mount, which is merged and then written out to another directory.
+For a quick test run we can overlay the default configuration from the Kafka distribution with <a href="https://github.com/apache/kafka/blob/trunk/docker/server.properties">the one</a> from the container image for setting up a single node Kafka cluster and write the result to a new directory:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="nb">mkdir </span>native-conf
+<span class="nb">export </span><span class="nv">CLUSTER_ID</span><span class="o">=</span><span class="s2">&#34;5L6g3nShT-eMCtK--X86sw&#34;</span> <span class="c"># Obtain a unique id via &#34;$(bin/kafka-storage.sh random-uuid)&#34;</span>
+
+./native-kafka setup <span class="se">\</span>
+  <span class="nt">--default-configs-dir</span> core/build/distributions/kafka_2.13-4.1.0-SNAPSHOT/config <span class="se">\</span>
+  <span class="nt">--mounted-configs-dir</span> docker <span class="se">\</span>
+  <span class="nt">--final-configs-dir</span> native-conf
+
+Formatting metadata directory /tmp/kraft-combined-logs with metadata.version 4.0-IV3
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With the log directory being formatted, the actual Kafka broker can be run using the <code>start</code> mode like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre>./native-kafka start <span class="se">\</span>
+  <span class="nt">--config</span> docker/server.properties <span class="se">\</span>
+  <span class="nt">-Dlog4j2</span>.configurationFile<span class="o">=</span>/Users/gunnarmorling/Applications/kafka_2.13-4.0.0/config/log4j2.yaml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now, interestingly, this actually takes a fair bit longer to start than when run via Docker as in the previous post:
+about 220 ms from the first log message emitted by Kafka to the &#34;Kafka Server started&#34; message,
+vs the 120 ms I had observed via Docker.
+Which is kinda puzzling, considering that Linux containers are running in a virtual machine on macOS.
+It would be very interesting to learn why that’s the case, perhaps some more efficient library implementation in Linux when running in a container?
+That being said, starting up the container itself takes about 340 ms on my machine (time from starting Docker up to the first Kafka log message),
+so running the native binary directly on macOS still is the fastest way to launch a Kafka broker.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
