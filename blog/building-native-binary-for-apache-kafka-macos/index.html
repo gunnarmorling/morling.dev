@@ -354,14 +354,16 @@ or just build it yourself from source:</p>
 <pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 3
+4
 </pre></td><td class="code"><pre>git clone git@github.com:apache/kafka.git
 <span class="nb">cd </span>kafka
 ./gradlew releaseTarGz
+<span class="nb">tar </span>xvf core/build/distributions/kafka_2.13-4.1.0-SNAPSHOT.tgz <span class="nt">-C</span> core/build/distributions
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>This will give you a Kafka distribution under <em>core/build/distributions/kafka_2.13-4.1.0-SNAPSHOT.tgz</em>.
+<p>This will give you a Kafka distribution directory under <em>core/build/distributions/kafka_2.13-4.1.0-SNAPSHOT</em>.
 GraalVM binary image builds require a fair bit of configuration,
 for instance to specify which classes should be subject to reflection,
 which interfaces should be available for the creation of dynamic proxies,
@@ -393,11 +395,9 @@ you can build a Kafka native binary like so
 18
 19
 20
-21
 </pre></td><td class="code"><pre>native-image <span class="nt">--no-fallback</span> <span class="se">\</span>
   <span class="nt">--enable-http</span> <span class="se">\</span>
   <span class="nt">--enable-https</span> <span class="se">\</span>
-  <span class="nt">--allow-incomplete-classpath</span> <span class="se">\</span>
   <span class="nt">--report-unsupported-elements-at-runtime</span> <span class="se">\</span>
   <span class="nt">--install-exit-handlers</span> <span class="se">\</span>
   <span class="nt">--enable-monitoring</span><span class="o">=</span>jmxserver,jmxclient,heapdump,jvmstat <span class="se">\</span>
@@ -462,7 +462,7 @@ Formatting metadata directory /tmp/kraft-combined-logs with metadata.version 4.0
 3
 </pre></td><td class="code"><pre>./native-kafka start <span class="se">\</span>
   <span class="nt">--config</span> docker/server.properties <span class="se">\</span>
-  <span class="nt">-Dlog4j2</span>.configurationFile<span class="o">=</span>/Users/gunnarmorling/Applications/kafka_2.13-4.0.0/config/log4j2.yaml
+  <span class="nt">-Dlog4j2</span>.configurationFile<span class="o">=</span>native-conf/log4j2.yaml
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
