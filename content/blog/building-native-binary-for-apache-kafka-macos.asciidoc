@@ -58,9 +58,10 @@ or just build it yourself from source:
 git clone git@github.com:apache/kafka.git
 cd kafka
 ./gradlew releaseTarGz
+tar xvf core/build/distributions/kafka_2.13-4.1.0-SNAPSHOT.tgz -C core/build/distributions
 ----
 
-This will give you a Kafka distribution under _core/build/distributions/kafka_2.13-4.1.0-SNAPSHOT.tgz_.
+This will give you a Kafka distribution directory under _core/build/distributions/kafka_2.13-4.1.0-SNAPSHOT_.
 GraalVM binary image builds require a fair bit of configuration,
 for instance to specify which classes should be subject to reflection,
 which interfaces should be available for the creation of dynamic proxies,
@@ -75,7 +76,6 @@ you can build a Kafka native binary like so
 native-image --no-fallback \
   --enable-http \
   --enable-https \
-  --allow-incomplete-classpath \
   --report-unsupported-elements-at-runtime \
   --install-exit-handlers \
   --enable-monitoring=jmxserver,jmxclient,heapdump,jvmstat \
@@ -123,7 +123,7 @@ With the log directory being formatted, the actual Kafka broker can be run using
 ----
 ./native-kafka start \
   --config docker/server.properties \
-  -Dlog4j2.configurationFile=/Users/gunnarmorling/Applications/kafka_2.13-4.0.0/config/log4j2.yaml
+  -Dlog4j2.configurationFile=native-conf/log4j2.yaml
 ----
 
 Now, interestingly, this actually takes a fair bit longer to start than when run via Docker as in the previous post:
