@@ -824,38 +824,10 @@ only that the connector type is <code>upsert-kafka</code>:</p>
 </div>
 <div class="paragraph">
 <p>The same goes for defining sink tables.
-Unfortunately, it is not possible to feed a changelog stream sourced from full Debezium change events (i.e. with the envelope) into an upsert sink,
-as the <code>upsert-kafka</code> connector doesn’t support the <code>debezium-json</code> format as a source:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
-2
-3
-</pre></td><td class="code"><pre>ValidationException: &#39;upsert-kafka&#39; connector doesn&#39;t support
-&#39;debezium-json&#39; as value format, because &#39;debezium-json&#39; is
-not in insert-only mode.
-</pre></td></tr></tbody></table></code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Neither can a changelog stream ingested via the non-upsert connector be propagated to the upsert connector:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
-2
-3
-</pre></td><td class="code"><pre>UnsupportedOperationException: Unsupported to visit node
-StreamPhysicalDropUpdateBefore. The node either should not be pushed
-through the changelog normalize or is not supported yet.
-</pre></td></tr></tbody></table></code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Being able to do so could be pretty interesting for instance for writing updates to an incrementally recomputed materialized view to an OLAP store for serving purposes,
-without incurring the overhead of the delete + insert event pair emitted by the non-upsert connector.
-Maybe in a future Flink version?</p>
+Now, is it also possible to ingest full Debezium change events, i.e. with the envelope, but emit upsert-style events?
+Indeed it is, as you can mix and match the Kafka SQL connector as a source using the <code>debezium-json</code> with the Upsert Kafka SQL connector as a sink using the <code>json</code> format.
+This comes in handy for instance for writing updates to an incrementally recomputed materialized view to an OLAP store for serving purposes,
+without incurring the overhead of the delete + insert event pair emitted by the non-upsert connector.</p>
 </div>
 <div class="paragraph">
 <p><em>When to use it:</em> Use the Upsert Kafka SQL Connector for processing &#34;flat&#34; Data change events, without the Debezium event envelope.
