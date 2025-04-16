@@ -318,28 +318,10 @@ CREATE TABLE authors_upsert_source (
 <1> A primary key definition is mandatory when using the upsert connector; it determines which field(s) are part of the Kafka message key and thus are forming the upsert key
 
 The same goes for defining sink tables.
-Unfortunately, it is not possible to feed a changelog stream sourced from full Debezium change events (i.e. with the envelope) into an upsert sink,
-as the `upsert-kafka` connector doesn't support the `debezium-json` format as a source:
-
-[source,linenums=true]
-----
-ValidationException: 'upsert-kafka' connector doesn't support
-'debezium-json' as value format, because 'debezium-json' is
-not in insert-only mode.
-----
-
-Neither can a changelog stream ingested via the non-upsert connector be propagated to the upsert connector:
-
-[source,linenums=true]
-----
-UnsupportedOperationException: Unsupported to visit node
-StreamPhysicalDropUpdateBefore. The node either should not be pushed
-through the changelog normalize or is not supported yet.
-----
-
-Being able to do so could be pretty interesting for instance for writing updates to an incrementally recomputed materialized view to an OLAP store for serving purposes,
+Now, is it also possible to ingest full Debezium change events, i.e. with the envelope, but emit upsert-style events?
+Indeed it is, as you can mix and match the Kafka SQL connector as a source using the `debezium-json` with the Upsert Kafka SQL connector as a sink using the `json` format.
+This comes in handy for instance for writing updates to an incrementally recomputed materialized view to an OLAP store for serving purposes,
 without incurring the overhead of the delete + insert event pair emitted by the non-upsert connector.
-Maybe in a future Flink version?
 
 _When to use it:_ Use the Upsert Kafka SQL Connector for processing "flat" Data change events, without the Debezium event envelope.
 Similar to the Kafka SQL Connector as a changelog source, the upsert connector lets you implement streaming queries on change event feeds.
