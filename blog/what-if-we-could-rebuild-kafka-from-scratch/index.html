@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>What If We Could Rebuild Kafka From Scratch? - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="What If We Could Rebuild Kafka From Scratch?" />
+<meta property="og:description" content="
+The last few days I spent some time digging into the recently announced KIP-1150 (&#34;Diskless Kafka&#34;), as well AutoMQ’s Kafka fork, tightly integrating Apache Kafka and object storage, such as S3. Following the example set by WarpStream, these projects aim to substantially improve the experience of using Kafka in cloud environments, providing better elasticity, drastically reducing cost, and paving the way towards native lakehouse integration.
+
+
+This got me thinking, if we were to start all over and develop a durable cloud-native event log from scratch—​Kafka.next if you will—​which traits and characteristics would be desirable for this to have? Separating storage and compute and object store support would be table stakes, but what else should be there? Having used Kafka for many years for building event-driven applications as well as for running realtime ETL and change data capture pipelines, here’s my personal wishlist:
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/what-if-we-could-rebuild-kafka-from-scratch/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2025-04-24T16:25:00+02:00" />
+<meta property="article:modified_time" content="2025-04-24T16:25:00+02:00" />
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="What If We Could Rebuild Kafka From Scratch?"/>
+<meta name="twitter:description" content="
+The last few days I spent some time digging into the recently announced KIP-1150 (&#34;Diskless Kafka&#34;), as well AutoMQ’s Kafka fork, tightly integrating Apache Kafka and object storage, such as S3. Following the example set by WarpStream, these projects aim to substantially improve the experience of using Kafka in cloud environments, providing better elasticity, drastically reducing cost, and paving the way towards native lakehouse integration.
+
+
+This got me thinking, if we were to start all over and develop a durable cloud-native event log from scratch—​Kafka.next if you will—​which traits and characteristics would be desirable for this to have? Separating storage and compute and object store support would be table stakes, but what else should be there? Having used Kafka for many years for building event-driven applications as well as for running realtime ETL and change data capture pipelines, here’s my personal wishlist:
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">What If We Could Rebuild Kafka From Scratch?</h1>
+				<div class="meta">Posted at Apr 24, 2025</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>The last few days I spent some time digging into the recently announced <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-1150%3A+Diskless+Topics">KIP-1150</a> (&#34;Diskless Kafka&#34;), as well <a href="https://github.com/AutoMQ/automq">AutoMQ’s Kafka fork</a>, tightly integrating Apache Kafka and object storage, such as S3. Following the example set by WarpStream, these projects aim to substantially improve the experience of using Kafka in cloud environments, providing better elasticity, drastically reducing cost, and paving the way towards native lakehouse integration.</p>
+</div>
+<div class="paragraph">
+<p>This got me thinking, if we were to start all over and develop a durable cloud-native event log from scratch—​Kafka.next if you will—​which traits and characteristics would be desirable for this to have? Separating storage and compute and object store support would be table stakes, but what else should be there? Having used Kafka for many years for building event-driven applications as well as for running realtime ETL and change data capture pipelines, here’s my personal wishlist:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Do away with partitions:</strong> topic partitions were crucial for scaling purposes when data was stored on node-local disks, but they are not required when storing data on effectively infinitely large object storage in the cloud. While partitions also provide ordering guarantees, this never struck me as overly useful from a client perspective. You either want to have global ordering of all messages on a given topic, or (more commonly) ordering of all messages with the same key. In contrast, defined ordering of otherwise unrelated messages whose key happens to yield the same partition after hashing isn’t that valuable, so there’s not much point in exposing partitions as a concept to users.</p>
+</li>
+<li>
+<p><strong>Key-centric access:</strong> instead of partition-based access, efficient access and replay of all the messages with one and the same key would be desirable. Rather than coarse-grained scanning of all the records on a given topic or partition, let’s have millions of entity-level streams! Not only would this provide access exactly to the subset of data you need, it would also let you increase and decrease the number of consumers dynamically based on demand, not hitting the limits of a pre-defined partition count. Key-level streams (with guaranteed ordering) would be a perfect foundation for <a href="https://microservices.io/patterns/data/event-sourcing.html">Event Sourcing</a> architectures as well as actor-based and agentic systems. In addition, this approach largely solves the problem of head-of-line blocking found in partition based systems with cumulative acknowledgements: if a consumer can’t process a particular message, this will only block other messages with the same key (which oftentimes is exactly what you’d want), while all other messages are not affected. Rather than coarse-grained partitions, individual messages keys are becoming the failure domain.</p>
+</li>
+<li>
+<p><strong>Topic hierarchies:</strong> available in systems like <a href="https://docs.solace.com/Messaging/Topic-Architecture-Best-Practices.htm">Solace</a>, topic hierarchies promote parts of the message payload into structured path-like topic identifiers, allowing for clients to subscribe to arbitrary sub sets of all the available streams based on patterns in an efficient way, without requiring brokers to deserialize and parse entire messages.</p>
+</li>
+<li>
+<p><strong>Means of concurrency control:</strong> As is, using Kafka as a system of record can be problematic as you can’t prevent writing messages which are based on an outdated view of the stored data. Concurrency control, for instance via optimistic locking of message keys, would help to detect and fence off concurrent conflicting writes. That way, when a message gets acknowledged successfully, it is guaranteed that it has been produced seeing the latest state of that key, avoiding lost updates.</p>
+</li>
+<li>
+<p><strong>Broker-side schema support:</strong> Kafka treats messages as opaque byte arrays with arbitrary content, requiring out-of-bands propagation of message schemas to consumers. This can be especially problematic when erroneous (or malicious) producers send non-conformant data. Also, without additional tooling, the current architecture prevents Kafka data from being written to open table formats such as Apache Iceberg. For all these reasons, Kafka is used with a schema registry most of the time, but making schema support a first-class concept would allow for better user ergonomics—​for instance, Kafka could expose <a href="https://www.asyncapi.com/en">AsyncAPI-compatible metadata</a> out of the box—​and also open the door for storing data in different ways, for instance in a columnar representation.</p>
+</li>
+<li>
+<p><strong>Extensibility and pluggability:</strong> a common trait of many successful open-source projects like Postgres or Kubernetes is their extensibility. Users and integrators can customize the behavior of the system by providing implementations of well-defined extension points and plug-in contracts, rather than by modifying the system’s core itself (following the <a href="https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle">Open-closed principle</a>). This would enable for instance custom broker-side message filters and transformations (addressing many scenarios currently requiring a protocol-aware proxy such as <a href="https://kroxylicious.io/">Kroxylicious</a>), storage formats (e.g. columnar), and more. Functionality such as rate limiting, topic encryption, or backing a topic via an Iceberg table should be possible to implement solely via extensions to the system.</p>
+</li>
+<li>
+<p><strong>Synchronous commit callbacks:</strong> End-to-end Kafka pipelines ensure eventual consistency. When producing a record to a topic and then using that record for materializing some derived data view on some downstream data store, there’s no way for the producer to know when it will be able to &#34;see&#34; that downstream update. For certain use cases it would be helpful to be able to guarantee that derived data views have been updated when a produce request gets acknowledged, allowing Kafka to act as a log for a true database with strong read-your-own-writes semantics.</p>
+</li>
+<li>
+<p><strong>Snapshotting:</strong> Currently, Kafka supports topic compaction, which will only retain the last record for a given key. This works well, if records contain the full state of the entity they represent (a customer, purchase order etc.). It doesn’t work though for partial or delta events, which describe changes to an entity and which need to be applied all after one another to fully restore the state of the entity. Assuming there was support for efficient key-based message replay (see above), this would take longer and longer, as the number of records for a key increases. Built-in snapshot support could allow for &#34;logical compaction&#34;, passing all events for a key to some event handler which condenses them into a snapshot. This would then serve as the foundation for subsequent update events, while all previous records for that key could be removed during compaction.</p>
+</li>
+<li>
+<p><strong>Multi-tenancy:</strong> Any modern data system should be built with multi-tenancy in mind from the ground up. Spinning up a new customer-specific environment should be a very cheap operation, happening instantaneously; the workloads of individual tenants should be strictly isolated, not interfering with each other in regards to access control and security, resource utilization, metering etc.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Some of these features are supported in other systems already—​for instance, <a href="https://s2.dev/docs/stream">high cardinality streams</a> in S2, <a href="https://wepay.github.io/waltz/docs/concurrency-control-optimistic-locking">optimistic locking</a> in Waltz, or <a href="https://pulsar.apache.org/docs/4.0.x/concepts-multi-tenancy/">multi-tenancy</a> in Apache Pulsar. But others are not, and I am not aware of a single system, let alone open-source, which would combine all these traits.</p>
+</div>
+<div class="paragraph">
+<p>Now, this describes my personal (which is to say, that in no way this post should be understood as speaking for my employer, Confluent, in any official capacity) wishlist for what a Kafka.next could be and the semantics it could provide, driven by the use cases and applications I’ve seen people wanting to employ Kafka for. But I am sure everyone who has worked with Kafka or comparable platforms for some time will have their own thoughts around this, and I’d love to learn about yours in the comments!</p>
+</div>
+<div class="paragraph">
+<p>Finally, an important question of course is how would such a system actually be architected? While I’ll have to leave the answer to that for another time, it’s safe to say that building that system on top of a log-structured merge (LSM) tree would be a likely choice.</p>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
