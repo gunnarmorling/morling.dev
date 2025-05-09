@@ -1,6 +1,6 @@
 ---
 title: "Backfilling Postgres TOAST Columns in Debezium Data Change Events"
-date: 2025-04-16T11:25:00+02:00
+date: 2025-05-12T11:25:00+02:00
 draft: false
 markup: adoc
 ---
@@ -12,23 +12,214 @@ ifdef::env-github[]
 :imagesdir: ../../static/images
 endif::[]
 
-
-
-partial updates
-reselect: latency, location, batching
+Logical replication allows you to capture and propagate all the data changes from a Postgres database in realtime.
+It is widely used for replication within Postgres clusters, but as the protocol is very well documented and accessible,
+also non-Postgres tools can tap into the replication data stream and leverage it for heterogenous replication pipelines across system boundaries.
+With the help of logical replication clients such as the Debezium connector for Postgres you can propagate changes from your operational database into data warehouses, data lakes, or search indexes, typically with sub-second end-to-end latencies.
 
 <!--more-->
 
-## Flink SQL Connectors for Apache Kafka
+But there are some caveats around logical replication too.
+When not doing things correctly, a replication slot may cause the database to retain more and more WAL segments and ultimately run out of disk space,
+something I've written about here.
+Another common stumbling stone is the specific way of how https://www.postgresql.org/docs/current/storage-toast.html[TOAST (The Oversized-Attribute Storage Technique) columns] are handled by logical replication.
+TOAST is Postgres' way of dealing with large column values:
+if a tuple (the physical representation of a row in a Postgres table) is larger than 2 kilobytes, large column values will be split up into multiple tuples, spread across multiple database pages.
+For each table with TOAST-able column types (for instance, `text` and `bytea`), an associated TOAST table will be created which stores these out-of-line values.
 
+Now, how does all that relate to logical replication?
+The answer to this depends on the replica identity configured for a given table.
+Specifically, unless a table has replica identity `FULL` (which isn't always desirable due to the impact on WAL size),
+if a row in that table gets updated,
+logical replication will expose only those TOAST-ed fields whose value has changed.
+Whereas no value will be provided for any unchanged TOAST-ed fields.
+This means that the change events created by a CDC tool such as Debezium don't completely describe the current state of that row,
+which makes them more complex to handle for consumers.
+Debezium change events contain a special marker value for unchanged TOAST columns in this situation,
+`__debezium_unavailable_value`.
 
+If a change event consumer supports partial updates,
+it can issue specific update queries which exclude any fields with that marker value from updates.
+For an example, refer to https://www.artie.com/blogs/why-toast-columns-break-postgres-cdc-and-how-to-fix-it#how-most-cdc-tools-handle-toast-incorrectly[this post] by Jaqueline Cheong which shows a Snowflake `MERGE` statement for doing so.
+This is approach isn't ideal for a number of reasons, though.
+It requires the consumer to be aware of the fact that specific columns could be TOAST-able,
+and it would have to have that information for each affected column of each affected table.
+Worse, if there are multiple consumers, each and every one of them will have to implement that logic.
+Finally, not all downstream systems may allow for partial updates to begin with,
+only letting you update entire records at once.
+
+Taking a step back, the underlying problem is that we are leaking implementation details here,
+requiring consumers to deal with something they shouldn't really have to care about.
+Adhering to the motion of Shift Left, a much better approach is to solve that issue on the producer side,
+establishing a consciously designed data contract which shields consumers from intricacies like TOAST columns.
+
+In the remainder of this post I'd like to discuss several techniques for doing exactly that.
+
+## Debezium Reselect Postprocessor
+
+While Debezium by default will export the `__debezium_unavailable_value` for unchanged TOAST-ed fields for tables with default replica identity,
+it provides some means to improve the situation at least a little bit.
+There is a post processor which will issue a query against the source database to retrieve the current value of the affected field and update the change event with that value before emitting it.
+To set up the post processor, add the following to your connector configuration:
+
+[source,json,linenums=true]
+----
+"connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+...
+"post.processors": "reselector",
+"reselector.type": "io.debezium.processors.reselect.ReselectColumnsPostProcessor",
+"reselector.reselect.columns.include.list": "inventory.authors:biography", # <1>
+"reselector.reselect.unavailable.values": "true",
+"reselector.reselect.null.values" : "false"
+----
+<1> Query missing values for the `biography` column of the `inventory.authors` table
+
+This may do the trick in certain situations, in particular if a TOAST-ed column rarely or even never changes.
+There are some important implications, though:
+The solution is inherently prone to data races.
+If there are multiple updates to a row shortly after another and the TOAST-ed column does get changed,
+an earlier change event may be enriched with the current value of the column,
+as Postgres does not support to query for past value
+(in Oracle, the technique may be implemented more robustly using an `AS OF SCN` query).
+Furthermore, there may be a performance impact: running a query for every event may adds latency and it may impose undesired load onto the source data base,
+in particular considering that no batching is applied for these look-ups currently.
+When using the reselect post processor,
+your should make sure to run Debezium close to your database,
+in order to minimize the latency impact.
+
+## DataStream API
+
+Flink supports several APIs for implementing stream processing jobs which differ in terms of their complexity and the capabilities they provide.
+The DataStream API is a foundational API which provides you the highest degree of freedom and flexibility,
+at the same time it has a steep learning curve and you can shoot into your own foot easily.
+
+To implement a backfill of TOAST columns, you'd create a custom processing function which manages the column values in a state store.
+It will put the value into the state store when processing an insert change event,
+and later on, read it back to replace the `__debezium_unavailable_value` marker value in update events which don't modify the TOAST column.
+As the state needs to be managed per record, you need to implement the `KeyedProcessFunction` contract:
+
+[source,java,linenums=true]
+----
+public class ToastBackfillFunction extends KeyedProcessFunction<Long, KafkaRecord, KafkaRecord> { // <1>
+
+  private static final String UNCHANGED_TOAST_VALUE = "__debezium_unavailable_value";
+
+  private final String fieldName;
+  private ValueStateDescriptor<String> descriptor; // <2>
+
+  public ToastBackfillFunction(String toastFieldName) {
+    this.fieldName = toastFieldName;
+  }
+
+  @Override
+  public void open(OpenContext openContext) throws Exception {
+    descriptor = new ValueStateDescriptor<String>(fieldName, String.class);  // <3>
+  }
+
+  @Override
+  public void processElement(KafkaRecord in, Context ctx, Collector<KafkaRecord> out) throws Exception { // <4>
+    ValueState<String> state = getRuntimeContext().getState(descriptor);
+
+    @SuppressWarnings("unchecked")
+    Map<String, Object> newRowState = (Map<String, Object>) in.value().get("after");
+
+    switch ((String)in.value().get("op")) {
+      case "r", "i" -> state.update((String) newRowState.get(fieldName));  // <5>
+
+      case "u" -> {
+        if (UNCHANGED_TOAST_VALUE.equals(newRowState.get(fieldName))) {  // <6>
+          newRowState.put(fieldName, state.value());
+        } else {
+          state.update((String) newRowState.get(fieldName)); // <7>
+        }
+      }
+
+      case "d" -> {
+        state.clear(); // <8>
+      }
+    }
+
+    out.collect(in);  // <9>
+  }
+}
+----
+<1> This is a keyed process function working on `Long` keys (the primary key type of our table), consuming and emitting Kafka records mapped via Jackson (see the source code repo for the details of these types)
+<2> Descriptor for a key-scoped value store containing the latest value of the TOAST column
+<3> Initialize the state store when the function instance gets created and configured
+<4> The `processElement()` method is invoked for each element on the stream
+<5> When receiving an `insert` or `read` (i.e. snapshot) event, put the value of the given TOAST column into the state store
+<6> When receiving an `update` event which doesn't modify the TOAST column, retrieve the value from the state store and put it into the event
+<7> When receiving an `update` event which does modify the column, update the value in the state store
+<8> When receiving a `delete` event, remove the value from the state store
+<9> Emit the event
+
+The function must be applied to a stream which is keyed by the change event's primary record:
+
+[source,java,linenums=true]
+----
+StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+KafkaSource<KafkaRecord> source = ...;
+KafkaSink<KafkaRecord> sink = ...;
+
+env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source")
+  .keyBy(k -> {
+    return Long.valueOf((Integer) k.key().get("id"));
+  })
+  .process(new ToastBackfillFunction("biography"))
+  .sinkTo(sink);
+
+env.execute("Flink TOAST Backfill");
+----
+
+## Flink SQL With `OVER` Aggregation
+
+In addition to the DataStream API, Flink also provides a relational interface to stream processing in form of Flink SQL and the accompanying Table API.
+This makes stream processing accessible to a much larger audience:
+all the developers and data engineers who are familiar with SQL.
+Can the TOAST column backfill implemented with a SQL query?
+As it turns out, yes it can:
 
 [source,sql,linenums=true]
 ----
-
+SELECT
+  id,
+  before,
+  ROW(
+    id,
+    after.first_name,
+    after.last_name,
+    CASE
+      WHEN after.biography IS NULL THEN NULL
+      ELSE
+        LAST_VALUE(NULLIF(after.biography, '__debezium_unavailable_value')) OVER (
+          PARTITION BY id
+          ORDER BY proctime
+          RANGE UNBOUNDED PRECEDING
+        )
+    END,
+    after.dob
+  ),
+  source,
+  op,
+  ts_ms
+FROM
+  authors
 ----
-<1> The `id` field maps to the key of incoming Kafka messages
+
+## Process Table Functions
+
+
+
+
+
+
 
 
 If you'd like to experiment with the different connectors and data formats for ingesting Debezium data change events from Kafka into Flink SQL by yourself,
 check out https://github.com/gunnarmorling/streaming-examples/tree/main/debezium-kafka-flink-sql-ingest[this project] in my _stream-examples_ repository which contains Flink jobs for all the different configurations.
+
+
+artie
+
+replica identity
