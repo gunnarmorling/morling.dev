@@ -1,0 +1,73 @@
+---
+title: "\"Streaming vs. Batch\" is a wrong dichotomy, and I think it's confusing."
+date: 2025-05-14T10:10:00+02:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+Often times, "Stream vs. Batch" is discussed as if it’s one _or_ the other, but to me this does not make that much sense really.
+
+<!--more-->
+
+Many streaming systems will apply batching too, i.e. processing or transferring multiple records (a "batch") at once,
+thus setting off connection overhead, amortizing the cost of fanning out work to multiple threads,
+opening the door for highly efficient SIMD processing, etc., all to ensure high performance.
+The prevailing trend towards storage/compute separation in data streaming and processing architectures
+(for instance, thinking of platforms such as WarpStream, and link:blog/what-if-we-could-rebuild-kafka-from-scratch/[Diskless Kafka] at large)
+further accelerates this development.
+
+Typically, this is happening transparently to users, done in an opportunistic way:
+handling all of those records (up to some limit) which have arrived in a buffer since the last batch.
+This makes for a very nice self-regulating system.
+High arrival rate of records: larger batches, improving throughput.
+Low arrival rate: smaller batches, perhaps with even just a single record, ensuring low latency.
+Columnar in-memory data formats like https://arrow.apache.org/[Apache Arrow] are of great help for implementing such a design.
+
+In contrast, what the "Stream vs. Batch" discussion in my opinion should actually be about,
+are "Pull vs. Push" semantics:
+will the system query its sources for new records in a fixed interval,
+or will new records be pushed to the system as soon as possible?
+Now, no matter how often you pull,
+you can't convert a pull-based solution into a streaming one.
+Unless a source represents a consumable stream of changes itself (you see where this is going),
+a pull system may miss updates happening between fetch attempts, as well as deletes.
+
+This is what makes streaming so interesting and powerful:
+it provides you with a complete view of your data in real-time.
+A streaming system lets you put your data to the _location_ where you need it,
+in the _format_ you need it, and in the _shape_ you need it (think denormalization),
+immediately as it gets produced or updated.
+The price for this is a potentially higher complexity,
+for example when reasoning about streaming joins (and their state),
+or handling out-of-order data.
+But the streaming community is working continuously to improve things here,
+e.g. via disaggregated state backends,
+transactional stream processing, and much more.
+I'm really excited about all the innovation happening in this space right now.
+
+Now, you might wonder: "Do I really need streaming _(push)_, though? I'm fine with batch _(pull)_."
+
+That's a common and fair question.
+This is in my experience best answered by giving it a try yourself.
+Again and again I have seen how folks who were skeptical at first,
+very quickly wanted to get real-time streaming for more and more,
+if not all of their use cases,
+once they've seen it in action once.
+If you’ve experienced a data freshness of a second or two in your data warehouse,
+you don’t want to miss this magic again.
+
+All that being said,
+it's  actually not even about pull _or_ push so much--the approaches complement each other.
+For instance, backfills often are done via batching, i.e. querying, in an otherwise streaming-based system.
+Also, if you want the completeness of streaming but don't require a super low latency,
+you may decide to suspend your streaming pipelines (thus saving cost) in times of low data volume,
+resume when there's new data to process, and halt again.
+
+Batch streaming, if you will.
