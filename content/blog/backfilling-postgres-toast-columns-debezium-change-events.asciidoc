@@ -210,6 +210,7 @@ This makes stateful stream processing accessible to a much larger audience:
 all the developers and data engineers who are familiar with SQL.
 Which begs the questoin: can the TOAST column backfill implemented with a SQL query?
 As it turns out, yes it can!
+
 The key idea is to use Flink's link:/blog/ingesting-debezium-events-from-kafka-with-flink-sql/[Apache Kafka SQL connector in append-only mode] for operating on the "raw" stream of Debezium change events and applying the necessary backfill with an https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/over-agg/[`OVER` aggregation]:
 
 [source,sql,linenums=true]
@@ -225,7 +226,8 @@ INSERT INTO authors_backfilled
       CASE
         WHEN after.biography IS NULL THEN NULL
         ELSE
-          LAST_VALUE(NULLIF(after.biography, '__debezium_unavailable_value')) OVER (
+          LAST_VALUE(NULLIF(after.biography,
+              '__debezium_unavailable_value')) OVER (
             PARTITION BY id
             ORDER BY proctime
             RANGE UNBOUNDED PRECEDING
@@ -240,26 +242,28 @@ INSERT INTO authors_backfilled
     authors
 ----
 
-Unlike a regular `GROUP BY` aggregation which condenses multiple input rows into a single output row,
-an `OVER` aggregation produces an aggregated value for every input row.
-The `LAST_VALUE()` aggregation function propagates the last non `NULL` value for the given group.
+Unlike a regular `GROUP BY` aggregation, which condenses multiple input rows into a single output row,
+an `OVER` aggregation produces an aggregated value for every input row, based on a given window.
+
+The `LAST_VALUE()` aggregation function propagates the last non `NULL` value for each window.
 By mapping the unvailable value placeholder to `NULL` using `NULLIF()`, this will always be the latest value of the biography column.
-The data is partitioned by id, so that the aggregation happens in the context of each individual row of the input table.
-The aggregation is wrapped by a `CASE` clause in order to handle the situation where the TOAST-ed column actually is set to `NULL`.
+The data is partitioned by id--applying an unbounded look-back--i.e. the aggregation window are all the change events with the same primary key.
+In order to handle the situation where the TOAST-ed column actually is set to `NULL`, the aggregation finally is wrapped by a `CASE` clause which emits the `NULL` value in this case.
 
 Arguably, SQL has a bit of a discoverability problem,
 and in particular software engineers with a background in application development may not necessarily be aware of features such as `OVER` aggregations,
-which are typically applied for analytical use cases.
+which are more commonly applied in the context of analytical use cases.
 Nevertheless, solving the problem with just a few lines of SQL makes for a very elegant solution,
-especially when considering that Flink SQL tends to be more widely supported by SaaS vendors than the DataStream API,
+especially when considering that Flink SQL tends to be more widely supported by Flink SaaS vendors than the DataStream API,
 due to the inherent complexities of operating the latter.
 
-## Bonus: Process Table Functions
+## Bonus: Flink Process Table Functions
 
-Finally, let's briefly tap into one more alternative approach for backfilling TOAST columns with Flink SQL:
+Finally, let's briefly tap into one more alternative approach for backfilling TOAST columns with Flink SQL,
+which is really interesting:
 implementing a custom process table function (PTF).
-PTFs are a new kind of user-defined function (UDF) in Flink SQL, which will be available in Flink 2.1.
-Complementing scalar UDFs already present in earlier Flink SQL versions,
+Specified in https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=298781093[FLIP-440], PTFs are a new kind of user-defined function (UDF) for Flink SQL, which will be available in Flink 2.1.
+Complementing other types of UDFs already present in earlier Flink SQL versions, such as scalar and aggregate functions,
 PTFs are much more powerful and have a few very interesting characteristics:
 
 * Just like a custom process function you'd implement for the DataStream API,
@@ -273,9 +277,10 @@ which means that their input and output types are determined dynamically, rather
 The polymorphic nature allows for extremely powerful customizations of your SQL queries,
 for instance there could be a PTF which exposes the contents of a Parquet file in a typed way,
 allowing for the projection of specific columns.
-Other potential use cases for custom PTFs include implement specific join semantics, custom aggregations, and much more.
+Other potential use cases for custom PTFs include implementing specific join operators, doing remote REST API calls for enriching your data,
+integrating with LLMs for sentiment analysis or categorization, and much more.
 
-PTFs are a comprehensive extension to the Flink API and definitely warrant their own blog post at some point,
+PTFs are a https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/ptfs/[comprehensive extension] to the Flink API and definitely warrant their own blog post at some point,
 for now let's just take a look at how to use a PTF for backfilling Postgres TOAST columns.
 Note that PTFs are still work-in-progress and details of the API may change.
 The following has been implemented against Flink built from source as of commit TODO.
@@ -283,7 +288,7 @@ The following has been implemented against Flink built from source as of commit 
 To create a PTF, create a sub-class of `ProcessTableFunction`, parameterized with the output type.
 In our case that's `Row`, as this PTF produces entire table rows.
 The processing logic needs to be implemented in a method named `eval()`,
-which takes any arguments and optionally a state carrier object as input:
+which takes any arguments, and optionally a state carrier object as well as other context, as input:
 
 
 [source,sql,linenums=true]
@@ -319,13 +324,13 @@ public class ToastBackfillFunction extends ProcessTableFunction<Row> {
 ----
 <1> A custom state type for managing the persistent state of this PTF; stores the latest value for the given TOAST column
 <2> The `eval()` method will be invoked for each row to be aggregated; it declares the state type and two arguments for PTF: the table to process, and the name of the TOAST column
-<3> If the incoming event is an insert (`c`) or snapshot event (`r`), store the value of the specified TOAST column in the state store
-<4> If the incoming event is an update and the value of the TOAST column didn't, retrieve the value from the state store and update the input row with it; if the value did change, update the value in the state store
+<3> If the incoming event is an insert (`c`) or snapshot (`r`) event, store the value of the specified TOAST column in the state store
+<4> If the incoming event is an update and the value of the TOAST column didn't change, retrieve the value from the state store and update the input row with it; if the value did change, update the value in the state store
 <5> Emit the table row
 
 In most cases, semantics of the arguments of the `eval()` method can be specified using annotations such as `@StateHint` and `@ArgumentHint`.
 The TOAST backfill PTF is special in so far as that its output type can't be specified statically;
-instead it mirrors the type of the input table.
+instead, it mirrors the type of the table the PTF is applied to.
 For dynamic cases like this, the `getTypeInference()` method can be overridden,
 allowing you to declare the exact input and output type semantics for the method:
  
@@ -357,7 +362,7 @@ public TypeInference getTypeInference(DataTypeFactory typeFactory) {
 ----
 <1> Declares the state type of the PTF
 <2> Defines the arguments of the PTF
-<3> The first argument is the input table; it has "set" semantics, which means the method operates on partitioned sets of rows (as opposed to "row" semantics, in which case it would operate on individual rows of the table); the PTF's state is mentioned within the context of each of those partitioned sets; the argument is table row and it is not optional
+<3> The first argument is the input table; it has "set" semantics, which means the method operates on partitioned sets of rows (as opposed to "row" semantics, in which case it would operate on individual rows of the table); the PTF's state is managed within the context of each of those partitioned sets; the argument is table row and it is not optional
 <4> The second argument is the name of the TOAST column to process; it is of type `String` and also not optional
 <5> The output type is excactly the same as the row type of the input table
 
@@ -379,18 +384,19 @@ FROM
 
 Invoking a table-valued function might feel unusual at first,
 but on the upside the overall statement is quite a bit less complex than the `OVER` aggregation shown above.
+This shows another potential benefit of PTFs: even if there is a way to achieve a certain goal using existing SQL constructs,
+it may be advantageous to encapsulate that logic in a reusable function,
+thus allowing for less complex and verbose queries.
+You might develop a library of parameterized PTFs tailored to your specific use cases,
+ready to be used by the data engineers in your organization for building streamin pipelines.
 
 
+## Summary
 
+TODO
 
+* Something on embedding that Flink job into a Debezium processor
 
-
-If you'd like to experiment with the different connectors and data formats for ingesting Debezium data change events from Kafka into Flink SQL by yourself,
-check out https://github.com/gunnarmorling/streaming-examples/tree/main/debezium-kafka-flink-sql-ingest[this project] in my _stream-examples_ repository which contains Flink jobs for all the different configurations.
-
-
-artie
-
-replica identity
+## Attic
 
 https://www.crunchydata.com/blog/logical-replication-from-postgres-to-iceberg
