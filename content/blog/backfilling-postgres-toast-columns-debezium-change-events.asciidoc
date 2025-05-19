@@ -12,7 +12,7 @@ ifdef::env-github[]
 :imagesdir: ../../static/images
 endif::[]
 
-Logical replication allows you to capture and propagate all the data changes from a Postgres database in realtime.
+Logical replication allows you to capture and propagate all the data changes from a Postgres database in real-time.
 It is widely used for replication within Postgres clusters, but as the protocol is very well documented and accessible,
 also non-Postgres tools can tap into the replication data stream and leverage it for heterogenous replication pipelines across system boundaries.
 With the help of logical replication clients such as the https://debezium.io/documentation/reference/stable/connectors/postgresql[Debezium connector for Postgres],
@@ -39,10 +39,17 @@ which makes them more complex to handle for consumers.
 Debezium change events contain a special marker value for unchanged TOAST columns in this situation,
 `__debezium_unavailable_value`.
 
+[NOTE] 
+====
+You might wonder why this relatively generic sentinel value was chosen.
+The reason is that the value is not only used for representing missing TOAST columns in data change events emitted by the Postgres connector,
+but for instance also for representing Oracle LOB/BLOB columns in a similar situation.
+====
+
 If a change event consumer supports partial updates,
 it can issue specific update queries which exclude any fields with that marker value from updates.
 For example, Snowflake lets you do this through https://www.artie.com/blogs/why-toast-columns-break-postgres-cdc-and-how-to-fix-it#how-most-cdc-tools-handle-toast-incorrectly[`MERGE` queries] with a `CASE` clause.
-This is approach isn't ideal for a number of reasons, though.
+This approach isn't ideal for a number of reasons, though.
 It requires the consumer to be aware of the fact that specific columns are TOAST-able,
 and it needs to have that information for each affected column of each affected table.
 Worse, if there are multiple consumers, each and every one of them will have to implement that logic.
@@ -93,16 +100,16 @@ as Postgres does not support to query for past values
 (for Oracle, Debezium implements the technique more robustly using an `AS OF SCN` query).
 
 Furthermore, there may be a performance impact: running a query for every event adds latency,
-and it may impose undesired load onto the source data base,
+and it may impose undesired load onto the source database,
 in particular considering that no batching is applied for these look-ups currently.
 When using the reselect post processor,
-your should make sure to run Debezium close to your database,
+you should make sure to run Debezium close to your database,
 in order to minimize the latency impact.
 
 ## Flink DataStream API
 
 As discussed above, issuing a database query for getting the current value of a TOAST-ed column suffers from data races.
-What we'd actually have to do when emitting an update change event is retrieving the column value as it was when that update happened.
+What we'd actually have to do when emitting an update change event is retrieve the column value as it was when that update happened.
 This kind of processing is a prime use case for stateful stream processors such as https://flink.apache.org/[Apache Flink].
 
 Flink supports several APIs for implementing stream processing jobs which differ in terms of their complexity and the capabilities they offer.
@@ -246,7 +253,7 @@ Unlike a regular `GROUP BY` aggregation, which condenses multiple input rows int
 an `OVER` aggregation produces an aggregated value for every input row, based on a given window.
 
 The `LAST_VALUE()` aggregation function propagates the last non `NULL` value for each window.
-By mapping the unvailable value placeholder to `NULL` using `NULLIF()`, this will always be the latest value of the biography column.
+By mapping the unavailable value placeholder to `NULL` using `NULLIF()`, this will always be the latest value of the biography column.
 The data is partitioned by id--applying an unbounded look-back--i.e. the aggregation window are all the change events with the same primary key.
 In order to handle the situation where the TOAST-ed column actually is set to `NULL`, the aggregation finally is wrapped by a `CASE` clause which emits the `NULL` value in this case.
 
