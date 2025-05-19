@@ -26,6 +26,7 @@ Besides WAL pile-up caused by inactive replication slots
 one common stumbling stone is the specific way of how TOAST (The Oversized-Attribute Storage Technique) columns are handled by logical replication.
 https://www.postgresql.org/docs/current/storage-toast.html[TOAST] is Postgres' way of dealing with large column values:
 if a tuple (the physical representation of a row in a Postgres table) is larger than 2 kilobytes, large column values will be split up into several tuples, spread across multiple database pages.
+Such large values are commonly found when dealing with unstructured text, or when storing non-textual media blobs, for instance for multi-modal AI use cases. 
 For each table with TOAST-able column types (for instance, `text` and `bytea`), an associated TOAST table will be created for storing these out-of-line values.
 
 Now, how does all that relate to logical replication?
@@ -403,6 +404,8 @@ ready to be used by the data engineers in your organization for building streami
 TODO
 
 * Something on embedding that Flink job into a Debezium processor
+
+_Many thanks to Steffen Hausmann for his feedback while writing this post!_
 
 ## Attic
 
