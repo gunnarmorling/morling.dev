@@ -23,7 +23,7 @@ including Flink SQL and the brand-new process table functions (PTFs) in Flink 2.
 Logical replication allows you to capture and propagate all the data changes from a Postgres database in real-time.
 Not only is it widely used for replication within Postgres clusters,
 thanks to the well documented protocol,
-also non-Postgres tools can tap into the replication data stream and leverage it for heterogenous replication pipelines across system boundaries.
+also non-Postgres tools can tap into the replication data stream and leverage it for heterogeneous replication pipelines across system boundaries.
 With the help of logical replication clients such as the https://debezium.io/documentation/reference/stable/connectors/postgresql[Debezium connector for Postgres],
 you can transfer data from your operational database into data warehouses, data lakes, or search indexes, typically with (sub-)second end-to-end latencies.
 
@@ -43,7 +43,7 @@ Specifically, unless a table has replica identity `FULL`
 (which isn't always desirable due to the https://xata.io/blog/replica-identity-full-performance#benchmarking[impact on WAL size and CPU consumption]),
 if a row in that table gets updated,
 logical replication will expose a TOAST-ed field only if its value has changed.
-Whereas no value will be provided for any unchanged TOAST-ed fields.
+Conversely, unchanged TOAST-ed fields will not have a value provided.
 This means that the change events created by a CDC tool such as Debezium don't completely describe the current state of that row,
 which makes them more complex to handle for consumers.
 Debezium change events contain a special marker value for unchanged TOAST columns in this situation,
@@ -56,8 +56,7 @@ The reason is that the value is not only used for representing missing TOAST col
 but for instance also for representing Oracle LOB/BLOB columns in a similar situation.
 ====
 
-If a change event consumer supports partial updates,
-it can issue specific update queries which exclude any fields with that marker value from updates.
+A change event consumer supporting partial updates can issue specific update queries which exclude any fields with that marker value.
 For example, Snowflake lets you do this through https://www.artie.com/blogs/why-toast-columns-break-postgres-cdc-and-how-to-fix-it#how-most-cdc-tools-handle-toast-incorrectly[`MERGE` queries] with a `CASE` clause.
 This approach isn't ideal for a number of reasons, though.
 It requires the consumer to be aware of the fact that specific columns are TOAST-able,
@@ -72,7 +71,7 @@ It would be much better to solve this issue at the producer side,
 establishing a consciously designed https://www.youtube.com/watch?v=8PycG-dOwDE[data contract] which shields consumers from intricacies like TOAST columns.
 Moving this sort of processing closer to the source of a data pipeline ("Shift Left"),
 helps to create reusable data products which are easier to consume,
-without having to reinvent the wheel in every single consumer, be it a data warehouse, datalake, or a search index.
+without having to reinvent the wheel in every single consumer, be it a data warehouse, data lake, or a search index.
 
 In the remainder of this post I'd like to discuss several techniques for doing exactly that:
 Debezium's built-in solution--column reselects--as well as stateful stream processing with Apache Flink.
@@ -81,7 +80,7 @@ Debezium's built-in solution--column reselects--as well as stateful stream proce
 
 While Debezium by default exports the `__debezium_unavailable_value` sentinel value for unchanged TOAST-ed fields for tables with default replica identity,
 it provides some means to improve the situation.
-There is a https://debezium.io/documentation/reference/stable/post-processors/reselect-columns.html[post processor] which issues a query against the source database to retrieve the current value of the affected field and update the change event with that value before emitting it.
+A https://debezium.io/documentation/reference/stable/post-processors/reselect-columns.html[post processor] is available that queries the source database to retrieve the current value of the affected field, updating the change event with that value before it's emitted.
 To set up the post processor, add the following to your Debezium connector configuration:
 
 [source,json,linenums=true]
@@ -104,10 +103,10 @@ To set up the post processor, add the following to your Debezium connector confi
 This may do the trick in certain situations, in particular if a TOAST-ed column rarely or even never changes.
 There are some important implications, though:
 The solution is inherently prone to data races.
-If there are multiple updates to a row shortly after another, and the TOAST-ed column actually does get changed,
-an earlier change event may be enriched with the current value of the column,
-as Postgres does not support to query for past values
-(for Oracle, Debezium implements the technique more robustly using an `AS OF SCN` query).
+If there are multiple updates to a row in quick succession and the TOAST-ed column changes,
+an earlier change event may be enriched with the _latest_ value of the column.
+This occurs because Postgres does not support queries for past values
+(Debezium implements a more robust solution for Oracle using an `AS OF SCN` query).
 
 Furthermore, there may be a performance impact: running a query for every event adds latency,
 and it may impose undesired load onto the source database,
@@ -218,7 +217,7 @@ The Kafka source shown in the job reads Debezium data change events from a Kafka
 whereas the Kafka sink will write them to another topic, once they have been processed.
 For each record of the source table, the processing function keeps the latest value of the TOAST column in the state store.
 Depending on the number of records and the size of the TOAST column values,
-a sizeable amount of state will be stored.
+a sizable amount of state will be stored.
 That's not a fundamental problem though: Flink jobs commonly manage hundreds of gigabytes of state size,
 and newer developments like the https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/disaggregated_state/[disaggregated state management] in Flink 2.0 can help with that task.
 
@@ -226,7 +225,7 @@ You can find the complete runnable example in my https://github.com/gunnarmorlin
 
 ## Flink SQL With OVER Aggregation
 
-Besides the DataStream API, Apache Flink also provides a relational interface to stream processing in form of https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/overview/[Flink SQL] and the accompanying Table API.
+Besides the DataStream API, Apache Flink also provides a relational interface to stream processing in the form of https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/overview/[Flink SQL] and the accompanying Table API.
 This makes stateful stream processing accessible to a much larger audience:
 all the developers and data engineers who are familiar with SQL.
 Which begs the question: can TOAST column backfills be implemented with a SQL query?
@@ -294,7 +293,7 @@ Furthermore, SQL arguably has a bit of a discoverability problem,
 in particular software engineers with a background in application development may not necessarily be aware of features such as `OVER` aggregations.
 
 This leads us to the next and final way for backfilling TOAST columns,
-which combines the simplicity of SQL with the flexibility and expressiveness of implementing key parts of the functionality in an imperative way.
+which combines the simplicity of SQL with the flexibility and expressiveness of implementing key parts of the functionality imperatively.
 
 ## Flink Process Table Functions
 
@@ -306,8 +305,7 @@ PTFs are much more powerful and have a few very interesting characteristics:
 * Just like a custom process function you'd implement for the DataStream API,
 they provide you with access to persistent state and timers
 * Unlike scalar functions,
-they are table-valued functions,
-i.e. they work on tables as an input and produce a table as output
+they are table-valued functions (TVFs) that accept tables as input and produce a table as output
 * They are also polymorphic functions (in fact, PTFs are called https://www.iso.org/standard/78938.html[polymorphic table functions] in the SQL standard),
 which means that their input and output types are determined dynamically, rather than statically
 
@@ -322,7 +320,7 @@ for now let's just take a look at how to use a PTF for backfilling Postgres TOAS
 Note that PTFs are still work-in-progress and details of the API may change.
 The following has been implemented against Flink built from source as of commit https://github.com/apache/flink/commit/f7b5d00c453d9774b37ca6c348505b10abfbc6ed[f7b5d00].
 
-To create a PTF, create a sub-class of `ProcessTableFunction`, parameterized with the output type.
+To create a PTF, create a subclass of `ProcessTableFunction`, parameterized with the output type.
 In our case that's `Row`, as this PTF produces entire table rows.
 The processing logic needs to be implemented in a method named `eval()`,
 which takes any arguments, and optionally a state carrier object as well as other context, as input:
@@ -407,7 +405,7 @@ public TypeInference getTypeInference(DataTypeFactory typeFactory) {
 <2> Defines the arguments of the PTF
 <3> The first argument is the input table; it has "set" semantics, which means the method operates on partitioned sets of rows (as opposed to "row" semantics, in which case it would operate on individual rows of the table); the PTF's state is managed within the context of each of those partitioned sets; the argument is of type `Row` (representing a table row) and it is not optional
 <4> The second argument is the name of the TOAST column to process; it is of type `String` and also not optional
-<5> The output type is excactly the same as the row type of the input table
+<5> The output type is exactly the same as the row type of the input table
 
 With that PTF definition in place, it can be invoked like this:
 
@@ -427,24 +425,24 @@ FROM
 
 Invoking a table-valued function might feel unusual at first,
 but on the upside the overall statement is quite a bit less complex than the `OVER` aggregation shown above.
-This shows another potential benefit of PTFs:
-they let you to encapsulate that logic in a reusable function,
+This illustrates another potential benefit of PTFs:
+they let you encapsulate that logic in a reusable function,
 thus allowing for less complex and verbose queries.
 You might develop a library of parameterized PTFs tailored to your specific use cases,
-ready to be used by the data engineers in your organization for building streamin pipelines.
+ready to be used by the data engineers in your organization for building streaming pipelines.
 
-## Summary
+## Summary and Discussion
 
 Used for storing large values, Postgres TOAST columns are not fully represented in data change events for tables without replica identity `FULL`.
 As such, they create complexities for downstream consumers,
-which typically are better of with events describing the complete state of a row.
+which typically are better off with events describing the complete state of a row.
 
 In this post, we've explored several solutions to address this issue.
 Debezium's built-in reselect post processor queries the database for missing values.
 It can be a solution for simple cases, but it is prone to data races and can create performance issues.
 Stateful stream processing, using Apache Flink, is a powerful alternative.
 Flink provides multiple options for solving this task, ranging from a purely imperative solution using the DataStream API,
-over a purely SQL-based implementation in form of an `OVER` aggreation,
+over a purely SQL-based implementation in form of an `OVER` aggregation,
 to a hybrid solution with a custom process table function for state management, invoked from within a very basic SQL query.
 
 To be officially released with Flink 2.1 later this year,
