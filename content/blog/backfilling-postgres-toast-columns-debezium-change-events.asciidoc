@@ -1,6 +1,6 @@
 ---
 title: "Backfilling Postgres TOAST Columns in Debezium Data Change Events"
-date: 2025-05-12T11:25:00+02:00
+date: 2025-05-26T16:40:00+02:00
 draft: false
 markup: adoc
 ---
@@ -12,26 +12,35 @@ ifdef::env-github[]
 :imagesdir: ../../static/images
 endif::[]
 
-Logical replication allows you to capture and propagate all the data changes from a Postgres database in real-time.
-It is widely used for replication within Postgres clusters, but as the protocol is very well documented and accessible,
-also non-Postgres tools can tap into the replication data stream and leverage it for heterogenous replication pipelines across system boundaries.
-With the help of logical replication clients such as the https://debezium.io/documentation/reference/stable/connectors/postgresql[Debezium connector for Postgres],
-you can propagate changes from your operational database into data warehouses, data lakes, or search indexes, typically with sub-second end-to-end latencies.
+_Postgres logical replication, while powerful for capturing real-time data changes, presents challenges with TOAST columns,
+whose values can be absent from data change events in specific situations.
+This post discusses how Debezium addresses this through its built-in reselect post processor,
+then explores more robust solutions leveraging Apache Flink's capabilities for stateful stream processing,
+including Flink SQL and the brand-new process table functions (PTFs) in Flink 2.1._
 
 <!--more-->
+
+Logical replication allows you to capture and propagate all the data changes from a Postgres database in real-time.
+Not only is it widely used for replication within Postgres clusters,
+thanks to the well documented protocol,
+also non-Postgres tools can tap into the replication data stream and leverage it for heterogenous replication pipelines across system boundaries.
+With the help of logical replication clients such as the https://debezium.io/documentation/reference/stable/connectors/postgresql[Debezium connector for Postgres],
+you can transfer data from your operational database into data warehouses, data lakes, or search indexes, typically with (sub-)second end-to-end latencies.
 
 But logical replication has its quirks, too.
 Besides WAL pile-up caused by inactive replication slots
 (something I've written about link:/blog/insatiable-postgres-replication-slot/[here]),
 one common stumbling stone is the specific way of how TOAST (The Oversized-Attribute Storage Technique) columns are handled by logical replication.
 https://www.postgresql.org/docs/current/storage-toast.html[TOAST] is Postgres' way of dealing with large column values:
-if a tuple (the physical representation of a row in a Postgres table) is larger than 2 kilobytes, large column values will be split up into several tuples, spread across multiple database pages.
-Such large values are commonly found when dealing with unstructured text, or when storing non-textual media blobs, for instance for multi-modal AI use cases. 
+if a tuple (the physical representation of a row in a Postgres table) is larger than two kilobytes, large column values will be split up into several tuples, spread across multiple database pages.
+Such large values are commonly found when dealing with unstructured text, or when storing non-textual media blobs,
+for example for multi-modal AI use cases. 
 For each table with TOAST-able column types (for instance, `text` and `bytea`), an associated TOAST table will be created for storing these out-of-line values.
 
 Now, how does all that relate to logical replication?
 The answer to this depends on the replica identity configured for a given table.
-Specifically, unless a table has replica identity `FULL` (which isn't always desirable due to the impact on WAL size),
+Specifically, unless a table has replica identity `FULL`
+(which isn't always desirable due to the https://xata.io/blog/replica-identity-full-performance#benchmarking[impact on WAL size and CPU consumption]),
 if a row in that table gets updated,
 logical replication will expose a TOAST-ed field only if its value has changed.
 Whereas no value will be provided for any unchanged TOAST-ed fields.
@@ -102,7 +111,7 @@ as Postgres does not support to query for past values
 
 Furthermore, there may be a performance impact: running a query for every event adds latency,
 and it may impose undesired load onto the source database,
-in particular considering that no batching is applied for these look-ups currently.
+in particular considering that currently there's no batching applied for these look-ups.
 When using the reselect post processor,
 you should make sure to run Debezium close to your database,
 in order to minimize the latency impact.
@@ -112,7 +121,6 @@ in order to minimize the latency impact.
 As discussed above, issuing a database query for getting the current value of a TOAST-ed column suffers from data races.
 What we'd actually have to do when emitting an update change event is retrieve the column value as it was when that update happened.
 This kind of processing is a prime use case for stateful stream processors such as https://flink.apache.org/[Apache Flink].
-
 Flink supports several APIs for implementing stream processing jobs which differ in terms of their complexity and the capabilities they offer.
 The https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/overview/[DataStream API] is a foundational API which provides you with the highest degree of freedom and flexibility,
 at the same time it has a steep learning curve and you can shoot into your own foot easily.
@@ -120,7 +128,6 @@ at the same time it has a steep learning curve and you can shoot into your own f
 To implement a backfill of TOAST columns, we'll need to create a custom processing function which manages the column values through a persistent https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/fault-tolerance/state/[state store].
 It puts the value into the state store when processing an insert change event,
 and later on, it'll read it back to replace the sentinel value in update events which don't modify the TOAST column.
-
 As the state needs to be managed per record, the `KeyedProcessFunction` contract must be implemented:
 
 [source,java,linenums=true]
@@ -196,8 +203,8 @@ KafkaSource<KafkaRecord> source = ...;
 KafkaSink<KafkaRecord> sink = ...;
 
 env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source")
-  .keyBy(k -> { // <1>
-    return Long.valueOf((Integer) k.key().get("id"));
+  .keyBy(record -> { // <1>
+    return Long.valueOf((Integer) record.key().get("id"));
   })
   .process(new ToastBackfillFunction("biography")) // <2>
   .sinkTo(sink);
@@ -209,6 +216,12 @@ env.execute("Flink TOAST Backfill");
 
 The Kafka source shown in the job reads Debezium data change events from a Kafka topic,
 whereas the Kafka sink will write them to another topic, once they have been processed.
+For each record of the source table, the processing function keeps the latest value of the TOAST column in the state store.
+Depending on the number of records and the size of the TOAST column values,
+a sizeable amount of state will be stored.
+That's not a fundamental problem though: Flink jobs commonly manage hundreds of gigabytes of state size,
+and newer developments like the https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/disaggregated_state/[disaggregated state management] in Flink 2.0 can help with that task.
+
 You can find the complete runnable example in my https://github.com/gunnarmorling/streaming-examples/blob/main/postgres-toast-backfill/toast-backfill/src/main/java/dev/morling/demos/partialevents/DataStreamJob.java[streaming-examples repo] on GitHub.
 
 ## Flink SQL With OVER Aggregation
@@ -216,7 +229,7 @@ You can find the complete runnable example in my https://github.com/gunnarmorlin
 Besides the DataStream API, Apache Flink also provides a relational interface to stream processing in form of https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/overview/[Flink SQL] and the accompanying Table API.
 This makes stateful stream processing accessible to a much larger audience:
 all the developers and data engineers who are familiar with SQL.
-Which begs the questoin: can the TOAST column backfill implemented with a SQL query?
+Which begs the question: can TOAST column backfills be implemented with a SQL query?
 As it turns out, yes it can!
 
 The key idea is to use Flink's link:/blog/ingesting-debezium-events-from-kafka-with-flink-sql/[Apache Kafka SQL connector in append-only mode] for operating on the "raw" stream of Debezium change events and applying the necessary backfill with an https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/over-agg/[`OVER` aggregation]:
@@ -238,7 +251,7 @@ INSERT INTO authors_backfilled
               '__debezium_unavailable_value')) OVER (
             PARTITION BY id
             ORDER BY proctime
-            RANGE UNBOUNDED PRECEDING
+            RANGE BETWEEN INTERVAL '30' DAY PRECEDING AND CURRENT ROW
           )
       END,
       after.dob
@@ -255,21 +268,37 @@ an `OVER` aggregation produces an aggregated value for every input row, based on
 
 The `LAST_VALUE()` aggregation function propagates the last non `NULL` value for each window.
 By mapping the unavailable value placeholder to `NULL` using `NULLIF()`, this will always be the latest value of the biography column.
-The data is partitioned by id--applying an unbounded look-back--i.e. the aggregation window are all the change events with the same primary key.
-In order to handle the situation where the TOAST-ed column actually is set to `NULL`, the aggregation finally is wrapped by a `CASE` clause which emits the `NULL` value in this case.
+The data is partitioned by id: the aggregation window are all the change events with the same primary key within the given interval of 30 days.
 
-Arguably, SQL has a bit of a discoverability problem,
-and in particular software engineers with a background in application development may not necessarily be aware of features such as `OVER` aggregations,
-which are more commonly applied in the context of analytical use cases.
-Nevertheless, solving the problem with just a few lines of SQL makes for a very elegant solution,
+[NOTE] 
+====
+Finding the right value for that look-back period can be tricky, as it depends on the lifecycle of your data.
+If update events for a record can come in 180 days after the previous update, state in the Flink job must be retained for that entire time.
+Ideally, we'd dispose of the state for a given record once the delete event for that key has been ingested.
+Unfortunately, I am not aware of any way for doing so purely with Flink SQL on an append-only data stream.
+The PTF solution discussed in the next section implements this logic.
+====
+
+In order to handle the situation where the TOAST-ed column actually is set to `NULL`, the aggregation is wrapped by a `CASE` clause which emits the `NULL` value in this case.
+Note that the statement above is simplified somewhat for the sake of comprehensibility.
+In particular, it ignores the case of delete events whose `after` field is null,
+which could be implemented using another `CASE` clause.
+
+Solving the problem solely with SQL makes for a generally elegant and portable solution,
 especially when considering that Flink SQL tends to be more widely supported by Flink SaaS vendors than the DataStream API,
 due to the inherent complexities of operating the latter.
+Yet, it is not a silver bullet:
+The complexity of statements can become a problem quickly.
+As discussed above, you lack fine-grained control over the retention period of the required state.
+Furthermore, SQL arguably has a bit of a discoverability problem,
+in particular software engineers with a background in application development may not necessarily be aware of features such as `OVER` aggregations.
 
-## Bonus: Flink Process Table Functions
+This leads us to the next and final way for backfilling TOAST columns,
+which combines the simplicity of SQL with the flexibility and expressiveness of implementing key parts of the functionality in an imperative way.
 
-Finally, let's briefly tap into one more alternative approach for backfilling TOAST columns with Flink SQL,
-which is really interesting:
-implementing a custom process table function (PTF).
+## Flink Process Table Functions
+
+The idea of this approach is to delegate state management to a custom process table function (PTF).
 Specified in https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=298781093[FLIP-440], PTFs are a new kind of user-defined function (UDF) for Flink SQL, which will be available in Flink 2.1.
 Complementing other types of UDFs already present in earlier Flink SQL versions, such as scalar and aggregate functions,
 PTFs are much more powerful and have a few very interesting characteristics:
@@ -279,7 +308,7 @@ they provide you with access to persistent state and timers
 * Unlike scalar functions,
 they are table-valued functions,
 i.e. they work on tables as an input and produce a table as output
-* They are also polymorphic functions (in fact, PTFs are called polymorphic table functions in the SQL standard),
+* They are also polymorphic functions (in fact, PTFs are called https://www.iso.org/standard/78938.html[polymorphic table functions] in the SQL standard),
 which means that their input and output types are determined dynamically, rather than statically
 
 The polymorphic nature allows for extremely powerful customizations of your SQL queries,
@@ -291,7 +320,7 @@ integrating with LLMs for sentiment analysis or categorization, and much more.
 PTFs are a https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/ptfs/[comprehensive extension] to the Flink API and definitely warrant their own blog post at some point,
 for now let's just take a look at how to use a PTF for backfilling Postgres TOAST columns.
 Note that PTFs are still work-in-progress and details of the API may change.
-The following has been implemented against Flink built from source as of commit TODO.
+The following has been implemented against Flink built from source as of commit https://github.com/apache/flink/commit/f7b5d00c453d9774b37ca6c348505b10abfbc6ed[f7b5d00].
 
 To create a PTF, create a sub-class of `ProcessTableFunction`, parameterized with the output type.
 In our case that's `Row`, as this PTF produces entire table rows.
@@ -299,7 +328,7 @@ The processing logic needs to be implemented in a method named `eval()`,
 which takes any arguments, and optionally a state carrier object as well as other context, as input:
 
 
-[source,sql,linenums=true]
+[source,java,linenums=true]
 ----
 public class ToastBackfillFunction extends ProcessTableFunction<Row> {
 
@@ -324,9 +353,12 @@ public class ToastBackfillFunction extends ProcessTableFunction<Row> {
           state.value = (String) newRowState.getField(column);
         }
       }
+      case "d" -> {  // <5>
+        state.value = null;
+      }
     }
 
-    collect(input); // <5>
+    collect(input); // <6>
   }
 }
 ----
@@ -334,15 +366,18 @@ public class ToastBackfillFunction extends ProcessTableFunction<Row> {
 <2> The `eval()` method will be invoked for each row to be aggregated; it declares the state type and two arguments for PTF: the table to process, and the name of the TOAST column
 <3> If the incoming event is an insert (`c`) or snapshot (`r`) event, store the value of the specified TOAST column in the state store
 <4> If the incoming event is an update and the value of the TOAST column didn't change, retrieve the value from the state store and update the input row with it; if the value did change, update the value in the state store
-<5> Emit the table row
+<5> If the incoming event is a delete, remove the value for the given key from the state; i.e. in contrast to the `OVER` aggregation solution,
+the state retention time now closely matches the lifecycle of the underlying data itself
+<6> Emit the table row
 
-In most cases, semantics of the arguments of the `eval()` method can be specified using annotations such as `@StateHint` and `@ArgumentHint`.
+In most cases, semantics of the arguments of the `eval()` method can be determined https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/ptfs/#implementation-guide[automatically via reflection],
+or they can be specified using annotations such as `@StateHint` and `@ArgumentHint`.
 The TOAST backfill PTF is special in so far as that its output type can't be specified statically;
 instead, it mirrors the type of the table the PTF is applied to.
 For dynamic cases like this, the `getTypeInference()` method can be overridden,
 allowing you to declare the exact input and output type semantics for the method:
  
-[source,sql,linenums=true]
+[source,java,linenums=true]
 ----
 @Override
 public TypeInference getTypeInference(DataTypeFactory typeFactory) {
@@ -370,7 +405,7 @@ public TypeInference getTypeInference(DataTypeFactory typeFactory) {
 ----
 <1> Declares the state type of the PTF
 <2> Defines the arguments of the PTF
-<3> The first argument is the input table; it has "set" semantics, which means the method operates on partitioned sets of rows (as opposed to "row" semantics, in which case it would operate on individual rows of the table); the PTF's state is managed within the context of each of those partitioned sets; the argument is table row and it is not optional
+<3> The first argument is the input table; it has "set" semantics, which means the method operates on partitioned sets of rows (as opposed to "row" semantics, in which case it would operate on individual rows of the table); the PTF's state is managed within the context of each of those partitioned sets; the argument is of type `Row` (representing a table row) and it is not optional
 <4> The second argument is the name of the TOAST column to process; it is of type `String` and also not optional
 <5> The output type is excactly the same as the row type of the input table
 
@@ -388,25 +423,40 @@ SELECT
 FROM 
   ToastBackfill(TABLE authors PARTITION BY id, "biography"); -- <1>
 ----
-<1> Invoke the PTF for the `authors` table, partioned by id, and backfilling values for the `biography` TOAST column
+<1> Invoke the PTF for the `authors` table, partitioned by id, and backfilling values for the `biography` TOAST column
 
 Invoking a table-valued function might feel unusual at first,
 but on the upside the overall statement is quite a bit less complex than the `OVER` aggregation shown above.
-This shows another potential benefit of PTFs: even if there is a way to achieve a certain goal using existing SQL constructs,
-it may be advantageous to encapsulate that logic in a reusable function,
+This shows another potential benefit of PTFs:
+they let you to encapsulate that logic in a reusable function,
 thus allowing for less complex and verbose queries.
 You might develop a library of parameterized PTFs tailored to your specific use cases,
 ready to be used by the data engineers in your organization for building streamin pipelines.
 
-
 ## Summary
 
-TODO
+Used for storing large values, Postgres TOAST columns are not fully represented in data change events for tables without replica identity `FULL`.
+As such, they create complexities for downstream consumers,
+which typically are better of with events describing the complete state of a row.
 
-* Something on embedding that Flink job into a Debezium processor
+In this post, we've explored several solutions to address this issue.
+Debezium's built-in reselect post processor queries the database for missing values.
+It can be a solution for simple cases, but it is prone to data races and can create performance issues.
+Stateful stream processing, using Apache Flink, is a powerful alternative.
+Flink provides multiple options for solving this task, ranging from a purely imperative solution using the DataStream API,
+over a purely SQL-based implementation in form of an `OVER` aggreation,
+to a hybrid solution with a custom process table function for state management, invoked from within a very basic SQL query.
 
-_Many thanks to Steffen Hausmann for his feedback while writing this post!_
+To be officially released with Flink 2.1 later this year,
+the PTF approach strikes a very appealing balance between expressiveness and flexibility--for instance in regards to managing the lifecycle of TOAST backfill data in the Flink state store--and ease of use for authors of SQL queries.
 
-## Attic
+Now, could Debezium also provide a reliable and robust solution out of the box, thus eliminating the need for any subsequent processing?
+Indeed I think it could:
+Next to the existing re-select post processor, there could be another one which implements the backfilling logic described in this post.
+To do so, such a post processor could directly manage values in a persistent store such as https://rocksdb.org/[RocksDB] or https://slatedb.io/[SlateDB].
+Alternatively, it also could embed Flink into the connector process,
+using Flink's mini-cluster deployment mode.
+I've logged issue https://issues.redhat.com/browse/DBZ-9078[DBZ-9078] for exploring this further;
+please reach out if this sounds interesting to you!
 
-https://www.crunchydata.com/blog/logical-replication-from-postgres-to-iceberg
+_Many thanks to Andrew Sellers and Steffen Hausmann for their feedback while writing this post!_
