@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Backfilling Postgres TOAST Columns in Debezium Data Change Events - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Backfilling Postgres TOAST Columns in Debezium Data Change Events" />
+<meta property="og:description" content="
+Postgres logical replication, while powerful for capturing real-time data changes, presents challenges with TOAST columns,
+whose values can be absent from data change events in specific situations.
+This post discusses how Debezium addresses this through its built-in reselect post processor,
+then explores more robust solutions leveraging Apache Flink’s capabilities for stateful stream processing,
+including Flink SQL and the brand-new process table functions (PTFs) in Flink 2.1.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/backfilling-postgres-toast-columns-debezium-change-events/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2025-05-26T16:40:00+02:00" />
+<meta property="article:modified_time" content="2025-05-26T16:40:00+02:00" />
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Backfilling Postgres TOAST Columns in Debezium Data Change Events"/>
+<meta name="twitter:description" content="
+Postgres logical replication, while powerful for capturing real-time data changes, presents challenges with TOAST columns,
+whose values can be absent from data change events in specific situations.
+This post discusses how Debezium addresses this through its built-in reselect post processor,
+then explores more robust solutions leveraging Apache Flink’s capabilities for stateful stream processing,
+including Flink SQL and the brand-new process table functions (PTFs) in Flink 2.1.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Backfilling Postgres TOAST Columns in Debezium Data Change Events</h1>
+				<div class="meta">Posted at May 26, 2025</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p><em>Postgres logical replication, while powerful for capturing real-time data changes, presents challenges with TOAST columns,
+whose values can be absent from data change events in specific situations.
+This post discusses how Debezium addresses this through its built-in reselect post processor,
+then explores more robust solutions leveraging Apache Flink’s capabilities for stateful stream processing,
+including Flink SQL and the brand-new process table functions (PTFs) in Flink 2.1.</em></p>
+</div>
+<div class="paragraph">
+<p>Logical replication allows you to capture and propagate all the data changes from a Postgres database in real-time.
+Not only is it widely used for replication within Postgres clusters,
+thanks to the well documented protocol,
+also non-Postgres tools can tap into the replication data stream and leverage it for heterogeneous replication pipelines across system boundaries.
+With the help of logical replication clients such as the <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql">Debezium connector for Postgres</a>,
+you can transfer data from your operational database into data warehouses, data lakes, or search indexes, typically with (sub-)second end-to-end latencies.</p>
+</div>
+<div class="paragraph">
+<p>But logical replication has its quirks, too.
+Besides WAL pile-up caused by inactive replication slots
+(something I’ve written about <a href="/blog/insatiable-postgres-replication-slot/">here</a>),
+one common stumbling stone is the specific way of how TOAST (The Oversized-Attribute Storage Technique) columns are handled by logical replication.
+<a href="https://www.postgresql.org/docs/current/storage-toast.html">TOAST</a> is Postgres&#39; way of dealing with large column values:
+if a tuple (the physical representation of a row in a Postgres table) is larger than two kilobytes, large column values will be split up into several tuples, spread across multiple database pages.
+Such large values are commonly found when dealing with unstructured text, or when storing non-textual media blobs,
+for example for multi-modal AI use cases.
+For each table with TOAST-able column types (for instance, <code>text</code> and <code>bytea</code>), an associated TOAST table will be created for storing these out-of-line values.</p>
+</div>
+<div class="paragraph">
+<p>Now, how does all that relate to logical replication?
+The answer to this depends on the replica identity configured for a given table.
+Specifically, unless a table has replica identity <code>FULL</code>
+(which isn’t always desirable due to the <a href="https://xata.io/blog/replica-identity-full-performance#benchmarking">impact on WAL size and CPU consumption</a>),
+if a row in that table gets updated,
+logical replication will expose a TOAST-ed field only if its value has changed.
+Conversely, unchanged TOAST-ed fields will not have a value provided.
+This means that the change events created by a CDC tool such as Debezium don’t completely describe the current state of that row,
+which makes them more complex to handle for consumers.
+Debezium change events contain a special marker value for unchanged TOAST columns in this situation,
+<code>__debezium_unavailable_value</code>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You might wonder why this relatively generic sentinel value was chosen.
+The reason is that the value is not only used for representing missing TOAST columns in data change events emitted by the Postgres connector,
+but for instance also for representing Oracle LOB/BLOB columns in a similar situation.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>A change event consumer supporting partial updates can issue specific update queries which exclude any fields with that marker value.
+For example, Snowflake lets you do this through <a href="https://www.artie.com/blogs/why-toast-columns-break-postgres-cdc-and-how-to-fix-it#how-most-cdc-tools-handle-toast-incorrectly"><code>MERGE</code> queries</a> with a <code>CASE</code> clause.
+This approach isn’t ideal for a number of reasons, though.
+It requires the consumer to be aware of the fact that specific columns are TOAST-able,
+and it needs to have that information for each affected column of each affected table.
+Worse, if there are multiple consumers, each and every one of them will have to implement that logic.
+Finally, not all downstream systems may allow for partial updates to begin with,
+only letting you update entire records at once.</p>
+</div>
+<div class="paragraph">
+<p>Taking a step back, the underlying problem is that we are leaking an implementation detail here,
+requiring consumers to deal with something they shouldn’t really have to care about.
+It would be much better to solve this issue at the producer side,
+establishing a consciously designed <a href="https://www.youtube.com/watch?v=8PycG-dOwDE">data contract</a> which shields consumers from intricacies like TOAST columns.
+Moving this sort of processing closer to the source of a data pipeline (&#34;Shift Left&#34;),
+helps to create reusable data products which are easier to consume,
+without having to reinvent the wheel in every single consumer, be it a data warehouse, data lake, or a search index.</p>
+</div>
+<div class="paragraph">
+<p>In the remainder of this post I’d like to discuss several techniques for doing exactly that:
+Debezium’s built-in solution—​column reselects—​as well as stateful stream processing with Apache Flink.</p>
+</div>
+<div class="sect1">
+<h2 id="_debezium_reselect_postprocessor">Debezium Reselect Postprocessor</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While Debezium by default exports the <code>__debezium_unavailable_value</code> sentinel value for unchanged TOAST-ed fields for tables with default replica identity,
+it provides some means to improve the situation.
+A <a href="https://debezium.io/documentation/reference/stable/post-processors/reselect-columns.html">post processor</a> is available that queries the source database to retrieve the current value of the affected field, updating the change event with that value before it’s emitted.
+To set up the post processor, add the following to your Debezium connector configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+</pre></td><td class="code"><pre><span class="p">{</span><span class="w">
+  </span><span class="nl">&#34;connector.class&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;io.debezium.connector.postgresql.PostgresConnector&#34;</span><span class="p">,</span><span class="w">
+  </span><span class="err">...</span><span class="w">
+  </span><span class="nl">&#34;post.processors&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;reselector&#34;</span><span class="p">,</span><span class="w">
+  </span><span class="nl">&#34;reselector.type&#34;</span><span class="p">:</span><span class="w">
+      </span><span class="s2">&#34;io.debezium.processors.reselect.ReselectColumnsPostProcessor&#34;</span><span class="p">,</span><span class="w"> <i class="conum" data-value="1"></i><b>(1)</b>
+  </span><span class="nl">&#34;reselector.reselect.columns.include.list&#34;</span><span class="p">:</span><span class="w">
+      </span><span class="s2">&#34;inventory.authors:biography&#34;</span><span class="p">,</span><span class="w"> <i class="conum" data-value="2"></i><b>(2)</b>
+  </span><span class="nl">&#34;reselector.reselect.unavailable.values&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;true&#34;</span><span class="p">,</span><span class="w">
+  </span><span class="nl">&#34;reselector.reselect.null.values&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;false&#34;</span><span class="w">
+</span><span class="p">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Enable the column reselect post processor for the events emitted by this connector</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Query missing values for the <code>biography</code> column of the <code>inventory.authors</code> table</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>This may do the trick in certain situations, in particular if a TOAST-ed column rarely or even never changes.
+There are some important implications, though:
+The solution is inherently prone to data races.
+If there are multiple updates to a row in quick succession and the TOAST-ed column changes,
+an earlier change event may be enriched with the <em>latest</em> value of the column.
+This occurs because Postgres does not support queries for past values
+(Debezium implements a more robust solution for Oracle using an <code>AS OF SCN</code> query).</p>
+</div>
+<div class="paragraph">
+<p>Furthermore, there may be a performance impact: running a query for every event adds latency,
+and it may impose undesired load onto the source database,
+in particular considering that currently there’s no batching applied for these look-ups.
+When using the reselect post processor,
+you should make sure to run Debezium close to your database,
+in order to minimize the latency impact.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_flink_datastream_api">Flink DataStream API</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As discussed above, issuing a database query for getting the current value of a TOAST-ed column suffers from data races.
+What we’d actually have to do when emitting an update change event is retrieve the column value as it was when that update happened.
+This kind of processing is a prime use case for stateful stream processors such as <a href="https://flink.apache.org/">Apache Flink</a>.
+Flink supports several APIs for implementing stream processing jobs which differ in terms of their complexity and the capabilities they offer.
+The <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/overview/">DataStream API</a> is a foundational API which provides you with the highest degree of freedom and flexibility,
+at the same time it has a steep learning curve and you can shoot into your own foot easily.</p>
+</div>
+<div class="paragraph">
+<p>To implement a backfill of TOAST columns, we’ll need to create a custom processing function which manages the column values through a persistent <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/fault-tolerance/state/">state store</a>.
+It puts the value into the state store when processing an insert change event,
+and later on, it’ll read it back to replace the sentinel value in update events which don’t modify the TOAST column.
+As the state needs to be managed per record, the <code>KeyedProcessFunction</code> contract must be implemented:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ToastBackfillFunction</span> <span class="kd">extends</span>
+    <span class="nc">KeyedProcessFunction</span><span class="o">&lt;</span><span class="nc">Long</span><span class="o">,</span> <span class="nc">KafkaRecord</span><span class="o">,</span> <span class="nc">KafkaRecord</span><span class="o">&gt;</span> <span class="o">{</span> <i class="conum" data-value="1"></i><b>(1)</b>
+
+  <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">String</span> <span class="no">UNCHANGED_TOAST_VALUE</span> <span class="o">=</span>
+      <span class="s">&#34;__debezium_unavailable_value&#34;</span><span class="o">;</span>
+
+  <span class="kd">private</span> <span class="kd">final</span> <span class="nc">String</span> <span class="n">columnName</span><span class="o">;</span>
+  <span class="kd">private</span> <span class="nc">ValueStateDescriptor</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">descriptor</span><span class="o">;</span> <i class="conum" data-value="2"></i><b>(2)</b>
+
+  <span class="kd">public</span> <span class="nf">ToastBackfillFunction</span><span class="o">(</span><span class="nc">String</span> <span class="n">columnName</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">columnName</span> <span class="o">=</span> <span class="n">olumnName</span><span class="o">;</span>
+  <span class="o">}</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">open</span><span class="o">(</span><span class="nc">OpenContext</span> <span class="n">openContext</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+    <span class="n">descriptor</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ValueStateDescriptor</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;(</span><span class="n">columnName</span><span class="o">,</span>
+        <span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>  <i class="conum" data-value="3"></i><b>(3)</b>
+  <span class="o">}</span>
+
+  <span class="nd">@Override</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">processElement</span><span class="o">(</span><span class="nc">KafkaRecord</span> <span class="n">in</span><span class="o">,</span> <span class="nc">Context</span> <span class="n">ctx</span><span class="o">,</span>
+      <span class="nc">Collector</span><span class="o">&lt;</span><span class="nc">KafkaRecord</span><span class="o">&gt;</span> <span class="n">out</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span> <i class="conum" data-value="4"></i><b>(4)</b>
+
+    <span class="nc">ValueState</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">state</span> <span class="o">=</span> <span class="n">getRuntimeContext</span><span class="o">().</span><span class="na">getState</span><span class="o">(</span><span class="n">descriptor</span><span class="o">);</span>
+
+    <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;</span> <span class="n">newRowState</span> <span class="o">=</span>
+        <span class="o">(</span><span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;)</span> <span class="n">in</span><span class="o">.</span><span class="na">value</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;after&#34;</span><span class="o">);</span>
+
+    <span class="k">switch</span> <span class="o">((</span><span class="nc">String</span><span class="o">)</span><span class="n">in</span><span class="o">.</span><span class="na">value</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;op&#34;</span><span class="o">))</span> <span class="o">{</span>
+      <span class="k">case</span> <span class="s">&#34;r&#34;</span><span class="o">,</span> <span class="s">&#34;i&#34;</span> <span class="o">-&gt;</span>
+          <span class="n">state</span><span class="o">.</span><span class="na">update</span><span class="o">((</span><span class="nc">String</span><span class="o">)</span> <span class="n">newRowState</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">columnName</span><span class="o">));</span> <i class="conum" data-value="5"></i><b>(5)</b>
+
+      <span class="k">case</span> <span class="s">&#34;u&#34;</span> <span class="o">-&gt;</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="no">UNCHANGED_TOAST_VALUE</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span>
+              <span class="n">newRowState</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">columnName</span><span class="o">)))</span> <span class="o">{</span> <i class="conum" data-value="6"></i><b>(6)</b>
+          <span class="n">newRowState</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">columnName</span><span class="o">,</span> <span class="n">state</span><span class="o">.</span><span class="na">value</span><span class="o">());</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+          <span class="n">state</span><span class="o">.</span><span class="na">update</span><span class="o">((</span><span class="nc">String</span><span class="o">)</span> <span class="n">newRowState</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">columnName</span><span class="o">));</span> <i class="conum" data-value="7"></i><b>(7)</b>
+        <span class="o">}</span>
+      <span class="o">}</span>
+
+      <span class="k">case</span> <span class="s">&#34;d&#34;</span> <span class="o">-&gt;</span> <span class="o">{</span>
+        <span class="n">state</span><span class="o">.</span><span class="na">clear</span><span class="o">();</span> <i class="conum" data-value="8"></i><b>(8)</b>
+      <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="n">out</span><span class="o">.</span><span class="na">collect</span><span class="o">(</span><span class="n">in</span><span class="o">);</span>  <i class="conum" data-value="9"></i><b>(9)</b>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>This is a keyed process function working on <code>Long</code> keys (the primary key type of our table), consuming and emitting Kafka records mapped via Jackson</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Descriptor for a key-scoped value store containing the latest value of the TOAST column</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Initialize the state store when the function instance gets created and configured</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The <code>processElement()</code> method is invoked for each element on the stream</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>When receiving an <code>insert</code> or <code>read</code> (i.e. snapshot) event, put the value of the given TOAST column into the state store</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>When receiving an <code>update</code> event which doesn’t modify the TOAST column, retrieve the value from the state store and put it into the event</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>When receiving an <code>update</code> event which does modify the column, update the value in the state store</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="8"></i><b>8</b></td>
+<td>When receiving a <code>delete</code> event, remove the value from the state store</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="9"></i><b>9</b></td>
+<td>Emit the event</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>The function must be applied to a stream which is keyed by the change event’s primary record:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+</pre></td><td class="code"><pre><span class="nc">StreamExecutionEnvironment</span> <span class="n">env</span> <span class="o">=</span>
+    <span class="nc">StreamExecutionEnvironment</span><span class="o">.</span><span class="na">getExecutionEnvironment</span><span class="o">();</span>
+
+<span class="nc">KafkaSource</span><span class="o">&lt;</span><span class="nc">KafkaRecord</span><span class="o">&gt;</span> <span class="n">source</span> <span class="o">=</span> <span class="o">...;</span>
+<span class="nc">KafkaSink</span><span class="o">&lt;</span><span class="nc">KafkaRecord</span><span class="o">&gt;</span> <span class="n">sink</span> <span class="o">=</span> <span class="o">...;</span>
+
+<span class="n">env</span><span class="o">.</span><span class="na">fromSource</span><span class="o">(</span><span class="n">source</span><span class="o">,</span> <span class="nc">WatermarkStrategy</span><span class="o">.</span><span class="na">noWatermarks</span><span class="o">(),</span> <span class="s">&#34;Kafka Source&#34;</span><span class="o">)</span>
+  <span class="o">.</span><span class="na">keyBy</span><span class="o">(</span><span class="n">record</span> <span class="o">-&gt;</span> <span class="o">{</span> <i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="k">return</span> <span class="nc">Long</span><span class="o">.</span><span class="na">valueOf</span><span class="o">((</span><span class="nc">Integer</span><span class="o">)</span> <span class="n">record</span><span class="o">.</span><span class="na">key</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;id&#34;</span><span class="o">));</span>
+  <span class="o">})</span>
+  <span class="o">.</span><span class="na">process</span><span class="o">(</span><span class="k">new</span> <span class="nc">ToastBackfillFunction</span><span class="o">(</span><span class="s">&#34;biography&#34;</span><span class="o">))</span> <i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="o">.</span><span class="na">sinkTo</span><span class="o">(</span><span class="n">sink</span><span class="o">);</span>
+
+<span class="n">env</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="s">&#34;Flink TOAST Backfill&#34;</span><span class="o">);</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Key the incoming change event stream by the table’s primary key, <code>id</code></td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>For each change event, apply the TOAST backfill function</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>The Kafka source shown in the job reads Debezium data change events from a Kafka topic,
+whereas the Kafka sink will write them to another topic, once they have been processed.
+For each record of the source table, the processing function keeps the latest value of the TOAST column in the state store.
+Depending on the number of records and the size of the TOAST column values,
+a sizable amount of state will be stored.
+That’s not a fundamental problem though: Flink jobs commonly manage hundreds of gigabytes of state size,
+and newer developments like the <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/disaggregated_state/">disaggregated state management</a> in Flink 2.0 can help with that task.</p>
+</div>
+<div class="paragraph">
+<p>You can find the complete runnable example in my <a href="https://github.com/gunnarmorling/streaming-examples/blob/main/postgres-toast-backfill/toast-backfill/src/main/java/dev/morling/demos/partialevents/DataStreamJob.java">streaming-examples repo</a> on GitHub.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_flink_sql_with_over_aggregation">Flink SQL With OVER Aggregation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Besides the DataStream API, Apache Flink also provides a relational interface to stream processing in the form of <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/overview/">Flink SQL</a> and the accompanying Table API.
+This makes stateful stream processing accessible to a much larger audience:
+all the developers and data engineers who are familiar with SQL.
+Which begs the question: can TOAST column backfills be implemented with a SQL query?
+As it turns out, yes it can!</p>
+</div>
+<div class="paragraph">
+<p>The key idea is to use Flink’s <a href="/blog/ingesting-debezium-events-from-kafka-with-flink-sql/">Apache Kafka SQL connector in append-only mode</a> for operating on the &#34;raw&#34; stream of Debezium change events and applying the necessary backfill with an <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/over-agg/"><code>OVER</code> aggregation</a>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+</pre></td><td class="code"><pre><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">authors_backfilled</span>
+  <span class="k">SELECT</span>
+    <span class="n">id</span><span class="p">,</span>
+    <span class="k">before</span><span class="p">,</span>
+    <span class="k">ROW</span><span class="p">(</span>
+      <span class="n">id</span><span class="p">,</span>
+      <span class="k">after</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span>
+      <span class="k">after</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span>
+      <span class="k">CASE</span>
+        <span class="k">WHEN</span> <span class="k">after</span><span class="p">.</span><span class="n">biography</span> <span class="k">IS</span> <span class="k">NULL</span> <span class="k">THEN</span> <span class="k">NULL</span>
+        <span class="k">ELSE</span>
+          <span class="n">LAST_VALUE</span><span class="p">(</span><span class="k">NULLIF</span><span class="p">(</span><span class="k">after</span><span class="p">.</span><span class="n">biography</span><span class="p">,</span>
+              <span class="s1">&#39;__debezium_unavailable_value&#39;</span><span class="p">))</span> <span class="n">OVER</span> <span class="p">(</span>
+            <span class="k">PARTITION</span> <span class="k">BY</span> <span class="n">id</span>
+            <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">proctime</span>
+            <span class="k">RANGE</span> <span class="k">BETWEEN</span> <span class="n">INTERVAL</span> <span class="s1">&#39;30&#39;</span> <span class="k">DAY</span> <span class="k">PRECEDING</span> <span class="k">AND</span> <span class="k">CURRENT</span> <span class="k">ROW</span>
+          <span class="p">)</span>
+      <span class="k">END</span><span class="p">,</span>
+      <span class="k">after</span><span class="p">.</span><span class="n">dob</span>
+    <span class="p">),</span>
+    <span class="k">source</span><span class="p">,</span>
+    <span class="n">op</span><span class="p">,</span>
+    <span class="n">ts_ms</span>
+  <span class="k">FROM</span>
+    <span class="n">authors</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Unlike a regular <code>GROUP BY</code> aggregation, which condenses multiple input rows into a single output row,
+an <code>OVER</code> aggregation produces an aggregated value for every input row, based on a given window.</p>
+</div>
+<div class="paragraph">
+<p>The <code>LAST_VALUE()</code> aggregation function propagates the last non <code>NULL</code> value for each window.
+By mapping the unavailable value placeholder to <code>NULL</code> using <code>NULLIF()</code>, this will always be the latest value of the biography column.
+The data is partitioned by id: the aggregation window are all the change events with the same primary key within the given interval of 30 days.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Finding the right value for that look-back period can be tricky, as it depends on the lifecycle of your data.
+If update events for a record can come in 180 days after the previous update, state in the Flink job must be retained for that entire time.
+Ideally, we’d dispose of the state for a given record once the delete event for that key has been ingested.
+Unfortunately, I am not aware of any way for doing so purely with Flink SQL on an append-only data stream.
+The PTF solution discussed in the next section implements this logic.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>In order to handle the situation where the TOAST-ed column actually is set to <code>NULL</code>, the aggregation is wrapped by a <code>CASE</code> clause which emits the <code>NULL</code> value in this case.
+Note that the statement above is simplified somewhat for the sake of comprehensibility.
+In particular, it ignores the case of delete events whose <code>after</code> field is null,
+which could be implemented using another <code>CASE</code> clause.</p>
+</div>
+<div class="paragraph">
+<p>Solving the problem solely with SQL makes for a generally elegant and portable solution,
+especially when considering that Flink SQL tends to be more widely supported by Flink SaaS vendors than the DataStream API,
+due to the inherent complexities of operating the latter.
+Yet, it is not a silver bullet:
+The complexity of statements can become a problem quickly.
+As discussed above, you lack fine-grained control over the retention period of the required state.
+Furthermore, SQL arguably has a bit of a discoverability problem,
+in particular software engineers with a background in application development may not necessarily be aware of features such as <code>OVER</code> aggregations.</p>
+</div>
+<div class="paragraph">
+<p>This leads us to the next and final way for backfilling TOAST columns,
+which combines the simplicity of SQL with the flexibility and expressiveness of implementing key parts of the functionality imperatively.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_flink_process_table_functions">Flink Process Table Functions</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The idea of this approach is to delegate state management to a custom process table function (PTF).
+Specified in <a href="https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=298781093">FLIP-440</a>, PTFs are a new kind of user-defined function (UDF) for Flink SQL, which will be available in Flink 2.1.
+Complementing other types of UDFs already present in earlier Flink SQL versions, such as scalar and aggregate functions,
+PTFs are much more powerful and have a few very interesting characteristics:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Just like a custom process function you’d implement for the DataStream API,
+they provide you with access to persistent state and timers</p>
+</li>
+<li>
+<p>Unlike scalar functions,
+they are table-valued functions (TVFs) that accept tables as input and produce a table as output</p>
+</li>
+<li>
+<p>They are also polymorphic functions (in fact, PTFs are called <a href="https://www.iso.org/standard/78938.html">polymorphic table functions</a> in the SQL standard),
+which means that their input and output types are determined dynamically, rather than statically</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The polymorphic nature allows for extremely powerful customizations of your SQL queries,
+for instance there could be a PTF which exposes the contents of a Parquet file in a typed way,
+allowing for the projection of specific columns.
+Other potential use cases for custom PTFs include implementing specific join operators, doing remote REST API calls for enriching your data,
+integrating with LLMs for sentiment analysis or categorization, and much more.</p>
+</div>
+<div class="paragraph">
+<p>PTFs are a <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/ptfs/">comprehensive extension</a> to the Flink API and definitely warrant their own blog post at some point,
+for now let’s just take a look at how to use a PTF for backfilling Postgres TOAST columns.
+Note that PTFs are still work-in-progress and details of the API may change.
+The following has been implemented against Flink built from source as of commit <a href="https://github.com/apache/flink/commit/f7b5d00c453d9774b37ca6c348505b10abfbc6ed">f7b5d00</a>.</p>
+</div>
+<div class="paragraph">
+<p>To create a PTF, create a subclass of <code>ProcessTableFunction</code>, parameterized with the output type.
+In our case that’s <code>Row</code>, as this PTF produces entire table rows.
+The processing logic needs to be implemented in a method named <code>eval()</code>,
+which takes any arguments, and optionally a state carrier object as well as other context, as input:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ToastBackfillFunction</span> <span class="kd">extends</span> <span class="nc">ProcessTableFunction</span><span class="o">&lt;</span><span class="nc">Row</span><span class="o">&gt;</span> <span class="o">{</span>
+
+  <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">String</span> <span class="no">UNCHANGED_TOAST_VALUE</span> <span class="o">=</span>
+      <span class="s">&#34;__debezium_unavailable_value&#34;</span><span class="o">;</span>
+
+  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">ToastState</span> <span class="o">{</span> <i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="kd">public</span> <span class="nc">String</span> <span class="n">value</span><span class="o">;</span>
+  <span class="o">}</span>
+
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">eval</span><span class="o">(</span><span class="nc">ToastState</span> <span class="n">state</span><span class="o">,</span> <span class="nc">Row</span> <span class="n">input</span><span class="o">,</span> <span class="nc">String</span> <span class="n">column</span><span class="o">)</span> <span class="o">{</span> <i class="conum" data-value="2"></i><b>(2)</b>
+    <span class="nc">Row</span> <span class="n">newRowState</span> <span class="o">=</span> <span class="o">(</span><span class="nc">Row</span><span class="o">)</span> <span class="n">input</span><span class="o">.</span><span class="na">getField</span><span class="o">(</span><span class="s">&#34;after&#34;</span><span class="o">);</span>
+
+    <span class="k">switch</span> <span class="o">((</span><span class="nc">String</span><span class="o">)</span><span class="n">input</span><span class="o">.</span><span class="na">getField</span><span class="o">(</span><span class="s">&#34;op&#34;</span><span class="o">))</span> <span class="o">{</span>
+      <span class="k">case</span> <span class="s">&#34;r&#34;</span><span class="o">,</span> <span class="s">&#34;c&#34;</span> <span class="o">-&gt;</span> <span class="o">{</span> <i class="conum" data-value="3"></i><b>(3)</b>
+        <span class="n">state</span><span class="o">.</span><span class="na">value</span> <span class="o">=</span> <span class="o">(</span><span class="nc">String</span><span class="o">)</span> <span class="n">newRowState</span><span class="o">.</span><span class="na">getField</span><span class="o">(</span><span class="n">column</span><span class="o">);</span>
+      <span class="o">}</span>
+      <span class="k">case</span> <span class="s">&#34;u&#34;</span> <span class="o">-&gt;</span> <span class="o">{</span> <i class="conum" data-value="4"></i><b>(4)</b>
+        <span class="k">if</span> <span class="o">(</span><span class="no">UNCHANGED_TOAST_VALUE</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">newRowState</span><span class="o">.</span><span class="na">getField</span><span class="o">(</span><span class="n">column</span><span class="o">)))</span> <span class="o">{</span>
+          <span class="n">newRowState</span><span class="o">.</span><span class="na">setField</span><span class="o">(</span><span class="n">column</span><span class="o">,</span> <span class="n">state</span><span class="o">.</span><span class="na">value</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+          <span class="n">state</span><span class="o">.</span><span class="na">value</span> <span class="o">=</span> <span class="o">(</span><span class="nc">String</span><span class="o">)</span> <span class="n">newRowState</span><span class="o">.</span><span class="na">getField</span><span class="o">(</span><span class="n">column</span><span class="o">);</span>
+        <span class="o">}</span>
+      <span class="o">}</span>
+      <span class="k">case</span> <span class="s">&#34;d&#34;</span> <span class="o">-&gt;</span> <span class="o">{</span>  <i class="conum" data-value="5"></i><b>(5)</b>
+        <span class="n">state</span><span class="o">.</span><span class="na">value</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="n">collect</span><span class="o">(</span><span class="n">input</span><span class="o">);</span> <i class="conum" data-value="6"></i><b>(6)</b>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>A custom state type for managing the persistent state of this PTF; stores the latest value for the given TOAST column</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The <code>eval()</code> method will be invoked for each row to be aggregated; it declares the state type and two arguments for PTF: the table to process, and the name of the TOAST column</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>If the incoming event is an insert (<code>c</code>) or snapshot (<code>r</code>) event, store the value of the specified TOAST column in the state store</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>If the incoming event is an update and the value of the TOAST column didn’t change, retrieve the value from the state store and update the input row with it; if the value did change, update the value in the state store</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>If the incoming event is a delete, remove the value for the given key from the state; i.e. in contrast to the <code>OVER</code> aggregation solution,
+the state retention time now closely matches the lifecycle of the underlying data itself</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Emit the table row</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>In most cases, semantics of the arguments of the <code>eval()</code> method can be determined <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/ptfs/#implementation-guide">automatically via reflection</a>,
+or they can be specified using annotations such as <code>@StateHint</code> and <code>@ArgumentHint</code>.
+The TOAST backfill PTF is special in so far as that its output type can’t be specified statically;
+instead, it mirrors the type of the table the PTF is applied to.
+For dynamic cases like this, the <code>getTypeInference()</code> method can be overridden,
+allowing you to declare the exact input and output type semantics for the method:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+</pre></td><td class="code"><pre><span class="nd">@Override</span>
+<span class="kd">public</span> <span class="nc">TypeInference</span> <span class="nf">getTypeInference</span><span class="o">(</span><span class="nc">DataTypeFactory</span> <span class="n">typeFactory</span><span class="o">)</span> <span class="o">{</span>
+  <span class="nc">LinkedHashMap</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">StateTypeStrategy</span><span class="o">&gt;</span> <span class="n">stateTypeStrategies</span> <span class="o">=</span>
+      <span class="nc">LinkedHashMap</span><span class="o">.</span><span class="na">newLinkedHashMap</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="n">stateTypeStrategies</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&#34;state&#34;</span><span class="o">,</span>
+      <span class="nc">StateTypeStrategy</span><span class="o">.</span><span class="na">of</span><span class="o">(</span>
+          <span class="nc">TypeStrategies</span><span class="o">.</span><span class="na">explicit</span><span class="o">(</span>
+              <span class="nc">DataTypes</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="nc">ToastState</span><span class="o">.</span><span class="na">class</span><span class="o">).</span><span class="na">toDataType</span><span class="o">(</span><span class="n">typeFactory</span><span class="o">))));</span>
+
+  <span class="k">return</span> <span class="nc">TypeInference</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">()</span>
+      <span class="o">.</span><span class="na">staticArguments</span><span class="o">(</span> <i class="conum" data-value="2"></i><b>(2)</b>
+        <span class="nc">StaticArgument</span><span class="o">.</span><span class="na">table</span><span class="o">(</span> <i class="conum" data-value="3"></i><b>(3)</b>
+          <span class="s">&#34;input&#34;</span><span class="o">,</span>
+          <span class="nc">Row</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
+          <span class="kc">false</span><span class="o">,</span>
+          <span class="nc">EnumSet</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="nc">StaticArgumentTrait</span><span class="o">.</span><span class="na">TABLE_AS_SET</span><span class="o">)),</span>
+        <span class="nc">StaticArgument</span><span class="o">.</span><span class="na">scalar</span><span class="o">(</span><span class="s">&#34;column&#34;</span><span class="o">,</span> <span class="nc">DataTypes</span><span class="o">.</span><span class="na">STRING</span><span class="o">(),</span> <span class="kc">false</span><span class="o">)</span> <i class="conum" data-value="4"></i><b>(4)</b>
+      <span class="o">)</span>
+      <span class="o">.</span><span class="na">stateTypeStrategies</span><span class="o">(</span><span class="n">stateTypeStrategies</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
+      <span class="o">.</span><span class="na">outputTypeStrategy</span><span class="o">(</span><span class="n">callContext</span> <span class="o">-&gt;</span> <i class="conum" data-value="5"></i><b>(5)</b>
+          <span class="nc">Optional</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">callContext</span><span class="o">.</span><span class="na">getArgumentDataTypes</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="mi">0</span><span class="o">)))</span>
+      <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Declares the state type of the PTF</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Defines the arguments of the PTF</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The first argument is the input table; it has &#34;set&#34; semantics, which means the method operates on partitioned sets of rows (as opposed to &#34;row&#34; semantics, in which case it would operate on individual rows of the table); the PTF’s state is managed within the context of each of those partitioned sets; the argument is of type <code>Row</code> (representing a table row) and it is not optional</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The second argument is the name of the TOAST column to process; it is of type <code>String</code> and also not optional</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The output type is exactly the same as the row type of the input table</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>With that PTF definition in place, it can be invoked like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="k">SELECT</span>
+  <span class="n">id</span><span class="p">,</span>
+  <span class="k">before</span><span class="p">,</span>
+  <span class="k">after</span><span class="p">,</span>
+  <span class="k">source</span><span class="p">,</span>
+  <span class="n">op</span><span class="p">,</span>
+  <span class="n">ts_ms</span>
+<span class="k">FROM</span>
+  <span class="n">ToastBackfill</span><span class="p">(</span><span class="k">TABLE</span> <span class="n">authors</span> <span class="k">PARTITION</span> <span class="k">BY</span> <span class="n">id</span><span class="p">,</span> <span class="nv">&#34;biography&#34;</span><span class="p">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Invoke the PTF for the <code>authors</code> table, partitioned by id, and backfilling values for the <code>biography</code> TOAST column</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>Invoking a table-valued function might feel unusual at first,
+but on the upside the overall statement is quite a bit less complex than the <code>OVER</code> aggregation shown above.
+This illustrates another potential benefit of PTFs:
+they let you encapsulate that logic in a reusable function,
+thus allowing for less complex and verbose queries.
+You might develop a library of parameterized PTFs tailored to your specific use cases,
+ready to be used by the data engineers in your organization for building streaming pipelines.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary_and_discussion">Summary and Discussion</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Used for storing large values, Postgres TOAST columns are not fully represented in data change events for tables without replica identity <code>FULL</code>.
+As such, they create complexities for downstream consumers,
+which typically are better off with events describing the complete state of a row.</p>
+</div>
+<div class="paragraph">
+<p>In this post, we’ve explored several solutions to address this issue.
+Debezium’s built-in reselect post processor queries the database for missing values.
+It can be a solution for simple cases, but it is prone to data races and can create performance issues.
+Stateful stream processing, using Apache Flink, is a powerful alternative.
+Flink provides multiple options for solving this task, ranging from a purely imperative solution using the DataStream API,
+over a purely SQL-based implementation in form of an <code>OVER</code> aggregation,
+to a hybrid solution with a custom process table function for state management, invoked from within a very basic SQL query.</p>
+</div>
+<div class="paragraph">
+<p>To be officially released with Flink 2.1 later this year,
+the PTF approach strikes a very appealing balance between expressiveness and flexibility—​for instance in regards to managing the lifecycle of TOAST backfill data in the Flink state store—​and ease of use for authors of SQL queries.</p>
+</div>
+<div class="paragraph">
+<p>Now, could Debezium also provide a reliable and robust solution out of the box, thus eliminating the need for any subsequent processing?
+Indeed I think it could:
+Next to the existing re-select post processor, there could be another one which implements the backfilling logic described in this post.
+To do so, such a post processor could directly manage values in a persistent store such as <a href="https://rocksdb.org/">RocksDB</a> or <a href="https://slatedb.io/">SlateDB</a>.
+Alternatively, it also could embed Flink into the connector process,
+using Flink’s mini-cluster deployment mode.
+I’ve logged issue <a href="https://issues.redhat.com/browse/DBZ-9078">DBZ-9078</a> for exploring this further;
+please reach out if this sounds interesting to you!</p>
+</div>
+<div class="paragraph">
+<p><em>Many thanks to Andrew Sellers and Steffen Hausmann for their feedback while writing this post!</em></p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed Under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
