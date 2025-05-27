@@ -405,12 +405,13 @@ To set up the post processor, add the following to your Debezium connector confi
 </div>
 <div class="paragraph">
 <p>This may do the trick in certain situations, in particular if a TOAST-ed column rarely or even never changes.
-There are some important implications, though:
-The solution is inherently prone to data races.
+There are some important implications, though.
+Most importantly, the solution is inherently prone to data races:
 If there are multiple updates to a row in quick succession and the TOAST-ed column changes,
 an earlier change event may be enriched with the <em>latest</em> value of the column.
-This occurs because Postgres does not support queries for past values
-(Debezium implements a more robust solution for Oracle using an <code>AS OF SCN</code> query).</p>
+This may happen as Postgres does not support queries for past values
+(Debezium implements a more robust solution for Oracle using an <code>AS OF SCN</code> query).
+Longer delays between creating a change event in the database and processing it with Debezium—​for instance in case of a connector downtime—​exacerbate that problem.</p>
 </div>
 <div class="paragraph">
 <p>Furthermore, there may be a performance impact: running a query for every event adds latency,
