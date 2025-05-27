@@ -421,16 +421,24 @@ When using the reselect post processor,
 you should make sure to run Debezium close to your database,
 in order to minimize the latency impact.</p>
 </div>
+<div class="paragraph">
+<p>Issuing a database query for getting the current value of a TOAST-ed column isn’t ideal.
+Rather, we’d want to retrieve the column value exactly as it was when that update happened, ideally also offloading these look-ups to a separate system.
+This kind of processing is a prime use case for stateful stream processors such as <a href="https://flink.apache.org/">Apache Flink</a>.
+So let’s explore how we could implement TOAST column backfills using Flink.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/toast_backfill_flink.png" alt="Backfilling TOAST column values with stateful stream processing"/>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_flink_datastream_api">Flink DataStream API</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>As discussed above, issuing a database query for getting the current value of a TOAST-ed column suffers from data races.
-What we’d actually have to do when emitting an update change event is retrieve the column value as it was when that update happened.
-This kind of processing is a prime use case for stateful stream processors such as <a href="https://flink.apache.org/">Apache Flink</a>.
-Flink supports several APIs for implementing stream processing jobs which differ in terms of their complexity and the capabilities they offer.
+<p>Flink supports several APIs for implementing stream processing jobs which differ in terms of their complexity and the capabilities they offer.
 The <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/overview/">DataStream API</a> is a foundational API which provides you with the highest degree of freedom and flexibility,
 at the same time it has a steep learning curve and you can shoot into your own foot easily.</p>
 </div>
@@ -1062,7 +1070,7 @@ I’ve logged issue <a href="https://issues.redhat.com/browse/DBZ-9078">DBZ-9078
 please reach out if this sounds interesting to you!</p>
 </div>
 <div class="paragraph">
-<p><em>Many thanks to Andrew Sellers and Steffen Hausmann for their feedback while writing this post!</em></p>
+<p><em>Many thanks to Andrew Sellers, Renato Mefi, and Steffen Hausmann for their feedback while writing this post!</em></p>
 </div>
 </div>
 </div>
