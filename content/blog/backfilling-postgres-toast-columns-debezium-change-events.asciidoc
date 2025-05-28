@@ -330,7 +330,6 @@ In our case that's `Row`, as this PTF produces entire table rows.
 The processing logic needs to be implemented in a method named `eval()`,
 which takes any arguments, and optionally a state carrier object as well as other context, as input:
 
-
 [source,java,linenums=true]
 ----
 public class ToastBackfillFunction extends ProcessTableFunction<Row> {
@@ -416,15 +415,16 @@ With that PTF definition in place, it can be invoked like this:
 
 [source,sql,linenums=true]
 ----
-SELECT
-  id,
-  before,
-  after,
-  source,
-  op,
-  ts_ms 
-FROM 
-  ToastBackfill(TABLE authors PARTITION BY id, "biography"); -- <1>
+INSERT INTO authors_backfilled
+  SELECT
+    id,
+    before,
+    after,
+    source,
+    op,
+    ts_ms 
+  FROM 
+    ToastBackfill(TABLE authors PARTITION BY id, "biography"); -- <1>
 ----
 <1> Invoke the PTF for the `authors` table, partitioned by id, and backfilling values for the `biography` TOAST column
 
