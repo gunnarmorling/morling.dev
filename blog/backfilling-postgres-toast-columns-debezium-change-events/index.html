@@ -998,24 +998,26 @@ allowing you to declare the exact input and output type semantics for the method
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
-2
-3
-4
-5
-6
-7
-8
-9
-</pre></td><td class="code"><pre><span class="k">SELECT</span>
-  <span class="n">id</span><span class="p">,</span>
-  <span class="k">before</span><span class="p">,</span>
-  <span class="k">after</span><span class="p">,</span>
-  <span class="k">source</span><span class="p">,</span>
-  <span class="n">op</span><span class="p">,</span>
-  <span class="n">ts_ms</span>
-<span class="k">FROM</span>
-  <span class="n">ToastBackfill</span><span class="p">(</span><span class="k">TABLE</span> <span class="n">authors</span> <span class="k">PARTITION</span> <span class="k">BY</span> <span class="n">id</span><span class="p">,</span> <span class="nv">&#34;biography&#34;</span><span class="p">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">authors_backfilled</span>
+  <span class="k">SELECT</span>
+    <span class="n">id</span><span class="p">,</span>
+    <span class="k">before</span><span class="p">,</span>
+    <span class="k">after</span><span class="p">,</span>
+    <span class="k">source</span><span class="p">,</span>
+    <span class="n">op</span><span class="p">,</span>
+    <span class="n">ts_ms</span>
+  <span class="k">FROM</span>
+    <span class="n">ToastBackfill</span><span class="p">(</span><span class="k">TABLE</span> <span class="n">authors</span> <span class="k">PARTITION</span> <span class="k">BY</span> <span class="n">id</span><span class="p">,</span> <span class="nv">&#34;biography&#34;</span><span class="p">);</span> <i class="conum" data-value="1"></i><b>(1)</b>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
