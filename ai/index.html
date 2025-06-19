@@ -12,24 +12,18 @@
 	</script>
 
 	<meta charset="utf-8" />
-	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Can Debezium Lose Events? - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Can Debezium Lose Events?" />
-<meta property="og:description" content="
-This question came up on the Data Engineering sub-reddit the other day:
-Can Debezium lose any events?
-I.e. can there be a situation where a record in a database get inserted, updated, or deleted, but Debezium fails to capture that event from the transaction log and propagate it to downstream consumers?
-" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>How I Use (and Don&#39;t Use) AI - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="How I Use (and Don&#39;t Use) AI" />
+<meta property="og:description" content="When you read a post on this site, you can be sure it is an original article, written by a human: me.
+My goal is to share unique (in any case, personal), and hopefully innovative perspectives, based on my own work and experience. Large language models (LLMs) are not going to give you that. I don’t see much value in publishing articles written by an LLM; after all, you could just run ChatGPT or Claude by yourself in order to do so." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/can-debezium-lose-events/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2023-11-14T15:00:00+01:00" />
-<meta property="article:modified_time" content="2023-11-14T15:00:00+01:00" />
+<meta property="og:url" content="https://www.morling.dev/ai/" /><meta property="article:section" content="" />
+<meta property="article:published_time" content="2025-06-19T09:30:00+02:00" />
+<meta property="article:modified_time" content="2025-06-19T09:30:00+02:00" />
 
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Can Debezium Lose Events?"/>
-<meta name="twitter:description" content="
-This question came up on the Data Engineering sub-reddit the other day:
-Can Debezium lose any events?
-I.e. can there be a situation where a record in a database get inserted, updated, or deleted, but Debezium fails to capture that event from the transaction log and propagate it to downstream consumers?
-"/>
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="How I Use (and Don&#39;t Use) AI"/>
+<meta name="twitter:description" content="When you read a post on this site, you can be sure it is an original article, written by a human: me.
+My goal is to share unique (in any case, personal), and hopefully innovative perspectives, based on my own work and experience. Large language models (LLMs) are not going to give you that. I don’t see much value in publishing articles written by an LLM; after all, you could just run ChatGPT or Claude by yourself in order to do so."/>
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -268,104 +262,70 @@ I.e. can there be a situation where a record in a database get inserted, updated
 
 		<div id = "main-content">
 			<div class="post-header">
-				<h1 class="title">Can Debezium Lose Events?</h1>
-				<div class="meta">Posted at Nov 14, 2023</div>
+				<h1 class="title">How I Use (and Don&#39;t Use) AI</h1>
+				<div class="meta">Posted at Jun 19, 2025</div>
 			</div>
 
 			<div class="markdown">
 				<div class="paragraph">
-<p>This question came up on the Data Engineering sub-reddit the other day:
-<a href="https://old.reddit.com/r/dataengineering/comments/17ttw5e/can_debezium_loose_updates/">Can Debezium lose any events</a>?
-I.e. can there be a situation where a record in a database get inserted, updated, or deleted, but Debezium fails to capture that event from the transaction log and propagate it to downstream consumers?</p>
+<p>When you read a post on this site, you can be sure it is an original article, written by a human: me.</p>
 </div>
 <div class="paragraph">
-<p>I’ve already <a href="https://old.reddit.com/r/dataengineering/comments/17ttw5e/can_debezium_loose_updates/k91icwi/">replied</a> on Reddit itself, but I thought it’d warrant a slightly longer discussion here.
-To get the most important thing out of the way first: In general, Debezium by itself should <em>never</em> miss any event.
-If it does, that’s considered a blocker bug which the development team will address with highest priority.
-After all, Debezium’s semantics are <a href="https://kafka.apache.org/36/documentation.html#semantics"><em>at-least-once</em></a> (i.e. duplicate events may occur, specifically after an unclean connector shut-down),
-not <em>at-most-once</em>.</p>
+<p>My goal is to share unique (in any case, personal), and hopefully innovative perspectives, based on my own work and experience.
+Large language models (LLMs) are not going to give you that.
+I don’t see much value in publishing articles written by an LLM;
+after all, you could just run ChatGPT or Claude by yourself in order to do so.</p>
 </div>
 <div class="paragraph">
-<p>That being said, it may happen that due to operational deficiencies portions of the database’s transaction log get discarded before Debezium gets a chance to capture them.
-This can happen when a Debezium connector isn’t running for a longer period of time,
-and the maximum transaction log retention time is reached.</p>
+<p>This is not to say I am not working with AI in the process of writing at all.
+I am using AI occassionally, similar to working with a human copy editor,
+helping me to improve articles, once I have a draft.
+The scope of this are light-touch changes, affecting a few handful of words.
+Here is how I am using AI:</p>
 </div>
-<div class="paragraph">
-<p>Most of the databases provide some sort of configuration parameter for controlling this behavior.
-In MySQL for instance, there is the <a href="https://dev.mysql.com/doc/refman/8.2/en/replication-options-binary-log.html#sysvar_binlog_expire_logs_seconds"><code>binlog_expire_logs_seconds</code></a> parameter for this purpose
-(which defaults to 2,592,000 seconds, i.e. 30 days).
-When you are using MySQL on Amazon RDS,
-the option to use is called <a href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/mysql-stored-proc-configuring.html"><code>binlog retention hours</code></a>.
-For SQL Server, the retention time for CDC data can be configured using the stored procedure <a href="https://learn.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sys-sp-cdc-change-job-transact-sql?view=sql-server-ver16"><code>sys.sp_cdc_change_job()</code></a>.</p>
+<div class="sect1">
+<h2 id="_what_i_use_ai_for">What I Use AI For</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Checking for correct grammar and wording</p>
+</li>
+<li>
+<p>Making suggestions for improving the expressiveness of my language; being a non-native English speaker, I like for instance finding new words to add variety. Case in point: I tend to overuse the word &#34;use&#34; (just check this page ;), and AI helps to find alternatives</p>
+</li>
+<li>
+<p>Validating whether the line of thought of an article is coherent</p>
+</li>
+<li>
+<p>Making suggestions for article titles and teasers, which I rework substantially to focus on the right thing and match my personal voice</p>
+</li>
+</ul>
 </div>
-<div class="paragraph">
-<p>In contrast, Postgres approaches this matter a bit differently:
-<a href="https://www.postgresql.org/docs/16/warm-standby.html#STREAMING-REPLICATION-SLOTS">Replication slots</a> keeps track of how far consumers have consumed the write-ahead log (WAL).
-Consumers must actively acknowledge the latest WAL position
-(log sequence number, LSN) they have consumed.
-Only when an LSN has been acknowledged by all replication slots,
-the database will discard older WAL segments.
-This means that, by default, even an extended connector downtime will not lead to event loss.
-This comes at a price though: the database holds on to all the unconsumed WAL segments,
-consuming more and more disk space until the connector gets restarted again.</p>
 </div>
-<div class="admonitionblock note">
-<table>
-<tbody><tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="title">The Insatiable Replication Slot</div>
-<div class="paragraph">
-<p>Even when a replication slot is active, it can happen under specific circumstances that the slot’s consumer cannot acknowledge any LSNs, causing the database machine to run out of disk space eventually.
-You can learn more about the reasons, and ways for mitigating this issue, in <a href="/blog/insatiable-postgres-replication-slot/">this blog post</a>.
-Luckily, the issue has recently <a href="https://engineering.zalando.com/posts/2023/11/patching-pgjdbc.html">been resolved</a> in the Postgres JDBC driver, version 42.6.0.</p>
 </div>
-</td>
-</tr>
-</tbody></table>
+<div class="sect1">
+<h2 id="_what_i_do_not_use_ai_for">What I Do Not Use AI For</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Original writing in any form</p>
+</li>
+<li>
+<p>Creating complete paragraphs or sections</p>
+</li>
+</ul>
 </div>
-<div class="paragraph">
-<p>Therefore, a new configuration option was introduced in Postgres 13, <a href="https://postgresqlco.nf/doc/en/param/max_slot_wal_keep_size/"><code>max_slot_wal_keep_size</code></a>,
-which defines the maximum WAL size in bytes which a replication slot may retain.
-If a slot causes retained WAL files to grow beyond the configured value,
-older segments will be removed.
-This means that, when configuring this option (the default value is -1, i.e. an indefinite WAL keep size),
-the behavior is the same as for instance with MySQL,
-and consumers will not be able to resume processing after falling off the log.
-By means of the <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-connector-snapshot-mode-options"><code>always</code> snapshot mode</a>, you can start with a new complete initial snapshot in this case.</p>
 </div>
-<div class="paragraph">
-<p>In general though, you should avoid this situation to begin with, and have observability tools in place which will trigger an alert when a Debezium connector isn’t running for a longer period of time,
-for instance by querying the Kafka Connect REST API.
-For Postgres, you also can track the retained WAL size of a replication slot using the <code>pg_current_wal_lsn()</code> and <code>pg_wal_lsn_diff()</code> functions, as I described in <a href="https://www.decodable.co/blog/the-wonders-of-postgres-logical-decoding-messages-for-cdc">this blog post</a> a while ago.</p>
 </div>
+
 			</div>
 
 			<div class="post-tags">
 				
-					
-				
 			</div>
-		</div><div id="disqus_thread">
-  <script src="https://giscus.app/client.js"
-    data-repo="gunnarmorling/discussions.morling.dev"
-    data-repo-id="R_kgDOGXzqNQ"
-    data-category="Announcements"
-    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
-    data-mapping="title"
-    data-reactions-enabled="1"
-    data-emit-metadata="0"
-    data-theme="light"
-    data-lang="en"
-    crossorigin="anonymous"
-    async>
-  </script>
-</div>
-
-<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
-</div>
+		</div></div>
 	<div class="footer wrapper">
 	<nav class="nav">
 		<div> © 2019 - 2025 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
