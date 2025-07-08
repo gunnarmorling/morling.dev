@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Mastering Postgres Replication Slots: Preventing WAL Bloat and Other Production Issues - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Mastering Postgres Replication Slots: Preventing WAL Bloat and Other Production Issues" />
+<meta property="og:description" content="
+Over the last couple of years, I’ve helped dozens of users and organizations to build Change Data Capture (CDC) pipelines for their Postgres databases. A key concern in that process is setting up and managing replication slots, which are Postgres&#39; mechanism for making sure that any segments of the write-ahead log (WAL) of the database are kept around until they have been processed by registered replication consumers.
+
+
+When not being careful, a replication slot may cause unduly large amounts of WAL segments to be retained by the database. This post describes best practices helping to prevent this and other issues, discussing aspects like heartbeats, replication slot failover, monitoring, the management of Postgres publications, and more. While this is primarily based on my experience of using replication slots via Debezium’s Postgres connector, the principles are generally applicable and are worth considering also when using other CDC tools for Postgres based on logical replication.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/mastering-postgres-replication-slots/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2025-07-08T13:55:00+02:00" />
+<meta property="article:modified_time" content="2025-07-08T13:55:00+02:00" />
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Mastering Postgres Replication Slots: Preventing WAL Bloat and Other Production Issues"/>
+<meta name="twitter:description" content="
+Over the last couple of years, I’ve helped dozens of users and organizations to build Change Data Capture (CDC) pipelines for their Postgres databases. A key concern in that process is setting up and managing replication slots, which are Postgres&#39; mechanism for making sure that any segments of the write-ahead log (WAL) of the database are kept around until they have been processed by registered replication consumers.
+
+
+When not being careful, a replication slot may cause unduly large amounts of WAL segments to be retained by the database. This post describes best practices helping to prevent this and other issues, discussing aspects like heartbeats, replication slot failover, monitoring, the management of Postgres publications, and more. While this is primarily based on my experience of using replication slots via Debezium’s Postgres connector, the principles are generally applicable and are worth considering also when using other CDC tools for Postgres based on logical replication.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Mastering Postgres Replication Slots: Preventing WAL Bloat and Other Production Issues</h1>
+				<div class="meta">Posted at Jul 8, 2025</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>Over the last couple of years, I’ve helped dozens of users and organizations to build Change Data Capture (CDC) pipelines for their Postgres databases. A key concern in that process is setting up and managing replication slots, which are Postgres&#39; mechanism for making sure that any segments of the write-ahead log (WAL) of the database are kept around until they have been processed by registered replication consumers.</p>
+</div>
+<div class="paragraph">
+<p>When not being careful, a replication slot may cause unduly large amounts of WAL segments to be retained by the database. This post describes best practices helping to prevent this and other issues, discussing aspects like heartbeats, replication slot failover, monitoring, the management of Postgres publications, and more. While this is primarily based on my experience of using replication slots via <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html">Debezium’s Postgres connector</a>, the principles are generally applicable and are worth considering also when using other CDC tools for Postgres based on logical replication.</p>
+</div>
+<div class="sect1">
+<h2 id="_use_the_pgoutput_logical_decoding_output_plug_in">Use the pgoutput Logical Decoding Output Plug-in</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Postgres uses <a href="https://www.postgresql.org/docs/current/logicaldecoding-output-plugin.html">logical decoding output plug-ins</a> for serializing the data sent to logical replication clients. When creating a replication slot, you need to specify which plug-in to use. While several options exist, I’d recommend using the pgoutput plug-in, which is the standard decoding plug-in also used for logical replication between Postgres servers. It has a couple of advantages:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>pgoutput is available out-of-the-box with Postgres 10+ (including AWS, GCP, and Azure managed services), requiring no additional installation</p>
+</li>
+<li>
+<p>Compared to other plug-ins using JSON as a serialization format, pgoutput uses the efficient binary <a href="https://www.postgresql.org/docs/current/protocol-logical-replication.html">Postgres replication message format</a>.</p>
+</li>
+<li>
+<p>It provides fine-grained control over the replicated tables, columns, and rows (see further down for more information)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>When using CDC tools like Debezium, they’ll typically create the replication slot automatically.
+In order to manually create a slot using the pgoutput plug-ing,
+call the <a href="https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-REPLICATIONhttps://www.postgresql.org/docs/current/datatype-pg-lsn.html"><code>pg_create_logical_replication_slot()</code></a> function like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">pg_create_logical_replication_slot</span><span class="p">(</span><span class="s1">&#39;my_slot&#39;</span><span class="p">,</span> <span class="s1">&#39;pgoutput&#39;</span><span class="p">);</span>
+
+<span class="n">slot_name</span>    <span class="o">|</span>    <span class="n">lsn</span>
+<span class="c1">-------------+-----------</span>
+<span class="n">my_slot</span>      <span class="o">|</span> <span class="mi">0</span><span class="o">/</span><span class="mi">15</span><span class="n">AF761</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The returned <a href="https://www.postgresql.org/docs/current/datatype-pg-lsn.html">LSN (log sequence number)</a> is a 64-bit pointer uniquely identifying a location in the WAL, with the first part identifying the WAL segment and the second part identifying the offset within that segment.
+A consumer subscribing to this slot will receive change events starting from this LSN.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>Unlike text-based decoding plug-ins such as <a href="https://www.postgresql.org/docs/current/test-decoding.html">test_decoding</a>, pgoutput emits a binary format, which means that you cannot inspect the messages for a replication slot using Postgres functions such as <code>pg_logical_slot_peek_changes()</code>. To take a quick look at the messages produced by pgoutput on the command line, without running a full CDC solution such as Debezium, you can use my tool <a href="https://github.com/gunnarmorling/pgoutput-cli">pgoutput-cli</a>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>docker run <span class="nt">-it</span> <span class="nt">--rm</span> <span class="nt">--network</span> my-network
+  gunnarmorling/pgoutput-cli <span class="se">\</span>
+  pgoutput-cli <span class="nt">--host</span><span class="o">=</span>postgres <span class="nt">--port</span><span class="o">=</span>5432 <span class="se">\</span>
+    <span class="nt">--database</span><span class="o">=</span>inventorydb <span class="nt">--user</span><span class="o">=</span>dbz_user <span class="se">\</span>
+    <span class="nt">--password</span><span class="o">=</span>kusnyf-maczuz-7qabnA <span class="se">\</span>
+  <span class="nt">--publication</span><span class="o">=</span>dbz_publication <span class="nt">--slot</span><span class="o">=</span>my_slot
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+</pre></td><td class="code"><pre><span class="p">{</span><span class="w">
+  </span><span class="nl">&#34;op&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;I&#34;</span><span class="p">,</span><span class="w">
+  </span><span class="nl">&#34;message_id&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;b14952a5-4033-4252-a33c-6039f700e9db&#34;</span><span class="p">,</span><span class="w">
+  </span><span class="nl">&#34;lsn&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">26691112</span><span class="p">,</span><span class="w">
+  </span><span class="nl">&#34;transaction&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">&#34;tx_id&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">755</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;begin_lsn&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">26691432</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;commit_ts&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;2025-07-02T12:09:05.854104Z&#34;</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">&#34;table_schema&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">&#34;column_definitions&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+      </span><span class="p">{</span><span class="w">
+        </span><span class="nl">&#34;name&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;id&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="nl">&#34;part_of_pkey&#34;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+        </span><span class="nl">&#34;type_id&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">23</span><span class="p">,</span><span class="w">
+        </span><span class="nl">&#34;type_name&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;integer&#34;</span><span class="p">,</span><span class="w">
+        </span><span class="nl">&#34;optional&#34;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+      </span><span class="p">},</span><span class="w">
+      </span><span class="err">...</span><span class="w">
+    </span><span class="p">],</span><span class="w">
+    </span><span class="nl">&#34;db&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;inventorydb&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;schema_name&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;inventory&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;table&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;customers&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;relation_id&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">16391</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">&#34;before&#34;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="nl">&#34;after&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">&#34;id&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">1028</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;first_name&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;Sarah&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;last_name&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;O&#39;Brian&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;email&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;sarah@example.com&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;is_test_account&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;f&#34;</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_define_a_maximum_replication_slot_size">Define a Maximum Replication Slot Size</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Replication protocols like Postgres&#39; need to balance keeping transaction logs around long enough so that consumers can catch up after a downtime—​for instance during an upgrade, and making sure transaction logs don’t consume an unreasonable amount of disk space on the database machine.</p>
+</div>
+<div class="paragraph">
+<p>Different systems make different trade-offs in this area. As an example, MySQL allows you to configure a maximum retention time for its binlog; consumers are responsible to process all events from the binlog in time. In contrast, Postgres replication slots require active acknowledgement by the consumer in order to release processed WAL segments. The database will hold onto all the WAL segments for as long as needed for all replication consumers to process the data. Historically, this meant that a replication slot could cause an unlimited amount of WAL backlog if a consumer stopped processing that slot, potentially exhausting the disk space of the database machine when not taking action.</p>
+</div>
+<div class="paragraph">
+<p>Fortunately, this situation changed with Postgres version 13, which allows you to limit the maximum WAL size a replication slot can hold on to. To do so, specify the <a href="https://postgresqlco.nf/doc/en/param/max_slot_wal_keep_size/"><code>max_slot_wal_keep_size</code></a> parameter in your <em>postgresql.conf</em> file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>max_slot_wal_keep_size=50GB
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the difference between a slot’s restart LSN and the current LSN is larger than this limit, the database will invalidate the replication slot and drop older WAL segments. This renders the slot unusable, which means a new slot needs to be created, typically also taking a fresh initial snapshot of the data when using Debezium. While that’s inconvenient for event consumers, it’s definitely preferable to your operational database running out of disk space eventually.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enable_heartbeats">Enable Heartbeats</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A situation which is particularly prone to accidental WAL growth is the combination of multiple logical databases with different traffic patterns on one Postgres host. This is because there is one shared WAL for the entire instance, whereas replication slots are scoped to individual databases. Now, imagine a situation where there are many transactions run against one database—​thus adding many entries to the WAL—​while there’s another database which is idle. A replication slot for that second database can’t make any progress, as it never receives any change events, and therefore will cause more and more WAL segments to be retained.</p>
+</div>
+<div class="paragraph">
+<p>A solution to this is to produce some “fake” traffic in that second database, allowing its replication slot to progress. Historically, a dedicated heartbeat table was often used for this purpose. However, Postgres 14+ offers an elegant table-less alternative: via the function <a href="https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-REPLICATION"><code>pg_logical_emit_message()</code></a>, arbitrary contents can be written to the WAL, without them manifesting in any table. There’s a number of <a href="https://www.infoq.com/articles/wonders-of-postgres-logical-decoding-messages/">interesting applications</a> for these logical decoding messages, including advancing replication slots in low traffic databases. To enable heartbeat messages with Debezium, add the following to your connector configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="p">{</span><span class="w">
+  </span><span class="err">...</span><span class="w">
+  </span><span class="nl">&#34;heartbeat.interval.ms&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;60000&#34;</span><span class="p">,</span><span class="w">
+  </span><span class="nl">&#34;heartbeat.action.query&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;SELECT pg_logical_emit_message(false, &#39;heartbeat&#39;, now()::varchar)&#34;</span><span class="p">,</span><span class="w">
+  </span><span class="err">...</span><span class="w">
+</span><span class="p">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The connector executes this query every 60 seconds, writing a logical decoding message with the current timestamp to the WAL. Subsequently, it will retrieve the message via logical replication and thus allow the slot to advance. Note that the <code>EXECUTE</code> permission for this function must have been granted to the Debezium database user:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre><span class="k">GRANT</span> <span class="k">EXECUTE</span> <span class="k">ON</span> <span class="k">FUNCTION</span> <span class="n">pg_logical_emit_message</span><span class="p">(</span><span class="n">transactional</span> <span class="nb">boolean</span><span class="p">,</span> <span class="k">prefix</span> <span class="nb">text</span><span class="p">,</span> <span class="n">content</span> <span class="nb">text</span><span class="p">)</span>
+<span class="k">TO</span> <span class="o">&lt;</span><span class="n">debezium_user</span><span class="o">&gt;</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_use_table_level_publications">Use Table-level Publications</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you are using the <code>pgoutput</code> logical decoding plug-in, you have fine-grained control over the contents of the replication stream. If you are interested only in changes to ten tables out of 100 tables in your database, streaming changes for exactly those ten tables not only helps with saving resources (CPU, network I/O) on the database side, but it also can drastically reduce egress cost, when streaming change events into another availability zone of your cloud provider.</p>
+</div>
+<div class="paragraph">
+<p>The pgoutput plug-in relies on Postgres <a href="https://www.postgresql.org/docs/current/logical-replication-publication.html">publications</a> for defining which kinds of changes should be published via logical replication. To create a table-level publication, specify all the tables for which change events should be published:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="k">CREATE</span> <span class="n">PUBLICATION</span> <span class="n">mypublication</span> <span class="k">FOR</span> <span class="k">TABLE</span> <span class="n">customers</span><span class="p">,</span> <span class="n">purchase_orders</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If your database has multiple schemas but you only want to capture changes to the tables in a given schema, you can do so by creating publication as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="k">CREATE</span> <span class="n">PUBLICATION</span> <span class="n">mypublication</span> <span class="k">FOR</span> <span class="n">TABLES</span> <span class="k">IN</span> <span class="k">SCHEMA</span> <span class="n">inventory</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When using Debezium, it can create publications for you automatically. By default, it will create a publication <code>FOR ALL TABLES</code>. However, this requires superuser permissions and it may unnecessarily stream events of tables which you are going to filter out in the connector anyways.</p>
+</div>
+<div class="paragraph">
+<p>Alternatively, you can have Debezium create table-level publications by setting the <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-publication-autocreate-mode"><code>publication.autocreate.mode</code></a> connector option to <code>filtered</code>. Debezium will then create a publication reflecting the set of captured tables as defined via the connector’s table and schema include/exclude filters. Note that this requires ownership permissions to all affected tables for the connector user.</p>
+</div>
+<div class="paragraph">
+<p>To follow the principle of least privilege, you should therefore consider creating a publication for the connector by yourself, thus minimizing the set of permissions you need to grant to the connector user. By default, the publication is expected to be named “dbz_publication”, but you can override the name via the <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-property-publication-name"><code>publication.name</code></a> connector property. When setting up multiple connectors for capturing distinct sets of tables in the same database, a dedicated publication needs to be created for each connector.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_use_column_and_row_filters">Use Column and Row Filters</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As of Postgres 15 and beyond, publications let you further trim down the contents of a replication stream. Via <a href="https://www.postgresql.org/docs/current/logical-replication-col-lists.html">column lists</a>, you can specify which column(s) of a table should be published. This can be very useful to exclude large columns, for instance binary data, which isn’t required for a given use case. Unfortunately, there’s no way to exclude a given column; instead, the names of all columns to be captured need to be specified when creating the publication:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre><span class="k">CREATE</span> <span class="n">PUBLICATION</span> <span class="n">mypublication</span>
+    <span class="k">FOR</span> <span class="k">TABLE</span> <span class="n">customers</span> <span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">first_name</span><span class="p">,</span> <span class="n">last_name</span><span class="p">);</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If this publication is used via Debezium, make sure that the connector’s column list (as specified via the <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-property-column-include-list"><code>column.include.list</code></a> and <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-property-column-exclude-list"><code>column.exclude.list</code></a> connector options), matches the column list of the publication.</p>
+</div>
+<div class="paragraph">
+<p>Column lists represent a form of projection, i.e. they are akin to the <code>SELECT</code> clause of a SQL query. In addition, publications also provide control over which rows to include in a replication stream via <a href="https://www.postgresql.org/docs/current/logical-replication-row-filter.html">row filters</a>. This corresponds to the <code>WHERE</code> clause of a query, and it is looking very similar to that when creating a publication:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre><span class="k">CREATE</span> <span class="n">PUBLICATION</span> <span class="n">mypublication</span>
+    <span class="k">FOR</span> <span class="k">TABLE</span> <span class="n">customers</span> <span class="k">WHERE</span> <span class="p">(</span><span class="n">is_test_account</span> <span class="k">IS</span> <span class="k">FALSE</span><span class="p">);</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Row filters can come in very handy to exclude portions of the operational data set from replication, for example test data or logically deleted data. You can learn more about row filters in <a href="https://www.decodable.co/blog/postgres-15-logical-decoding-row-filters-with-debezium">this post</a> I wrote after Postgres 15 was released.</p>
+</div>
+<div class="paragraph">
+<p>When using the snapshotting feature of Debezium—​which retrieves rows not via logical replication but by scanning the actual tables in the database—​you should specify the same filter expression via the <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-property-snapshot-select-statement-overrides"><code>snapshot.select.statement.overrides</code></a> option in order to ensure consistency between snapshotting and streaming events.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enable_fail_over_slots">Enable Fail-Over Slots</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A long-standing shortcoming of logical replication in Postgres used to be the lack of fail-over support. Until relatively recently, replication slots could only be created on primary instances. If you had set up a Postgres cluster comprising a primary server and a read replica, logical replication couldn’t resume from the replica after promoting it to primary in case of a failure. Instead, you’d typically have to create a new replication slot, which also meant starting with a new initial snapshot if writes could occur on the new primary before creating a new replication slot.</p>
+</div>
+<div class="paragraph">
+<p>Luckily, over the last few Postgres versions, this issue finally got addressed. In Postgres 16, support for creating replication slots on replicas was added. While not solving the failover problem directly, this is a substantial improvement, as it allows you to have slots on primary and standby servers and manually keep them in sync. To do so, you need to track the progress of the primary slot and move the slot on the stand-by forward accordingly with the help of the <a href="https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-REPLICATION"><code>pg_replication_slot_advance()</code></a> function. I wrote about this topic in <a href="https://www.decodable.co/blog/logical-replication-from-postgres-16-stand-by-servers-part-2-of-2">this post</a> a while ago.</p>
+</div>
+<div class="paragraph">
+<p>Postgres 17 finally added full <a href="https://www.postgresql.org/docs/current/logical-replication-failover.html">support for failover slots</a>. It now can automatically sync the status of a replication slot on a standby server with a slot on the primary, without requiring any manual intervention whatsoever. After failover, consumers can continue to read from the slot on the newly promoted primary, without missing any events, or facing a large amount of duplicate events (some duplicates are to be expected in case the consumer has fetched events from the slot on the primary and a failover happens before the slot state could be updated accordingly on the replica server). To enable failover slots, a bit of configuration is required.</p>
+</div>
+<div class="paragraph">
+<p>On the primary:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Pass <code>failover=true</code> when calling <code>pg_create_logical_replication_slot()</code> for creating the replication slot on the primary; With Debezium 3.0.5 or newer, you can have Debezium create a failover slot by setting the <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-property-slot-failover"><code>slot.failover</code></a> connector option to <code>true</code></p>
+</li>
+<li>
+<p>Set the option <a href="https://postgresqlco.nf/doc/en/param/synchronized_standby_slots/"><code>synchronized_standby_slots</code></a> to the name of the physical slot connecting primary and standby server; this ensures that no logical replication slot can advance beyond the latest LSN synchronized from the primary to the replica</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>And on the stand-by server:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Set the option <a href="https://postgresqlco.nf/doc/en/param/sync_replication_slots/"><code>sync_replication_slots</code></a> to on; this will start a worker process which automatically synchronizes the state of any logical replication slots from the primary server to the stand-by server; alternatively, you can call the function <code>pg_sync_replication_slots()</code> manually for synchronizing the slot state</p>
+</li>
+<li>
+<p>Add the slot’s database name to the connection string used for connecting to the primary server (<a href="https://postgresqlco.nf/doc/en/param/primary_conninfo/"><code>primary_conninfo</code></a>), e.g. <code>…dbname=inventorydb</code>; If you are using Postgres on Amazon RDS, specify the database name instead using the option <a href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Appendix.PostgreSQL.CommonDBATasks.pglogical.slot.synchronization.html"><code>rds.logical_slot_sync_dbname</code></a></p>
+</li>
+<li>
+<p>Set the option <a href="https://postgresqlco.nf/doc/en/param/hot_standby_feedback/"><code>hot_standby_feedback</code></a> to true</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If you connect to Postgres through a proxy, for instance <a href="https://www.pgbouncer.org/">pgbouncer</a>, promoting a replica to primary can be made fully transparent to your replication consumers such as Debezium, seamlessly continuing to process any change events after a failover. You can find a complete example for doing so in <a href="https://www.decodable.co/blog/failover-replication-slots-with-postgres-17">this blog post</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_consider_using_replica_identity_full">Consider Using Replica Identity FULL</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In Postgres, a table’s replica identity determines which fields of a row will be written to the WAL for the old row image for update and delete events. By default, the old value will be only recorded for primary columns. In addition, the value of any <a href="https://www.postgresql.org/docs/current/storage-toast.html">TOAST</a> columns will only be contained in the new row image if their value changed.</p>
+</div>
+<div class="paragraph">
+<p>These peculiarities can make change events somewhat difficult and complex to process for consumers. When performing incremental stream processing on a change event stream, the missing old row image (the <code>before</code> part of Debezium change events), requires a <a href="https://www.linkedin.com/posts/gunnar-morling_debezium-activity-7305948780120453120-ybxZ/">costly state materialization operation</a>. Due to values for unchanged TOAST columns being absent from update events (represented by Debezium with a special value, <code>__debezium_unavailable_value</code>), consumers cannot apply such a change event with simple upsert semantics (I’ve discussed a potential solution for backfilling missing TOAST values via Apache Flink <a href="https://www.morling.dev/blog/backfilling-postgres-toast-columns-debezium-change-events/">here</a>).</p>
+</div>
+<div class="paragraph">
+<p>To avoid these problems, consider changing the replica identity of your tables from <code>DEFAULT</code> to <code>FULL</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">inventory</span><span class="p">.</span><span class="n">customers</span> <span class="n">REPLICA</span> <span class="k">IDENTITY</span> <span class="k">FULL</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will cause the complete old and new row image, including TOAST columns, to be written to the WAL and thus be available in data change events. Some Postgres DBAs are concerned about the potential impact on disk utilization and CPU consumption. However, the overhead is actually manageable in many cases. The details depend on your specific workload, so you should do your own benchmarking to measure the exact impact. But as an example, <a href="https://xata.io/blog/replica-identity-full-performance">this post</a> mentions a moderate increase of peak CPU consumption from 30% to 35% when enabling replica identity <code>FULL</code>. This should be acceptable in many cases, and doing so can help substantially to simplify the consumption and processing of change event streams.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_monitor_monitor_monitor">Monitor, Monitor, Monitor!</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Deep observability is key for operating data systems successfully in production. When running Postgres, you should put monitoring and alerting for your replication slots in place to make sure that they’ll never consume unreasonably large amounts of WAL. The following metrics should be constantly tracked using observability tools such as Prometheus and Grafana, Datadog, Elastic, or similar:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Total WAL size</p>
+</li>
+<li>
+<p>Retained WAL size per replication slot</p>
+</li>
+<li>
+<p>Remaining WAL space per replication slot</p>
+</li>
+<li>
+<p>Status (active/inactive/invalid) per replication slot</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To obtain the total WAL size, you can sum up the sizes of all the files returned by the <code>pg_ls_waldir()</code> function. The slot specific metrics can be retrieved from the <a href="https://www.postgresql.org/docs/current/view-pg-replication-slots.html"><code>pg_replication_slots</code></a> view, e.g. like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+</pre></td><td class="code"><pre><span class="k">SELECT</span>
+  <span class="n">slot_name</span><span class="p">,</span>
+  <span class="n">plugin</span><span class="p">,</span>
+  <span class="k">database</span><span class="p">,</span>
+  <span class="n">restart_lsn</span><span class="p">,</span>
+  <span class="k">CASE</span>
+    <span class="k">WHEN</span> <span class="n">invalidation_reason</span> <span class="k">IS</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">THEN</span> <span class="s1">&#39;invalid&#39;</span>
+    <span class="k">ELSE</span>
+      <span class="k">CASE</span>
+        <span class="k">WHEN</span> <span class="n">active</span> <span class="k">IS</span> <span class="k">TRUE</span> <span class="k">THEN</span> <span class="s1">&#39;active&#39;</span>
+        <span class="k">ELSE</span> <span class="s1">&#39;inactive&#39;</span>
+      <span class="k">END</span>
+    <span class="k">END</span> <span class="k">as</span> <span class="nv">&#34;status&#34;</span><span class="p">,</span>
+  <span class="n">pg_size_pretty</span><span class="p">(</span>
+    <span class="n">pg_wal_lsn_diff</span><span class="p">(</span>
+      <span class="n">pg_current_wal_lsn</span><span class="p">(),</span> <span class="n">restart_lsn</span><span class="p">))</span> <span class="k">AS</span> <span class="nv">&#34;retained_wal&#34;</span><span class="p">,</span>
+  <span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">safe_wal_size</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">&#34;safe_wal_size&#34;</span>
+<span class="k">FROM</span>
+  <span class="n">pg_replication_slots</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="n">slot_name</span><span class="p">;</span>
+<span class="o">+</span><span class="c1">----------------+----------+-------------+-------------+----------+--------------+---------------+</span>
+<span class="o">|</span> <span class="n">slot_name</span>      <span class="o">|</span> <span class="n">plugin</span>   <span class="o">|</span> <span class="k">database</span>    <span class="o">|</span> <span class="n">restart_lsn</span> <span class="o">|</span> <span class="n">status</span>   <span class="o">|</span> <span class="n">retained_wal</span> <span class="o">|</span> <span class="n">safe_wal_size</span> <span class="o">|</span>
+<span class="o">|</span><span class="c1">----------------+----------+-------------+-------------+----------+--------------+---------------|</span>
+<span class="o">|</span> <span class="n">logical_slot_1</span> <span class="o">|</span> <span class="n">pgoutput</span> <span class="o">|</span> <span class="n">inventorydb</span> <span class="o">|</span> <span class="mi">0</span><span class="o">/</span><span class="mi">1983</span><span class="n">A40</span>   <span class="o">|</span> <span class="n">inactive</span> <span class="o">|</span> <span class="mi">2386</span> <span class="n">MB</span>      <span class="o">|</span> <span class="mi">48</span> <span class="n">GB</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="n">logical_slot_2</span> <span class="o">|</span> <span class="n">pgoutput</span> <span class="o">|</span> <span class="n">inventorydb</span> <span class="o">|</span> <span class="mi">0</span><span class="o">/</span><span class="mi">96</span><span class="n">BFA970</span>  <span class="o">|</span> <span class="n">active</span>   <span class="o">|</span> <span class="mi">3920</span> <span class="n">bytes</span>   <span class="o">|</span> <span class="mi">50</span> <span class="n">GB</span>         <span class="o">|</span>
+<span class="o">+</span><span class="c1">----------------+----------+-------------+-------------+----------+--------------+---------------+</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The retained WAL size can be calculated by determining the difference between the slot’s restart LSN (the earliest LSN it holds on to) and the current LSN of the database. The <code>safe_wal_size</code> field in the view represents the number of bytes which the slot can hold in addition until it hits the limit configured via <code>max_slot_wal_keep_size</code> (see above).</p>
+</div>
+<div class="paragraph">
+<p>All these metrics can be obtained from a Postgres instance very easily using the <a href="https://github.com/prometheus-community/postgres_exporter">postgres_exporter</a> project, which exposes a Prometheus-compatible endpoint. In addition, it also makes sense to track the remaining free space of the disk or volume holding the WAL. Postgres itself doesn’t expose this value, instead you’ll have to obtain it from your operating system, job orchestrator (such as Kubernetes), or cloud provider (when running Postgres on a service such as Amazon RDS). Last but not least, it is recommended to monitor the <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html#connectors-strm-metric-millisecondsbehindsource_postgresql"><code>MilliSecondsBehindSource</code></a> metric which Debezium provides for each connector instance. It represents the time it takes from the point in time a change is made in the database until that event is being processed by Debezium. Debezium provides its metrics via JMX; via Prometheus&#39; <a href="https://github.com/prometheus/jmx_exporter">jmx_exporter</a> component, they can be exposed via HTTP in a Prometheus-compatible format.</p>
+</div>
+<div class="paragraph">
+<p>As a starting point for your own observability solution for Postgres logical replication slot, you can find a Grafana dashboard displaying most of these metrics <a href="https://github.com/gunnarmorling/streaming-examples/tree/main/postgres-replication-slots">here</a>:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/mastering_postgres_replication_slots_dashboard.png" alt="mastering postgres replication slots dashboard"/>
+</div>
+</div>
+<div class="paragraph">
+<p>The example shows results from a 30 min run of <a href="https://www.postgresql.org/docs/current/pgbench.html">pgbench</a> (20 connections, four threads each). There are three Debezium connectors with corresponding logical replication slots. Replication slot 1 shows a constant level of WAL retention, as this connector is continuously running and is emitting events. The connector owning slot 2 is stopped for a few minutes in the middle of the run, as indicated by the red columns in the activity status panel. During that time, the WAL backlog of that slot goes up, but it then shrinks again as the connector catches up after being restarted. Slot 3 finally continuously retains more and more WAL, the reason being that this slot is configured against another database on this Postgres host, and no changes are occurring in that database. Thus, Debezium never gets to acknowledge progress on this slot. Heartbeat events, as discussed above, can be used to overcome this situation.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>What to do if an active replication consumer can’t keep up with the changes in the source database and its replication lag continuously increases? While I am planning to write a separate blog post about tuning the performance of the Debezium Postgres connector, one solution can be to work with multiple replication slots, each exporting changes to a distinct subset of tables, thus allowing you to split the consumer load to multiple processes running on separate machines. To do so, you can copy an existing replication slot with <a href="https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-REPLICATION"><code>pg_copy_logical_replication_slot()</code></a>. That way, a second connector can resume processing from the same LSN as the original slot.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>Besides visualizing the values in a dashboard, you should also have alerts which trigger when certain thresholds are passed. The specific values depend on your particular database size and the characteristics of your workload. Consider starting with the following values and adjust the thresholds from there to find the right balance between firing early enough and avoiding unnecessary noise:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Disk utilization passes 60-70%</p>
+</li>
+<li>
+<p>A replication slot is inactive for longer than 30 minutes</p>
+</li>
+<li>
+<p>A replication slot retains more than 10-20 GB of WAL data</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Oftentimes, more than absolute values themselves, the first derivative—​i.e. changes to the values—​is interesting, and should be subject to alerting, for instance if disk utilization rapidly increases, or if the WAL retained by a replication slot slowly yet steadily grows over a longer period of time.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you apply larger, long-running transactions against your Postgres database, this may cause logical replication to spill state to disk during decoding the WAL contents, increasing the I/O load of the machine and slowing down the replication process. On Postgres 14 and newer, you can examine the disk spill of a replication slot by querying the <a href="https://www.postgresql.org/docs/current/monitoring-stats.html#MONITORING-PG-STAT-REPLICATION-SLOTS-VIEW"><code>pg_stat_replication_slots</code></a> view:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="k">SELECT</span>
+  <span class="n">slot_name</span><span class="p">,</span>
+  <span class="n">total_txns</span><span class="p">,</span>
+  <span class="n">spill_txns</span><span class="p">,</span>
+  <span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">spill_bytes</span><span class="p">)</span> <span class="k">as</span> <span class="n">spilled</span><span class="p">,</span>
+  <span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">total_bytes</span><span class="p">)</span> <span class="k">as</span> <span class="n">total</span>
+<span class="k">FROM</span> <span class="n">pg_stat_replication_slots</span><span class="p">;</span>
+
+<span class="o">+</span><span class="c1">-----------+------------+------------+---------+--------+</span>
+<span class="o">|</span> <span class="n">slot_name</span> <span class="o">|</span> <span class="n">total_txns</span> <span class="o">|</span> <span class="n">spill_txns</span> <span class="o">|</span> <span class="n">spilled</span> <span class="o">|</span> <span class="n">total</span>  <span class="o">|</span>
+<span class="o">|</span><span class="c1">-----------+------------+------------+---------+--------|</span>
+<span class="o">|</span> <span class="n">my_slot</span>   <span class="o">|</span> <span class="mi">3</span>          <span class="o">|</span> <span class="mi">1</span>          <span class="o">|</span> <span class="mi">66</span> <span class="n">MB</span>   <span class="o">|</span> <span class="mi">122</span> <span class="n">MB</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">-----------+------------+------------+---------+--------+</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you are observing an unduly large amount of disk spill, consider increasing the <a href="https://postgresqlco.nf/doc/en/param/logical_decoding_work_mem/"><code>logical_decoding_work_mem</code></a> setting (defaults to 64 MB).</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_drop_unused_replication_slots">Drop Unused Replication Slots</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Finally, a housekeeping tip: don’t forget to delete any unused replication slots! In particular, when stopping and deleting a Debezium connector, its replication slot in Postgres will not automatically be removed. If the slot is not required any more for other connectors or other types of replication consumers, you should drop the slot in order to prevent it from blocking the removal of WAL segments. To do so, call the function <a href="https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-REPLICATION"><code>pg_drop_replication_slot()</code></a> like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="k">SELECT</span> <span class="n">pg_drop_replication_slot</span><span class="p">(</span><span class="s1">&#39;my_replication slot&#39;</span><span class="p">);</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once Postgres 18 has been released (planned for September 2025), the new option <a href="https://postgresqlco.nf/doc/en/param/idle_replication_slot_timeout/"><code>idle_replication_slot_timeout</code></a> will come in handy for that. A time-based counterpart to the aforementioned <code>max_slot_wal_keep_size</code> option, it lets you invalidate replication slots after a configurable period of inactivity. Setting it to a reasonably large value such as 48h or 72h will help to make sure that inactive slots are invalidated in time, preventing them from holding on to more and more WAL segments.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary">Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Logical replication slots are an essential building block for building CDC pipelines with Postgres.
+While concerns about potential WAL growth sometimes lead to uncertainty and anxiety among users, these fears are largely unnecessary when replication slots are set up and configured correctly.</p>
+</div>
+<div class="paragraph">
+<p>By carefully configuring aspects like the maximum slot size, fine-grained publications, and heartbeats, you can ensure the stability and performance of your Postgres database and your CDC pipelines. Fail-over slots, as supported since Postgres 17, let you resume replication seamlessly after promoting a stand-by server to primary. Finally, put comprehensive monitoring and alerting in place, to make sure your replication slots behave as intended. The Grafana dashboard shown above can be a starting point for doing so; you can find it <a href="https://github.com/gunnarmorling/streaming-examples/tree/main/postgres-replication-slots">in my streaming-examples</a> repository on GitHub. Contributions to this dashboard will be very welcomed!</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
