@@ -1,0 +1,104 @@
+---
+title: "Converting Future to CompletableFuture With Java Virtual Threads"
+date: 2025-07-17T10:25:00+02:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+_This post explores how virtual threads in Java 21+ provide an elegant solution for converting legacy `Future` objects into `CompletableFuture` instances._
+
+Since Java 8, the https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/CompletableFuture.html[`CompletableFuture`] API provides a convenient way for performing asynchronous operations in a functional, composable way.
+This makes it very simple to call some long-running methods--for instance involving external I/O--asynchronously and process each result as soon as it is available, without blocking on any threads:
+
+<!--more-->
+
+[source,java,linenums=true]
+----
+CompletableFuture.supplyAsync(() -> getCustomerFromDb("Bob"))
+	.thenApply(c -> getOrdersForCustomer(c.id()))
+	.thenAccept(o -> System.out.println("Bob's orders: " + o));
+----
+
+Unfortunately, many Java platform APIs, for instance `ExecutorService`, as well as 3rd party libraries, still don't expose `CompletableFuture`, but the legacy `Future` type from Java 5.0 times.
+While both types represent the result of an asynchronous computation, `CompletableFuture` provides several advantages.
+Not only is it composable, it also is _push-based_, i.e. it notifies you when the computation result is available.
+
+`Future`, on the other hand, only supports _pull-style access_:
+To retrieve the result value, you need to call the `get()` method, which will block the current thread until the result is available,
+thus somewhat defeating the purpose of using an asynchronous processing model to begin with.
+To mitigate the situation, you can check whether the `Future` has been completed by calling the (non-blocking) `isDone()` method, and do something else until the result finally is there.
+
+This approach is neither very elegant nor efficient, which raises the question whether a `Future` can be converted into a `CompletableFuture`.
+A first attempt could look like so:
+
+[source,java,linenums=true]
+----
+public <T> CompletableFuture<T> toCompletableFuture(Future<T> future) {
+  return CompletableFuture.supplyAsync(() -> {
+    try {
+      return future.get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CompletionException(e);
+    }
+  });
+}
+----
+
+This lets you integrate a `Future`, for instance returned by some legacy library, into a `CompletableFuture`-based processing pipeline.
+However, closer inspection reveals that this only shifts the problem from one place to another:
+the call to `Future::get()` blocks the thread running the Lambda expression passed to `supplyAsync()`.
+By default, when not specifying a particular executor, this will be a thread of the common fork-join pool.
+Since this pool is shared globally across the application, blocking threads in it is undesirable.
+
+Alternatively, you could envision a solution based on the aforementioned `isDone()` method:
+you could https://concurrencydeepdives.com/transform-future-into-completablefuture/#Poll_on_a_scheduler[use another thread or a timer] which regularly checks the future for completion, and once that's the case,
+the `CompletableFuture` gets completed with the value obtained from `get()`.
+While this avoids any thread blocking, it either adds CPU overhead--when calling `isDone()` with a very high frequency--or it adds latencym when checking less frequently.
+
+Now, taking a step back, let's rethink the first solution.
+Is blocking a thread actually always bad?
+In fact, it is not, thanks to https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html[virtual threads], as available since Java 21.
+Virtual threads are cheap, you can have hundreds of thousands, or even millions of them.
+When a virtual thread blocks, it will be unmounted from the underlying operating system thread which is running it ("carrier thread"),
+thus freeing it for running other virtual threads.
+Only once the virtual thread gets unblocked, it will be mounted to a carrier again.
+
+[NOTE]
+====
+In certain situations, a virtual thread actually can block its carrier, a situation known as https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html#GUID-704A716D-0662-4BC7-8C7F-66EE74B1EDAD["pinning"].
+Most notably, on **Java 21** this would happen when calling a blocking operation from within a `synchronized` block.
+Starting with **Java 24**, this will not cause pinning any longer.
+The use case discussed in this post is unaffected by pinning.
+====
+
+How could we use virtual threads then to convert a `Future` into a `CompletableFuture`?
+One option would be to pass an executor backed by virtual threads when calling `CompletableFuture::supplyAsync()` in the solution above.
+Or, we could just start a virtual thread ourselves and manually complete a `CompletableFuture` object with the result of the original `Future`:
+
+[source,java,linenums=true]
+----
+public <T> CompletableFuture<T> toCompletableFuture(Future<T> future) {
+  CompletableFuture<T> completable = new CompletableFuture<T>();
+
+  Thread.ofVirtual().start(() -> {
+    try {
+      completable.complete(future.get());
+    } catch (InterruptedException | ExecutionException e) {
+      completable.completeExceptionally(e);
+    }
+  });
+
+  return completable;
+}
+----
+
+Virtual threads provide an elegant solution to a long-standing integration challenge.
+Thanks to their lightweight nature, you can seamlessly bridge the gap between legacy `Future`-based APIs and modern `CompletableFuture` composition patterns,
+without the traditional trade-offs of thread blocking or polling overhead.
