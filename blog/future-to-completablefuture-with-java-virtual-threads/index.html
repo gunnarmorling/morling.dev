@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Converting Future to CompletableFuture With Java Virtual Threads - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Converting Future to CompletableFuture With Java Virtual Threads" />
+<meta property="og:description" content="
+This post explores how virtual threads in Java 21&#43; provide an elegant solution for converting legacy Future objects into CompletableFuture instances.
+
+
+Since Java 8, the CompletableFuture API provides a convenient way for performing asynchronous operations in a functional, composable way.
+This makes it very simple to call some long-running methods—​for instance involving external I/O—​asynchronously and process each result as soon as it is available, without blocking on any threads:
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/future-to-completablefuture-with-java-virtual-threads/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2025-07-17T10:25:00+02:00" />
+<meta property="article:modified_time" content="2025-07-17T10:25:00+02:00" />
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Converting Future to CompletableFuture With Java Virtual Threads"/>
+<meta name="twitter:description" content="
+This post explores how virtual threads in Java 21&#43; provide an elegant solution for converting legacy Future objects into CompletableFuture instances.
+
+
+Since Java 8, the CompletableFuture API provides a convenient way for performing asynchronous operations in a functional, composable way.
+This makes it very simple to call some long-running methods—​for instance involving external I/O—​asynchronously and process each result as soon as it is available, without blocking on any threads:
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Converting Future to CompletableFuture With Java Virtual Threads</h1>
+				<div class="meta">Posted at Jul 17, 2025</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p><em>This post explores how virtual threads in Java 21+ provide an elegant solution for converting legacy <code>Future</code> objects into <code>CompletableFuture</code> instances.</em></p>
+</div>
+<div class="paragraph">
+<p>Since Java 8, the <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/CompletableFuture.html"><code>CompletableFuture</code></a> API provides a convenient way for performing asynchronous operations in a functional, composable way.
+This makes it very simple to call some long-running methods—​for instance involving external I/O—​asynchronously and process each result as soon as it is available, without blocking on any threads:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="nc">CompletableFuture</span><span class="o">.</span><span class="na">supplyAsync</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="n">getCustomerFromDb</span><span class="o">(</span><span class="s">&#34;Bob&#34;</span><span class="o">))</span>
+	<span class="o">.</span><span class="na">thenApply</span><span class="o">(</span><span class="n">c</span> <span class="o">-&gt;</span> <span class="n">getOrdersForCustomer</span><span class="o">(</span><span class="n">c</span><span class="o">.</span><span class="na">id</span><span class="o">()))</span>
+	<span class="o">.</span><span class="na">thenAccept</span><span class="o">(</span><span class="n">o</span> <span class="o">-&gt;</span> <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&#34;Bob&#39;s orders: &#34;</span> <span class="o">+</span> <span class="n">o</span><span class="o">));</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Unfortunately, many Java platform APIs, for instance <code>ExecutorService</code>, as well as 3rd party libraries, still don’t expose <code>CompletableFuture</code>, but the legacy <code>Future</code> type from Java 5.0 times.
+While both types represent the result of an asynchronous computation, <code>CompletableFuture</code> provides several advantages.
+Not only is it composable, it also is <em>push-based</em>, i.e. it notifies you when the computation result is available.</p>
+</div>
+<div class="paragraph">
+<p><code>Future</code>, on the other hand, only supports <em>pull-style access</em>:
+To retrieve the result value, you need to call the <code>get()</code> method, which will block the current thread until the result is available,
+thus somewhat defeating the purpose of using an asynchronous processing model to begin with.
+To mitigate the situation, you can check whether the <code>Future</code> has been completed by calling the (non-blocking) <code>isDone()</code> method, and do something else until the result finally is there.</p>
+</div>
+<div class="paragraph">
+<p>This approach is neither very elegant nor efficient, which raises the question whether a <code>Future</code> can be converted into a <code>CompletableFuture</code>.
+A first attempt could look like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="nc">CompletableFuture</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="nf">toCompletableFuture</span><span class="o">(</span><span class="nc">Future</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">future</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">return</span> <span class="nc">CompletableFuture</span><span class="o">.</span><span class="na">supplyAsync</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+    <span class="k">try</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">future</span><span class="o">.</span><span class="na">get</span><span class="o">();</span>
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">InterruptedException</span> <span class="o">|</span> <span class="nc">ExecutionException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">throw</span> <span class="k">new</span> <span class="nf">CompletionException</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
+    <span class="o">}</span>
+  <span class="o">});</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This lets you integrate a <code>Future</code>, for instance returned by some legacy library, into a <code>CompletableFuture</code>-based processing pipeline.
+However, closer inspection reveals that this only shifts the problem from one place to another:
+the call to <code>Future::get()</code> blocks the thread running the Lambda expression passed to <code>supplyAsync()</code>.
+By default, when not specifying a particular executor, this will be a thread of the common fork-join pool.
+Since this pool is shared globally across the application, blocking threads in it is undesirable.</p>
+</div>
+<div class="paragraph">
+<p>Alternatively, you could envision a solution based on the aforementioned <code>isDone()</code> method:
+you could <a href="https://concurrencydeepdives.com/transform-future-into-completablefuture/#Poll_on_a_scheduler">use another thread or a timer</a> which regularly checks the future for completion, and once that’s the case,
+the <code>CompletableFuture</code> gets completed with the value obtained from <code>get()</code>.
+While this avoids any thread blocking, it either adds CPU overhead—​when calling <code>isDone()</code> with a very high frequency—​or it adds latencym when checking less frequently.</p>
+</div>
+<div class="paragraph">
+<p>Now, taking a step back, let’s rethink the first solution.
+Is blocking a thread actually always bad?
+In fact, it is not, thanks to <a href="https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html">virtual threads</a>, as available since Java 21.
+Virtual threads are cheap, you can have hundreds of thousands, or even millions of them.
+When a virtual thread blocks, it will be unmounted from the underlying operating system thread which is running it (&#34;carrier thread&#34;),
+thus freeing it for running other virtual threads.
+Only once the virtual thread gets unblocked, it will be mounted to a carrier again.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>In certain situations, a virtual thread actually can block its carrier, a situation known as <a href="https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html#GUID-704A716D-0662-4BC7-8C7F-66EE74B1EDAD">&#34;pinning&#34;</a>.
+Most notably, on <strong>Java 21</strong> this would happen when calling a blocking operation from within a <code>synchronized</code> block.
+Starting with <strong>Java 24</strong>, this will not cause pinning any longer.
+The use case discussed in this post is unaffected by pinning.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>How could we use virtual threads then to convert a <code>Future</code> into a <code>CompletableFuture</code>?
+One option would be to pass an executor backed by virtual threads when calling <code>CompletableFuture::supplyAsync()</code> in the solution above.
+Or, we could just start a virtual thread ourselves and manually complete a <code>CompletableFuture</code> object with the result of the original <code>Future</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="nc">CompletableFuture</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="nf">toCompletableFuture</span><span class="o">(</span><span class="nc">Future</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">future</span><span class="o">)</span> <span class="o">{</span>
+  <span class="nc">CompletableFuture</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">completable</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">CompletableFuture</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;();</span>
+
+  <span class="nc">Thread</span><span class="o">.</span><span class="na">ofVirtual</span><span class="o">().</span><span class="na">start</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+    <span class="k">try</span> <span class="o">{</span>
+      <span class="n">completable</span><span class="o">.</span><span class="na">complete</span><span class="o">(</span><span class="n">future</span><span class="o">.</span><span class="na">get</span><span class="o">());</span>
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">InterruptedException</span> <span class="o">|</span> <span class="nc">ExecutionException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">completable</span><span class="o">.</span><span class="na">completeExceptionally</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
+    <span class="o">}</span>
+  <span class="o">});</span>
+
+  <span class="k">return</span> <span class="n">completable</span><span class="o">;</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Virtual threads provide an elegant solution to a long-standing integration challenge.
+Thanks to their lightweight nature, you can seamlessly bridge the gap between legacy <code>Future</code>-based APIs and modern <code>CompletableFuture</code> composition patterns,
+without the traditional trade-offs of thread blocking or polling overhead.</p>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
