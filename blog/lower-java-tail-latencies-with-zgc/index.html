@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Let&#39;s Take a Look at... Lower Java Tail Latencies With ZGC - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Let&#39;s Take a Look at... Lower Java Tail Latencies With ZGC" />
+<meta property="og:description" content="
+In the &#34;Let’s Take a Look at…​!&#34; blog series I am exploring interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, open-source projects, services, relevant improvements to Java and the JVM, and more. The idea is to get some hands-on experience, learn about potential use cases and applications, and understand the trade-offs involved. If you think there’s a specific subject I should take a look at, let me know in the comments below.
+
+
+Java 25 was released earlier this week,
+and it is the first Java release with long-term support (LTS) which ships with Generational ZGC as the one (and only) flavor of the ZGC garbage collector.
+ZGC itself is a relatively new concurrent collector, originally added in Java 11.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/lower-java-tail-latencies-with-zgc/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2025-09-17T17:09:00+02:00" />
+<meta property="article:modified_time" content="2025-09-17T17:09:00+02:00" />
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Let&#39;s Take a Look at... Lower Java Tail Latencies With ZGC"/>
+<meta name="twitter:description" content="
+In the &#34;Let’s Take a Look at…​!&#34; blog series I am exploring interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, open-source projects, services, relevant improvements to Java and the JVM, and more. The idea is to get some hands-on experience, learn about potential use cases and applications, and understand the trade-offs involved. If you think there’s a specific subject I should take a look at, let me know in the comments below.
+
+
+Java 25 was released earlier this week,
+and it is the first Java release with long-term support (LTS) which ships with Generational ZGC as the one (and only) flavor of the ZGC garbage collector.
+ZGC itself is a relatively new concurrent collector, originally added in Java 11.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Let&#39;s Take a Look at... Lower Java Tail Latencies With ZGC</h1>
+				<div class="meta">Posted at Sep 17, 2025</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p><em>In the &#34;Let’s Take a Look at…​!&#34; blog series I am exploring interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, open-source projects, services, relevant improvements to Java and the JVM, and more. The idea is to get some hands-on experience, learn about potential use cases and applications, and understand the trade-offs involved. If you think there’s a specific subject I should take a look at, let me know in the comments below.</em></p>
+</div>
+<div class="paragraph">
+<p>Java 25 <a href="https://www.oracle.com/news/announcement/oracle-releases-java-25-2025-09-16/">was released</a> earlier this week,
+and it is the first Java release with long-term support (LTS) which ships with Generational ZGC as the one (and only) flavor of the ZGC garbage collector.
+<a href="https://openjdk.org/jeps/333">ZGC</a> itself is a relatively new concurrent collector, originally added in Java 11.</p>
+</div>
+<div class="paragraph">
+<p>The high-level intuition on concurrent garbage collectors (another example being <a href="https://wiki.openjdk.org/display/shenandoah/Main">Shenandoah</a>) is that they move as much of their work as possible from the application’s threads to separate GC threads.
+That way, they essentially do away with GC pauses, which used to plague Java users in the past in the form of high tail latencies of their applications.
+ZGC pushes down GC times in application threads down to the sub millisecond range, making GC pauses practically a non-issue for the vast majority of use cases.
+Of course, there is no free lunch: by running the GC logic in separate threads, concurrent collectors require more CPU resources,
+thus reducing the overall throughput of the system.</p>
+</div>
+<div class="paragraph">
+<p>So far, I haven’t had the chance to gather some hands-on experience with ZGC yet;
+hence, I set out to run some comparisons of ZGC and G1, which is Java’s default garbage collector since version 9.
+Now, ZGC oftentimes is associated with large heaps of hundreds of gigabytes and beyond,
+but I was curious whether it would also be beneficial for a typical microservice deployment with just a few gigabytes.
+Furthermore, I was eager to learn about the performance characteristics using the default settings,
+i.e. I’m not too interested in fine-tuning specific garbage collectors.
+In practice, most folks don’t bother doing so for running their applications either.
+Hardly anyone has the time or interest to find optimal settings,
+which may be obsolete very soon anyways when details of the workload change, or a new Java version with changes to the GC behavior gets released.
+So arguably, in most cases the performance with default settings matters more than a theoretical peak performance achievable only with highly tuned settings.</p>
+</div>
+<div class="paragraph">
+<p>I started by benchmarking a <a href="https://github.com/gunnarmorling/zgc-test">sample microservice</a> built using the <a href="https://quarkus.io/">Quarkus</a> framework,
+returning some data from a Postgres database.
+Using <a href="https://github.com/tsenart/vegeta">Vegata</a> as a load generator,
+I created a moderate load of 1,000 requests per second.
+The test ran on a Hetzner CCX43 instance, using four of its 16 exclusive CPU cores and four GB of RAM.
+Here are the request latencies from running the test for two minutes with each collector, discarding the first 30 seconds of each run to exclude any warm-up effects.
+It’s not a super-scientific benchmark by any means, but good enough to show some interesting results (click to enlarge):</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/zgc_basic_histogram.png" alt="Latency histogram of a REST service with G1 and ZGC, 1,000 req/sec"/>
+</div>
+</div>
+<div class="paragraph">
+<p>While latencies are practically identically up to the 99th percentile, the p999 and p9999 latencies show quite an advantage for ZGC.
+Let’s try and find out whether indeed GC pauses explain the difference.
+Examining the actual request latencies in the Vegeta plot show that there a several significant outliers with G1:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/zgc_basic_latency_g1.png" alt="Request latencies of a REST service with G1"/>
+</div>
+</div>
+<div class="paragraph">
+<p>Whereas the runtimes look much more homogenous with ZGC:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/zgc_basic_latency_zgc.png" alt="Request latencies of a REST service with ZGC"/>
+</div>
+</div>
+<div class="paragraph">
+<p>In order to verify whether the G1 outliers actually were caused by GC pauses, I enabled <a href="/blog/jdk-flight-recorder-file-format/">JDK Flight Recorder</a> while running the tests.
+And indeed there we can observe GC pauses of more than 20 ms at the respective offsets in the JFR recording:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/zgc_basic_jfr_g1.png" alt="Garbage collections of a REST service with G1"/>
+</div>
+</div>
+<div class="paragraph">
+<p>With ZGC on the other hand, the longest GC pause time observed is ~50 <em>microseconds</em>:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/zgc_basic_jfr_zgc.png" alt="GC pause times of a REST service with ZGC"/>
+</div>
+</div>
+<div class="paragraph">
+<p>That’s pretty neat: solely by using ZGC as the garbage collector, we could improve tail latencies of this example service substantially, without any sort of tuning.
+Note you may potentially get better results out of G1 too by playing with JVM options such <code>-XX:MaxGCPauseMillis</code>, but the much lower tail latencies you get from ZGC with default settings are what make it very appealing.
+Results may look different for your specific workloads, but it’s definitely worth giving ZGC a try.
+Chances are you may see some really nice benefits, without a lot of effort.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Garbage collections are note the only cause for JVM pauses.
+Other examples include the deoptimization of compiled methods and the creation of heap dumps.
+These, and other operations, require all threads to come to a JVM savepoint, which may take some time.
+<a href="https://blanco.io/blog/jvm-safepoint-pauses/#fnref:1:1">This post</a> by Zac Blanco discusses potential causes for JVM pauses and ways to analyse them.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>Now, the test above didn’t put an awful lot of pressure on the garbage collectors to begin with (~17 MB/sec),
+and by no means the take away should be that ZGC <em>always</em> is a superior choice.
+In particular if there is a high CPU load on the system,
+ZGC’s more resource-intensive approach of cleaning up garbage in concurrent threads may actually yield <em>higher</em> request times than G1.</p>
+</div>
+<div class="sect1">
+<h2 id="_zgc_allocation_stalls">ZGC Allocation Stalls</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To see when and how that can be the case, let’s turn to <a href="https://github.com/gunnarmorling/allocation-test">another example</a>.
+This is a synthetic benchmark which allocates large amounts of objects in the form of <code>List&lt;Long&gt;</code> with random numbers in a loop.
+The results are interesting:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/zgc_high_allocation_histogram.png" alt="Latency histogram of a synthetic benchmark allocating ~12 GB/sec and 30 GB/sec with G1 and ZGC"/>
+</div>
+</div>
+<div class="paragraph">
+<p>When allocating ~12 GB/sec (using 4 cores of the test system), the picture is similar to the one above: up to p99, G1 and ZGC are on par, whereas the p999 and p9999 latencies are significantly lower with ZGC.
+In contrast, when allocating ~30 GB/sec (using all the 16 cores of the test system), latencies are generally lower with G1 than with ZGC.</p>
+</div>
+<div class="paragraph">
+<p>As above, a JFR recording can help to identify the cause.
+Looking at GC pause times is going to be misleading though: the longest pause time of ZGC still is in the microseconds range.
+So what is going on?
+Running on all the system’s cores, the workload under test is CPU bound, not leaving enough CPU resources for the concurrent GC threads of ZGC.
+This means that the collector can’t free up memory fast enough in order to keep up with the application allocating new objects at such a high rate.
+In that situation, ZGC will stall allocations until memory has become available again.
+Since Java 15, a dedicated JFR event,  <a href="https://sap.github.io/SapMachine/jfrevents/25.html#zallocationstall"><code>ZAllocationStall</code></a> is logged in this case:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/zgc_allocation_stalls.png" alt="Observing ZGC allocation stalls in JDK Mission Control"/>
+</div>
+</div>
+<div class="paragraph">
+<p>Similar to GC pause times, allocation stalls increase tail latencies of an application.
+They shouldn’t be equated to GC pauses though:
+unlike when using a non-concurrent collector which is causing pauses in application threads, a healthy application using ZGC should generally not encounter any allocation stalls at runtime.
+If it does, it is a sign that the workload doesn’t have enough CPU capacity at its disposal and you should either identify potential bottlenecks using a profiler, or provision more CPU resources.
+It’s a good idea to monitor allocation stalls via <a href="/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/">JFR event streaming</a> and trigger an alert when they manifest.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary">Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>ZGC is a very interesting addition to the JVM’s portfolio of garbage collectors.
+By moving all the heavy lifting to separate GC threads, large tail latencies due to GC pauses essentially are a thing of the past,
+making the Java platform a compelling choice also for workloads for which it historically may not have been considered.</p>
+</div>
+<div class="paragraph">
+<p>If you haven’t looked at ZGC before, now may be a great time to do so:
+Java 25 is the first release with LTS support which includes Generational ZGC,
+yielding <a href="https://openjdk.org/jeps/439">significant improvements</a> in regards to throughput and tail latencies over Java 17’s single generation ZGC implementation.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Generational garbage collectors organize the heap in multiple generations, <a href="https://inside.java/2023/11/28/gen-zgc-explainer/">taking advantage</a> &#34;of the weak-generational hypothesis, which posits that most objects become unreachable shortly after they are created&#34;.
+Objects which have survived for some time after being created are moved to a heap area called the &#34;old generation&#34; which is scanned less frequently,
+thus making more efficient usage of CPU resources.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>It’s important to keep in mind though that there is not <em>the</em> one best garbage collector for each and every situation.
+While you can get a very welcomed improvement to tail latencies by moving to ZGC, there’s a price for this to pay in the form of a lower overall throughput.
+In particular if your application is close to being CPU bound already, ZGC may not be the right choice.
+For many workloads though this can be mitigated by scaling out to multiple compute nodes organized in a cluster.
+You should do your own testing with your specific workload in your specific runtime environment to evaluate whether moving to ZGC is beneficial or not.
+Luckily that’s as simple as specifying <code>-XX:+UseZGC</code> when starting the JVM.</p>
+</div>
+<div class="paragraph">
+<p>You can find the source code of the benchmarks used for this blog post <a href="https://github.com/gunnarmorling/zgc-test">here</a> and <a href="https://github.com/gunnarmorling/allocation-test">here</a>.
+If you’d like to learn more about ZGC and its concepts, the <a href="https://malloc.se/">blog</a> by OpenJDK developer Per Liden is a great starting point.</p>
+</div>
+<div class="paragraph">
+<p>When I find the time, I’d like to run some data streaming workloads using Apache Kafka and Flink on ZGC and share my findings in a follow-up to this post.
+If you have any experience and insight from running these systems on ZGC, I’d love to hear from you in the comments!</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
