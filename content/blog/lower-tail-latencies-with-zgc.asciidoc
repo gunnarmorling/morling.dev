@@ -1,0 +1,128 @@
+---
+title: "Let's Take a Look at... Lower Tail Latencies With ZGC"
+date: 2025-08-05T13:55:00+02:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+_In the "Let's Take a Look at...!" blog series I am exploring interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, open-source projects, services, relevant improvements to Java and the JVM, and more. The idea is to get some hands-on experience, learn about potential use cases and applications, and understand the trade-offs involved. If you think there's a specific subject I should take a look at, let me know in the comments below._
+
+Java 25 got released earlier this week,
+and it is the first Java release with long-term support (LTS) which ships with Generational ZGC as the one (and only) flavor of the ZGC garbage collector.
+ZGC is a relatively new concurrent collector (https://openjdk.org/jeps/333[added in Java 11] as an experimental feature).
+
+The high-level intuition on concurrent garbage collectors (another example being Shenandoah) is that they move as much of their work as possible from the application's threads to separate GC threads.
+That way, they essentially do away with GC pauses, which used to plague Java users in the past in the form of high tail latencies of their applications.
+ZGC pushes down GC times in application threads down to to the sub milli-second range, making GC pauses a non issue for the vast majority of use cases.
+Of course, there is no free lunch: by running the GC logic in separate threads, concurrent collectors require more CPU resources,
+thus reducing the overall throughput of the system.
+
+<!--more-->
+
+So far, I didn't have the chance to gather some hands-on experience with ZGC yet,
+so I set out to run some comparisons of ZGC and the G1 collector, which is the current default garbage collector in Java.
+Now, ZGC oftentimes is associated with large heaps of hundreds of gigabytes and beyond,
+but I was curious whether it would also be beneficial for typical microservice deployments with perhaps a gigabyte of heap or so.
+Furthermore, I was eager to learn about the performance characteristics using the default settings,
+i.e. I'm not too interested in fine-tuning specific garbage collectors.
+In practice, most folks don't bother doing so for running their applications either.
+Hardly anyone has the time or interest to find optimal settings,
+which may be obsolete very soon anyways when details of the workload change, or a new Java version with changes to the GC behavior gets released.
+So arguably, in most cases the performance with default settings matters more than theoretical peak performance with highly tuned settings.
+
+I started by benchmarking a sample microservice built using the Quarkus framework,
+returning some data from a Postgres database.
+Using Vegata as a load generator, 
+I created a moderate load of 1,000 requests per second.
+The test ran on a Hetzner CCX43 instance, with 16 exclusive CPU cores and 64 GB of RAM way over-provisioned for this workload.
+Here are the request latencies from running the test for two minutes with each collector, discarding the first 30 seconds to exclude any warm-up effects:
+
+image::zgc_basic_histogram.png["Latency histogram of a REST service with G1 and ZGC, 1,000 req/sec"]
+
+While latencies are practically identically up to the 99th percentile, p999 and p9999 show quite an advantage for ZGC.
+Let's try and find out whether GC pauses explain the difference indeed.
+Examining the actual request latencies in the Vegeta plot show that there a several significant outliers with G1:
+
+image::zgc_basic_latency_g1.png["Request latencies of a REST service with G1"]
+
+Whereas the runtimes look much more homogenous with ZGC:
+
+image::zgc_basic_latency_zgc.png["Request latencies of a REST service with ZGC"]
+
+In order to verify whether the G1 outliers indeed were caused by GC pauses, I enabled JDK Flight Recorder while running the tests.
+And indeed there we can observe GC pauses of more than 20 ms at the respective offsets in the JFR recording:
+
+image::zgc_basic_jfr_g1.png["Garbage collections of a REST service with G1"]
+
+With ZGC on the other hand, the longest GC pause time observed is ~50 micro-seconds:
+
+image::zgc_basic_jfr_zgc.png["GC pause times of a REST service with ZGC"]
+
+That's pretty neat: solely by changing the garbage collector to ZGC--by specifying `-XX:+UseZGC` upon start-up--without any sort of tuning, we could improve tail latencies of this example service substantially.
+Note you may potentially get better results out of G1 too by setting JVM options such `-XX:MaxGCPauseMillis`, but the much better latencies with default settings make ZGC very appealing.
+Results may look different for your specific workloads, but it's definitely worth giving ZGC a try.
+Chances are you may see some really nice benefits pretty much for free.
+
+[NOTE]
+====
+Garbage collections are note the only cause for JVM pauses.
+Other examples include the deoptimization of compiled methods and the creation of heap dumps.
+These, and other operations, require all threads to come to a JVM savepoint, which may take some time.
+https://blanco.io/blog/jvm-safepoint-pauses/#fnref:1:1[This post] by Zac Blanco discusses potential causes for JVM pauses and ways to analyse them.
+====
+
+Now, the test above didn't put an awful lot of pressure on the garbage collectors to begin with (~17 MB/sec),
+and by no means the take away should be that ZGC _always_ is a superior choice.
+In particular if there is a high CPU load on the system,
+ZGC's more resource-intensive approach of cleaning up garbage concurrently may actually yield higher request times than G1.
+
+== ZGC Allocation Stalls
+
+To see how that can be the case, let's turn to another example.
+This is a synthetic benchmark which allocates large amounts of objects in the form of `List<Long>` with random numbers in a loop.
+The results are interesting:
+
+image::zgc_high_allocation_histogram.png["Latency histogram of a synthetic benchmark allocating ~12 GB/sec and 30 GB/sec with G1 and ZGC"]
+
+When allocating ~12 GB/sec (using 4 cores of the test system), the picture is similar to the one above: up to p99, G1 and ZGC are on par, whereas the p999 and p9999 latencies are significantly lower with ZGC.
+In contrast, when allocating ~30 GB/sec (using all the 16 cores of the test system), latencies are generally lower with G1 then with ZGC.
+
+As above, a JFR recording can help to identify the cause.
+Looking at GC pause times is going to be misleading though: the longest pause time of ZGC still is in the microseconds range.
+So what is going on?
+Running on all the system's cores, the workload under test CPU bound, not leaving enough CPU resources for the concurrent GC threads of ZGC.
+This means, the collector can't free up memory fast enough to keep up with the application allocating new objects at a high rate.
+In that situation, ZGC will stall allocations until memory has become available again.
+Since Java 15, a dedicated JFR event,  https://sap.github.io/SapMachine/jfrevents/25.html#zallocationstall[`ZAllocationStall`] is logged in this case:
+
+image::zgc_allocation_stalls.png["Observing ZGC allocation stalls in JDK Mission Control"]
+
+Similar to GC pause times, allocation stalls increase tail latencies of an application.
+They shouldn't be equated to GC pauses though:
+a healthy application should generally not trigger any allocation stalls at runtime.
+If it does, it is a sign that the workload is CPU bound and you should either identify potential bottlenecks using a profiler or provision more CPU resources.
+It's a good idea to monitor allocation stalls via link:/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/[JFR event streaming] and trigger an alert when they manifest.
+
+== Summary
+
+ZGC is a very interesting addition to the JVM's portfolio of garbage collectors.
+By moving all the heavy lifting to separate GC threads, large tail latencies due to GC pauses essentially are a thing of the past,
+making the Java platform a compelling choice also for workloads where it historically may not have been considered.
+
+If you haven't looked at ZGC before, now may be a great time to do so:
+Java 25 is the first release with LTS support which includes Generational ZGC,
+yielding https://inside.java/2023/11/28/gen-zgc-explainer/[signficant improvements] in regards to throughput and tail latencies over Java 17's single generation ZGC implementation.
+It's important to keep in mind though that there is not _the_ one best garbage collector for each and every situation.
+While you can get a very welcome improvement to tail latencies by moving to ZGC, you are going to pay the price in the form of a lower overall throughput.
+
+In particular if your application is close to being CPU bound already, ZGC may not be the right choice.
+For many workloads though this can be mitigated by scaling out to multiple compute nodes.
+You should do your own testing with your specific workload in your own runtime environment to evaluate whether moving to ZGC is beneficial or not.
+You can find the source code of the benchmarks used for this blog post here and here.
