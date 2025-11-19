@@ -46,7 +46,7 @@ Workflows defined in code, using general purpose programming languages such as P
 That way, developers don't need to pick up a new language for defining flows,
 as was the case with earlier process automation platforms.
 They can use their familiar tooling for editing flows, versioning them, etc.
-A DE engine transparently tracks program progress, persists execution state, and enables resumption after failures.
+A DE engine transparently tracks program progress, persists execution state in the form of durable checkpoints, and enables resumption after failures.
 
 Naturally, this piqued my interest:
 what would it take to implement a basic DE engine in Java?
@@ -88,6 +88,11 @@ public class HelloWorldFlow {
 
 Steps are the unit of persistence--their outcomes are recorded, and when resuming a flow after a failure,
 it will continue from the last successfully run step method.
+Now, which exact parts of a flow warrant being persisted as a step is on the developer to decide.
+You don't want to define steps too granularly, so as to keep the overhead of logging low.
+In general, flow sections which are costly or time-consuming to run or whose result cannot easily be reproduced,
+are great candidates for being moved into a step method.
+
 A flow is executed by obtaining a `FlowInstance` object and then calling the flow's main method:
 
 [source,java,linenums=true]
@@ -302,7 +307,7 @@ that step would be repeated when rerunning the flow.
 Odds for this to happen are pretty small, but whether it is acceptable or not depends on the particular use case.
 When executing steps with side-effects, such as remote API calls,
 it may  be a good idea to add idempotency keys to the requests,
-which lets the invoked services detect and ignore duplicate calls.
+which lets the invoked services detect and ignore any potential duplicate calls.
 
 The actual execution log implementation isn't that interesting, you can find its source code https://github.com/gunnarmorling/persistasaurus/blob/main/src/main/java/dev/morling/persistasaurus/internal/ExecutionLog.java[here].
 All it does is persist step invocations and their status in the `execution_log` SQLite table shown above.
