@@ -339,16 +339,19 @@ public class SignupFlow {
 ----
 
 Naturally, we don't want to block the initiating thread when delaying a step--for instance, a web application's request handler.
-Instead, we need a way to yield continuation of the flow, return control to the caller,
+Instead, we need a way to temporarily yield execution of the flow, return control to the caller,
 and then later on, when the configured delay has passed, resume the flow.
 
 Unlike other programming languages, Java doesn't support https://en.wikipedia.org/wiki/Continuation[continuations] via its public API.
 So how could we yield control then?
 One option would be to define a specific exception type, let's say `FlowYieldException`, and raise it from within the method interceptor when encountering a delayed method.
 The call stack would be unwound until some framework-provided exception handler catches that exception and returns control to the code triggering the flow.
-Note that it is essential that no user-provided flow or step code catches that exception type.
+For this to work, it is essential that no user-provided flow or step code catches that exception type.
+Alternatively, one could transform the bytecode of the step method (and all the methods below it in the call stack),
+so that it can return control at given suspension points and later on resume from there,
+similar to how https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html#asynchronous-programming-with-coroutines[Kotlin's coroutines] are implemented under the hood ("continuation passing style").
 
-This works, but Java 21 offers a simpler solution.
+Luckily, Java 21 offers a much simpler solution.
 This version added support for virtual threads (https://openjdk.org/jeps/444[JEP 444]),
 and while you shouldn't block OS level threads, blocking virtual threads is totally fine.
 Virtual threads are lightweight user-mode threads managed by the JVM,
