@@ -1,0 +1,552 @@
+---
+title: "Building a Durable Execution Engine With SQLite"
+date: 2025-11-19T16:00:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+Lately, there has been a lot of excitement around Durable Execution (DE) engines.
+The basic idea of DE is to take (potentially long-running) multi-step workflows,
+such as processing a purchase order or a user sign-up,
+and make their individual steps persistent.
+If a flow gets interrupted while running, for instance due to a machine failure,
+the DE engine can resume it from the last successfully executed step and drive it to completion.
+
+<!--more-->
+
+This is a very interesting value proposition:
+the progress of critical business processes is captured reliably, ensuring they'll complete eventually.
+Importantly, any steps performed already successfully won't be repeated when retrying a failed flow.
+This helps to ensure that flows are executed correctly
+(for instance preventing inventory from getting assigned twice to the same purchase order),
+efficiently (e.g. avoiding repeated remote API calls),
+and deterministically.
+One particular category of software which benefits from this are agentic systems, or more generally speaking, any sort of system which interacts with LLMs.
+LLM calls are slow and costly, and their results are non-deterministic.
+So it is desirable to avoid repeating any previous LLM calls when continuing an agentic flow after a failure.
+
+Now, at a high level, "durable execution" is nothing new.
+A scheduler running a batch job for moving purchase orders through their lifecycle?
+You could consider this a form of durable execution.
+Sending a Kafka message from one microservice to another and reacting to the response message in a callback?
+Also durable execution, if you squint a little.
+A workflow engine running a BPMN job? Implementing durable execution, before the term actually got popularized.
+All these approaches model multi-step business transactions--making the logical flow of the overall transaction more or less explicit--in a persistent way,
+ensuring that transactions progress safely and reliably and eventually complete.
+
+However, modern DE typically refers to one particular approach for achieving this goal:
+Workflows defined in code, using general purpose programming languages such as Python, TypeScript, or Java.
+That way, developers don't need to pick up a new language for defining flows,
+as was the case with earlier process automation platforms.
+They can use their familiar tooling for editing flows, versioning them, etc.
+A DE engine transparently tracks program progress, persists execution state, and enables resumption after failures.
+
+Naturally, this piqued my interest:
+what would it take to implement a basic DE engine in Java?
+Can we achieve something useful with less than, let's say, 1,000 lines of code?
+The idea being not to build a production-ready engine,
+but to get a better understanding of the problem space and potential solutions for it.
+You can find the result of this exploration, called Persistasaurus, in https://github.com/gunnarmorling/persistasaurus[this GitHub repository].
+Coincidentally, this project also serves as a very nice example of how modern Java versions can significantly simplify the life of developers.
+
+== Hello Persistasaurus!
+
+Let's take a look at an example of what you can do with Persistasaurus and then dive into some of the key implementation details.
+As per the idea of DE, flows are implemented as regular Java code.
+The entry point of a flow is a method marked with the `@Flow` annotation.
+Individual flow steps are methods annotated with `@Step`:
+
+[source,java,linenums=true]
+----
+public class HelloWorldFlow {
+
+  @Flow
+  public void sayHello() {
+    int sum = 0;
+
+    for (int i = 0; i < 5; i++) {
+      sum += say("World", i);
+    }
+
+    System.out.println(String.format("Sum: %s", sum));
+  }
+
+  @Step
+  protected int say(String name, int count) {
+    System.out.println(String.format("Hello, %s (%s)", name, count));
+    return count;
+  }
+}
+----
+
+Steps are the unit of persistence--their outcomes are recorded, and when resuming a flow after a failure,
+it will continue from the last successfully run step method.
+A flow is executed by obtaining a `FlowInstance` object and then calling the flow's main method:
+
+[source,java,linenums=true]
+----
+UUID uuid = UUID.randomUUID();
+
+FlowInstance<HelloWorldFlow> flow = Persistasaurus.getFlow(
+    HelloWorldFlow.class, uuid);
+
+flow.run(f -> f.sayHello());
+----
+
+Each flow run is identified by a unique id,
+allowing to re-execute it after a failure, or to resume it when waiting for an external signal ("human in the loop", more on that below).
+If the Hello World flow runs to completion, the following will be logged to stdout:
+
+[source,linenums=true]
+----
+Hello, World (0)
+Hello, World (1)
+Hello, World (2)
+Hello, World (3)
+Hello, World (4)
+Sum: 10
+----
+
+Now let's assume something goes wrong while executing the third step:
+
+[source,linenums=true]
+----
+Hello, World (0)
+Hello, World (1)
+Hello, World (2)
+RuntimeException("Uh oh")
+----
+
+When re-running the flow, using the same UUID as before, it will retry that failed step and resume from there. The first two steps which were already run successfully are not re-executed.
+Instead, they will be replayed from a persistent execution log, which is based on https://sqlite.org/[SQLite], an embedded SQL database:
+
+[source,linenums=true]
+----
+Hello, World (3)
+Hello, World (4)
+Sum: 10
+----
+
+In the following, let's take a closer look at some of the implementation choices in Persistasaurus.
+
+== Capturing Execution State
+
+At the core of every DE engine there's some form of persistent durable execution log.
+You can think of this a bit like the write-ahead log of a database.
+It captures the intent to execute a given flow step, which makes it possible to retry that step should it fail, using the same parameter values.
+Once successfully executed, a step's result will also be recorded in the log,
+so that it can be replayed from there if needed, without having to actually re-execute the step itself.
+
+DE logs come in two flavours largely speaking; one is in the form of an external state store which is accessed via some sort of SDK.
+Examples for this include https://temporal.io/[Temporal], https://www.restate.dev/[Restate], and https://www.inngest.com/[Inngest].
+The other option is to persist DE state in the local database of a given application or (micro)service.
+One example in this category is https://www.dbos.dev/[DBOS], which implements DE on top of Postgres.
+
+To keep things simple, I went with the local database model for Persistasaurus, using SQLite for storing the execution log.
+But as we'll see later on, depending on your specific use case, SQLite actually might also be a great choice for a production scenario,
+for instance when building a self-contained agentic system.
+
+The structure of the execution log table in SQLite is straight-forward.
+It contains one entry for each durable execution step:
+
+[source,sql,linenums=true]
+----
+CREATE TABLE IF NOT EXISTS execution_log (
+   id TEXT NOT NULL, -- <1>
+   step INTEGER NOT NULL, -- <2>
+   timestamp INTEGER NOT NULL, -- <3>
+   class_name TEXT NOT NULL, -- <4>
+   method_name TEXT NOT NULL, -- <5>
+   delay INTEGER, -- <6>
+   status TEXT -- <7>
+        CHECK( status IN ('PENDING','WAITING_FOR_SIGNAL','COMPLETE') )
+        NOT NULL,
+   attempts INTEGER NOT NULL DEFAULT 1, -- <8>
+   parameters BLOB, -- <9>
+   return_value BLOB, -- <10>
+   PRIMARY KEY (id, step)
+)
+----
+<1> The UUID of the flow
+<2> The sequence number of the step within the flow
+<3> The timestamp of first running this step
+<4> The name of the class defining the step method
+<5> The name of the step method
+<6> For delayed steps, the delay in milli-seconds
+<7> The current status of the step
+<8> A counter for keeping track of how many times the step has been tried
+<9> The serialized form of the step's input parameters, if any
+<10> The serialized form of the step's result, if any
+
+This log table contains all information needed to capture execution intent and persist results.
+More details on the notion of delays and signals follow further down.
+
+When running a flow, the engine needs to know when a given step gets executed so it can be logged.
+One common way for doing so is via explicit API calls into the engine, e.g. like so with DBOS Transact:
+
+[source,java,linenums=true]
+----
+@Workflow
+public void workflow() {
+  DBOS.runStep(() -> stepOne(), "stepOne");
+  DBOS.runStep(() -> stepTwo(), "stepTwo");
+}
+----
+
+This works, but tightly couples workflows to the DE engine's API.
+For Persistaurus I aimed to avoid this dependency as much as possible.
+Instead, the idea is to transparently intercept the invocations of all step methods and track them in the execution log,
+allowing to express that flow a bit more concisely:
+
+[source,java,linenums=true]
+----
+@Flow
+public void workflow() {
+  stepOne();
+  stepTwo();
+}
+----
+
+Thanks to Java's dynamic nature, this is relatively easy, requiring just a little bit of bytecode generation.
+Unsurprisingly, I'm using the https://bytebuddy.net/[ByteBuddy] library for this job:
+
+[source,java,linenums=true]
+----
+private static <T> T getFlowProxy(Class<T> clazz, UUID id) {
+  try {
+    return new ByteBuddy()
+        .subclass(clazz) // <1>
+        .method(ElementMatchers.any()) // <2>
+        .intercept( // <3>
+            MethodDelegation.withDefaultConfiguration()
+                .withBinders(
+                    Morph.Binder.install(OverrideCallable.class))
+                .to(new Interceptor(id)))
+        .make()
+        .load(Persistasaurus.class.getClassLoader()) // <4>
+        .getLoaded()
+        .getDeclaredConstructor()
+        .newInstance(); // <5>
+  }
+  catch (Exception e) {
+    throw new RuntimeException("Couldn't instantiate flow", e);
+  }
+}
+----
+<1> Create a sub-class proxy for the flow type
+<2> Intercept all method invocations on this proxy...
+<3> ...and delegate them to an `Interceptor` object
+<4> Load the generated proxy class
+<5> Instantiate the flow proxy
+
+As an aside, Claude Code does an excellent job in creating code using the ByteBuddy API, which is not always self-explanatory.
+Now, whenever a method is invoked on the flow proxy,
+the call is delegated to the `Interceptor` class,
+which will record the step in the execution log before invoking the actual flow method.
+I am going to spare you the complete details of the method interceptor implementation
+(you can find it https://github.com/gunnarmorling/persistasaurus/blob/main/src/main/java/dev/morling/persistasaurus/Persistasaurus.java[here] on GitHub),
+but the high-level logic looks like so:
+
+[source,java,linenums=true]
+----
+public Object intercept(@This Object instance,
+    @Origin Method method,
+    @AllArguments Object[] args,
+    @Morph OverrideCallable callable) throws Throwable {
+
+  if (!isFlowOrStep(method)) {
+    return callable.call(args);
+  }
+
+  Invocation loggedInvocation = executionLog.getInvocation(id, step);
+
+  if (loggedInvocation != null &&
+      loggedInvocation.status() == InvocationStatus.COMPLETE) { // <1>
+    step++;
+    return loggedInvocation.returnValue();
+  }
+  else {
+    executionLog.logInvocationStart(
+        id, step, method.getName(), InvocationStatus.PENDING, args); // <2>
+
+    int currentStep = step;
+    step++;
+
+    Object result = callable.call(args); // <3>
+
+    executionLog.logInvocationCompletion(id, currentStep, result); // <4>
+
+    return result;
+  }
+}
+----
+<1> Replay completed step if present
+<2> Log invocation
+<3> Execute the actual step method
+<4> Log result
+
+Replaying completed steps from the log is essential for ensuring deterministic execution.
+Each step typically runs exactly once,
+capturing non-deterministic values such as the current time or random numbers while doing so.
+
+There's an important failure mode, though:
+if the system crashes _after_ a step has been executed but _before_ the result can be recorded in the log,
+that step would be repeated when rerunning the flow.
+Odds for this to happen are pretty small, but whether it is acceptable or not depends on the particular use case.
+When executing steps with side-effects, such as remote API calls,
+it may  be a good idea to add idempotency keys to the requests,
+which lets the invoked services detect and ignore duplicate calls.
+
+The actual execution log implementation isn't that interesting, you can find its source code https://github.com/gunnarmorling/persistasaurus/blob/main/src/main/java/dev/morling/persistasaurus/internal/ExecutionLog.java[here].
+All it does is persisting step invocations and their status in the `execution_log` SQLite table shown above.
+
+== Delayed Executions
+
+At this point, we have a basic Durable Execution engine which can run simple flows as the one above.
+Next, I explored implementing delayed execution steps.
+As an example, consider a user onboarding flow, where you might want to send out an email with useful resources a few days after a user has signed up.
+Using the annotation-based programming model of Persistasaurus, this can be expressed like so:
+
+[source,java,linenums=true]
+----
+public class SignupFlow {
+
+  @Flow
+  public void signUp(String userName, String email) {
+    long id = createUserRecord(userName, email);
+
+    sendUsefulResources(id);
+  }
+
+  @Step
+  protected long createUserRecord(String userName, String email) {
+    // persist the user...
+    return id;
+  }
+
+  @Step(delay=3, timeUnit=DAYS)
+  protected void sendUsefulResources(long userId) {
+    // send the email...
+  }
+}
+----
+
+Naturally, we don't want to block the initiating thread when delaying a step--for instance, a web application's request handler.
+Instead, we need a way to yield continuation of the flow, return control to the caller,
+and then later on, when the configured delay has passed, resume the flow.
+
+Unlike other programming languages, Java doesn't support https://en.wikipedia.org/wiki/Continuation[continuations] via its public API.
+So how could we yield control then?
+One option would be to define a specific exception type, let's say `FlowYieldException`, and raise it from within the method interceptor when encountering a delayed method.
+The call stack would be unwound until some framework-provided exception handler catches that exception and returns control to the code triggering the flow.
+Note that it is essential that no user-provided flow or step code catches that exception type.
+
+This works, but Java 21 offers a simpler solution.
+This version added support for virtual threads (https://openjdk.org/jeps/444[JEP 444]),
+and while you shouldn't block OS level threads, blocking virtual threads is totally fine.
+Virtual threads are lightweight user-mode threads managed by the JVM,
+and an application can have hundreds of thousands, or even millions of them at once.
+Thus I decided to implement delayed executions in Persistasaurus through virtual threads,
+sleeping for the given period of time when encountering a delayed method.
+
+To run a flow with a delayed step, trigger it via `runAsync()`,
+which immediately returns control to the caller:
+
+[source,java,linenums=true]
+----
+FlowInstance<SignupFlow> flow = Persistasaurus.getFlow(
+    SignupFlow.class, uuid);
+
+flow.runAsync(f -> f.signUp("Bob", "bob@example.com"));
+----
+
+When putting a virtual thread running a flow method asleep, 
+it will be unmounted from the underlying OS level carrier thread,
+freeing its resources.
+Later on, once the sleep time has passed, the virtual thread will be remounted onto a carrier thread and continue the flow.
+When rerunning non-finished flows with a delayed execution step,
+Persistasaurus will only sleep for the remainder of the configured delay,
+which might be zero if enough time has passed since the original run of the flow.
+
+So in fact, you could think of virtual threads as a form of continuations;
+and indeed, if you look closely at the stacktrace of a virtual thread, you'll see that the frame at the very bottom is the `enter()` method of a JDK-internal class `Continuation`.
+Interestingly, this class was even part of the public Java API in early preview versions of virtual threads,
+but it got made private later on.
+
+== Human Interaction
+
+As the last step of my exploration I was curious how flows with "human in the loop"-steps could be implemented:
+steps where externally provided input or data is required in order for a flow to continue.
+Sticking to the sign-up flow example,
+this could be an email by the user, so as to confirm their identity (double opt-in).
+As much as possible, I tried to stick to the idea of using plain method calls for expressing the flow logic,
+but I couldn't get around making flows invoke a Persistasaurus-specific method, `await()`, for signalling that a step requires external input:
+
+[source,java,linenums=true]
+----
+public class SignupFlow {
+
+  @Flow
+  public void signUp(String userName, String email) {
+    long id = createUserRecord(userName, email);
+
+    sendEmailConfirmationRequest(email);
+
+    await(() -> confirmEmailAddress(any())); // <1>
+
+    finalizeSignUp(id);
+  }
+
+  @Step
+  protected void confirmEmailAddress(Instant timeOfConfirmation) {
+    // ...
+  }
+}
+----
+<1>  Await the invocation of the given step method
+
+When the method interceptor encounters a step method invoked from within an `await()` block,
+it doesn't go on to actually execute right away.
+Instead, the flow will await continuation until the step method gets triggered.
+This is why it doesn't matter which parameter values are passed to that step within the flow definition.
+You could pass `null`, or, as a convention, the `any()` placeholder method.
+
+In order to provide the input to a waiting step and continue the flow,
+call the step method via `resume()`, for instance like so, in a request handler method of a Spring Boot web application:
+
+[source,java,linenums=true]
+----
+@PostMapping("/email-confirmations")
+void confirmEmailAddress(@RequestBody Confirmation confirmation) {
+  FlowInstance<UserSignupFlow> flow = Persistasaurus.getFlow(
+        UserSignupFlow.class, confirmation.uuid());
+
+  flow.resume(f -> {
+    f.confirmEmailAddress(confirmation.timestamp());
+  });
+}
+----
+
+The flow will then continue from that step, using the given parameter value(s) as its input.
+For this to work, we need a way for the engine to know whether a given step method gets invoked from within `resume()` and thus actually should be executed,
+or, whether it gets invoked from within `await()` and hence should be suspended.
+
+Seasoned framework developers might immediately think of using thread-local variables for this purpose,
+but as of Java 25, this can be solved much more elegantly and safely using so-called _scoped values_,
+as defined in https://openjdk.org/jeps/506[JEP 506].
+To quote that JEP, scoped values
+
+> enable a method to share immutable data both with its callees within a thread, and with child threads. Scoped values are easier to reason about than thread-local variables. They also have lower space and time costs
+
+Scoped values are typically defined as as a static field like so:
+
+[source,java,linenums=true]
+----
+public class Persistasaurus {
+
+  enum CallType { RUN, AWAIT, RESUME; }
+    
+  static final ScopedValue<CallType> CALL_TYPE =
+      ScopedValue.newInstance();
+
+  // ...
+}
+----
+
+To set the scoped value and run some unit of code with that value, call `ScopedValue::where()`:
+
+[source,java,linenums=true]
+----
+public static void await(Runnable r) {
+  ScopedValue.where(CALL_TYPE, CallType.AWAIT).run(r);
+}
+----
+
+Unlike thread-local variables,
+this ensures the scoped value is cleared when leaving the scope.
+Then, further down in the call stack, within the method handler, the scoped value can be consumed:
+
+[source,java,linenums=true]
+----
+CallType callType = CALL_TYPE.get();
+
+if (callType == CallType.RESUME) {
+  WaitCondition waitCondition = getWaitCondition(flowId);
+
+  waitCondition.lock.lock();
+
+  try {
+    waitCondition.condition.signal();
+  }
+  finally {
+    waitCondition.lock.unlock();
+  }
+}
+----
+
+In order to yield control when waiting for external input and to resume when that input has been provided,
+a `ReentrantLock` with a wait condition is used.
+Similar to the `sleep()` call used for fixed delay steps above,
+a virtual thread will be unmounted from its carrier when waiting for a condition.
+
+When accidentally trying to access a scoped value which isn't actually set, an exception will be raised,
+addressing another issue you'd commonly encounter with thread-local variables.
+This might not seem like a huge deal,
+but it's great to see how the Java platform continues to evolve and improves things like this.
+
+== Managing State
+
+Let's dive a bit deeper into managing state in a durable execution engine.
+For the example DE implementation developed for this blog post,
+I went with SQLite primarily for the sake of simplicity.
+Now, would you use SQLite, as an embedded database, also in an actual production-ready implementation?
+The answer is going to depend on your specific use case.
+If, for instance, you are building a self-contained AI agent and you want to use DE for making sure LLM invocations are not repeated when the agent crashes,
+an embedded database such as SQLite would make for a great store for persisting execution state.
+Each agent could have its own database, thus avoiding any concurrent writes, which can pose a bottleneck due to SQLite's single-writer design.
+
+On the other hand, if you're building a system with a high number of parallel requests by different users,
+such as a typical microservice,
+a client/server database such as Postgres or MySQL would be a better fit.
+If that system already maintains state in a database (as most services do),
+then re-using that same database to store execution state provides a critical advantage:
+Updates to the application's data and its execution state can happen atomically in a single database transaction, providing atomicity guarantees.
+This solution is implemented by the DBOS engine, on top of Postgres, for instance.
+
+Another category of DE engines which include systems such as Temporal and Restate,
+utilizes a separate server component with its own dedicated store for persisting execution state.
+This approach can be very useful to implement flows spanning across a set of multiple services
+(sometimes referred to as https://www.infoq.com/articles/saga-orchestration-outbox/[Sagas]).
+By keeping track of the overall execution state in one central place,
+they essentially avoid the need for cross-system transactions.
+
+Another advantage of this approach is that the actual application doesn't have to keep running while waiting for delayed execution steps,
+making it a great fit for systems implemented in the form of scale-to-zero serverless designs (Function-as-a-Service, Knative, etc.).
+The downside of this centralized design is the potentially closer coupling of the participating services,
+as they all need to converge on a specific DE engine, on one specific version of that engine, etc.
+Also HA and fault tolerance must be a priority in order to avoid the creation of a single point of failure between all the orchestrated services.
+
+== Wrapping Up
+
+At its heart, the idea of Durable Execution is not a complex one:
+Potentially long-running workflows are organized into individual steps whose execution status and result is persisted in a durable form.
+That way, flows become resumable after failures, while skipping any steps already executed successfully.
+You could think of it as a persistent implementation of the https://en.wikipedia.org/wiki/Memoization[memoization pattern], or a persistent form of continuations.
+
+As demonstrated in this post and the accompanying https://github.com/gunnarmorling/persistasaurus[source code],
+it doesn't take too much work to create a functioning PoC for a DE engine.
+Of course, it's still quite a way to go from there to a system you'd actually want to put into production.
+At the persistence level, you'd have to address aspects such as  fault tolerance and HA.
+The engine should support things such as retrying failing steps with exponential back-off,
+parallel execution of workflow steps,
+throttling flow executions, compensation steps for implementing Sagas, and more.
+You'd also want to have a UI for managing flows, analyzing, restarting, and debugging them.
+Finally, you should also have a strategy for evolving flow definitions and the state they persist,
+in particular when dealing with long-running flows which may take days, weeks, or months to complete.
