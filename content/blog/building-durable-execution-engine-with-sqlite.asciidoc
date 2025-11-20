@@ -150,9 +150,9 @@ Once successfully executed, a step's result will also be recorded in the log,
 so that it can be replayed from there if needed, without having to actually re-execute the step itself.
 
 DE logs come in two flavours largely speaking; one is in the form of an external state store which is accessed via some sort of SDK.
-Examples for this include https://temporal.io/[Temporal], https://www.restate.dev/[Restate], and https://www.inngest.com/[Inngest].
+Example frameworks taking this approach include https://temporal.io/[Temporal], https://www.restate.dev/[Restate], https://www.resonatehq.io/[Resonate], and https://www.inngest.com/[Inngest].
 The other option is to persist DE state in the local database of a given application or (micro)service.
-One example in this category is https://www.dbos.dev/[DBOS], which implements DE on top of Postgres.
+One solution in this category is https://www.dbos.dev/[DBOS], which implements DE on top of Postgres.
 
 To keep things simple, I went with the local database model for Persistasaurus, using SQLite for storing the execution log.
 But as we'll see later on, depending on your specific use case, SQLite actually might also be a great choice for a production scenario,
@@ -164,26 +164,26 @@ It contains one entry for each durable execution step:
 [source,sql,linenums=true]
 ----
 CREATE TABLE IF NOT EXISTS execution_log (
-   id TEXT NOT NULL, -- <1>
-   step INTEGER NOT NULL, -- <2>
-   timestamp INTEGER NOT NULL, -- <3>
-   class_name TEXT NOT NULL, -- <4>
-   method_name TEXT NOT NULL, -- <5>
-   delay INTEGER, -- <6>
-   status TEXT -- <7>
-        CHECK( status IN ('PENDING','WAITING_FOR_SIGNAL','COMPLETE') )
-        NOT NULL,
-   attempts INTEGER NOT NULL DEFAULT 1, -- <8>
-   parameters BLOB, -- <9>
-   return_value BLOB, -- <10>
-   PRIMARY KEY (id, step)
+  flowId TEXT NOT NULL, -- <1>
+  step INTEGER NOT NULL, -- <2>
+  timestamp INTEGER NOT NULL, -- <3>
+  class_name TEXT NOT NULL, -- <4>
+  method_name TEXT NOT NULL, -- <5>
+  delay INTEGER, -- <6>
+  status TEXT -- <7>
+      CHECK( status IN ('PENDING','WAITING_FOR_SIGNAL','COMPLETE') )
+      NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 1, -- <8>
+  parameters BLOB, -- <9>
+  return_value BLOB, -- <10>
+  PRIMARY KEY (flowId, step)
 )
 ----
 <1> The UUID of the flow
-<2> The sequence number of the step within the flow
+<2> The sequence number of the step within the flow, in the order of execution
 <3> The timestamp of first running this step
 <4> The name of the class defining the step method
-<5> The name of the step method
+<5> The name of the step method (currently ignoring overloaded methods for this PoC)
 <6> For delayed steps, the delay in milli-seconds
 <7> The current status of the step
 <8> A counter for keeping track of how many times the step has been tried
@@ -208,7 +208,7 @@ public void workflow() {
 This works, but tightly couples workflows to the DE engine's API.
 For Persistaurus I aimed to avoid this dependency as much as possible.
 Instead, the idea is to transparently intercept the invocations of all step methods and track them in the execution log,
-allowing to express that flow a bit more concisely:
+allowing for a very concise flow expression, without any API dependencies:
 
 [source,java,linenums=true]
 ----
@@ -219,7 +219,11 @@ public void workflow() {
 }
 ----
 
-Thanks to Java's dynamic nature, this is relatively easy, requiring just a little bit of bytecode generation.
+In order for the DE engine to know when a flow or step method gets invoked,
+the https://en.wikipedia.org/wiki/Proxy_pattern[proxy pattern] is being used:
+a proxy wraps the actually flow object and handles each of its method invocations,
+updating the state in the execution log before and after passing the call on to the flow itself.
+Thanks to Java's dynamic nature, creating such a proxy is relatively easy, requiring just a little bit of bytecode generation.
 Unsurprisingly, I'm using the https://bytebuddy.net/[ByteBuddy] library for this job:
 
 [source,java,linenums=true]
