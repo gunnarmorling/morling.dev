@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Building a Durable Execution Engine With SQLite - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="Building a Durable Execution Engine With SQLite" />
+<meta property="og:description" content="
+Lately, there has been a lot of excitement around Durable Execution (DE) engines.
+The basic idea of DE is to take (potentially long-running) multi-step workflows,
+such as processing a purchase order or a user sign-up,
+and make their individual steps persistent.
+If a flow gets interrupted while running, for instance due to a machine failure,
+the DE engine can resume it from the last successfully executed step and drive it to completion.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/building-durable-execution-engine-with-sqlite/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2025-11-20T13:10:00+01:00" />
+<meta property="article:modified_time" content="2025-11-20T13:10:00+01:00" />
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Building a Durable Execution Engine With SQLite"/>
+<meta name="twitter:description" content="
+Lately, there has been a lot of excitement around Durable Execution (DE) engines.
+The basic idea of DE is to take (potentially long-running) multi-step workflows,
+such as processing a purchase order or a user sign-up,
+and make their individual steps persistent.
+If a flow gets interrupted while running, for instance due to a machine failure,
+the DE engine can resume it from the last successfully executed step and drive it to completion.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Building a Durable Execution Engine With SQLite</h1>
+				<div class="meta">Posted at Nov 20, 2025</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>Lately, there has been a lot of excitement around Durable Execution (DE) engines.
+The basic idea of DE is to take (potentially long-running) multi-step workflows,
+such as processing a purchase order or a user sign-up,
+and make their individual steps persistent.
+If a flow gets interrupted while running, for instance due to a machine failure,
+the DE engine can resume it from the last successfully executed step and drive it to completion.</p>
+</div>
+<div class="paragraph">
+<p>This is a very interesting value proposition:
+the progress of critical business processes is captured reliably, ensuring they’ll complete eventually.
+Importantly, any steps performed already successfully won’t be repeated when retrying a failed flow.
+This helps to ensure that flows are executed correctly
+(for instance preventing inventory from getting assigned twice to the same purchase order),
+efficiently (e.g. avoiding repeated remote API calls),
+and deterministically.
+One particular category of software which benefits from this are agentic systems, or more generally speaking, any sort of system which interacts with LLMs.
+LLM calls are slow and costly, and their results are non-deterministic.
+So it is desirable to avoid repeating any previous LLM calls when continuing an agentic flow after a failure.</p>
+</div>
+<div class="paragraph">
+<p>Now, at a high level, &#34;durable execution&#34; is nothing new.
+A scheduler running a batch job for moving purchase orders through their lifecycle?
+You could consider this a form of durable execution.
+Sending a Kafka message from one microservice to another and reacting to the response message in a callback?
+Also durable execution, if you squint a little.
+A workflow engine running a BPMN job? Implementing durable execution, before the term actually got popularized.
+All these approaches model multi-step business transactions—​making the logical flow of the overall transaction more or less explicit—​in a persistent way,
+ensuring that transactions progress safely and reliably and eventually complete.</p>
+</div>
+<div class="paragraph">
+<p>However, modern DE typically refers to one particular approach for achieving this goal:
+Workflows defined in code, using general purpose programming languages such as Python, TypeScript, or Java.
+That way, developers don’t need to pick up a new language for defining flows,
+as was the case with earlier process automation platforms.
+They can use their familiar tooling for editing flows, versioning them, etc.
+A DE engine transparently tracks program progress, persists execution state in the form of durable checkpoints, and enables resumption after failures.</p>
+</div>
+<div class="paragraph">
+<p>Naturally, this piqued my interest:
+what would it take to implement a basic DE engine in Java?
+Can we achieve something useful with less than, let’s say, 1,000 lines of code?
+The idea being not to build a production-ready engine,
+but to get a better understanding of the problem space and potential solutions for it.
+You can find the result of this exploration, called Persistasaurus, in <a href="https://github.com/gunnarmorling/persistasaurus">this GitHub repository</a>.
+Coincidentally, this project also serves as a very nice example of how modern Java versions can significantly simplify the life of developers.</p>
+</div>
+<div class="sect1">
+<h2 id="_hello_persistasaurus">Hello Persistasaurus!</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let’s take a look at an example of what you can do with Persistasaurus and then dive into some of the key implementation details.
+As per the idea of DE, flows are implemented as regular Java code.
+The entry point of a flow is a method marked with the <code>@Flow</code> annotation.
+Individual flow steps are methods annotated with <code>@Step</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">HelloWorldFlow</span> <span class="o">{</span>
+
+  <span class="nd">@Flow</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">sayHello</span><span class="o">()</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">sum</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+      <span class="n">sum</span> <span class="o">+=</span> <span class="n">say</span><span class="o">(</span><span class="s">&#34;World&#34;</span><span class="o">,</span> <span class="n">i</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="nc">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="s">&#34;Sum: %s&#34;</span><span class="o">,</span> <span class="n">sum</span><span class="o">));</span>
+  <span class="o">}</span>
+
+  <span class="nd">@Step</span>
+  <span class="kd">protected</span> <span class="kt">int</span> <span class="nf">say</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="kt">int</span> <span class="n">count</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="nc">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="s">&#34;Hello, %s (%s)&#34;</span><span class="o">,</span> <span class="n">name</span><span class="o">,</span> <span class="n">count</span><span class="o">));</span>
+    <span class="k">return</span> <span class="n">count</span><span class="o">;</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Steps are the unit of persistence—​their outcomes are recorded, and when resuming a flow after a failure,
+it will continue from the last successfully run step method.
+Now, which exact parts of a flow warrant being persisted as a step is on the developer to decide.
+You don’t want to define steps too granularly, so as to keep the overhead of logging low.
+In general, flow sections which are costly or time-consuming to run or whose result cannot easily be reproduced,
+are great candidates for being moved into a step method.</p>
+</div>
+<div class="paragraph">
+<p>A flow is executed by obtaining a <code>FlowInstance</code> object and then calling the flow’s main method:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="no">UUID</span> <span class="n">uuid</span> <span class="o">=</span> <span class="no">UUID</span><span class="o">.</span><span class="na">randomUUID</span><span class="o">();</span>
+
+<span class="nc">FlowInstance</span><span class="o">&lt;</span><span class="nc">HelloWorldFlow</span><span class="o">&gt;</span> <span class="n">flow</span> <span class="o">=</span> <span class="nc">Persistasaurus</span><span class="o">.</span><span class="na">getFlow</span><span class="o">(</span>
+    <span class="nc">HelloWorldFlow</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">uuid</span><span class="o">);</span>
+
+<span class="n">flow</span><span class="o">.</span><span class="na">run</span><span class="o">(</span><span class="n">f</span> <span class="o">-&gt;</span> <span class="n">f</span><span class="o">.</span><span class="na">sayHello</span><span class="o">());</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Each flow run is identified by a unique id,
+allowing to re-execute it after a failure, or to resume it when waiting for an external signal (&#34;human in the loop&#34;, more on that below).
+If the Hello World flow runs to completion, the following will be logged to stdout:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>Hello, World (0)
+Hello, World (1)
+Hello, World (2)
+Hello, World (3)
+Hello, World (4)
+Sum: 10
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now let’s assume something goes wrong while executing the third step:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre>Hello, World (0)
+Hello, World (1)
+Hello, World (2)
+RuntimeException(&#34;Uh oh&#34;)
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When re-running the flow, using the same UUID as before, it will retry that failed step and resume from there. The first two steps which were already run successfully are not re-executed.
+Instead, they will be replayed from a persistent execution log, which is based on <a href="https://sqlite.org/">SQLite</a>, an embedded SQL database:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre>Hello, World (3)
+Hello, World (4)
+Sum: 10
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the following, let’s take a closer look at some of the implementation choices in Persistasaurus.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_capturing_execution_state">Capturing Execution State</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>At the core of every DE engine there’s some form of persistent durable execution log.
+You can think of this a bit like the write-ahead log of a database.
+It captures the intent to execute a given flow step, which makes it possible to retry that step should it fail, using the same parameter values.
+Once successfully executed, a step’s result will also be recorded in the log,
+so that it can be replayed from there if needed, without having to actually re-execute the step itself.</p>
+</div>
+<div class="paragraph">
+<p>DE logs come in two flavours largely speaking; one is in the form of an external state store which is accessed via some sort of SDK.
+Example frameworks taking this approach include <a href="https://temporal.io/">Temporal</a>, <a href="https://www.restate.dev/">Restate</a>, <a href="https://www.resonatehq.io/">Resonate</a>, and <a href="https://www.inngest.com/">Inngest</a>.
+The other option is to persist DE state in the local database of a given application or (micro)service.
+One solution in this category is <a href="https://www.dbos.dev/">DBOS</a>, which implements DE on top of Postgres.</p>
+</div>
+<div class="paragraph">
+<p>To keep things simple, I went with the local database model for Persistasaurus, using SQLite for storing the execution log.
+But as we’ll see later on, depending on your specific use case, SQLite actually might also be a great choice for a production scenario,
+for instance when building a self-contained agentic system.</p>
+</div>
+<div class="paragraph">
+<p>The structure of the execution log table in SQLite is straight-forward.
+It contains one entry for each durable execution step:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">IF</span> <span class="k">NOT</span> <span class="k">EXISTS</span> <span class="n">execution_log</span> <span class="p">(</span>
+  <span class="n">flowId</span> <span class="nb">TEXT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span> <i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="n">step</span> <span class="nb">INTEGER</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span> <i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="nb">timestamp</span> <span class="nb">INTEGER</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span> <i class="conum" data-value="3"></i><b>(3)</b>
+  <span class="n">class_name</span> <span class="nb">TEXT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span> <i class="conum" data-value="4"></i><b>(4)</b>
+  <span class="n">method_name</span> <span class="nb">TEXT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span> <i class="conum" data-value="5"></i><b>(5)</b>
+  <span class="n">delay</span> <span class="nb">INTEGER</span><span class="p">,</span> <i class="conum" data-value="6"></i><b>(6)</b>
+  <span class="n">status</span> <span class="nb">TEXT</span> <i class="conum" data-value="7"></i><b>(7)</b>
+      <span class="k">CHECK</span><span class="p">(</span> <span class="n">status</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">&#39;PENDING&#39;</span><span class="p">,</span><span class="s1">&#39;WAITING_FOR_SIGNAL&#39;</span><span class="p">,</span><span class="s1">&#39;COMPLETE&#39;</span><span class="p">)</span> <span class="p">)</span>
+      <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+  <span class="n">attempts</span> <span class="nb">INTEGER</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="mi">1</span><span class="p">,</span> <i class="conum" data-value="8"></i><b>(8)</b>
+  <span class="k">parameters</span> <span class="nb">BLOB</span><span class="p">,</span> <i class="conum" data-value="9"></i><b>(9)</b>
+  <span class="n">return_value</span> <span class="nb">BLOB</span><span class="p">,</span> <i class="conum" data-value="10"></i><b>(10)</b>
+  <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="n">flowId</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The UUID of the flow</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The sequence number of the step within the flow, in the order of execution</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The timestamp of first running this step</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The name of the class defining the step method</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The name of the step method (currently ignoring overloaded methods for this PoC)</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>For delayed steps, the delay in milli-seconds</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>The current status of the step</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="8"></i><b>8</b></td>
+<td>A counter for keeping track of how many times the step has been tried</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="9"></i><b>9</b></td>
+<td>The serialized form of the step’s input parameters, if any</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="10"></i><b>10</b></td>
+<td>The serialized form of the step’s result, if any</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>This log table stores all information needed to capture execution intent and persist results.
+More details on the notion of delays and signals follow further down.</p>
+</div>
+<div class="paragraph">
+<p>When running a flow, the engine needs to know when a given step gets executed so it can be logged.
+One common way for doing so is via explicit API calls into the engine, e.g. like so with DBOS Transact:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="nd">@Workflow</span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">workflow</span><span class="o">()</span> <span class="o">{</span>
+  <span class="no">DBOS</span><span class="o">.</span><span class="na">runStep</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="n">stepOne</span><span class="o">(),</span> <span class="s">&#34;stepOne&#34;</span><span class="o">);</span>
+  <span class="no">DBOS</span><span class="o">.</span><span class="na">runStep</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="n">stepTwo</span><span class="o">(),</span> <span class="s">&#34;stepTwo&#34;</span><span class="o">);</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This works, but tightly couples workflows to the DE engine’s API.
+For Persistaurus I aimed to avoid this dependency as much as possible.
+Instead, the idea is to transparently intercept the invocations of all step methods and track them in the execution log,
+allowing for a very concise flow expression, without any API dependencies:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="nd">@Flow</span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">workflow</span><span class="o">()</span> <span class="o">{</span>
+  <span class="n">stepOne</span><span class="o">();</span>
+  <span class="n">stepTwo</span><span class="o">();</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In order for the DE engine to know when a flow or step method gets invoked,
+the <a href="https://en.wikipedia.org/wiki/Proxy_pattern">proxy pattern</a> is being used:
+a proxy wraps the actually flow object and handles each of its method invocations,
+updating the state in the execution log before and after passing the call on to the flow itself.
+Thanks to Java’s dynamic nature, creating such a proxy is relatively easy, requiring just a little bit of bytecode generation.
+Unsurprisingly, I’m using the <a href="https://bytebuddy.net/">ByteBuddy</a> library for this job:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre></td><td class="code"><pre><span class="kd">private</span> <span class="kd">static</span> <span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="no">T</span> <span class="nf">getFlowProxy</span><span class="o">(</span><span class="nc">Class</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">clazz</span><span class="o">,</span> <span class="no">UUID</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">try</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="nf">ByteBuddy</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">subclass</span><span class="o">(</span><span class="n">clazz</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="o">.</span><span class="na">method</span><span class="o">(</span><span class="nc">ElementMatchers</span><span class="o">.</span><span class="na">any</span><span class="o">())</span> <i class="conum" data-value="2"></i><b>(2)</b>
+        <span class="o">.</span><span class="na">intercept</span><span class="o">(</span> <i class="conum" data-value="3"></i><b>(3)</b>
+            <span class="nc">MethodDelegation</span><span class="o">.</span><span class="na">withDefaultConfiguration</span><span class="o">()</span>
+                <span class="o">.</span><span class="na">withBinders</span><span class="o">(</span>
+                    <span class="nc">Morph</span><span class="o">.</span><span class="na">Binder</span><span class="o">.</span><span class="na">install</span><span class="o">(</span><span class="nc">OverrideCallable</span><span class="o">.</span><span class="na">class</span><span class="o">))</span>
+                <span class="o">.</span><span class="na">to</span><span class="o">(</span><span class="k">new</span> <span class="nc">Interceptor</span><span class="o">(</span><span class="n">id</span><span class="o">)))</span>
+        <span class="o">.</span><span class="na">make</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">load</span><span class="o">(</span><span class="nc">Persistasaurus</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getClassLoader</span><span class="o">())</span> <i class="conum" data-value="4"></i><b>(4)</b>
+        <span class="o">.</span><span class="na">getLoaded</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">getDeclaredConstructor</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">newInstance</span><span class="o">();</span> <i class="conum" data-value="5"></i><b>(5)</b>
+  <span class="o">}</span>
+  <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">(</span><span class="s">&#34;Couldn&#39;t instantiate flow&#34;</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Create a sub-class proxy for the flow type</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Intercept all method invocations on this proxy…​</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>…​and delegate them to an <code>Interceptor</code> object</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Load the generated proxy class</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Instantiate the flow proxy</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>As an aside, Claude Code does an excellent job in creating code using the ByteBuddy API, which is not always self-explanatory.
+Now, whenever a method is invoked on the flow proxy,
+the call is delegated to the <code>Interceptor</code> class,
+which will record the step in the execution log before invoking the actual flow method.
+I am going to spare you the complete details of the method interceptor implementation
+(you can find it <a href="https://github.com/gunnarmorling/persistasaurus/blob/main/src/main/java/dev/morling/persistasaurus/Persistasaurus.java">here</a> on GitHub),
+but the high-level logic looks like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="nc">Object</span> <span class="nf">intercept</span><span class="o">(</span><span class="nd">@This</span> <span class="nc">Object</span> <span class="n">instance</span><span class="o">,</span>
+    <span class="nd">@Origin</span> <span class="nc">Method</span> <span class="n">method</span><span class="o">,</span>
+    <span class="nd">@AllArguments</span> <span class="nc">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">,</span>
+    <span class="nd">@Morph</span> <span class="nc">OverrideCallable</span> <span class="n">callable</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Throwable</span> <span class="o">{</span>
+
+  <span class="k">if</span> <span class="o">(!</span><span class="n">isFlowOrStep</span><span class="o">(</span><span class="n">method</span><span class="o">))</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="n">callable</span><span class="o">.</span><span class="na">call</span><span class="o">(</span><span class="n">args</span><span class="o">);</span>
+  <span class="o">}</span>
+
+  <span class="nc">Invocation</span> <span class="n">loggedInvocation</span> <span class="o">=</span> <span class="n">executionLog</span><span class="o">.</span><span class="na">getInvocation</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">step</span><span class="o">);</span>
+
+  <span class="k">if</span> <span class="o">(</span><span class="n">loggedInvocation</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span>
+      <span class="n">loggedInvocation</span><span class="o">.</span><span class="na">status</span><span class="o">()</span> <span class="o">==</span> <span class="nc">InvocationStatus</span><span class="o">.</span><span class="na">COMPLETE</span><span class="o">)</span> <span class="o">{</span> <i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="n">step</span><span class="o">++;</span>
+    <span class="k">return</span> <span class="n">loggedInvocation</span><span class="o">.</span><span class="na">returnValue</span><span class="o">();</span>
+  <span class="o">}</span>
+  <span class="k">else</span> <span class="o">{</span>
+    <span class="n">executionLog</span><span class="o">.</span><span class="na">logInvocationStart</span><span class="o">(</span>
+        <span class="n">id</span><span class="o">,</span> <span class="n">step</span><span class="o">,</span> <span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">(),</span> <span class="nc">InvocationStatus</span><span class="o">.</span><span class="na">PENDING</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span> <i class="conum" data-value="2"></i><b>(2)</b>
+
+    <span class="kt">int</span> <span class="n">currentStep</span> <span class="o">=</span> <span class="n">step</span><span class="o">;</span>
+    <span class="n">step</span><span class="o">++;</span>
+
+    <span class="nc">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">callable</span><span class="o">.</span><span class="na">call</span><span class="o">(</span><span class="n">args</span><span class="o">);</span> <i class="conum" data-value="3"></i><b>(3)</b>
+
+    <span class="n">executionLog</span><span class="o">.</span><span class="na">logInvocationCompletion</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">currentStep</span><span class="o">,</span> <span class="n">result</span><span class="o">);</span> <i class="conum" data-value="4"></i><b>(4)</b>
+
+    <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Replay completed step if present</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Log invocation</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Execute the actual step method</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Log result</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>Replaying completed steps from the log is essential for ensuring deterministic execution.
+Each step typically runs exactly once,
+capturing non-deterministic values such as the current time or random numbers while doing so.</p>
+</div>
+<div class="paragraph">
+<p>There’s an important failure mode, though:
+if the system crashes <em>after</em> a step has been executed but <em>before</em> the result can be recorded in the log,
+that step would be repeated when rerunning the flow.
+Odds for this to happen are pretty small, but whether it is acceptable or not depends on the particular use case.
+When executing steps with side-effects, such as remote API calls,
+it may  be a good idea to add idempotency keys to the requests,
+which lets the invoked services detect and ignore any potential duplicate calls.</p>
+</div>
+<div class="paragraph">
+<p>The actual execution log implementation isn’t that interesting, you can find its source code <a href="https://github.com/gunnarmorling/persistasaurus/blob/main/src/main/java/dev/morling/persistasaurus/internal/ExecutionLog.java">here</a>.
+All it does is persist step invocations and their status in the <code>execution_log</code> SQLite table shown above.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_delayed_executions">Delayed Executions</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>At this point, we have a basic Durable Execution engine which can run simple flows as the one above.
+Next, I explored implementing delayed execution steps.
+As an example, consider a user onboarding flow, where you might want to send out an email with useful resources a few days after a user has signed up.
+Using the annotation-based programming model of Persistasaurus, this can be expressed like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">SignupFlow</span> <span class="o">{</span>
+
+  <span class="nd">@Flow</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">signUp</span><span class="o">(</span><span class="nc">String</span> <span class="n">userName</span><span class="o">,</span> <span class="nc">String</span> <span class="n">email</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kt">long</span> <span class="n">id</span> <span class="o">=</span> <span class="n">createUserRecord</span><span class="o">(</span><span class="n">userName</span><span class="o">,</span> <span class="n">email</span><span class="o">);</span>
+
+    <span class="n">sendUsefulResources</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+  <span class="o">}</span>
+
+  <span class="nd">@Step</span>
+  <span class="kd">protected</span> <span class="kt">long</span> <span class="nf">createUserRecord</span><span class="o">(</span><span class="nc">String</span> <span class="n">userName</span><span class="o">,</span> <span class="nc">String</span> <span class="n">email</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// persist the user...</span>
+    <span class="k">return</span> <span class="n">id</span><span class="o">;</span>
+  <span class="o">}</span>
+
+  <span class="nd">@Step</span><span class="o">(</span><span class="n">delay</span><span class="o">=</span><span class="mi">3</span><span class="o">,</span> <span class="n">timeUnit</span><span class="o">=</span><span class="no">DAYS</span><span class="o">)</span>
+  <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">sendUsefulResources</span><span class="o">(</span><span class="kt">long</span> <span class="n">userId</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// send the email...</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Naturally, we don’t want to block the initiating thread when delaying a step—​for instance, a web application’s request handler.
+Instead, we need a way to temporarily yield execution of the flow, return control to the caller,
+and then later on, when the configured delay has passed, resume the flow.</p>
+</div>
+<div class="paragraph">
+<p>Unlike other programming languages, Java doesn’t support <a href="https://en.wikipedia.org/wiki/Continuation">continuations</a> via its public API.
+So how could we yield control then?
+One option would be to define a specific exception type, let’s say <code>FlowYieldException</code>, and raise it from within the method interceptor when encountering a delayed method.
+The call stack would be unwound until some framework-provided exception handler catches that exception and returns control to the code triggering the flow.
+For this to work, it is essential that no user-provided flow or step code catches that exception type.
+Alternatively, one could transform the bytecode of the step method (and all the methods below it in the call stack),
+so that it can return control at given suspension points and later on resume from there,
+similar to how <a href="https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html#asynchronous-programming-with-coroutines">Kotlin’s coroutines</a> are implemented under the hood (&#34;continuation passing style&#34;).</p>
+</div>
+<div class="paragraph">
+<p>Luckily, Java 21 offers a much simpler solution.
+This version added support for virtual threads (<a href="https://openjdk.org/jeps/444">JEP 444</a>),
+and while you shouldn’t block OS level threads, blocking virtual threads is totally fine.
+Virtual threads are lightweight user-mode threads managed by the JVM,
+and an application can have hundreds of thousands, or even millions of them at once.
+Thus I decided to implement delayed executions in Persistasaurus through virtual threads,
+sleeping for the given period of time when encountering a delayed method.</p>
+</div>
+<div class="paragraph">
+<p>To run a flow with a delayed step, trigger it via <code>runAsync()</code>,
+which immediately returns control to the caller:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="nc">FlowInstance</span><span class="o">&lt;</span><span class="nc">SignupFlow</span><span class="o">&gt;</span> <span class="n">flow</span> <span class="o">=</span> <span class="nc">Persistasaurus</span><span class="o">.</span><span class="na">getFlow</span><span class="o">(</span>
+    <span class="nc">SignupFlow</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">uuid</span><span class="o">);</span>
+
+<span class="n">flow</span><span class="o">.</span><span class="na">runAsync</span><span class="o">(</span><span class="n">f</span> <span class="o">-&gt;</span> <span class="n">f</span><span class="o">.</span><span class="na">signUp</span><span class="o">(</span><span class="s">&#34;Bob&#34;</span><span class="o">,</span> <span class="s">&#34;bob@example.com&#34;</span><span class="o">));</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When putting a virtual thread running a flow method asleep,
+it will be unmounted from the underlying OS level carrier thread,
+freeing its resources.
+Later on, once the sleep time has passed, the virtual thread will be remounted onto a carrier thread and continue the flow.
+When rerunning non-finished flows with a delayed execution step,
+Persistasaurus will only sleep for the remainder of the configured delay,
+which might be zero if enough time has passed since the original run of the flow.</p>
+</div>
+<div class="paragraph">
+<p>So in fact, you could think of virtual threads as a form of continuations;
+and indeed, if you look closely at the stacktrace of a virtual thread, you’ll see that the frame at the very bottom is the <code>enter()</code> method of a JDK-internal class <code>Continuation</code>.
+Interestingly, this class was even part of the public Java API in early preview versions of virtual threads,
+but it got made private later on.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_human_interaction">Human Interaction</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As the last step of my exploration I was curious how flows with &#34;human in the loop&#34;-steps could be implemented:
+steps where externally provided input or data is required in order for a flow to continue.
+Sticking to the sign-up flow example,
+this could be an email by the user, so as to confirm their identity (double opt-in).
+As much as possible, I tried to stick to the idea of using plain method calls for expressing the flow logic,
+but I couldn’t get around making flows invoke a Persistasaurus-specific method, <code>await()</code>, for signalling that a step requires external input:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">SignupFlow</span> <span class="o">{</span>
+
+  <span class="nd">@Flow</span>
+  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">signUp</span><span class="o">(</span><span class="nc">String</span> <span class="n">userName</span><span class="o">,</span> <span class="nc">String</span> <span class="n">email</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kt">long</span> <span class="n">id</span> <span class="o">=</span> <span class="n">createUserRecord</span><span class="o">(</span><span class="n">userName</span><span class="o">,</span> <span class="n">email</span><span class="o">);</span>
+
+    <span class="n">sendEmailConfirmationRequest</span><span class="o">(</span><span class="n">email</span><span class="o">);</span>
+
+    <span class="n">await</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="n">confirmEmailAddress</span><span class="o">(</span><span class="n">any</span><span class="o">()));</span> <i class="conum" data-value="1"></i><b>(1)</b>
+
+    <span class="n">finalizeSignUp</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+  <span class="o">}</span>
+
+  <span class="nd">@Step</span>
+  <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">confirmEmailAddress</span><span class="o">(</span><span class="nc">Instant</span> <span class="n">timeOfConfirmation</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// ...</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Await the invocation of the given step method</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>When the method interceptor encounters a step method invoked from within an <code>await()</code> block,
+it doesn’t go on to actually execute right away.
+Instead, the flow will await continuation until the step method gets triggered.
+This is why it doesn’t matter which parameter values are passed to that step within the flow definition.
+You could pass <code>null</code>, or, as a convention, the <code>any()</code> placeholder method.</p>
+</div>
+<div class="paragraph">
+<p>In order to provide the input to a waiting step and continue the flow,
+call the step method via <code>resume()</code>, for instance like so, in a request handler method of a Spring Boot web application:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="nd">@PostMapping</span><span class="o">(</span><span class="s">&#34;/email-confirmations&#34;</span><span class="o">)</span>
+<span class="kt">void</span> <span class="nf">confirmEmailAddress</span><span class="o">(</span><span class="nd">@RequestBody</span> <span class="nc">Confirmation</span> <span class="n">confirmation</span><span class="o">)</span> <span class="o">{</span>
+  <span class="nc">FlowInstance</span><span class="o">&lt;</span><span class="nc">UserSignupFlow</span><span class="o">&gt;</span> <span class="n">flow</span> <span class="o">=</span> <span class="nc">Persistasaurus</span><span class="o">.</span><span class="na">getFlow</span><span class="o">(</span>
+        <span class="nc">UserSignupFlow</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">confirmation</span><span class="o">.</span><span class="na">uuid</span><span class="o">());</span>
+
+  <span class="n">flow</span><span class="o">.</span><span class="na">resume</span><span class="o">(</span><span class="n">f</span> <span class="o">-&gt;</span> <span class="o">{</span>
+    <span class="n">f</span><span class="o">.</span><span class="na">confirmEmailAddress</span><span class="o">(</span><span class="n">confirmation</span><span class="o">.</span><span class="na">timestamp</span><span class="o">());</span>
+  <span class="o">});</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The flow will then continue from that step, using the given parameter value(s) as its input.
+For this to work, we need a way for the engine to know whether a given step method gets invoked from within <code>resume()</code> and thus actually should be executed,
+or, whether it gets invoked from within <code>await()</code> and hence should be suspended.</p>
+</div>
+<div class="paragraph">
+<p>Seasoned framework developers might immediately think of using thread-local variables for this purpose,
+but as of Java 25, this can be solved much more elegantly and safely using so-called <em>scoped values</em>,
+as defined in <a href="https://openjdk.org/jeps/506">JEP 506</a>.
+To quote that JEP, scoped values</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>enable a method to share immutable data both with its callees within a thread, and with child threads. Scoped values are easier to reason about than thread-local variables. They also have lower space and time costs</p>
+</div>
+</blockquote>
+</div>
+<div class="paragraph">
+<p>Scoped values are typically defined as as a static field like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Persistasaurus</span> <span class="o">{</span>
+
+  <span class="kd">enum</span> <span class="nc">CallType</span> <span class="o">{</span> <span class="no">RUN</span><span class="o">,</span> <span class="no">AWAIT</span><span class="o">,</span> <span class="no">RESUME</span><span class="o">;</span> <span class="o">}</span>
+
+  <span class="kd">static</span> <span class="kd">final</span> <span class="nc">ScopedValue</span><span class="o">&lt;</span><span class="nc">CallType</span><span class="o">&gt;</span> <span class="no">CALL_TYPE</span> <span class="o">=</span>
+      <span class="nc">ScopedValue</span><span class="o">.</span><span class="na">newInstance</span><span class="o">();</span>
+
+  <span class="c1">// ...</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To set the scoped value and run some unit of code with that value, call <code>ScopedValue::where()</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">await</span><span class="o">(</span><span class="nc">Runnable</span> <span class="n">r</span><span class="o">)</span> <span class="o">{</span>
+  <span class="nc">ScopedValue</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="no">CALL_TYPE</span><span class="o">,</span> <span class="nc">CallType</span><span class="o">.</span><span class="na">AWAIT</span><span class="o">).</span><span class="na">run</span><span class="o">(</span><span class="n">r</span><span class="o">);</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Unlike thread-local variables,
+this ensures the scoped value is cleared when leaving the scope.
+Then, further down in the call stack, within the method handler, the scoped value can be consumed:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+</pre></td><td class="code"><pre><span class="nc">CallType</span> <span class="n">callType</span> <span class="o">=</span> <span class="no">CALL_TYPE</span><span class="o">.</span><span class="na">get</span><span class="o">();</span>
+
+<span class="k">if</span> <span class="o">(</span><span class="n">callType</span> <span class="o">==</span> <span class="nc">CallType</span><span class="o">.</span><span class="na">RESUME</span><span class="o">)</span> <span class="o">{</span>
+  <span class="nc">WaitCondition</span> <span class="n">waitCondition</span> <span class="o">=</span> <span class="n">getWaitCondition</span><span class="o">(</span><span class="n">flowId</span><span class="o">);</span>
+
+  <span class="n">waitCondition</span><span class="o">.</span><span class="na">lock</span><span class="o">.</span><span class="na">lock</span><span class="o">();</span>
+
+  <span class="k">try</span> <span class="o">{</span>
+    <span class="n">waitCondition</span><span class="o">.</span><span class="na">condition</span><span class="o">.</span><span class="na">signal</span><span class="o">();</span>
+  <span class="o">}</span>
+  <span class="k">finally</span> <span class="o">{</span>
+    <span class="n">waitCondition</span><span class="o">.</span><span class="na">lock</span><span class="o">.</span><span class="na">unlock</span><span class="o">();</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In order to yield control when waiting for external input and to resume when that input has been provided,
+a <code>ReentrantLock</code> with a wait condition is used.
+Similar to the <code>sleep()</code> call used for fixed delay steps above,
+a virtual thread will be unmounted from its carrier when waiting for a condition.</p>
+</div>
+<div class="paragraph">
+<p>When accidentally trying to access a scoped value which isn’t actually set, an exception will be raised,
+addressing another issue you’d commonly encounter with thread-local variables.
+This might not seem like a huge deal,
+but it’s great to see how the Java platform continues to evolve and improves things like this.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_managing_state">Managing State</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let’s dive a bit deeper into managing state in a durable execution engine.
+For the example DE implementation developed for this blog post,
+I went with SQLite primarily for the sake of simplicity.
+Now, would you use SQLite, as an embedded database, also in an actual production-ready implementation?
+The answer is going to depend on your specific use case.
+If, for instance, you are building a self-contained AI agent and you want to use DE for making sure LLM invocations are not repeated when the agent crashes,
+an embedded database such as SQLite would make for a great store for persisting execution state.
+Each agent could have its own database, thus avoiding any concurrent writes, which can pose a bottleneck due to SQLite’s single-writer design.</p>
+</div>
+<div class="paragraph">
+<p>On the other hand, if you’re building a system with a high number of parallel requests by different users,
+such as a typical microservice,
+a client/server database such as Postgres or MySQL would be a better fit.
+If that system already maintains state in a database (as most services do),
+then re-using that same database to store execution state provides a critical advantage:
+Updates to the application’s data and its execution state can happen atomically in a single database transaction, providing atomicity guarantees.
+This solution is implemented by the DBOS engine, on top of Postgres, for instance.</p>
+</div>
+<div class="paragraph">
+<p>Another category of DE engines which include systems such as Temporal and Restate,
+utilizes a separate server component with its own dedicated store for persisting execution state.
+This approach can be very useful to implement flows spanning across a set of multiple services
+(sometimes referred to as <a href="https://www.infoq.com/articles/saga-orchestration-outbox/">Sagas</a>).
+By keeping track of the overall execution state in one central place,
+they essentially avoid the need for cross-system transactions.</p>
+</div>
+<div class="paragraph">
+<p>Another advantage of this approach is that the actual application doesn’t have to keep running while waiting for delayed execution steps,
+making it a great fit for systems implemented in the form of scale-to-zero serverless designs (Function-as-a-Service, Knative, etc.).
+The downside of this centralized design is the potentially closer coupling of the participating services,
+as they all need to converge on a specific DE engine, on one specific version of that engine, etc.
+Also HA and fault tolerance must be a priority in order to avoid the creation of a single point of failure between all the orchestrated services.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_wrapping_up">Wrapping Up</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>At its heart, the idea of Durable Execution is not a complex one:
+Potentially long-running workflows are organized into individual steps whose execution status and result is persisted in a durable form.
+That way, flows become resumable after failures, while skipping any steps already executed successfully.
+You could think of it as a persistent implementation of the <a href="https://en.wikipedia.org/wiki/Memoization">memoization pattern</a>, or a persistent form of continuations.</p>
+</div>
+<div class="paragraph">
+<p>As demonstrated in this post and the accompanying <a href="https://github.com/gunnarmorling/persistasaurus">source code</a>,
+it doesn’t take too much work to create a functioning PoC for a DE engine.
+Of course, it’s still quite a way to go from there to a system you’d actually want to put into production.
+At the persistence level, you’d have to address aspects such as (horizontal) scalability, fault tolerance and HA.
+The engine should support things such as retrying failing steps with exponential back-off,
+parallel execution of workflow steps,
+throttling flow executions, compensation steps for implementing Sagas, and more.
+You’d also want to have a UI for managing flows, analyzing, restarting, and debugging them.
+Finally, you should also have a strategy for evolving flow definitions and the state they persist,
+in particular when dealing with long-running flows which may take days, weeks, or months to complete.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div>
+
+		<div class="post-footer">
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<div class="header-image-container" style="flex-shrink: 0;">
+					<img class="footer-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+				</div>
+				<p style="margin: 0;">Gunnar Morling is an open-source software engineer in the Java and data streaming space. He currently works as a Technologist for Confluent. In his past role at Decodable he focused on developer outreach and helped them build their stream processing platform based on Apache Flink. Prior to that, he spent ten years at Red Hat, where he led the Debezium project, a platform for change data capture.</p>
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
