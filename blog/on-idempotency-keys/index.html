@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>On Idempotency Keys - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="On Idempotency Keys" />
+<meta property="og:description" content="
+In distributed systems, there’s a common understanding that it is not possible to guarantee exactly-once delivery of messages.
+What is possible though is exactly-once processing. By adding a unique idempotency key to each message, you can enable consumers to recognize and ignore duplicate messages, i.e. messages which they have received and successfully processed before.
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.morling.dev/blog/on-idempotency-keys/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2025-11-25T13:10:00+01:00" />
+<meta property="article:modified_time" content="2025-11-25T13:10:00+01:00" />
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="On Idempotency Keys"/>
+<meta name="twitter:description" content="
+In distributed systems, there’s a common understanding that it is not possible to guarantee exactly-once delivery of messages.
+What is possible though is exactly-once processing. By adding a unique idempotency key to each message, you can enable consumers to recognize and ignore duplicate messages, i.e. messages which they have received and successfully processed before.
+"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+ 
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://www.morling.dev/css/main.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/base16.dark.css" />
+	
+	<link rel="stylesheet" type="text/css" href="https://www.morling.dev/css/morlingdev.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+
+	<script src="https://www.morling.dev//js/main.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">On Idempotency Keys</h1>
+				<div class="meta">Posted at Nov 25, 2025</div>
+			</div>
+
+			<div class="markdown">
+				<div class="paragraph">
+<p>In distributed systems, there’s a common understanding that it is not possible to guarantee exactly-once delivery of messages.
+<a href="https://medium.com/@jaykreps/exactly-once-support-in-apache-kafka-55e1fdd0a35f">What is possible</a> though is <em>exactly-once processing</em>. By adding a unique idempotency key to each message, you can enable consumers to recognize and ignore duplicate messages, i.e. messages which they have received and successfully processed before.</p>
+</div>
+<div class="paragraph">
+<p>Now, how does this work exactly? When receiving a message, a consumer takes the message’s idempotency key and compares it to the keys of the messages which it already has processed. If it has seen the key before, the incoming message is a duplicate and can be ignored. Otherwise, the consumer goes on to process the message, for instance by storing the message itself, or a view derived from it, in some kind of database.</p>
+</div>
+<div class="paragraph">
+<p>In addition, it stores the idempotency key of the message. Critically, these two things must happen atomically, typically by wrapping them in a database transaction. Either the message gets processed <em>and</em> its idempotency key gets persisted. Or, the transaction gets rolled back and no changes are applied at all. That way, it is ensured that the consumer will process a message again upon redelivery, if it failed to do so before. It also is ensured that duplicates received after successfully processing the message are skipped over.</p>
+</div>
+<div class="sect1">
+<h2 id="_uuids">UUIDs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>So let’s discuss what makes for a good idempotency key then. One possible option would be to use a UUIDv4. These random identifiers solve the requirement of uniquely identifying each message. However, they require the consumer to store the UUIDs of all the previous messages it ever has received in order to reliably identify a duplicate. Depending on the message volume, this may not be practical. Pragmatically, you might get away with discarding received UUIDs after some time period, if it is acceptable to occasionally receive and process a duplicate after that period. Unfortunately, neither the producer of the message nor the consumer will have any indication of the duplicated processing in that case.</p>
+</div>
+<div class="paragraph">
+<p>We can somewhat improve this situation by adding a timestamp to the idempotency key, for instance by using a <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_7_\(timestamp_and_random\">UUIDv7</a>) which contains both a timestamp part (first 48 bits) and a random part (remaining bits), or an <a href="https://github.com/ulid/spec">ULID</a>. That way, the consumer can detect when it receives a message with an idempotency key which is “too old”. While it can’t decide whether the message is a duplicate or not, it can flag to the producer that it can’t handle that message. It is then upon the producer to decide how to proceed. For instance, if the message is part of a payment flow, the system might suggest to the user to first check in their banking account whether this payment has already been executed or not. Only if that’s not the case, a <em>new</em> message with the same payload and a fresh UUID would be sent.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_monotonically_increasing_sequences">Monotonically Increasing Sequences</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>All these intricacies can be avoided when it is possible to use a monotonically increasing sequence value as the idempotency key. In that case, the consumer does not need to store all the keys it ever has processed (or a reasonably sized subset thereof). It only needs to store a single value, the one of the latest message which it has processed. If it receives a message with the same or a lower idempotency key, that message must be a duplicate and can be ignored. When receiving messages from a partitioned source, such as a Kafka topic with multiple partitions, or from multiple independent producers (e.g., different clients of a REST API, each using their own separate sequence), then the latest key value per partition must be stored.</p>
+</div>
+<div class="paragraph">
+<p>Monotonically increasing idempotency keys are a great improvement from the perspective of the message consumer. On the flipside, they may make things more complicated for producers: creating monotonically increasing sequence values isn’t without its own challenges. It is trivial if producers are single-threaded, producing one message at a time. In that case, a database sequence, or even a simple in-memory counter, can be used for creating the idempotency keys. Gaps in the sequence are fine, hence it is possible to increment the persistent state of the sequence or counter in larger steps, and dispense the actual values from an in-memory copy. That way, disk IO can be reduced. From a consumer perspective, Kafka partition offsets fall into that bucket, as they can be considered a monotonically increasing idempotency key for the messages consumed from a given partition.</p>
+</div>
+<div class="paragraph">
+<p>Things get more complicated when the producer is subject to multiple concurrent requests at once, for instance a REST service with multiple request workers, perhaps even scaled out to multiple compute nodes in a cluster. To ensure monotonicity, retrieval of the idempotency key and emitting a message with that key must happen atomically, uninterrupted by other worker threads. Otherwise, you may end up in a situation where thread A fetches sequence value 100, thread B fetches sequence value 101, B emits a message with idempotency key 101, and then A emits a message with idempotency key 100\. A consumer would then, incorrectly, discard A’s message as a duplicate.</p>
+</div>
+<div class="paragraph">
+<p>For most cases, ensuring this level of atomicity will impose a severe bottleneck, essentially serializing all requests of the producer system, regardless of how many worker threads or service
+instances you deploy. Note that if you really wanted to go down that route, solely using a database sequence for producing the idempotency key will not work. Instead, you’d have to use a mechanism such as <a href="https://www.postgresql.org/docs/current/explicit-locking.html">Postgres advisory locks</a> in order to guarantee monotonicity of idempotency keys in the outgoing messages.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_deriving_idempotency_keys_from_the_transaction_log">Deriving Idempotency Keys From the Transaction Log</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now, is there a way for us to have this cake and eat it too? Can we get the space efficiency for consumers when using monotonically increasing idempotency keys, without hampering performance of multi-threaded producers? Turns out we can, at least when the emission of messages can be made an asynchronous activity in the producer system, happening independently from processing inbound requests.
+This means clients of the producer system receive confirmation that the intent to send a message or request was persisted, but they don’t get the result of the same right away.
+If a use case can be modeled with these semantics, the problem can be reduced to the single-threaded situation above: instead of emitting messages directly to the target system, each producer thread inserts them into a queue. This queue is processed by a single-threaded worker process which emits all the messages sequentially. As argued in <a href="https://www.morling.dev/blog/the-synchrony-budget/">The Synchrony Budget</a>, making activities asynchronous can be generally advantageous, if we don’t require their outcome right away.</p>
+</div>
+<div class="paragraph">
+<p>One specific way to do so would be a variation of the widely used <a href="https://vimeo.com/1115794417">outbox pattern</a>, utilizing the transaction log of the producer service’s database. After all, it’s not necessary to sequence inbound requests ourselves as the database already is doing that for us when serializing the transactions in its log. When producers persist the intent to send a message in the transaction log—for instance by writing a record into a specific table—a process tailing the log can assign idempotency keys to these messages based on their position in the transaction log.</p>
+</div>
+<div class="paragraph">
+<p>An implementation of this is straight-forward using tools for log-based Change Data Capture (CDC), such as <a href="https://debezium.io/">Debezium</a>: You retrieve the messages to be sent from the log by capturing the INSERT events from the outbox table, and assign an idempotency key before emitting them, derived from their log offset. The exact details are going to depend on the specific database.</p>
+</div>
+<div class="paragraph">
+<p>For example, in Postgres <a href="https://www.morling.dev/blog/postgres-replication-slots-confirmed-flush-lsn-vs-restart-lsn/">it is ensured</a> that the log sequence numbers (LSN) of commit events within its write-ahead log (WAL) are monotonically increasing: the commit event of a transaction committing after another transaction will have a higher LSN. Furthermore, it is guaranteed that within a given transaction, the LSNs of the events are also monotonically increasing. This makes the tuple of <code>{ Commit LSN, Event LSN }</code> a great fit for an idempotency key. In order to not leak the fact that a producer is using a Postgres database, both values can be encoded into a single 128 bit number value. Note that you don’t need to deploy Kafka or Kafka Connect for this solution. Debezium’s <a href="https://debezium.io/documentation/reference/stable/development/engine.html">embedded engine</a> is a great fit for this use case, allowing you to assign idempotency keys from within a callback method in the producer service itself, not requiring any further infrastructure.
+When using Postgres to implement this pattern, you don’t even need a dedicated outbox table, as it lets you write arbitrary contents into the transaction log via <a href="http://www.infoq.com/articles/wonders-of-postgres-logical-decoding-messages/"><code>pg_logical_emit_message()</code></a>, which is perfect for the use case at hand.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_discussion">Discussion</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>So, when to use which kind of idempotency key then?
+As always, there are no silver bullets, and the answer depends on your specific use case.
+For many scenarios, using UUIDs and dropping them after some time will probably be sufficient,
+provided you can tolerate that messages occasionally can be processed a second time when duplicates arrive after the retention period of processed keys.</p>
+</div>
+<div class="paragraph">
+<p>The more messages you need to process overall,
+the more attractive a solution centered around monotonically increasing sequences becomes,
+as it allows for space-efficient duplicate detection and exclusion, no matter how many messages you have.
+The proposed log-based approach can be an efficient solution for doing so,
+but it also adds operational complexity:
+your database needs to support logical replication,
+you need to run a CDC connector, etc.
+However, many organizations already operate CDC pipelines for other purposes
+(analytics, search indexing, cache invalidation, etc.). If you’re in that category,
+the incremental complexity is minimal. If you’re not, you should weigh the operational
+overhead against the benefits (constant-space duplicate detection) for your specific scale.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			<div class="post-tags">
+				
+					
+				
+			</div>
+		</div>
+
+		<div class="post-footer">
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<div class="header-image-container" style="flex-shrink: 0;">
+					<img class="footer-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+				</div>
+				<p style="margin: 0;">Gunnar Morling is an open-source software engineer in the Java and data streaming space. He currently works as a Technologist for Confluent. In his past role at Decodable he focused on developer outreach and helped them build their stream processing platform based on Apache Flink. Prior to that, he spent ten years at Red Hat, where he led the Debezium project, a platform for change data capture.</p>
+			</div>
+		</div><div id="disqus_thread">
+  <script src="https://giscus.app/client.js"
+    data-repo="gunnarmorling/discussions.morling.dev"
+    data-repo-id="R_kgDOGXzqNQ"
+    data-category="Announcements"
+    data-category-id="DIC_kwDOGXzqNc4B_2Pq"
+    data-mapping="title"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
