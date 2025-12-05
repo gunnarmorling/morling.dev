@@ -8,6 +8,7 @@ markup: adoc
 :rouge-style: base16.dark
 :icons: font
 :imagesdir: /images
+:emdash: &#8212;&#8203;
 ifdef::env-github[]
 :imagesdir: ../../static/images
 endif::[]
@@ -24,7 +25,7 @@ Reasons for specifically configuring which columns and rows should be contained 
 * Excluding columns or rows with sensitive data can be necessary in order to satisfy privacy requirements, when for instance Personally Identifiable Information (PII) shouldn't be exposed to external systems
 * Filtering published rows by tenant id can be useful for setting up tenant-specific change streams in a multi-tenant architecture
 
-Before the advent of Postgres-native column lists and row filters, users of https://debezium.io/[Debezium] – a popular open-source platform for change data capture (CDC), which also is used by several Decodable CDC connectors – would typically have implemented these kinds of use cases via a combination of configuration options and single message transformations (SMTs).
+Before the advent of Postgres-native column lists and row filters, users of https://debezium.io/[Debezium]{emdash}a popular open-source platform for change data capture (CDC), which also is used by several Decodable CDC connectors--would typically have implemented these kinds of use cases via a combination of configuration options and single message transformations (SMTs).
 
 Projections are supported in Debezium via the https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-property-column-include-list[column.include.list] and https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-property-column-exclude-list[column.exclude.list] options. These configuration options are applied client-side, i.e. within the Debezium connector, which makes them less efficient to server-side column lists, potentially causing large amounts of data to be streamed to Debezium, only to be discarded there.
 
@@ -196,9 +197,10 @@ Now let's do some data changes and observe the resulting change events, as retri
 [source,sql,linenums=true]
 ----
 INSERT INTO products
-VALUES (DEFAULT, 'deck chair', 'A cozy wooden deck chair', 15.7, 7),
-			(DEFAULT, 'paint', 'A bucket of white paint', 5.0, 15),
-			(DEFAULT, 'lamp', 'A green library style lamp', 4.8, 3);
+VALUES
+  (DEFAULT, 'deck chair', 'A cozy wooden deck chair', 15.7, 7),
+  (DEFAULT, 'paint', 'A bucket of white paint', 5.0, 15),
+  (DEFAULT, 'lamp', 'A green library style lamp', 4.8, 3);
 ----
 
 Nothing too exciting is happening in the Kafka topic: as you would expect, only events for the deck chair and the lamp products show up in Kafka, but not for the paint item, as its quantity is larger than 10. Things get a bit more interesting when doing some updates:
@@ -291,4 +293,4 @@ Going forward, a good next step usability-wise would be for Debezium to apply an
 
 If you would like to get started with your own experimentations around 15 Postgres row filters using Debezium, you can find the complete source code of the example shown above in https://github.com/gunnarmorling/postgres-publication-filtering[this repository] on GitHub. You can find more information about row filters in https://www.postgresql.fastware.com/blog/introducing-publication-row-filters[this blog post]; also refer to http://amitkapila16.blogspot.com/2022/11/logical-replication-improvements-in.html[this post] to learn more about this and other new features related to logical replication in Postgres 15.
 
-_Many thanks to https://twitter.com/rmetzger_[Robert Metzger] for his feedback while writing this post!_
+_Many thanks to https://twitter.com/rmetzger$$_$$[Robert Metzger] for his feedback while writing this post!_
