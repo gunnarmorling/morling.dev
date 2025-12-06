@@ -289,13 +289,13 @@ To me, it boils down to three pieces of information which should be conveyed by 
 <div class="ulist">
 <ul>
 <li>
-<p><em>Context:</em> What led to the error? What was the code trying to do when it failed?</p>
+<p><strong>Context:</strong> What led to the error? What was the code trying to do when it failed?</p>
 </li>
 <li>
-<p><em>The error itself:</em> What exactly failed?</p>
+<p><strong>The error itself:</strong> What exactly failed?</p>
 </li>
 <li>
-<p><em>Mitigation:</em> What needs to be done in order to overcome the error?</p>
+<p><strong>Mitigation:</strong> What needs to be done in order to overcome the error?</p>
 </li>
 </ul>
 </div>
@@ -503,25 +503,25 @@ Nothing is more frustrating than essentially being told &#34;You did it wrong!&#
 <div class="ulist">
 <ul>
 <li>
-<p><em>Uniform voice and style:</em> The specific style chosen doesn’t matter too much, but you should settle on either active vs. passive voice (&#34;couldn’t parse config file&#34; vs. &#34;config file couldn’t be parsed&#34;), apply consistent casing, either finish or not finishes messages with a dot, etc.; not a big thing, but it will make your messages a bit easier to deal with</p>
+<p><strong>Uniform voice and style</strong>: The specific style chosen doesn’t matter too much, but you should settle on either active vs. passive voice (&#34;couldn’t parse config file&#34; vs. &#34;config file couldn’t be parsed&#34;), apply consistent casing, either finish or not finishes messages with a dot, etc.; not a big thing, but it will make your messages a bit easier to deal with</p>
 </li>
 <li>
-<p><em>One concept, one term</em>: Avoid referring to the same concept from your domain using different terms in different error messages; similarly, avoid using the same term for multiple things. Use the same terms as in other places, e.g. your API documentation, reference guides etc.; The more consisent and unambiguous you are, the better</p>
+<p><strong>One concept, one term</strong>: Avoid referring to the same concept from your domain using different terms in different error messages; similarly, avoid using the same term for multiple things. Use the same terms as in other places, e.g. your API documentation, reference guides etc.; The more consisent and unambiguous you are, the better</p>
 </li>
 <li>
-<p><em>Don’t localize error messages:</em> This one is not as clear cut, but I’d generally recommend to not translate error messages into other languages than English; Again, this all is not about user-facing error messages, but about messages geared towards software developers and ops folks, who generally should command reasonable English skills; depending on your audience and target market, translations to specific languages might make sense, in which case a common, unambiguous error code should definitely be part of messages, so as to facilitate searching for the error on the internet</p>
+<p><strong>Don’t localize error messages</strong>: This one is not as clear cut, but I’d generally recommend to not translate error messages into other languages than English; Again, this all is not about user-facing error messages, but about messages geared towards software developers and ops folks, who generally should command reasonable English skills; depending on your audience and target market, translations to specific languages might make sense, in which case a common, unambiguous error code should definitely be part of messages, so as to facilitate searching for the error on the internet</p>
 </li>
 <li>
-<p><em>Don’t make error messages an API contract:</em> In case consumers of your API should be able to react to different kinds of errors, they should not be required to parse any error messages in order to do so. Instead, raise an exception type which exposes a machine-processable error code, or raise specific exception types which can be caught separately by the caller</p>
+<p><strong>Don’t make error messages an API contract</strong>: In case consumers of your API should be able to react to different kinds of errors, they should not be required to parse any error messages in order to do so. Instead, raise an exception type which exposes a machine-processable error code, or raise specific exception types which can be caught separately by the caller</p>
 </li>
 <li>
-<p><em>Be cautious about exposing sensitive data:</em> if your library is in the business of handling and processing sensitive user data, make sure to to not create any privacy concerns; for instance, &#34;show actual vs. expected value&#34; may not pose a problem for values provided by an application developer or administrator; but it can pose a problem if the actual value is GDPR protected user data</p>
+<p><strong>Be cautious about exposing sensitive data</strong>: if your library is in the business of handling and processing sensitive user data, make sure to to not create any privacy concerns; for instance, &#34;show actual vs. expected value&#34; may not pose a problem for values provided by an application developer or administrator; but it can pose a problem if the actual value is GDPR protected user data</p>
 </li>
 <li>
-<p><em>Either raise an exception OR log an error, but not both:</em> A given error should either be communicated by raising an exception or by logging an error. Otherwise, when doing both, as the exception will typically end up being logged via some kind of generic handler anyways, the user would see information about the same error in their logs twice, which only adds confusion</p>
+<p><strong>Either raise an exception OR log an error, but not both</strong>: A given error should either be communicated by raising an exception or by logging an error. Otherwise, when doing both, as the exception will typically end up being logged via some kind of generic handler anyways, the user would see information about the same error in their logs twice, which only adds confusion</p>
 </li>
 <li>
-<p><em>Fail early:</em> This one is not so much about how to express error messages, but when to raise them; in general, the earlier, the better; a message at application start-up beats one later at runtime; a message at build time beats one at start-up, etc. Quicker feedback makes for shorter turn-around times for fixes and also helps to provide the context of any failures</p>
+<p><strong>Fail early</strong>: This one is not so much about how to express error messages, but when to raise them; in general, the earlier, the better; a message at application start-up beats one later at runtime; a message at build time beats one at start-up, etc. Quicker feedback makes for shorter turn-around times for fixes and also helps to provide the context of any failures</p>
 </li>
 </ul>
 </div>

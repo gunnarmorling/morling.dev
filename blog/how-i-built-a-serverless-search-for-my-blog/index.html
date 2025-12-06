@@ -362,15 +362,15 @@ It boils down to three reasons:</p>
 <div class="ulist">
 <ul>
 <li>
-<p><em>Security:</em> While it’d only cost a few EUR per month to set up a VM with a cloud provider like Digital Ocean or Hetzner, having to manage a full operating system installation would require too much of my attention; I don’t want someone to mine bitcoins or doing other nasty things on a box I run, just because I failed to apply some security patch</p>
+<p><strong>Security:</strong> While it’d only cost a few EUR per month to set up a VM with a cloud provider like Digital Ocean or Hetzner, having to manage a full operating system installation would require too much of my attention; I don’t want someone to mine bitcoins or doing other nasty things on a box I run, just because I failed to apply some security patch</p>
 </li>
 <li>
-<p><em>Cost:</em> Serverless does not only promise to scale-out (and let’s be honest, there likely won’t be millions of search queries on my blog every month), but also scale-to-zero.
+<p><strong>Cost:</strong> Serverless does not only promise to scale-out (and let’s be honest, there likely won’t be millions of search queries on my blog every month), but also scale-to-zero.
 As Serverless is pay-per-use and there are free tiers in place e.g. for AWS Lambda,
 this service ideally should cost me just a few cents per month</p>
 </li>
 <li>
-<p><em>Learning Opportunity:</em> Last but not least, this also should be a nice occasion for me to dive into the world of Serverless, by means of designing, developing and running a solution for a real-world problem, exploring how Java as my preferred programming language can be used for this task</p>
+<p><strong>Learning Opportunity:</strong> Last but not least, this also should be a nice occasion for me to dive into the world of Serverless, by means of designing, developing and running a solution for a real-world problem, exploring how Java as my preferred programming language can be used for this task</p>
 </li>
 </ul>
 </div>
@@ -424,16 +424,16 @@ Overall, there are four steps involved:</p>
 <div class="ulist">
 <ul>
 <li>
-<p><em><a href="#_data_extraction">Data extraction:</a></em> The blog contents to be indexed must be extracted and converted into an easy-to-process data format</p>
+<p><strong><a href="#_data_extraction">Data extraction:</a></strong> The blog contents to be indexed must be extracted and converted into an easy-to-process data format</p>
 </li>
 <li>
-<p><em><a href="#_search_backend_implementation">Search backend implementation:</a></em> A small HTTP service is needed which exposes the search functionality of Apache Lucene, which in particular requires some steps to enable Lucene being used in a native GraalVM binary</p>
+<p><strong><a href="#_search_backend_implementation">Search backend implementation:</a></strong> A small HTTP service is needed which exposes the search functionality of Apache Lucene, which in particular requires some steps to enable Lucene being used in a native GraalVM binary</p>
 </li>
 <li>
-<p><em><a href="#_wiring_things_up">Integration with the website:</a></em> The search service must be integrated into the static site on GitHub Pages</p>
+<p><strong><a href="#_wiring_things_up">Integration with the website:</a></strong> The search service must be integrated into the static site on GitHub Pages</p>
 </li>
 <li>
-<p><em><a href="#_deployment_to_aws_lambda">Deployment:</a></em> Finally, the search service needs to be deployed to AWS API Gateway and Lambda</p>
+<p><strong><a href="#_deployment_to_aws_lambda">Deployment:</a></strong> Finally, the search service needs to be deployed to AWS API Gateway and Lambda</p>
 </li>
 </ul>
 </div>
@@ -1111,13 +1111,13 @@ there’s a few things I’d like to improve and expand going forward:</p>
 <div class="ulist">
 <ul>
 <li>
-<p><em>CI pipeline:</em> Automatically re-building and deploying the search service after changes to the contents of my blog; this should hopefully be quite easy using GitHub Actions</p>
+<p><strong>CI pipeline:</strong> Automatically re-building and deploying the search service after changes to the contents of my blog; this should hopefully be quite easy using GitHub Actions</p>
 </li>
 <li>
-<p><em>Performance improvements:</em> While the performance of the query service definitely is good enough, I’d like to see whether and how it could be tuned here and there. Tooling might be challenging there; where I’d use JDK Flight Recorder and Mission Control with a JVM based application, I’m much less familiar with equivalent tooling for native binaries. One option I’d like to explore in particular is taking advantage of Quarkus bytecode recording capability: bytecode instructions for creating the in-memory data structure of the Lucene index could be recorded at build time and then just be executed at application start-up; this might be the fastest option for loading the index in my special use case of a read-only index</p>
+<p><strong>Performance improvements:</strong> While the performance of the query service definitely is good enough, I’d like to see whether and how it could be tuned here and there. Tooling might be challenging there; where I’d use JDK Flight Recorder and Mission Control with a JVM based application, I’m much less familiar with equivalent tooling for native binaries. One option I’d like to explore in particular is taking advantage of Quarkus bytecode recording capability: bytecode instructions for creating the in-memory data structure of the Lucene index could be recorded at build time and then just be executed at application start-up; this might be the fastest option for loading the index in my special use case of a read-only index</p>
 </li>
 <li>
-<p><em>Serverless comments:</em> Currently I’m using Disqus for the commenting feature of the blog. It’s not ideal in terms of privacy and page loading speed, which is why I’m looking for alternatives. One idea could be a custom Serverless commenting functionality, which would be very interesting to explore, in particular as it shifts the focus from a purely immutable application to a stateful service that’ll require some means of modifiable, persistent storage</p>
+<p><strong>Serverless comments:</strong> Currently I’m using Disqus for the commenting feature of the blog. It’s not ideal in terms of privacy and page loading speed, which is why I’m looking for alternatives. One idea could be a custom Serverless commenting functionality, which would be very interesting to explore, in particular as it shifts the focus from a purely immutable application to a stateful service that’ll require some means of modifiable, persistent storage</p>
 </li>
 </ul>
 </div>

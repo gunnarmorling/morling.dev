@@ -344,7 +344,7 @@ Studying the image should give you a good understanding of the JFR file format a
 <div class="ulist">
 <ul>
 <li>
-<p><em>JFR recordings are organized in chunks:</em> Chunks are self-contained independent containers of recorded events and all the metadata required for interpreting these events.
+<p><strong>JFR recordings are organized in chunks:</strong> Chunks are self-contained independent containers of recorded events and all the metadata required for interpreting these events.
 There’s no additional content in recordings besides the chunks, i.e. <a href="https://twitter.com/BriceDutheil/status/1495506834387619847">concat several chunk files</a>, and you’ll have a JFR recording file.
 A multi-chunk recording file can be split up into the individual chunks using the <a href="https://docs.oracle.com/en/java/javase/17/docs/specs/man/jfr.html"><em>jfr</em></a> utility which comes with OpenJDK:</p>
 <div class="listingblock">
@@ -362,11 +362,11 @@ due to the repeatedly stored metadata and constant pools</p>
 </div>
 </li>
 <li>
-<p><em>The event format is self-descriptive:</em> The metadata part of each chunk describes the structure of the contained events, all referenced types, their attributes, etc.; by means of JFR <a href="https://docs.oracle.com/en/java/javase/17/docs/api/jdk.jfr/jdk/jfr/MetadataDefinition.html">metadata annotations</a>, such as <code>@Label</code>, <code>@Description</code>, <code>@Timestamp</code> etc., further metadata like human-readable names and description as well as units of measurements are expressed,
+<p><strong>The event format is self-descriptive:</strong> The metadata part of each chunk describes the structure of the contained events, all referenced types, their attributes, etc.; by means of JFR <a href="https://docs.oracle.com/en/java/javase/17/docs/api/jdk.jfr/jdk/jfr/MetadataDefinition.html">metadata annotations</a>, such as <code>@Label</code>, <code>@Description</code>, <code>@Timestamp</code> etc., further metadata like human-readable names and description as well as units of measurements are expressed,
 allowing to consume and parse an event stream without a-priori knowledge of specific event types. In particular, this allows for the definition of <a href="/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/">custom event types</a> and displaying them in the generic event browser of JMC (of course, bespoke views such as the &#34;Memory&#34; view rely on type-specific interpretations of individual event types)</p>
 </li>
 <li>
-<p><em>The format is geared towards space efficiency:</em> Integer values are stored in a variable-length encoded way (<a href="https://en.wikipedia.org/wiki/LEB128">LEB128</a>), which will safe lots of space when storing small values.
+<p><strong>The format is geared towards space efficiency:</strong> Integer values are stored in a variable-length encoded way (<a href="https://en.wikipedia.org/wiki/LEB128">LEB128</a>), which will safe lots of space when storing small values.
 A constant pool is used to store repeatedly referenced objects, such as String literals,
 stack traces, class and method names, etc.;
 for each usage of such constant in a recorded event, only the constant pool index is stored
@@ -394,13 +394,13 @@ This will be fixed in Java 17.0.3 and 18.
 <div class="ulist">
 <ul>
 <li>
-<p><em>The format is row-based:</em> Events are stored sequentially one after another in recording files; this means that for instance boolean attributes will consume one full byte, also if actually eight boolean values could be stored in a single byte.
+<p><strong>The format is row-based:</strong> Events are stored sequentially one after another in recording files; this means that for instance boolean attributes will consume one full byte, also if actually eight boolean values could be stored in a single byte.
 It could be interesting to explore a columnar format as an alternative,
 which may help to further reduce recording size,
 for instance also allowing to efficiently compress event timestamps values using <a href="https://en.wikipedia.org/wiki/Delta_encoding">delta-encoding</a></p>
 </li>
 <li>
-<p><em>Compression support in JMC reader implementation:</em> The JFR parser implementation of JMC transparently unpacks recording files which are compressed using GZip, ZIP, or LZ4
+<p><strong>Compression support in JMC reader implementation:</strong> The JFR parser implementation of JMC transparently unpacks recording files which are compressed using GZip, ZIP, or LZ4
 (Marcus Hirt discusses the compression of JFR recordings in <a href="http://hirt.se/blog/?p=1166">this post</a>).
 Interestingly, JMC 8.1 still failed to open such compressed recording with an error message.
 The <em>jfr</em> utility doesn’t support compressed recording files, and I suppose the JFR writer in the JDK doesn’t produce compressed recordings either</p>
