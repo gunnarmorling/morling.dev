@@ -1,0 +1,17 @@
+{{- $description := "" -}}
+{{- if .Description -}}
+  {{- $description = .Description -}}
+{{- else if .Summary -}}
+  {{- $summary := partial "strip-toc.html" .Summary -}}
+  {{- $description = $summary | truncate 200 -}}
+{{- else -}}
+  {{- $description = .Site.Params.description | default "" -}}
+{{- end -}}
+
+<meta name="twitter:card" content="summary">
+{{- with .Title }}
+  <meta name="twitter:title" content="{{ . }}">
+{{- end }}
+{{- with $description }}
+  <meta name="twitter:description" content="{{ . }}">
+{{- end }}

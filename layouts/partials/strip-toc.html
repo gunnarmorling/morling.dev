@@ -1,0 +1,13 @@
+{{- $input := . -}}
+{{- /* Insert marker before first paragraph to mark end of ToC */ -}}
+{{- $input = replaceRE `(<div class="paragraph">)` `<!-- END_TOC -->$1` $input 1 -}}
+{{- /* Split on marker and take everything after it (removes ToC) */ -}}
+{{- $parts := split $input "<!-- END_TOC -->" -}}
+{{- $withoutTOC := "" -}}
+{{- if gt (len $parts) 1 -}}
+  {{- $withoutTOC = index $parts 1 -}}
+{{- else -}}
+  {{- $withoutTOC = $input -}}
+{{- end -}}
+{{- /* Plainify the result */ -}}
+{{- $withoutTOC | plainify -}}
