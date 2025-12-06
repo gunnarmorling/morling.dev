@@ -1,3 +1,8 @@
+/* Ensure bold text renders consistently across browsers */
+strong, b {
+    font-weight: 700;
+}
+
 .row {
     display: flex;
     align-items: center;
@@ -249,4 +254,52 @@ th.tableblock {
 
 .post-discussions {
     text-align: center;
+}
+
+/* Wrapper for paragraphs with sidebar annotations */
+.openblock:has(.sidebarblock) {
+    position: relative;
+    margin: 1em 0;
+}
+
+.openblock:has(.sidebarblock) > .content {
+    padding: 0;
+}
+
+/* Sidebar annotations - using AsciiDoc's built-in sidebarblock */
+.openblock .sidebarblock {
+    position: absolute;
+    left: 100%;
+    margin-left: 20px;
+    top: 0;
+    width: 200px;
+    padding: 0em 0.5em;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: #666;
+    background-color: #f8f8f8;
+    border: none;
+    border-left: 3px solid #73ba30;
+    z-index: 10;
+}
+
+.openblock .sidebarblock .content {
+    background: none;
+    padding: 0;
+    border: none;
+}
+
+.openblock .sidebarblock a {
+    color: #73ba30;
+}
+
+@media (max-width: 1200px) {
+    .openblock .sidebarblock {
+        position: static;
+        margin-left: 0;
+        margin-top: 1em;
+        margin-bottom: 1em;
+        width: auto;
+        display: block;
+    }
 }
