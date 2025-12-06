@@ -13,45 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>FizzBuzz – SIMD Style! - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="FizzBuzz – SIMD Style!" />
-<meta property="og:description" content="
-Java 16 is around the corner, so there’s no better time than now for learning more about the features which the new version will bring.
-After exploring the support for Unix domain sockets a while ago,
-I’ve lately been really curious about the incubating Vector API,
-as defined by JEP 338,
-developed under the umbrella of Project Panama,
-which aims at &#34;interconnecting JVM and native code&#34;.
-
-
-Vectors?!?
-Of course this is not about renewing the ancient Java collection types like java.util.Vector
-(&lt;insert some pun about this here&gt;),
-but rather about an API which lets Java developers take advantage of the vector calculation capabilities you can find in most CPUs these days.
-Now I’m by no means an expert on low-level programming leveraging specific CPU instructions,
-but exactly that’s why I hope to make the case with this post that the new Vector API makes these capabilities approachable to a wide audience of Java programmers.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/fizzbuzz-simd-style/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2021-03-08T16:25:00+01:00" />
-<meta property="article:modified_time" content="2021-03-08T16:25:00+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="FizzBuzz – SIMD Style!"/>
-<meta name="twitter:description" content="
-Java 16 is around the corner, so there’s no better time than now for learning more about the features which the new version will bring.
-After exploring the support for Unix domain sockets a while ago,
-I’ve lately been really curious about the incubating Vector API,
-as defined by JEP 338,
-developed under the umbrella of Project Panama,
-which aims at &#34;interconnecting JVM and native code&#34;.
-
-
-Vectors?!?
-Of course this is not about renewing the ancient Java collection types like java.util.Vector
-(&lt;insert some pun about this here&gt;),
-but rather about an API which lets Java developers take advantage of the vector calculation capabilities you can find in most CPUs these days.
-Now I’m by no means an expert on low-level programming leveraging specific CPU instructions,
-but exactly that’s why I hope to make the case with this post that the new Vector API makes these capabilities approachable to a wide audience of Java programmers.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/fizzbuzz-simd-style/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="FizzBuzz – SIMD Style!">
+  <meta property="og:description" content=" Java 16 is around the corner, so there’s no better time than now for learning more about the features which the new version will bring. After exploring the support for Unix domain sockets a while …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2021-03-08T16:25:00&#43;01:00">
+    <meta property="article:modified_time" content="2021-03-08T16:25:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="FizzBuzz – SIMD Style!">
+  <meta name="twitter:description" content=" Java 16 is around the corner, so there’s no better time than now for learning more about the features which the new version will bring. After exploring the support for Unix domain sockets a while …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -294,8 +267,18 @@ but exactly that’s why I hope to make the case with this post that the new Vec
 				<div class="meta">Posted at Mar 8, 2021</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_whats_simd_anyways">What’s SIMD Anyways?</a></li>
+<li><a href="#_vectorizing_fizzbuzz">Vectorizing FizzBuzz</a></li>
+<li><a href="#_examining_the_native_code">Examining the Native Code</a></li>
+<li><a href="#_avoiding_scalar_processing_of_tail_elements">Avoiding Scalar Processing of Tail Elements</a></li>
+<li><a href="#_wrap_up">Wrap-Up</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>Java 16 is around the corner, so there’s no better time than now for learning more about the features which the new version will bring.
 After exploring the support for <a href="/blog/talking-to-postgres-through-java-16-unix-domain-socket-channels/">Unix domain sockets</a> a while ago,
 I’ve lately been really curious about the incubating Vector API,

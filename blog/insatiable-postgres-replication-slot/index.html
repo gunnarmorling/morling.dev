@@ -13,41 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>The Insatiable Postgres Replication Slot - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="The Insatiable Postgres Replication Slot" />
-<meta property="og:description" content="
-While working on a demo for processing change events from Postgres with Apache Flink,
-I noticed an interesting phenomenon:
-A Postgres database which I had set up for that demo on Amazon RDS, ran out of disk space.
-The machine had a disk size of 200 GiB which was fully used up in the course of less than two weeks.
-
-
-Now a common cause for this kind of issue are replication slots which are not advanced:
-in that case, Postgres will hold on to all WAL segments after the latest log sequence number (LSN) which was confirmed for that slot.
-Indeed I had set up a replication slot (via the Decodable CDC source connector for Postgres, which is based on Debezium).
-I then had stopped that connector, causing the slot to become inactive.
-The problem was though that I was really sure that there was no traffic in that database whatsoever!
-What could cause a WAL growth of ~18 GB/day then?
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/insatiable-postgres-replication-slot/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2022-11-30T14:00:00+01:00" />
-<meta property="article:modified_time" content="2022-11-30T14:00:00+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="The Insatiable Postgres Replication Slot"/>
-<meta name="twitter:description" content="
-While working on a demo for processing change events from Postgres with Apache Flink,
-I noticed an interesting phenomenon:
-A Postgres database which I had set up for that demo on Amazon RDS, ran out of disk space.
-The machine had a disk size of 200 GiB which was fully used up in the course of less than two weeks.
-
-
-Now a common cause for this kind of issue are replication slots which are not advanced:
-in that case, Postgres will hold on to all WAL segments after the latest log sequence number (LSN) which was confirmed for that slot.
-Indeed I had set up a replication slot (via the Decodable CDC source connector for Postgres, which is based on Debezium).
-I then had stopped that connector, causing the slot to become inactive.
-The problem was though that I was really sure that there was no traffic in that database whatsoever!
-What could cause a WAL growth of ~18 GB/day then?
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/insatiable-postgres-replication-slot/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="The Insatiable Postgres Replication Slot">
+  <meta property="og:description" content=" While working on a demo for processing change events from Postgres with Apache Flink, I noticed an interesting phenomenon: A Postgres database which I had set up for that demo on Amazon RDS, ran out …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2022-11-30T14:00:00&#43;01:00">
+    <meta property="article:modified_time" content="2022-11-30T14:00:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="The Insatiable Postgres Replication Slot">
+  <meta name="twitter:description" content=" While working on a demo for processing change events from Postgres with Apache Flink, I noticed an interesting phenomenon: A Postgres database which I had set up for that demo on Amazon RDS, ran out …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -290,8 +267,16 @@ What could cause a WAL growth of ~18 GB/day then?
 				<div class="meta">Posted at Nov 30, 2022</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_the_observation">The Observation</a></li>
+<li><a href="#_the_solution">The Solution</a></li>
+<li><a href="#_take_away">Take Away</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>While working on a demo for processing change events from Postgres with Apache Flink,
 I noticed an interesting phenomenon:
 A Postgres database which I had set up for that demo on Amazon RDS, ran out of disk space.

@@ -13,31 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>How I Built a Serverless Search for My Blog - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="How I Built a Serverless Search for My Blog" />
-<meta property="og:description" content="
-I have built a custom search functionality for this blog,
-based on Java and the Apache Lucene full-text search library,
-compiled into a native binary using the Quarkus framework and GraalVM.
-It is deployed as a Serverless application running on AWS Lambda,
-providing search results without any significant cold start delay.
-If you thought Java wouldn’t be the right language for this job, keep reading;
-in this post I’m going to give an overview over the implementation of this feature and my learnings along the way.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/how-i-built-a-serverless-search-for-my-blog/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2020-07-29T17:30:00+02:00" />
-<meta property="article:modified_time" content="2020-07-29T17:30:00+02:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="How I Built a Serverless Search for My Blog"/>
-<meta name="twitter:description" content="
-I have built a custom search functionality for this blog,
-based on Java and the Apache Lucene full-text search library,
-compiled into a native binary using the Quarkus framework and GraalVM.
-It is deployed as a Serverless application running on AWS Lambda,
-providing search results without any significant cold start delay.
-If you thought Java wouldn’t be the right language for this job, keep reading;
-in this post I’m going to give an overview over the implementation of this feature and my learnings along the way.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/how-i-built-a-serverless-search-for-my-blog/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="How I Built a Serverless Search for My Blog">
+  <meta property="og:description" content=" I have built a custom search functionality for this blog, based on Java and the Apache Lucene full-text search library, compiled into a native binary using the Quarkus framework and GraalVM. It is …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2020-07-29T17:30:00&#43;02:00">
+    <meta property="article:modified_time" content="2020-07-29T17:30:00&#43;02:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="How I Built a Serverless Search for My Blog">
+  <meta name="twitter:description" content=" I have built a custom search functionality for this blog, based on Java and the Apache Lucene full-text search library, compiled into a native binary using the Quarkus framework and GraalVM. It is …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -280,8 +267,32 @@ in this post I’m going to give an overview over the implementation of this fea
 				<div class="meta">Posted at Jul 29, 2020</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_why_serverless">Why Serverless?</a></li>
+<li><a href="#_solution_overview">Solution Overview</a></li>
+<li><a href="#_data_extraction">Data Extraction</a></li>
+<li><a href="#_search_backend_implementation">Search Backend Implementation</a>
+<ul class="sectlevel2">
+<li><a href="#_apache_lucene_in_a_graalvm_native_binary">Apache Lucene in a GraalVM Native Binary</a></li>
+<li><a href="#_the_search_http_service">The Search HTTP Service</a></li>
+</ul>
+</li>
+<li><a href="#_wiring_things_up">Wiring Things Up</a></li>
+<li><a href="#_deployment_to_aws_lambda">Deployment to AWS Lambda</a>
+<ul class="sectlevel2">
+<li><a href="#_building_quarkus_applications_for_aws_lambda">Building Quarkus Applications for AWS Lambda</a></li>
+<li><a href="#_identity_and_access_management">Identity and Access Management</a></li>
+<li><a href="#_performance">Performance</a></li>
+<li><a href="#_cost_control">Cost Control</a></li>
+</ul>
+</li>
+<li><a href="#_wrap_up_and_outlook">Wrap-Up and Outlook</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p><em>I have built a custom search functionality for this blog,
 based on Java and the Apache Lucene full-text search library,
 compiled into a native binary using the Quarkus framework and GraalVM.

@@ -13,63 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Refining The Return Type Of Java Methods Without Breaking Backwards-Compatibility - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Refining The Return Type Of Java Methods Without Breaking Backwards-Compatibility" />
-<meta property="og:description" content="
-If you work on any kind of software library,
-ensuring backwards-compatibility is a key concern:
-if there’s one thing which users really dislike, it is breaking changes in a new version of a library.
-The rules of what can (and cannot) be changed in a Java API without breaking existing consumers are well defined in the Java language specification (JLS),
-but things can get pretty interesting in certain corner cases.
-
-
-The Eclipse team provides a comprehensive overview about API evolution guidelines in their wiki.
-When I shared the link to this great resource on Twitter the other day,
-I received an interesting reply from Lukas Eder:
-
-
-
-I wish Java had a few tools to prevent some cases of binary compatibility breakages. E.g. when refining a method return type, I’d like to keep the old method around in byte code (but not in source code).
-
-
-I think kotlin has such tools?
-
-
-
-In the remainder of this post,
-I’d like to provide some more insight into that problem mentioned by Lukas,
-and how it can be addressed using an open-source tool called Bridger.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/refining-return-type-java-methods-without-breaking-backwards-compatibility/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2021-11-22T18:30:00+01:00" />
-<meta property="article:modified_time" content="2021-11-22T18:30:00+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Refining The Return Type Of Java Methods Without Breaking Backwards-Compatibility"/>
-<meta name="twitter:description" content="
-If you work on any kind of software library,
-ensuring backwards-compatibility is a key concern:
-if there’s one thing which users really dislike, it is breaking changes in a new version of a library.
-The rules of what can (and cannot) be changed in a Java API without breaking existing consumers are well defined in the Java language specification (JLS),
-but things can get pretty interesting in certain corner cases.
-
-
-The Eclipse team provides a comprehensive overview about API evolution guidelines in their wiki.
-When I shared the link to this great resource on Twitter the other day,
-I received an interesting reply from Lukas Eder:
-
-
-
-I wish Java had a few tools to prevent some cases of binary compatibility breakages. E.g. when refining a method return type, I’d like to keep the old method around in byte code (but not in source code).
-
-
-I think kotlin has such tools?
-
-
-
-In the remainder of this post,
-I’d like to provide some more insight into that problem mentioned by Lukas,
-and how it can be addressed using an open-source tool called Bridger.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/refining-return-type-java-methods-without-breaking-backwards-compatibility/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Refining The Return Type Of Java Methods Without Breaking Backwards-Compatibility">
+  <meta property="og:description" content=" If you work on any kind of software library, ensuring backwards-compatibility is a key concern: if there’s one thing which users really dislike, it is breaking changes in a new version of a library. …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2021-11-22T18:30:00&#43;01:00">
+    <meta property="article:modified_time" content="2021-11-22T18:30:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Refining The Return Type Of Java Methods Without Breaking Backwards-Compatibility">
+  <meta name="twitter:description" content=" If you work on any kind of software library, ensuring backwards-compatibility is a key concern: if there’s one thing which users really dislike, it is breaking changes in a new version of a library. …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -312,8 +267,16 @@ and how it can be addressed using an open-source tool called Bridger.
 				<div class="meta">Posted at Nov 22, 2021</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_the_problem">The Problem</a></li>
+<li><a href="#_bridge_methods_to_the_rescue">Bridge Methods to the Rescue</a></li>
+<li><a href="#_creating_bridge_methods_ourselves">Creating Bridge Methods Ourselves</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>If you work on any kind of software library,
 ensuring backwards-compatibility is a key concern:
 if there’s one thing which users really dislike, it is breaking changes in a new version of a library.

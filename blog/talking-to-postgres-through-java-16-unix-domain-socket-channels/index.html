@@ -13,31 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Talking to Postgres Through Java 16 Unix-Domain Socket Channels - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Talking to Postgres Through Java 16 Unix-Domain Socket Channels" />
-<meta property="og:description" content="
-Reading a blog post about what’s coming up in JDK 16 recently,
-I learned that one of the new features is support for Unix domain sockets (JEP 380).
-Before Java 16, you’d have to resort to 3rd party libraries like jnr-unixsocket in order to use them.
-If you haven’t heard about Unix domain sockets before,
-they are &#34;data communications [endpoints] for exchanging data between processes executing on the same host operating system&#34;.
-Don’t be put off by the name btw.;
-Unix domain sockets are also supported by macOS and even Windows since version 10.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/talking-to-postgres-through-java-16-unix-domain-socket-channels/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2021-01-31T20:25:00+01:00" />
-<meta property="article:modified_time" content="2021-01-31T20:25:00+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Talking to Postgres Through Java 16 Unix-Domain Socket Channels"/>
-<meta name="twitter:description" content="
-Reading a blog post about what’s coming up in JDK 16 recently,
-I learned that one of the new features is support for Unix domain sockets (JEP 380).
-Before Java 16, you’d have to resort to 3rd party libraries like jnr-unixsocket in order to use them.
-If you haven’t heard about Unix domain sockets before,
-they are &#34;data communications [endpoints] for exchanging data between processes executing on the same host operating system&#34;.
-Don’t be put off by the name btw.;
-Unix domain sockets are also supported by macOS and even Windows since version 10.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/talking-to-postgres-through-java-16-unix-domain-socket-channels/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Talking to Postgres Through Java 16 Unix-Domain Socket Channels">
+  <meta property="og:description" content=" Reading a blog post about what’s coming up in JDK 16 recently, I learned that one of the new features is support for Unix domain sockets (JEP 380). Before Java 16, you’d have to resort to 3rd party …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2021-01-31T20:25:00&#43;01:00">
+    <meta property="article:modified_time" content="2021-01-31T20:25:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Talking to Postgres Through Java 16 Unix-Domain Socket Channels">
+  <meta name="twitter:description" content=" Reading a blog post about what’s coming up in JDK 16 recently, I learned that one of the new features is support for Unix domain sockets (JEP 380). Before Java 16, you’d have to resort to 3rd party …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -280,8 +267,16 @@ Unix domain sockets are also supported by macOS and even Windows since version 1
 				<div class="meta">Posted at Jan 31, 2021</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_the_postgres_jdbc_driver">The Postgres JDBC Driver</a></li>
+<li><a href="#_the_vert_x_postgres_client">The Vert.x Postgres Client</a></li>
+<li><a href="#_other_use_cases">Other Use Cases</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>Reading a blog post about what’s <a href="https://www.loicmathieu.fr/wordpress/en/informatique/java-16-quoi-de-neuf/">coming up in JDK 16</a> recently,
 I learned that one of the new features is support for Unix domain sockets (<a href="https://openjdk.java.net/jeps/380">JEP 380</a>).
 Before Java 16, you’d have to resort to 3rd party libraries like <a href="https://github.com/jnr/jnr-unixsocket">jnr-unixsocket</a> in order to use them.

@@ -13,31 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Finding Java Thread Leaks With JDK Flight Recorder and a Bit Of SQL - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Finding Java Thread Leaks With JDK Flight Recorder and a Bit Of SQL" />
-<meta property="og:description" content="
-The other day at work, we had a situation where we suspected a thread leak in one particular service,
-i.e. code which continuously starts new threads, without taking care of ever stopping them again.
-Each thread requires a bit of memory for its stack space,
-so starting an unbounded number of threads can be considered as a form of memory leak, causing your application to run out of memory eventually.
-In addition, the more threads there are, the more overhead the operating system incurs for scheduling them,
-until the scheduler itself will consume most of the available CPU resources.
-Thus it’s vital to detect and fix this kind of problem early on.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/finding-java-thread-leaks-with-jdk-flight-recorder-and-bit-of-sql/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2023-02-28T22:16:10+01:00" />
-<meta property="article:modified_time" content="2023-02-28T22:16:10+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Finding Java Thread Leaks With JDK Flight Recorder and a Bit Of SQL"/>
-<meta name="twitter:description" content="
-The other day at work, we had a situation where we suspected a thread leak in one particular service,
-i.e. code which continuously starts new threads, without taking care of ever stopping them again.
-Each thread requires a bit of memory for its stack space,
-so starting an unbounded number of threads can be considered as a form of memory leak, causing your application to run out of memory eventually.
-In addition, the more threads there are, the more overhead the operating system incurs for scheduling them,
-until the scheduler itself will consume most of the available CPU resources.
-Thus it’s vital to detect and fix this kind of problem early on.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/finding-java-thread-leaks-with-jdk-flight-recorder-and-bit-of-sql/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Finding Java Thread Leaks With JDK Flight Recorder and a Bit Of SQL">
+  <meta property="og:description" content=" The other day at work, we had a situation where we suspected a thread leak in one particular service, i.e. code which continuously starts new threads, without taking care of ever stopping them again. …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2023-02-28T22:16:10&#43;01:00">
+    <meta property="article:modified_time" content="2023-02-28T22:16:10&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Finding Java Thread Leaks With JDK Flight Recorder and a Bit Of SQL">
+  <meta name="twitter:description" content=" The other day at work, we had a situation where we suspected a thread leak in one particular service, i.e. code which continuously starts new threads, without taking care of ever stopping them again. …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -280,7 +267,7 @@ Thus it’s vital to detect and fix this kind of problem early on.
 				<div class="meta">Posted at Feb 28, 2023</div>
 			</div>
 
-			<div class="markdown">
+			<div class="post-content">
 				<div class="paragraph">
 <p>The other day at work, we had a situation where we suspected a thread leak in one particular service,
 i.e. code which continuously starts new threads, without taking care of ever stopping them again.

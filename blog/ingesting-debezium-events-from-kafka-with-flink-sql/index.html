@@ -13,29 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>A Deep Dive Into Ingesting Debezium Events From Kafka With Flink SQL - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="A Deep Dive Into Ingesting Debezium Events From Kafka With Flink SQL" />
-<meta property="og:description" content="
-Over the years, I’ve spoken quite a bit about the use cases for processing Debezium data change events with Apache Flink,
-such as metadata enrichment, building denormalized data views, and creating data contracts for your CDC streams.
-One detail I haven’t covered in depth so far is how to actually ingest Debezium change events from a Kafka topic into Flink,
-in particular via Flink SQL.
-Several connectors and data formats exist for this, which can make things somewhat confusing at first.
-So let’s dive into the different options and the considerations around them!
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/ingesting-debezium-events-from-kafka-with-flink-sql/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2025-04-16T11:25:00+02:00" />
-<meta property="article:modified_time" content="2025-04-16T11:25:00+02:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="A Deep Dive Into Ingesting Debezium Events From Kafka With Flink SQL"/>
-<meta name="twitter:description" content="
-Over the years, I’ve spoken quite a bit about the use cases for processing Debezium data change events with Apache Flink,
-such as metadata enrichment, building denormalized data views, and creating data contracts for your CDC streams.
-One detail I haven’t covered in depth so far is how to actually ingest Debezium change events from a Kafka topic into Flink,
-in particular via Flink SQL.
-Several connectors and data formats exist for this, which can make things somewhat confusing at first.
-So let’s dive into the different options and the considerations around them!
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/ingesting-debezium-events-from-kafka-with-flink-sql/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="A Deep Dive Into Ingesting Debezium Events From Kafka With Flink SQL">
+  <meta property="og:description" content=" Over the years, I’ve spoken quite a bit about the use cases for processing Debezium data change events with Apache Flink, such as metadata enrichment, building denormalized data views, and creating …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2025-04-16T11:25:00&#43;02:00">
+    <meta property="article:modified_time" content="2025-04-16T11:25:00&#43;02:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="A Deep Dive Into Ingesting Debezium Events From Kafka With Flink SQL">
+  <meta name="twitter:description" content=" Over the years, I’ve spoken quite a bit about the use cases for processing Debezium data change events with Apache Flink, such as metadata enrichment, building denormalized data views, and creating …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -278,8 +267,18 @@ So let’s dive into the different options and the considerations around them!
 				<div class="meta">Posted at Apr 16, 2025</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_flink_sql_connectors_for_apache_kafka">Flink SQL Connectors for Apache Kafka</a></li>
+<li><a href="#_the_apache_kafka_sql_connector_in_append_only_mode">The Apache Kafka SQL Connector in Append-Only Mode</a></li>
+<li><a href="#_the_apache_kafka_sql_connector_as_a_changelog_source">The Apache Kafka SQL Connector As a Changelog Source</a></li>
+<li><a href="#_the_upsert_kafka_sql_connector">The Upsert Kafka SQL Connector</a></li>
+<li><a href="#_summary">Summary</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>Over the years, I’ve spoken quite a bit about the use cases for processing <a href="https://2023.javazone.no/program/355869fa-5aa0-43a7-abd2-7c5250e10bcd">Debezium data change events with Apache Flink</a>,
 such as metadata enrichment, building denormalized data views, and creating data contracts for your CDC streams.
 One detail I haven’t covered in depth so far is how to actually ingest Debezium change events from a Kafka topic into Flink,

@@ -13,51 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Building a Native Binary for Apache Kafka on macOS - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Building a Native Binary for Apache Kafka on macOS" />
-<meta property="og:description" content="
-With help of the GraalVM configuration developed for KIP-974 (Docker Image for GraalVM based Native Kafka Broker),
-you can easily build a self-contained native binary for Apache Kafka.
-Read on to learn how you can build a native Kafka executable yourself,
-starting in milli-seconds, making it a perfect fit for development and testing purposes.
-
-
-When I wrote about ahead-of-time class loading and linking in Java 24 recently,
-I also published the start-up time for Apache Kafka as a native binary for comparison.
-This was done via Docker, as there’s no pre-built native binary of Kafka available for the operating system I’m running on, macOS.
-But there is a native Kafka container image, so this is what I chose for the sake of convenience.
-
-
-Now, running in a container adds a little bit of overhead of course,
-so it wasn’t a surprise when Thomas Würthinger, lead of the GraalVM project at Oracle,
-brought up the question what the value would be when running Kafka natively on macOS.
-Needless to say I can’t leave this kind of nice nerd snipe pass,
-so I set out to learn how to build a native Kafka binary on macOS, using GraalVM.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/building-native-binary-for-apache-kafka-macos/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2025-04-07T12:25:00+02:00" />
-<meta property="article:modified_time" content="2025-04-07T12:25:00+02:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Building a Native Binary for Apache Kafka on macOS"/>
-<meta name="twitter:description" content="
-With help of the GraalVM configuration developed for KIP-974 (Docker Image for GraalVM based Native Kafka Broker),
-you can easily build a self-contained native binary for Apache Kafka.
-Read on to learn how you can build a native Kafka executable yourself,
-starting in milli-seconds, making it a perfect fit for development and testing purposes.
-
-
-When I wrote about ahead-of-time class loading and linking in Java 24 recently,
-I also published the start-up time for Apache Kafka as a native binary for comparison.
-This was done via Docker, as there’s no pre-built native binary of Kafka available for the operating system I’m running on, macOS.
-But there is a native Kafka container image, so this is what I chose for the sake of convenience.
-
-
-Now, running in a container adds a little bit of overhead of course,
-so it wasn’t a surprise when Thomas Würthinger, lead of the GraalVM project at Oracle,
-brought up the question what the value would be when running Kafka natively on macOS.
-Needless to say I can’t leave this kind of nice nerd snipe pass,
-so I set out to learn how to build a native Kafka binary on macOS, using GraalVM.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/building-native-binary-for-apache-kafka-macos/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Building a Native Binary for Apache Kafka on macOS">
+  <meta property="og:description" content=" With help of the GraalVM configuration developed for KIP-974 (Docker Image for GraalVM based Native Kafka Broker), you can easily build a self-contained native binary for Apache Kafka. Read on to …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2025-04-07T12:25:00&#43;02:00">
+    <meta property="article:modified_time" content="2025-04-07T12:25:00&#43;02:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Building a Native Binary for Apache Kafka on macOS">
+  <meta name="twitter:description" content=" With help of the GraalVM configuration developed for KIP-974 (Docker Image for GraalVM based Native Kafka Broker), you can easily build a self-contained native binary for Apache Kafka. Read on to …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -300,8 +267,14 @@ so I set out to learn how to build a native Kafka binary on macOS, using GraalVM
 				<div class="meta">Posted at Apr 7, 2025</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_kip_974_docker_image_for_graalvm_based_native_kafka_broker">KIP-974: Docker Image for GraalVM based Native Kafka Broker</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p><em>With help of the GraalVM configuration developed for KIP-974 (Docker Image for GraalVM based Native Kafka Broker),
 you can easily build a self-contained native binary for Apache Kafka.
 Read on to learn how you can build a native Kafka executable yourself,

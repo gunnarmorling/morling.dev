@@ -13,25 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Is your Blocking Queue... Blocking? - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Is your Blocking Queue... Blocking?" />
-<meta property="og:description" content="
-Java’s BlockingQueue hierarchy is widely used for coordinating work between different producer and consumer threads.
-When set up with a maximum capacity (i.e. a bounded queue), no more elements can be added by producers to the queue once it is full, until a consumer has taken at least one element.
-For scenarios where new work may arrive more quickly than it can be consumed, this applies means of back-pressure,
-ensuring the application doesn’t run out of memory eventually, while enqueuing more and more work items.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/is-your-blocking-queue-blocking/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2023-01-03T22:10:00+01:00" />
-<meta property="article:modified_time" content="2023-01-03T22:10:00+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Is your Blocking Queue... Blocking?"/>
-<meta name="twitter:description" content="
-Java’s BlockingQueue hierarchy is widely used for coordinating work between different producer and consumer threads.
-When set up with a maximum capacity (i.e. a bounded queue), no more elements can be added by producers to the queue once it is full, until a consumer has taken at least one element.
-For scenarios where new work may arrive more quickly than it can be consumed, this applies means of back-pressure,
-ensuring the application doesn’t run out of memory eventually, while enqueuing more and more work items.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/is-your-blocking-queue-blocking/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Is your Blocking Queue... Blocking?">
+  <meta property="og:description" content=" Java’s BlockingQueue hierarchy is widely used for coordinating work between different producer and consumer threads. When set up with a maximum capacity (i.e. a bounded queue), no more elements can …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2023-01-03T22:10:00&#43;01:00">
+    <meta property="article:modified_time" content="2023-01-03T22:10:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Is your Blocking Queue... Blocking?">
+  <meta name="twitter:description" content=" Java’s BlockingQueue hierarchy is widely used for coordinating work between different producer and consumer threads. When set up with a maximum capacity (i.e. a bounded queue), no more elements can …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -274,8 +267,16 @@ ensuring the application doesn’t run out of memory eventually, while enqueuing
 				<div class="meta">Posted at Jan 3, 2023</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_emitting_custom_events">Emitting Custom Events</a></li>
+<li><a href="#_filtering_thread_park_events">Filtering &#34;Thread Park&#34; Events</a></li>
+<li><a href="#_towards_real_time_analysis_of_jfr_events">Towards Real-Time Analysis of JFR Events</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>Java’s <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/BlockingQueue.html"><code>BlockingQueue</code></a> hierarchy is widely used for coordinating work between different producer and consumer threads.
 When set up with a maximum capacity (i.e. a <em>bounded queue</em>), no more elements can be added by producers to the queue once it is full, until a consumer has taken at least one element.
 For scenarios where new work may arrive more quickly than it can be consumed, this applies means of back-pressure,

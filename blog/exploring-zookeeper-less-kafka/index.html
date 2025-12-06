@@ -13,67 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Exploring ZooKeeper-less Kafka - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Exploring ZooKeeper-less Kafka" />
-<meta property="og:description" content="
-Sometimes, less is more.
-One case where that’s certainly true is dependencies.
-And so it shouldn’t come at a surprise that the Apache Kafka community is eagerly awaiting the removal of the dependency to the ZooKeeper service,
-which currently is used for storing Kafka metadata (e.g. about topics and partitions) as well as for the purposes of leader election in the cluster.
-
-
-The Kafka improvement proposal KIP-500
-(&#34;Replace ZooKeeper with a Self-Managed Metadata Quorum&#34;)
-promises to make life better for users in many regards:
-
-
-
-
-Better getting started and operational experience by requiring to run only one system, Kafka, instead of two
-
-
-Removing potential for discrepancies of metadata state between ZooKeeper and the Kafka controller
-
-
-Simplifying configuration, for instance when it comes to security
-
-
-Better scalability, e.g. in terms of number of partitions; faster execution of operations like topic creation
-
-
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/exploring-zookeeper-less-kafka/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2021-05-17T18:45:00+01:00" />
-<meta property="article:modified_time" content="2021-05-17T18:45:00+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Exploring ZooKeeper-less Kafka"/>
-<meta name="twitter:description" content="
-Sometimes, less is more.
-One case where that’s certainly true is dependencies.
-And so it shouldn’t come at a surprise that the Apache Kafka community is eagerly awaiting the removal of the dependency to the ZooKeeper service,
-which currently is used for storing Kafka metadata (e.g. about topics and partitions) as well as for the purposes of leader election in the cluster.
-
-
-The Kafka improvement proposal KIP-500
-(&#34;Replace ZooKeeper with a Self-Managed Metadata Quorum&#34;)
-promises to make life better for users in many regards:
-
-
-
-
-Better getting started and operational experience by requiring to run only one system, Kafka, instead of two
-
-
-Removing potential for discrepancies of metadata state between ZooKeeper and the Kafka controller
-
-
-Simplifying configuration, for instance when it comes to security
-
-
-Better scalability, e.g. in terms of number of partitions; faster execution of operations like topic creation
-
-
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/exploring-zookeeper-less-kafka/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Exploring ZooKeeper-less Kafka">
+  <meta property="og:description" content=" Sometimes, less is more. One case where that’s certainly true is dependencies. And so it shouldn’t come at a surprise that the Apache Kafka community is eagerly awaiting the removal of the dependency …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2021-05-17T18:45:00&#43;01:00">
+    <meta property="article:modified_time" content="2021-05-17T18:45:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Exploring ZooKeeper-less Kafka">
+  <meta name="twitter:description" content=" Sometimes, less is more. One case where that’s certainly true is dependencies. And so it shouldn’t come at a surprise that the Apache Kafka community is eagerly awaiting the removal of the dependency …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -316,8 +267,16 @@ Better scalability, e.g. in terms of number of partitions; faster execution of o
 				<div class="meta">Posted at May 17, 2021</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_trying_zk_less_kafka_yourself">Trying ZK-less Kafka Yourself</a></li>
+<li><a href="#_taking_brokers_down">Taking Brokers Down</a></li>
+<li><a href="#_wrap_up">Wrap-Up</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>Sometimes, less is more.
 One case where that’s certainly true is dependencies.
 And so it shouldn’t come at a surprise that the <a href="https://kafka.apache.org/">Apache Kafka</a> community is eagerly awaiting the removal of the dependency to the <a href="https://zookeeper.apache.org/">ZooKeeper</a> service,

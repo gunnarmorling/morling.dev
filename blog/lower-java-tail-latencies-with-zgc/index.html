@@ -13,29 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Let&#39;s Take a Look at... Lower Java Tail Latencies With ZGC - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Let&#39;s Take a Look at... Lower Java Tail Latencies With ZGC" />
-<meta property="og:description" content="
-In the &#34;Let’s Take a Look at…​!&#34; blog series I am exploring interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, open-source projects, services, relevant improvements to Java and the JVM, and more. The idea is to get some hands-on experience, learn about potential use cases and applications, and understand the trade-offs involved. If you think there’s a specific subject I should take a look at, let me know in the comments below.
-
-
-Java 25 was released earlier this week,
-and it is the first Java release with long-term support (LTS) which ships with Generational ZGC as the one (and only) flavor of the ZGC garbage collector.
-ZGC itself is a relatively new concurrent collector, originally added in Java 11.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/lower-java-tail-latencies-with-zgc/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2025-09-17T17:09:00+02:00" />
-<meta property="article:modified_time" content="2025-09-17T17:09:00+02:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Let&#39;s Take a Look at... Lower Java Tail Latencies With ZGC"/>
-<meta name="twitter:description" content="
-In the &#34;Let’s Take a Look at…​!&#34; blog series I am exploring interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, open-source projects, services, relevant improvements to Java and the JVM, and more. The idea is to get some hands-on experience, learn about potential use cases and applications, and understand the trade-offs involved. If you think there’s a specific subject I should take a look at, let me know in the comments below.
-
-
-Java 25 was released earlier this week,
-and it is the first Java release with long-term support (LTS) which ships with Generational ZGC as the one (and only) flavor of the ZGC garbage collector.
-ZGC itself is a relatively new concurrent collector, originally added in Java 11.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/lower-java-tail-latencies-with-zgc/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Let&#39;s Take a Look at... Lower Java Tail Latencies With ZGC">
+  <meta property="og:description" content=" In the &amp;#34;Let’s Take a Look at…​!&amp;#34; blog series I am exploring interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2025-09-17T17:09:00&#43;02:00">
+    <meta property="article:modified_time" content="2025-09-17T17:09:00&#43;02:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Let&#39;s Take a Look at... Lower Java Tail Latencies With ZGC">
+  <meta name="twitter:description" content=" In the &amp;#34;Let’s Take a Look at…​!&amp;#34; blog series I am exploring interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -278,8 +267,15 @@ ZGC itself is a relatively new concurrent collector, originally added in Java 11
 				<div class="meta">Posted at Sep 17, 2025</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_zgc_allocation_stalls">ZGC Allocation Stalls</a></li>
+<li><a href="#_summary">Summary</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p><em>In the &#34;Let’s Take a Look at…​!&#34; blog series I am exploring interesting projects, developments and technologies in the data and streaming space. This can be KIPs and FLIPs, open-source projects, services, relevant improvements to Java and the JVM, and more. The idea is to get some hands-on experience, learn about potential use cases and applications, and understand the trade-offs involved. If you think there’s a specific subject I should take a look at, let me know in the comments below.</em></p>
 </div>
 <div class="paragraph">

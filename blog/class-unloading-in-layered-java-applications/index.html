@@ -13,43 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Class Unloading in Layered Java Applications - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Class Unloading in Layered Java Applications" />
-<meta property="og:description" content="
-Layers are sort of the secret sauce of the Java platform module system (JPMS):
-by providing fine-grained control over how individual JPMS modules and their classes are loaded by the JVM,
-they enable advanced usages like loading multiple versions of a given module, or dynamically adding and removing modules at application runtime.
-
-
-The Layrry API and launcher provides a small plug-in API based on top of layers,
-which for instance can be used to dynamically add plug-ins contributing new views and widgets to a running JavaFX application.
-If such plug-in gets removed from the application again,
-all its classes need to be unloaded by the JVM, avoiding an ever-increasing memory consumption if for instance a plug-in gets updated multiple times.
-
-
-In this blog post I’m going to explore how to ensure classes from removed plug-in layers are unloaded in a timely manner,
-and how to find the culprit in case some class fails to be unloaded.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/class-unloading-in-layered-java-applications/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2020-10-14T17:45:00+02:00" />
-<meta property="article:modified_time" content="2020-10-14T17:45:00+02:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Class Unloading in Layered Java Applications"/>
-<meta name="twitter:description" content="
-Layers are sort of the secret sauce of the Java platform module system (JPMS):
-by providing fine-grained control over how individual JPMS modules and their classes are loaded by the JVM,
-they enable advanced usages like loading multiple versions of a given module, or dynamically adding and removing modules at application runtime.
-
-
-The Layrry API and launcher provides a small plug-in API based on top of layers,
-which for instance can be used to dynamically add plug-ins contributing new views and widgets to a running JavaFX application.
-If such plug-in gets removed from the application again,
-all its classes need to be unloaded by the JVM, avoiding an ever-increasing memory consumption if for instance a plug-in gets updated multiple times.
-
-
-In this blog post I’m going to explore how to ensure classes from removed plug-in layers are unloaded in a timely manner,
-and how to find the culprit in case some class fails to be unloaded.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/class-unloading-in-layered-java-applications/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Class Unloading in Layered Java Applications">
+  <meta property="og:description" content=" Layers are sort of the secret sauce of the Java platform module system (JPMS): by providing fine-grained control over how individual JPMS modules and their classes are loaded by the JVM, they enable …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2020-10-14T17:45:00&#43;02:00">
+    <meta property="article:modified_time" content="2020-10-14T17:45:00&#43;02:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Class Unloading in Layered Java Applications">
+  <meta name="twitter:description" content=" Layers are sort of the secret sauce of the Java platform module system (JPMS): by providing fine-grained control over how individual JPMS modules and their classes are loaded by the JVM, they enable …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -292,8 +267,18 @@ and how to find the culprit in case some class fails to be unloaded.
 				<div class="meta">Posted at Oct 14, 2020</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_do_we_really_need_plug_ins">Do We Really Need Plug-ins?</a></li>
+<li><a href="#_plug_ins_in_layered_java_applications">Plug-ins in Layered Java Applications</a></li>
+<li><a href="#_class_unloading_in_practice">Class Unloading in Practice</a></li>
+<li><a href="#_if_things_go_wrong">If Things Go Wrong</a></li>
+<li><a href="#_learning_more">Learning More</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>Layers are sort of the secret sauce of the Java platform module system (JPMS):
 by providing fine-grained control over how individual JPMS modules and their classes are loaded by the JVM,
 they enable advanced usages like loading multiple versions of a given module, or dynamically adding and removing modules at application runtime.</p>

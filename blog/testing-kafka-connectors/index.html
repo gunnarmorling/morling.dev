@@ -13,47 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Testing Kafka Connectors - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Testing Kafka Connectors" />
-<meta property="og:description" content="
-Kafka Connect is a key factor for the wide-spread adoption of Apache Kafka:
-a framework and runtime environment for connectors,
-it makes the task of getting data either into Kafka or out of Kafka solely a matter of configuration,
-rather than a bespoke programming job.
-There’s dozens, if not hundreds, of readymade source and sink connectors,
-allowing you to create no-code data pipelines between all kinds of databases, APIs, and other systems.
-
-
-There may be situations though where there is no existing connector matching your requirements,
-in which case you can implement your own custom connector using the Kafka Connect framework.
-Naturally, this raises the question of how to test such a Kafka connector,
-making sure it propagates the data between the connected external system and Kafka correctly and completely.
-In this blog post I’d like to focus on testing approaches for Kafka Connect source connectors,
-i.e. connectors like Debezium, which ingest data from an external system into Kafka.
-Very similar strategies can be employed for testing sink connectors, though.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/testing-kafka-connectors/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2022-08-25T09:20:00+01:00" />
-<meta property="article:modified_time" content="2022-08-25T09:20:00+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Testing Kafka Connectors"/>
-<meta name="twitter:description" content="
-Kafka Connect is a key factor for the wide-spread adoption of Apache Kafka:
-a framework and runtime environment for connectors,
-it makes the task of getting data either into Kafka or out of Kafka solely a matter of configuration,
-rather than a bespoke programming job.
-There’s dozens, if not hundreds, of readymade source and sink connectors,
-allowing you to create no-code data pipelines between all kinds of databases, APIs, and other systems.
-
-
-There may be situations though where there is no existing connector matching your requirements,
-in which case you can implement your own custom connector using the Kafka Connect framework.
-Naturally, this raises the question of how to test such a Kafka connector,
-making sure it propagates the data between the connected external system and Kafka correctly and completely.
-In this blog post I’d like to focus on testing approaches for Kafka Connect source connectors,
-i.e. connectors like Debezium, which ingest data from an external system into Kafka.
-Very similar strategies can be employed for testing sink connectors, though.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/testing-kafka-connectors/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Testing Kafka Connectors">
+  <meta property="og:description" content=" Kafka Connect is a key factor for the wide-spread adoption of Apache Kafka: a framework and runtime environment for connectors, it makes the task of getting data either into Kafka or out of Kafka …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2022-08-25T09:20:00&#43;01:00">
+    <meta property="article:modified_time" content="2022-08-25T09:20:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Testing Kafka Connectors">
+  <meta name="twitter:description" content=" Kafka Connect is a key factor for the wide-spread adoption of Apache Kafka: a framework and runtime environment for connectors, it makes the task of getting data either into Kafka or out of Kafka …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -296,8 +267,16 @@ Very similar strategies can be employed for testing sink connectors, though.
 				<div class="meta">Posted at Aug 25, 2022</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_unit_tests">Unit Tests</a></li>
+<li><a href="#_integration_tests">Integration Tests</a></li>
+<li><a href="#_wrap_up">Wrap-Up</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p><a href="https://kafka.apache.org/documentation/#connect">Kafka Connect</a> is a key factor for the wide-spread adoption of Apache Kafka:
 a framework and runtime environment for connectors,
 it makes the task of getting data either into Kafka or out of Kafka solely a matter of configuration,

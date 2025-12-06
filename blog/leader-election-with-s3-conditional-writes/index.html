@@ -13,25 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Leader Election With S3 Conditional Writes - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Leader Election With S3 Conditional Writes" />
-<meta property="og:description" content="
-In distributed systems, for instance when scaling out some workload to multiple compute nodes,
-it is a common requirement to select a leader for performing a given task:
-only one of the nodes should process the records from a Kafka topic partition, write to a file system, call a remote API, etc.
-Otherwise, multiple workers may end up doing the same task twice, overwriting each other’s data, and worse.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/leader-election-with-s3-conditional-writes/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2024-08-26T09:15:00+01:00" />
-<meta property="article:modified_time" content="2024-08-26T09:15:00+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Leader Election With S3 Conditional Writes"/>
-<meta name="twitter:description" content="
-In distributed systems, for instance when scaling out some workload to multiple compute nodes,
-it is a common requirement to select a leader for performing a given task:
-only one of the nodes should process the records from a Kafka topic partition, write to a file system, call a remote API, etc.
-Otherwise, multiple workers may end up doing the same task twice, overwriting each other’s data, and worse.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/leader-election-with-s3-conditional-writes/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Leader Election With S3 Conditional Writes">
+  <meta property="og:description" content=" In distributed systems, for instance when scaling out some workload to multiple compute nodes, it is a common requirement to select a leader for performing a given task: only one of the nodes should …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2024-08-26T09:15:00&#43;01:00">
+    <meta property="article:modified_time" content="2024-08-26T09:15:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Leader Election With S3 Conditional Writes">
+  <meta name="twitter:description" content=" In distributed systems, for instance when scaling out some workload to multiple compute nodes, it is a common requirement to select a leader for performing a given task: only one of the nodes should …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -274,8 +267,18 @@ Otherwise, multiple workers may end up doing the same task twice, overwriting ea
 				<div class="meta">Posted at Aug 26, 2024</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_the_algorithm">The Algorithm</a></li>
+<li><a href="#_obtaining_the_lock">Obtaining the Lock</a></li>
+<li><a href="#_expiring_a_lock">Expiring a Lock</a></li>
+<li><a href="#_lock_validity">Lock Validity</a></li>
+<li><a href="#_fencing_off_zombies">Fencing Off Zombies</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>In distributed systems, for instance when scaling out some workload to multiple compute nodes,
 it is a common requirement to select a <em>leader</em> for performing a given task:
 only one of the nodes should process the records from a Kafka topic partition, write to a file system, call a remote API, etc.

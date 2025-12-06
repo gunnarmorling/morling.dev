@@ -13,49 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Smaller, Faster-starting Container Images With jlink and AppCDS - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Smaller, Faster-starting Container Images With jlink and AppCDS" />
-<meta property="og:description" content="
-A few months ago I wrote about how you could speed up your Java application’s start-up times using application class data sharing (AppCDS),
-based on the example of a simple Quarkus application.
-Since then, quite some progress has been made in this area:
-Quarkus 1.6 brought built-in support for AppCDS,
-so that now you just need to provide the -Dquarkus.package.create-appcds=true option when building your project,
-and you’ll find an AppCDS file in the target folder.
-
-
-Things get more challenging though when combining AppCDS with custom Java runtime images,
-as produced using the jlink tool added in Java 9.
-Combining custom runtime images with AppCDS is very attractive,
-in particular when looking at the deployment of Java applications via Linux containers.
-Instead of putting the full Java runtime into the container image, you only add those JDK modules which your application actually requires.
-(Parts of) what you save in image size by doing so,
-can be used for adding an AppCDS archive to your container image.
-The result will be a container image which still is smaller than before — and thus is faster to push to a container registry, distribute to worker nodes in a Kubernetes cluster, etc. — and which starts up significantly faster.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/smaller-faster-starting-container-images-with-jlink-and-appcds/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2020-12-13T20:30:00+01:00" />
-<meta property="article:modified_time" content="2020-12-13T20:30:00+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Smaller, Faster-starting Container Images With jlink and AppCDS"/>
-<meta name="twitter:description" content="
-A few months ago I wrote about how you could speed up your Java application’s start-up times using application class data sharing (AppCDS),
-based on the example of a simple Quarkus application.
-Since then, quite some progress has been made in this area:
-Quarkus 1.6 brought built-in support for AppCDS,
-so that now you just need to provide the -Dquarkus.package.create-appcds=true option when building your project,
-and you’ll find an AppCDS file in the target folder.
-
-
-Things get more challenging though when combining AppCDS with custom Java runtime images,
-as produced using the jlink tool added in Java 9.
-Combining custom runtime images with AppCDS is very attractive,
-in particular when looking at the deployment of Java applications via Linux containers.
-Instead of putting the full Java runtime into the container image, you only add those JDK modules which your application actually requires.
-(Parts of) what you save in image size by doing so,
-can be used for adding an AppCDS archive to your container image.
-The result will be a container image which still is smaller than before — and thus is faster to push to a container registry, distribute to worker nodes in a Kubernetes cluster, etc. — and which starts up significantly faster.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/smaller-faster-starting-container-images-with-jlink-and-appcds/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Smaller, Faster-starting Container Images With jlink and AppCDS">
+  <meta property="og:description" content=" A few months ago I wrote about how you could speed up your Java application’s start-up times using application class data sharing (AppCDS), based on the example of a simple Quarkus application. Since …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2020-12-13T20:30:00&#43;01:00">
+    <meta property="article:modified_time" content="2020-12-13T20:30:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Smaller, Faster-starting Container Images With jlink and AppCDS">
+  <meta name="twitter:description" content=" A few months ago I wrote about how you could speed up your Java application’s start-up times using application class data sharing (AppCDS), based on the example of a simple Quarkus application. Since …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -298,8 +267,17 @@ The result will be a container image which still is smaller than before — 
 				<div class="meta">Posted at Dec 13, 2020</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_creating_a_modular_runtime_image_for_a_quarkus_application">Creating a Modular Runtime Image for a Quarkus Application</a></li>
+<li><a href="#_adding_an_appcds_archive_to_a_custom_runtime_image">Adding an AppCDS Archive to a Custom Runtime Image</a></li>
+<li><a href="#_creating_a_linux_container_image">Creating a Linux Container Image</a></li>
+<li><a href="#_lets_see_some_numbers">Let’s See Some Numbers!</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>A few months ago I <a href="/blog/building-class-data-sharing-archives-with-apache-maven/">wrote about</a> how you could speed up your Java application’s start-up times using application class data sharing (<a href="http://openjdk.java.net/jeps/350">AppCDS</a>),
 based on the example of a simple <a href="https://quarkus.io/">Quarkus</a> application.
 Since then, quite some progress has been made in this area:

@@ -13,63 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Single Message Transformations - The Swiss Army Knife of Kafka Connect - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Single Message Transformations - The Swiss Army Knife of Kafka Connect" />
-<meta property="og:description" content="
-Do you remember Angus &#34;Mac&#34; MacGyver?
-The always creative protagonist of the popular 80ies/90ies TV show, who could solve about any problem with nothing more than a Swiss Army knife, duct tape, shoe strings and a paper clip?
-
-
-The single message transformations (SMTs) of Kafka Connect are almost as versatile as MacGyver’s Swiss Army knife:
-
-
-
-
-How to change the timezone or format of date/time message fields?
-
-
-How to change the topic a specific message gets sent to?
-
-
-How to filter out specific records?
-
-
-
-
-SMTs can be the answer to these and many other questions that come up in the context of Kafka Connect.
-Applied to source or sink connectors,
-SMTs allow to modify Kafka records before they are sent to Kafka, or after they are consumed from a topic, respectively.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/single-message-transforms-swiss-army-knife-of-kafka-connect/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2020-05-14T15:30:00+02:00" />
-<meta property="article:modified_time" content="2020-05-14T15:30:00+02:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Single Message Transformations - The Swiss Army Knife of Kafka Connect"/>
-<meta name="twitter:description" content="
-Do you remember Angus &#34;Mac&#34; MacGyver?
-The always creative protagonist of the popular 80ies/90ies TV show, who could solve about any problem with nothing more than a Swiss Army knife, duct tape, shoe strings and a paper clip?
-
-
-The single message transformations (SMTs) of Kafka Connect are almost as versatile as MacGyver’s Swiss Army knife:
-
-
-
-
-How to change the timezone or format of date/time message fields?
-
-
-How to change the topic a specific message gets sent to?
-
-
-How to filter out specific records?
-
-
-
-
-SMTs can be the answer to these and many other questions that come up in the context of Kafka Connect.
-Applied to source or sink connectors,
-SMTs allow to modify Kafka records before they are sent to Kafka, or after they are consumed from a topic, respectively.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/single-message-transforms-swiss-army-knife-of-kafka-connect/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Single Message Transformations - The Swiss Army Knife of Kafka Connect">
+  <meta property="og:description" content=" Do you remember Angus &amp;#34;Mac&amp;#34; MacGyver? The always creative protagonist of the popular 80ies/90ies TV show, who could solve about any problem with nothing more than a Swiss Army knife, …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2020-05-14T15:30:00&#43;02:00">
+    <meta property="article:modified_time" content="2020-05-14T15:30:00&#43;02:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Single Message Transformations - The Swiss Army Knife of Kafka Connect">
+  <meta name="twitter:description" content=" Do you remember Angus &amp;#34;Mac&amp;#34; MacGyver? The always creative protagonist of the popular 80ies/90ies TV show, who could solve about any problem with nothing more than a Swiss Army knife, …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -312,8 +267,20 @@ SMTs allow to modify Kafka records before they are sent to Kafka, or after they 
 				<div class="meta">Posted at May 14, 2020</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_format_conversions">Format Conversions</a></li>
+<li><a href="#_ensuring_backwards_compatibility">Ensuring Backwards Compatibility</a></li>
+<li><a href="#_filtering_and_routing">Filtering and Routing</a></li>
+<li><a href="#_tombstone_handling">Tombstone Handling</a></li>
+<li><a href="#_externalizing_large_payloads">Externalizing Large Payloads</a></li>
+<li><a href="#_limitations">Limitations</a></li>
+<li><a href="#_learning_more">Learning More</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>Do you remember Angus &#34;Mac&#34; MacGyver?
 The always creative protagonist of the popular 80ies/90ies TV show, who could solve about any problem with nothing more than a Swiss Army knife, duct tape, shoe strings and a paper clip?</p>
 </div>

@@ -13,37 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Loom and Thread Fairness - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Loom and Thread Fairness" />
-<meta property="og:description" content="
-Project Loom (JEP 425) is probably amongst the most awaited feature additions to Java ever;
-its implementation of virtual threads (or &#34;green threads&#34;) promises developers the ability to create highly concurrent applications,
-for instance with hundreds of thousands of open HTTP connections,
-sticking to the well-known thread-per-request programming model,
-without having to resort to less familiar and often more complex to use reactive approaches.
-
-
-Having been in the workings for several years, Loom got merged into the mainline of OpenJDK just recently and is available as a preview feature in the latest Java 19 early access builds.
-I.e. it’s the perfect time to get your hands onto virtual threads and explore the new feature.
-In this post I’m going to share an interesting aspect I learned about thread scheduling fairness for CPU-bound workloads running on Loom.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/loom-and-thread-fairness/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2022-05-27T09:20:00+01:00" />
-<meta property="article:modified_time" content="2022-05-27T09:20:00+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Loom and Thread Fairness"/>
-<meta name="twitter:description" content="
-Project Loom (JEP 425) is probably amongst the most awaited feature additions to Java ever;
-its implementation of virtual threads (or &#34;green threads&#34;) promises developers the ability to create highly concurrent applications,
-for instance with hundreds of thousands of open HTTP connections,
-sticking to the well-known thread-per-request programming model,
-without having to resort to less familiar and often more complex to use reactive approaches.
-
-
-Having been in the workings for several years, Loom got merged into the mainline of OpenJDK just recently and is available as a preview feature in the latest Java 19 early access builds.
-I.e. it’s the perfect time to get your hands onto virtual threads and explore the new feature.
-In this post I’m going to share an interesting aspect I learned about thread scheduling fairness for CPU-bound workloads running on Loom.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/loom-and-thread-fairness/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Loom and Thread Fairness">
+  <meta property="og:description" content=" Project Loom (JEP 425) is probably amongst the most awaited feature additions to Java ever; its implementation of virtual threads (or &amp;#34;green threads&amp;#34;) promises developers the ability …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2022-05-27T09:20:00&#43;01:00">
+    <meta property="article:modified_time" content="2022-05-27T09:20:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Loom and Thread Fairness">
+  <meta name="twitter:description" content=" Project Loom (JEP 425) is probably amongst the most awaited feature additions to Java ever; its implementation of virtual threads (or &amp;#34;green threads&amp;#34;) promises developers the ability …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -286,8 +267,16 @@ In this post I’m going to share an interesting aspect I learned about thread s
 				<div class="meta">Posted at May 27, 2022</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_project_loom">Project Loom</a></li>
+<li><a href="#_scheduling">Scheduling</a></li>
+<li><a href="#_discussion">Discussion</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>Project Loom (<a href="https://openjdk.java.net/jeps/425">JEP 425</a>) is probably amongst the most awaited feature additions to Java ever;
 its implementation of virtual threads (or &#34;green threads&#34;) promises developers the ability to create highly concurrent applications,
 for instance with hundreds of thousands of open HTTP connections,

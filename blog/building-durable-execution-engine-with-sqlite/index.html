@@ -13,29 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Building a Durable Execution Engine With SQLite - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Building a Durable Execution Engine With SQLite" />
-<meta property="og:description" content="
-Lately, there has been a lot of excitement around Durable Execution (DE) engines.
-The basic idea of DE is to take (potentially long-running) multi-step workflows,
-such as processing a purchase order or a user sign-up,
-and make their individual steps persistent.
-If a flow gets interrupted while running, for instance due to a machine failure,
-the DE engine can resume it from the last successfully executed step and drive it to completion.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/building-durable-execution-engine-with-sqlite/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2025-11-20T13:10:00+01:00" />
-<meta property="article:modified_time" content="2025-11-20T13:10:00+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Building a Durable Execution Engine With SQLite"/>
-<meta name="twitter:description" content="
-Lately, there has been a lot of excitement around Durable Execution (DE) engines.
-The basic idea of DE is to take (potentially long-running) multi-step workflows,
-such as processing a purchase order or a user sign-up,
-and make their individual steps persistent.
-If a flow gets interrupted while running, for instance due to a machine failure,
-the DE engine can resume it from the last successfully executed step and drive it to completion.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/building-durable-execution-engine-with-sqlite/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Building a Durable Execution Engine With SQLite">
+  <meta property="og:description" content=" Lately, there has been a lot of excitement around Durable Execution (DE) engines. The basic idea of DE is to take (potentially long-running) multi-step workflows, such as processing a purchase order …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2025-11-20T13:10:00&#43;01:00">
+    <meta property="article:modified_time" content="2025-11-20T13:10:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Building a Durable Execution Engine With SQLite">
+  <meta name="twitter:description" content=" Lately, there has been a lot of excitement around Durable Execution (DE) engines. The basic idea of DE is to take (potentially long-running) multi-step workflows, such as processing a purchase order …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -278,8 +267,19 @@ the DE engine can resume it from the last successfully executed step and drive i
 				<div class="meta">Posted at Nov 20, 2025</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_hello_persistasaurus">Hello Persistasaurus!</a></li>
+<li><a href="#_capturing_execution_state">Capturing Execution State</a></li>
+<li><a href="#_delayed_executions">Delayed Executions</a></li>
+<li><a href="#_human_interaction">Human Interaction</a></li>
+<li><a href="#_managing_state">Managing State</a></li>
+<li><a href="#_wrapping_up">Wrapping Up</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>Lately, there has been a lot of excitement around Durable Execution (DE) engines.
 The basic idea of DE is to take (potentially long-running) multi-step workflows,
 such as processing a purchase order or a user sign-up,

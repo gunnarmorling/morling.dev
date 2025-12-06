@@ -13,21 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>On Idempotency Keys - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="On Idempotency Keys" />
-<meta property="og:description" content="
-In distributed systems, there’s a common understanding that it is not possible to guarantee exactly-once delivery of messages.
-What is possible though is exactly-once processing. By adding a unique idempotency key to each message, you can enable consumers to recognize and ignore duplicate messages, i.e. messages which they have received and successfully processed before.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/on-idempotency-keys/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2025-11-25T13:10:00+01:00" />
-<meta property="article:modified_time" content="2025-11-25T13:10:00+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="On Idempotency Keys"/>
-<meta name="twitter:description" content="
-In distributed systems, there’s a common understanding that it is not possible to guarantee exactly-once delivery of messages.
-What is possible though is exactly-once processing. By adding a unique idempotency key to each message, you can enable consumers to recognize and ignore duplicate messages, i.e. messages which they have received and successfully processed before.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/on-idempotency-keys/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="On Idempotency Keys">
+  <meta property="og:description" content=" In distributed systems, there’s a common understanding that it is not possible to guarantee exactly-once delivery of messages. What is possible though is exactly-once processing. By adding a unique …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2025-11-25T13:10:00&#43;01:00">
+    <meta property="article:modified_time" content="2025-11-25T13:10:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="On Idempotency Keys">
+  <meta name="twitter:description" content=" In distributed systems, there’s a common understanding that it is not possible to guarantee exactly-once delivery of messages. What is possible though is exactly-once processing. By adding a unique …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -270,8 +267,17 @@ What is possible though is exactly-once processing. By adding a unique idempoten
 				<div class="meta">Posted at Nov 25, 2025</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_uuids">UUIDs</a></li>
+<li><a href="#_monotonically_increasing_sequences">Monotonically Increasing Sequences</a></li>
+<li><a href="#_deriving_idempotency_keys_from_the_transaction_log">Deriving Idempotency Keys From the Transaction Log</a></li>
+<li><a href="#_discussion">Discussion</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>In distributed systems, there’s a common understanding that it is not possible to guarantee exactly-once delivery of messages.
 <a href="https://medium.com/@jaykreps/exactly-once-support-in-apache-kafka-55e1fdd0a35f">What is possible</a> though is <em>exactly-once processing</em>. By adding a unique idempotency key to each message, you can enable consumers to recognize and ignore duplicate messages, i.e. messages which they have received and successfully processed before.</p>
 </div>

@@ -13,25 +13,20 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Postgres 15: Logical Decoding Row Filters With Debezium - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Postgres 15: Logical Decoding Row Filters With Debezium" />
-<meta property="og:description" content="
-This post originally appeared on the Decodable blog.
-
-
-Since logical decoding was added to Postgres in version 9.4, this powerful feature for capturing changes from the write-ahead log of the database has been continuously improved. Postgres 15, released in October this year, added support for fine-grained control over which columns (by means of column lists) and rows (via row filters) should be exported from captured tables. This means, in relational terminology, projections and filters are now natively supported by Postgres change event publications.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/postgres-15-logical-decoding-row-filters-with-debezium/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2022-12-15T00:00:00+01:00" />
-<meta property="article:modified_time" content="2022-12-15T00:00:00+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Postgres 15: Logical Decoding Row Filters With Debezium"/>
-<meta name="twitter:description" content="
-This post originally appeared on the Decodable blog.
-
-
-Since logical decoding was added to Postgres in version 9.4, this powerful feature for capturing changes from the write-ahead log of the database has been continuously improved. Postgres 15, released in October this year, added support for fine-grained control over which columns (by means of column lists) and rows (via row filters) should be exported from captured tables. This means, in relational terminology, projections and filters are now natively supported by Postgres change event publications.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/postgres-15-logical-decoding-row-filters-with-debezium/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Postgres 15: Logical Decoding Row Filters With Debezium">
+  <meta property="og:description" content=" This post originally appeared on the Decodable blog.
+Since logical decoding was added to Postgres in version 9.4, this powerful feature for capturing changes from the write-ahead log of the database …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2022-12-15T00:00:00&#43;01:00">
+    <meta property="article:modified_time" content="2022-12-15T00:00:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Postgres 15: Logical Decoding Row Filters With Debezium">
+  <meta name="twitter:description" content=" This post originally appeared on the Decodable blog.
+Since logical decoding was added to Postgres in version 9.4, this powerful feature for capturing changes from the write-ahead log of the database …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -274,8 +269,16 @@ Since logical decoding was added to Postgres in version 9.4, this powerful featu
 				<div class="meta">Posted at Dec 15, 2022</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_using_logical_decoding_row_filters_with_debezium">Using Logical Decoding Row Filters With Debezium</a></li>
+<li><a href="#_observing_filtered_change_events">Observing Filtered Change Events</a></li>
+<li><a href="#_wrap_up">Wrap-Up</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p><em>This post <a href="https://www.decodable.co/blog/postgres-15-logical-decoding-row-filters-with-debezium">originally appeared</a> on the Decodable blog.</em></p>
 </div>
 <div class="paragraph">

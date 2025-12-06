@@ -13,41 +13,20 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Quarkus and Testcontainers - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Quarkus and Testcontainers" />
-<meta property="og:description" content="
-The Testcontainers project is invaluable for spinning up containerized resources during your (JUnit) tests,
-e.g. databases or Kafka clusters.
-
-
-For users of JUnit 5, the project provides the @Testcontainers extension, which controls the lifecycle of containers used by a test.
-When testing a Quarkus application though, this is at odds with Quarkus&#39; own @QuarkusTest extension;
-it’s a recommended best practice to avoid fixed ports for any containers started by Testcontainers.
-Instead, you should rely on Docker to automatically allocate random free ports.
-This avoids conflicts between concurrently running tests,
-e.g. amongst multiple Postgres containers,
-started up by several parallel job runs in a CI environment, all trying to allocate Postgres&#39; default port 5432.
-Obtaining the randomly assigned port and passing it into the Quarkus bootstrap process isn’t possible though when combining the two JUnit extensions.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/quarkus-and-testcontainers/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2020-11-28T17:45:00+01:00" />
-<meta property="article:modified_time" content="2020-11-28T17:45:00+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Quarkus and Testcontainers"/>
-<meta name="twitter:description" content="
-The Testcontainers project is invaluable for spinning up containerized resources during your (JUnit) tests,
-e.g. databases or Kafka clusters.
-
-
-For users of JUnit 5, the project provides the @Testcontainers extension, which controls the lifecycle of containers used by a test.
-When testing a Quarkus application though, this is at odds with Quarkus&#39; own @QuarkusTest extension;
-it’s a recommended best practice to avoid fixed ports for any containers started by Testcontainers.
-Instead, you should rely on Docker to automatically allocate random free ports.
-This avoids conflicts between concurrently running tests,
-e.g. amongst multiple Postgres containers,
-started up by several parallel job runs in a CI environment, all trying to allocate Postgres&#39; default port 5432.
-Obtaining the randomly assigned port and passing it into the Quarkus bootstrap process isn’t possible though when combining the two JUnit extensions.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/quarkus-and-testcontainers/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Quarkus and Testcontainers">
+  <meta property="og:description" content=" The Testcontainers project is invaluable for spinning up containerized resources during your (JUnit) tests, e.g. databases or Kafka clusters.
+For users of JUnit 5, the project provides the …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2020-11-28T17:45:00&#43;01:00">
+    <meta property="article:modified_time" content="2020-11-28T17:45:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Quarkus and Testcontainers">
+  <meta name="twitter:description" content=" The Testcontainers project is invaluable for spinning up containerized resources during your (JUnit) tests, e.g. databases or Kafka clusters.
+For users of JUnit 5, the project provides the …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -290,8 +269,14 @@ Obtaining the randomly assigned port and passing it into the Quarkus bootstrap p
 				<div class="meta">Posted at Nov 28, 2020</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_bonus_schema_creation">Bonus: Schema Creation</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>The <a href="https://www.testcontainers.org/">Testcontainers</a> project is invaluable for spinning up containerized resources during your (JUnit) tests,
 e.g. databases or Kafka clusters.</p>
 </div>

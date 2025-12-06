@@ -13,57 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Towards Continuous Performance Regression Testing - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Towards Continuous Performance Regression Testing" />
-<meta property="og:description" content="
-Functional unit and integration tests are a standard tool of any software development organization,
-helping not only to ensure correctness of newly implemented code,
-but also to identify regressions — bugs in existing functionality introduced by a code change.
-The situation looks different though when it comes to regressions related to non-functional requirements, in particular performance-related ones:
-How to detect increased response times in a web application?
-How to identify decreased throughput?
-
-
-These aspects are typically hard to test in an automated and reliable way in the development workflow,
-as they are dependent on the underlying hardware and the workload of an application.
-For instance assertions on the duration of specific requests of a web application typically cannot be run in a meaningful way on a developer laptop,
-which differs from the actual production hardware
-(ironically, nowadays both is an option, the developer laptop being less or more powerful than the actual production environment).
-When run in a virtualized or containerized CI environment, such tests are prone to severe measurement distortions due to concurrent load of other applications and jobs.
-
-
-This post introduces the JfrUnit open-source project, which offers a fresh angle to this topic by supporting assertions not on metrics like latency/throughput themselves, but on indirect metrics which may impact those.
-JfrUnit allows you define expected values for metrics such as memory allocation, database I/O, or number of executed SQL statements, for a given workload and asserts the actual metrics values — which are obtained from JDK Flight Recorder events — against these expected values.
-Starting off from a defined base line, future failures of such assertions are an indicator for potential performance regressions in an application, as a code change may have introduced higher GC pressure,
-the retrieval of unneccessary data from the database, or SQL problems commonly induced by ORM tools, like N&#43;1 SELECT statements.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/towards-continuous-performance-regression-testing/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2020-12-16T17:45:00+01:00" />
-<meta property="article:modified_time" content="2020-12-16T17:45:00+01:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Towards Continuous Performance Regression Testing"/>
-<meta name="twitter:description" content="
-Functional unit and integration tests are a standard tool of any software development organization,
-helping not only to ensure correctness of newly implemented code,
-but also to identify regressions — bugs in existing functionality introduced by a code change.
-The situation looks different though when it comes to regressions related to non-functional requirements, in particular performance-related ones:
-How to detect increased response times in a web application?
-How to identify decreased throughput?
-
-
-These aspects are typically hard to test in an automated and reliable way in the development workflow,
-as they are dependent on the underlying hardware and the workload of an application.
-For instance assertions on the duration of specific requests of a web application typically cannot be run in a meaningful way on a developer laptop,
-which differs from the actual production hardware
-(ironically, nowadays both is an option, the developer laptop being less or more powerful than the actual production environment).
-When run in a virtualized or containerized CI environment, such tests are prone to severe measurement distortions due to concurrent load of other applications and jobs.
-
-
-This post introduces the JfrUnit open-source project, which offers a fresh angle to this topic by supporting assertions not on metrics like latency/throughput themselves, but on indirect metrics which may impact those.
-JfrUnit allows you define expected values for metrics such as memory allocation, database I/O, or number of executed SQL statements, for a given workload and asserts the actual metrics values — which are obtained from JDK Flight Recorder events — against these expected values.
-Starting off from a defined base line, future failures of such assertions are an indicator for potential performance regressions in an application, as a code change may have introduced higher GC pressure,
-the retrieval of unneccessary data from the database, or SQL problems commonly induced by ORM tools, like N&#43;1 SELECT statements.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/towards-continuous-performance-regression-testing/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Towards Continuous Performance Regression Testing">
+  <meta property="og:description" content=" Functional unit and integration tests are a standard tool of any software development organization, helping not only to ensure correctness of newly implemented code, but also to identify regressions …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2020-12-16T17:45:00&#43;01:00">
+    <meta property="article:modified_time" content="2020-12-16T17:45:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Towards Continuous Performance Regression Testing">
+  <meta name="twitter:description" content=" Functional unit and integration tests are a standard tool of any software development organization, helping not only to ensure correctness of newly implemented code, but also to identify regressions …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -306,8 +267,18 @@ the retrieval of unneccessary data from the database, or SQL problems commonly i
 				<div class="meta">Posted at Dec 16, 2020</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_getting_started_with_jfrunit">Getting Started With JfrUnit</a></li>
+<li><a href="#_case_study_1_spotting_increased_memory_allocation">Case Study 1: Spotting Increased Memory Allocation</a></li>
+<li><a href="#_case_study_2_identifying_increased_io_with_the_database">Case Study 2: Identifying Increased I/O With the Database</a></li>
+<li><a href="#_discussion">Discussion</a></li>
+<li><a href="#_summary_and_outlook">Summary and Outlook</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>Functional unit and integration tests are a standard tool of any software development organization,
 helping not only to ensure correctness of newly implemented code,
 but also to identify regressions — bugs in existing functionality introduced by a code change.

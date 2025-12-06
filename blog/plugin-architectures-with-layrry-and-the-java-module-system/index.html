@@ -13,33 +13,18 @@
 
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Plug-in Architectures With Layrry and the Java Module System - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:title" content="Plug-in Architectures With Layrry and the Java Module System" />
-<meta property="og:description" content="
-Making applications extensible with some form of plug-ins is a very common pattern in software design:
-based on well-defined APIs provided by the application core, plug-ins can customize an application’s behavior and provide new functionality.
-Examples include desktop applications like IDEs or web browsers, build tools such as Apache Maven or Gradle, as well as server-side applications such as Apache Kafka Connect,
-a runtime for Kafka connectors plug-ins.
-
-
-In this post I’m going to explore how the Java Platform Module System&#39;s notion of module layers can be leveraged for implementing plug-in architectures on the JVM.
-We’ll also discuss how Layrry, a launcher and runtime for layered Java applications, can help with this task.
-" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://www.morling.dev/blog/plugin-architectures-with-layrry-and-the-java-module-system/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2020-04-21T18:54:00+02:00" />
-<meta property="article:modified_time" content="2020-04-21T18:54:00+02:00" />
-
-<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Plug-in Architectures With Layrry and the Java Module System"/>
-<meta name="twitter:description" content="
-Making applications extensible with some form of plug-ins is a very common pattern in software design:
-based on well-defined APIs provided by the application core, plug-ins can customize an application’s behavior and provide new functionality.
-Examples include desktop applications like IDEs or web browsers, build tools such as Apache Maven or Gradle, as well as server-side applications such as Apache Kafka Connect,
-a runtime for Kafka connectors plug-ins.
-
-
-In this post I’m going to explore how the Java Platform Module System&#39;s notion of module layers can be leveraged for implementing plug-in architectures on the JVM.
-We’ll also discuss how Layrry, a launcher and runtime for layered Java applications, can help with this task.
-"/>
+	<meta property="og:url" content="https://www.morling.dev/blog/plugin-architectures-with-layrry-and-the-java-module-system/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Plug-in Architectures With Layrry and the Java Module System">
+  <meta property="og:description" content=" Making applications extensible with some form of plug-ins is a very common pattern in software design: based on well-defined APIs provided by the application core, plug-ins can customize an …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2020-04-21T18:54:00&#43;02:00">
+    <meta property="article:modified_time" content="2020-04-21T18:54:00&#43;02:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Plug-in Architectures With Layrry and the Java Module System">
+  <meta name="twitter:description" content=" Making applications extensible with some form of plug-ins is a very common pattern in software design: based on well-defined APIs provided by the application core, plug-ins can customize an …">
 <link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,700,300italic,400italic,700italic|Raleway:200,300" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
  
@@ -282,8 +267,17 @@ We’ll also discuss how Layrry, a launcher and runtime for layered Java applica
 				<div class="meta">Posted at Apr 21, 2020</div>
 			</div>
 
-			<div class="markdown">
-				<div class="paragraph">
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_an_example_the_greeter_cli_app">An Example: The Greeter CLI App</a></li>
+<li><a href="#_application_plug_ins_with_layrry">Application Plug-ins With Layrry</a></li>
+<li><a href="#_finding_plug_in_implementations_with_the_java_service_loader">Finding Plug-in Implementations With the Java Service Loader</a></li>
+<li><a href="#_seeing_it_in_action">Seeing it in Action</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>Making applications extensible with some form of plug-ins is a very common pattern in software design:
 based on well-defined APIs provided by the application core, plug-ins can customize an application’s behavior and provide new functionality.
 Examples include desktop applications like IDEs or web browsers, build tools such as Apache Maven or Gradle, as well as server-side applications such as Apache Kafka Connect,
