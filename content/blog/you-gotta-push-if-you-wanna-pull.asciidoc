@@ -1,0 +1,88 @@
+---
+title: "You Gotta Push If You Wanna Pull"
+date: 2025-12-07T10:05:00+01:00
+draft: false
+markup: adoc
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+Historically, data management systems have been built around the notion of _pull queries_: users query data which, for instance, is stored in tables in an RDBMS, Parquet files in a data lake, or a full-text index in Elasticsearch. When a user issues a query, the engine will produce the result set at that point in time by churning through the data set and finding all matching records (oftentimes sped up by utilizing indexes).
+
+<!--more-->
+
+Generally, this approach of pulling data works well and it matches with how people think and operate. You have a question about your data set? Express it as a query, run that query, and the system will provide the answer. But there are some challenges with that, too:
+
+* *Performance:* Queries might be prohibitively expensive to process, taking too long to provide an answer in a satisfactory amount of time, for instance if the data set is very large, or if a query is very complex.  
+* *Data format:* Depending on the kind of query, the system storing the data might not be the most suitable one to answer it. For instance, an RDBMS such as Postgres might not be the best tool for processing analytical queries.  
+* *Data shape:* The data might not be in the right shape to answer a given query efficiently, for instance requiring a complex many-way join of highly normalized tables which is expensive to compute.  
+* *Data location:* The data might just not be at the right place. Depending on the specific use case, it might be necessary to store it close to users, e.g. at edge locations or even on the user's mobile device, in order to meet defined latency or availability requirements.
+
+## Materialized Views
+
+All these problems can be overcome with the help of _materialized views_, applying a very broad interpretation of that term. No matter whether you use actual materialized views in a database or work with derived datasets stored in different kinds of data systems, the idea is always the same: precompute the results of a given query and store them in a format, shape, and location optimized specifically for that query.
+
+That five-way join required to fetch a purchase order with all its order lines, associated product data, shipment details, and customer information? Precompute it and store it in a materialized view in your database, allowing for super-fast look-up solely based on the order id. Ad-hoc queries by the data science team for identifying upsell opportunities across all the orders, which would put a massive load onto your operational database? Copy the data into a data lake, allowing for all sorts of analytical queries without impacting the operational database whatsoever. Need to answer queries with the lowest latency possible? Put a derived view of the data set into https://speakerdeck.com/gunnarmorling/keep-your-cache-always-fresh-with-debezium-current-22[a cache close to your users].
+
+image::push_pull_01.jpg["It's ok to have multiple copies of your data."]
+
+--
+Put differently, in order to get the most value out of pull queries, you should lean into data duplication and denormalization. Arranging multiple materialized views of your data set in different ways, each one optimized for specific query and access patterns, allows you to satisfy the requirements of different use cases operating on that data set. Ultimately, it is physics which are demanding this: there's only ever going to be a single way to iterate efficiently through a data set in its natural sort order. This is why we have indexes in databases, which, if you squint a little, are just another kind of materialized view, at least in their covering form+++<sup>[1]</sup>+++.
+
+[.aside]
+****
+[1] A https://use-the-index-luke.com/sql/clustering/index-only-scan-covering-index[covering index] is an index which contains all the columns required by a given query. A query engine therefore needs only to scan the index for processing the query, it doesn't have to retrieve further data from the https://x.com/gunnarmorling/status/1994711292309864667[table's primary B+ tree or the heap].
+****
+--
+
+== Embracing Data Duplication
+
+Now, the thought of duplication might trigger some reservations: isn't chaos going to ensue if there are multiple copies of the same data set? Which version is the right one? Aren't you at the risk of producing inconsistent query results? I think https://www.linkedin.com/posts/gunnar-morling_having-multiple-copies-of-your-data-specifically-activity-7392675117799165952-EUaC?utm_source=share&utm_medium=member_desktop&rcm=ACoAADk0a-gBumlYou5VPjjZZrbz5W644EI7wQI[there's not much to fear] if you keep one fundamental principle in mind: there should be _exactly one canonical instance_ of the data set. As the system of record it is the only one that gets mutated by business transactions. All other views of the data set are derived from this one, i.e. it is the source of truth.
+
+[NOTE]
+====
+In practice, it is not feasible to update all derived views synchronously, in particular if they are located in another system. This means consumers need to account for eventual consistency of view data. For many use cases, such as analytics, that is perfectly acceptable. Other situations might have stronger consistency requirements, making it necessary to prevent stale data from being retrieved from a view. Different techniques exist for doing so, such as tracking logical timestamps or log sequence numbers (LSNs).
+====
+
+This raises the question of how to keep all these different flavors of materialized views in sync, as the original data set changes. New records will be added, existing ones be updated or removed, and all the derived views need to be updated in order to reflect these changes. You could periodically recreate any derived views from scratch, but not only might this be a very costly operation, you'd also have to deal with outdated or incomplete query results very quickly again.
+
+Thinking about it, recomputing materialized views from scratch can be pretty wasteful. Typically, only small parts of a dataset change, hence also only small parts of any derived views should require to be updated. Intuitively, this makes a lot of sense. For instance, assume you'd want to keep track of the revenue per product category across the purchase orders in your system. When a new order arrives, would you recalculate the totals for all the categories, by processing all the orders? Of course not. Instead, you'd keep the totals of all the unrelated categories as-is. Only the total of the incoming order's category needs updating, and you'd compute that one by simply adding the new order's value to the previous total.
+
+This is exactly how _push queries_ work. Triggered by changes to rows in the source tables they operate on, https://justinjaffray.com/query-engines-push-vs.-pull/[they'll emit new (or updated) results] reflecting exactly these changes. A new row in the purchase orders table in the previous example will yield exactly one update to the sum of that order's category. That way, push queries solve the concern of pull queries potentially being too costly and taking too long to run. As they operate on small incremental data changes, the cost is distributed over time, and each output update can be calculated very quickly.
+
+[NOTE]
+====
+A core assumption of push queries is that the delta they operate on is comparatively small. If there is a massive data change—for instance when doing bulk deletes, or when https://www.feldera.com/blog/backfill-explained[backfilling historical data]—instead of processing all these changes incrementally, triggering millions of state updates, each with its own overhead (lookups, partial aggregations, downstream propagation), it may be advantageous to fall back to a pull query processing the complete data set.
+====
+
+== Streams for machines, tables for humans
+
+Such a stream of query result updates is great for implementing realtime use cases, acting on the data as it changes. For instance, to build a system for fraud detection you could define a push query identifying certain patterns in newly created purchase orders as they come in and emit any results to some alerting system.
+
+In contrast, push queries don't work very well for how humans operate. You probably don't want to be notified for every single update to the revenue-per-category query. Users want to process query results at their own pace and demand. Most of the time, users of a data system are not interested in a stream of data changes, but rather the effective result at a given point in time. When looking for the current balance of your bank account, you don't want to sum up all previous transactions; you just want to see the resulting number.
+
+That's where the combination of push and pull queries comes in: taking the incrementally computed updates to the results of a push query and storing them in a system supporting pull queries lets you have the cake and eat it too.
+
+image::push_pull_02.jpg["Push, pull. Why not both?"]
+
+There are several ways for implementing this. This could be a stream processor such as https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/overview/[Flink SQL], operating on https://www.morling.dev/blog/ingesting-debezium-events-from-kafka-with-flink-sql/[change events sourced from a database via change data capture], and writing data into Elasticsearch, or an Iceberg table. It could be a database supporting incremental view maintenance (IVM), such as Postgres with the https://github.com/sraoss/pg_ivm[pg_ivm] extension. Or it could be an external IVM engine such as https://www.feldera.com/[Feldera], https://materialize.com/[Materialize], or https://risingwave.com/[RisingWave].
+
+--
+The IVM space has seen considerable activity over the past few years, with vendors working to extend incremental computation to increasingly complex SQL queries, e.g. with windowed aggregations or recursive logic, managing the potentially large state+++<sup>[2]</sup>+++ required for incremental computations and amortizing it across multiple queries, supporting edge-based caching (https://readyset.io/[ReadySet]), and much more.
+
+[.aside]
+****
+[2] As an example, consider an incremental `MAX()` query on rows which can be updated. If the row contributing the current max value gets deleted, the next largest value needs to be emitted instead.
+Thus, that operator needs to store all row values for that column.
+****
+--
+
+
+However, no matter which specific solution you choose, this approach allows you to materialize views incrementally and efficiently, making your data available for pull-based querying in the right format and shape, at the right location.
+
+If you want instant pulls, you need constant pushes.
