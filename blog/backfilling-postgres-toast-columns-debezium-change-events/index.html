@@ -16,7 +16,7 @@
 	<meta property="og:url" content="https://www.morling.dev/blog/backfilling-postgres-toast-columns-debezium-change-events/">
   <meta property="og:site_name" content="Gunnar Morling">
   <meta property="og:title" content="Backfilling Postgres TOAST Columns in Debezium Data Change Events">
-  <meta property="og:description" content=" Postgres logical replication, while powerful for capturing real-time data changes, presents challenges with TOAST columns, whose values can be absent from data change events in specific situations. …">
+  <meta property="og:description" content=" Table of Contents Debezium Reselect Postprocessor Flink DataStream API Flink SQL With OVER Aggregation Flink Process Table Functions Summary and Discussion Postgres logical replication, while …">
   <meta property="og:locale" content="en-us">
   <meta property="og:type" content="blog">
     <meta property="article:section" content="blog">
@@ -24,7 +24,7 @@
     <meta property="article:modified_time" content="2025-05-26T16:40:00&#43;02:00">
 <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Backfilling Postgres TOAST Columns in Debezium Data Change Events">
-  <meta name="twitter:description" content=" Postgres logical replication, while powerful for capturing real-time data changes, presents challenges with TOAST columns, whose values can be absent from data change events in specific situations. …">
+  <meta name="twitter:description" content=" Table of Contents Debezium Reselect Postprocessor Flink DataStream API Flink SQL With OVER Aggregation Flink Process Table Functions Summary and Discussion Postgres logical replication, while …">
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
 	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
 	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.672476d25c0fad0fd490e21222003c6c89ca45b73df6a5634305e06e889c49ad.css" />
@@ -32,7 +32,7 @@
 	
 	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
 	
-	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.329eb1abca4c7934062e30807fae757534c9b8d1b2588fc8ef1e134d73198b54.css" />
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.1f7c90fe21e9cb9a420de17091548a5bddce9099924773750cedf84f08a3adce.css" />
 	
 
 	<script>
@@ -275,12 +275,12 @@
 <li><a href="#_summary_and_discussion">Summary and Discussion</a></li>
 </ul>
 </div>
-<div class="paragraph">
-<p><em>Postgres logical replication, while powerful for capturing real-time data changes, presents challenges with TOAST columns,
+<div class="paragraph teaser">
+<p>Postgres logical replication, while powerful for capturing real-time data changes, presents challenges with TOAST columns,
 whose values can be absent from data change events in specific situations.
 This post discusses how Debezium addresses this through its built-in reselect post processor,
 then explores more robust solutions leveraging Apache Flink’s capabilities for stateful stream processing,
-including Flink SQL and the brand-new process table functions (PTFs) in Flink 2.1.</em></p>
+including Flink SQL and the brand-new process table functions (PTFs) in Flink 2.1.</p>
 </div>
 <div class="paragraph">
 <p>Logical replication allows you to capture and propagate all the data changes from a Postgres database in real-time.
