@@ -433,14 +433,23 @@ which can be useful when working with partition tables in Postgres, or with data
 such script-based approach can be an interesting middleground between ease-of-use (no Java code must be compiled and deployed to Kafka Connect) and expressiveness; e.g. here is how the routing SMT could be used with <a href="https://github.com/graalvm/graaljs">GraalVM’s JavaScript engine</a> for routing change events from a table with purchase orders to different topics in Kafka, based on the order type:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code>...
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre>...
 transforms=route
 transforms.route.type=io.debezium.transforms.ContentBasedRouter
 transforms.route.topic.regex=.*purchaseorders
 transforms.route.language=jsr223.graal.js
 transforms.route.topic.expression=
     value.after.ordertype == &#39;B2B&#39; ? &#39;b2b_orders&#39; : &#39;b2c_orders&#39;
-...</code></pre>
+...
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 </li>

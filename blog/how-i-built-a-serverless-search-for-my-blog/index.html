@@ -454,14 +454,23 @@ In my <em>config.toml</em> I declared the new output format and activate it for 
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="toml"><span class="nn">[outputFormats.SearchIndex]</span>
+<pre class="rouge highlight"><code data-lang="toml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre><span class="nn">[outputFormats.SearchIndex]</span>
 <span class="py">mediaType</span> <span class="p">=</span> <span class="s">&#34;application/json&#34;</span>
 <span class="py">baseName</span> <span class="p">=</span> <span class="s">&#34;searchindex&#34;</span>
 <span class="py">isPlainText</span> <span class="p">=</span> <span class="kc">true</span>
 <span class="py">notAlternative</span> <span class="p">=</span> <span class="kc">true</span>
 
 <span class="nn">[outputs]</span>
-<span class="py">home</span> <span class="p">=</span> <span class="p">[</span><span class="s">&#34;HTML&#34;</span><span class="p">,</span><span class="s">&#34;RSS&#34;</span><span class="p">,</span> <span class="s">&#34;SearchIndex&#34;</span><span class="p">]</span></code></pre>
+<span class="py">home</span> <span class="p">=</span> <span class="p">[</span><span class="s">&#34;HTML&#34;</span><span class="p">,</span><span class="s">&#34;RSS&#34;</span><span class="p">,</span> <span class="s">&#34;SearchIndex&#34;</span><span class="p">]</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -469,11 +478,17 @@ In my <em>config.toml</em> I declared the new output format and activate it for 
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code>{{- $.Scratch.Add &#34;searchindex&#34; slice -}}
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>{{- $.Scratch.Add &#34;searchindex&#34; slice -}}
 {{- range $index, $element := .Site.Pages -}}
   {{- $.Scratch.Add &#34;searchindex&#34; (dict &#34;id&#34; $index &#34;title&#34; $element.Title &#34;uri&#34; $element.Permalink &#34;tags&#34; $element.Params.tags &#34;section&#34; $element.Section &#34;content&#34; $element.Plain &#34;summary&#34; $element.Summary &#34;publicationdate&#34; ($element.Date.Format &#34;Jan 2, 2006&#34;)) -}}
 {{- end -}}
-{{- $.Scratch.Get &#34;searchindex&#34; | jsonify -}}</code></pre>
+{{- $.Scratch.Get &#34;searchindex&#34; | jsonify -}}
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -481,7 +496,27 @@ In my <em>config.toml</em> I declared the new output format and activate it for 
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="json"><span class="p">[</span><span class="w">
+<pre class="rouge highlight"><code data-lang="json"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre></td><td class="code"><pre><span class="p">[</span><span class="w">
   </span><span class="err">...</span><span class="w">
   </span><span class="p">{</span><span class="w">
     </span><span class="nl">&#34;content&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;The JDK Flight Recorder (JFR) is an invaluable tool...&#34;</span><span class="p">,</span><span class="w">
@@ -500,7 +535,8 @@ In my <em>config.toml</em> I declared the new output format and activate it for 
     </span><span class="nl">&#34;uri&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;https://www.morling.dev/blog/rest-api-monitoring-with-custom-jdk-flight-recorder-events/&#34;</span><span class="w">
   </span><span class="p">},</span><span class="w">
   </span><span class="err">...</span><span class="w">
-</span><span class="p">]</span></code></pre>
+</span><span class="p">]</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -562,7 +598,27 @@ As an example, here’s one of the substitution classes I had to create:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="nd">@TargetClass</span><span class="o">(</span><span class="n">className</span> <span class="o">=</span> <span class="s">&#34;org.apache.lucene.util.AttributeFactory$DefaultAttributeFactory&#34;</span><span class="o">)</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre></td><td class="code"><pre><span class="nd">@TargetClass</span><span class="o">(</span><span class="n">className</span> <span class="o">=</span> <span class="s">&#34;org.apache.lucene.util.AttributeFactory$DefaultAttributeFactory&#34;</span><span class="o">)</span>
 <span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">DefaultAttributeFactorySubstitution</span> <span class="o">{</span>
 
   <span class="kd">public</span> <span class="nf">DefaultAttributeFactorySubstitution</span><span class="o">()</span> <span class="o">{}</span>
@@ -581,7 +637,8 @@ As an example, here’s one of the substitution classes I had to create:</p>
 
     <span class="k">throw</span> <span class="k">new</span> <span class="nf">UnsupportedOperationException</span><span class="o">(</span><span class="s">&#34;Unknown attribute class: &#34;</span> <span class="o">+</span> <span class="n">attClass</span><span class="o">);</span>
   <span class="o">}</span>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -631,7 +688,33 @@ It’s based on <a href="https://projects.eclipse.org/projects/ee4j.jaxrs">JAX-R
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash">http <span class="s2">&#34;https://my-search-service/search?q=java&#34;</span>
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+</pre></td><td class="code"><pre>http <span class="s2">&#34;https://my-search-service/search?q=java&#34;</span>
 
 HTTP/1.1 200 OK
 Connection: keep-alive
@@ -656,7 +739,8 @@ Date: Tue, 21 Jul 2020 17:05:00 GMT
     <span class="o">}</span>,
     ...
   <span class="o">]</span>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -698,11 +782,17 @@ the search text input field is hidden in that case via CSS:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="xml"><span class="nt">&lt;noscript&gt;</span>
+<pre class="rouge highlight"><code data-lang="xml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="nt">&lt;noscript&gt;</span>
   <span class="nt">&lt;style</span> <span class="na">type=</span><span class="s">&#34;text/css&#34;</span><span class="nt">&gt;</span>
     .search-input { display:none; }
   <span class="nt">&lt;/style&gt;</span>
-<span class="nt">&lt;/noscript&gt;</span></code></pre>
+<span class="nt">&lt;/noscript&gt;</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -824,7 +914,17 @@ Lastly, I used a specific pre-configured execution role instead of the default <
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash">mvn clean package <span class="nt">-Pnative</span>,lambda <span class="nt">-DskipTests</span><span class="o">=</span><span class="nb">true</span> <span class="se">\</span>
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre>mvn clean package <span class="nt">-Pnative</span>,lambda <span class="nt">-DskipTests</span><span class="o">=</span><span class="nb">true</span> <span class="se">\</span>
   <span class="nt">-Dquarkus</span>.native.container-build<span class="o">=</span><span class="nb">true
 
 </span>sam package <span class="nt">--template-file</span> sam.native.yaml <span class="se">\</span>
@@ -833,7 +933,8 @@ Lastly, I used a specific pre-configured execution role instead of the default <
 
 sam deploy <span class="nt">--template-file</span> packaged.yaml <span class="se">\</span>
   <span class="nt">--capabilities</span> CAPABILITY_IAM <span class="se">\</span>
-  <span class="nt">--stack-name</span> &lt;my stack name&gt;</code></pre>
+  <span class="nt">--stack-name</span> &lt;my stack name&gt;
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">

@@ -314,11 +314,17 @@ the access <code>method</code> for the <code>local</code> connection type must b
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code>...
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>...
 # TYPE  DATABASE        USER            ADDRESS                 METHOD
 # &#34;local&#34; is for Unix domain socket connections only
 local   all             all                                     md5
-...</code></pre>
+...
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -344,7 +350,19 @@ So it should be easy to create <code>SocketFactory</code> implementation based o
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">PostgresUnixDomainSocketFactory</span> <span class="kd">extends</span> <span class="nc">SocketFactory</span> <span class="o">{</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">PostgresUnixDomainSocketFactory</span> <span class="kd">extends</span> <span class="nc">SocketFactory</span> <span class="o">{</span>
 
   <span class="nd">@Override</span>
   <span class="kd">public</span> <span class="nc">Socket</span> <span class="nf">createSocket</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
@@ -355,7 +373,8 @@ So it should be easy to create <code>SocketFactory</code> implementation based o
   <span class="o">}</span>
 
   <span class="c1">// other create methods ...</span>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -374,7 +393,17 @@ and <code>java.net.Socket</code> only connects to addresses of type <code>InetSo
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code>org.postgresql.util.PSQLException: Something unusual has occurred to cause the driver to fail. Please report this exception.
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre>org.postgresql.util.PSQLException: Something unusual has occurred to cause the driver to fail. Please report this exception.
   at org.postgresql.Driver.connect(Driver.java:285)
   ...
 
@@ -383,7 +412,8 @@ java.lang.IllegalArgumentException: Unsupported address type
   at java.base/java.net.Socket.connect(Socket.java:629)
   at java.base/java.net.Socket.connect(Socket.java:595)
   at dev.morling.demos.PostgresUnixDomainSocketFactory.createSocket(PostgresUnixDomainSocketFactory.java:19)
-  ...</code></pre>
+  ...
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -392,11 +422,17 @@ but perhaps obtaining a socket from a domain socket channel works?</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="nc">Socket</span> <span class="nf">createSocket</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="nc">Socket</span> <span class="nf">createSocket</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
   <span class="kt">var</span> <span class="n">sc</span> <span class="o">=</span> <span class="nc">SocketChannel</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="nc">UnixDomainSocketAddress</span><span class="o">.</span><span class="na">of</span><span class="o">(</span>
       <span class="s">&#34;/var/run/postgresql/.s.PGSQL.5432&#34;</span><span class="o">));</span>
   <span class="k">return</span> <span class="n">sc</span><span class="o">.</span><span class="na">socket</span><span class="o">();</span>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -404,9 +440,13 @@ but perhaps obtaining a socket from a domain socket channel works?</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code>java.lang.UnsupportedOperationException: Not supported
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre>java.lang.UnsupportedOperationException: Not supported
   at java.base/sun.nio.ch.SocketChannelImpl.socket(SocketChannelImpl.java:226)
-  at dev.morling.demos.PostgresUnixDomainSocketFactory.createSocket(PostgresUnixDomainSocketFactory.java:17)</code></pre>
+  at dev.morling.demos.PostgresUnixDomainSocketFactory.createSocket(PostgresUnixDomainSocketFactory.java:17)
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -454,7 +494,39 @@ and <code>convert()</code> for converting a Vert.x <code>SocketAddress</code> in
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UnixDomainTransport</span> <span class="kd">extends</span> <span class="nc">Transport</span> <span class="o">{</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UnixDomainTransport</span> <span class="kd">extends</span> <span class="nc">Transport</span> <span class="o">{</span>
 
   <span class="nd">@Override</span>
   <span class="kd">public</span> <span class="nc">ChannelFactory</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="nc">Channel</span><span class="o">&gt;</span> <span class="nf">channelFactory</span><span class="o">(</span>
@@ -485,7 +557,8 @@ and <code>convert()</code> for converting a Vert.x <code>SocketAddress</code> in
       <span class="k">return</span> <span class="nc">UnixDomainSocketAddress</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">address</span><span class="o">.</span><span class="na">path</span><span class="o">());</span> <i class="conum" data-value="4"></i><b>(4)</b>
     <span class="o">}</span>
   <span class="o">}</span>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -523,10 +596,15 @@ I ended up doing two small changes:</p>
 <p>Avoiding the call to <code>SocketChannel#socket()</code> in the constructor:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="nf">UnixDomainSocketChannel</span><span class="o">(</span><span class="nc">Channel</span> <span class="n">parent</span><span class="o">,</span> <span class="nc">SocketChannel</span> <span class="n">socket</span><span class="o">)</span> <span class="o">{</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="nf">UnixDomainSocketChannel</span><span class="o">(</span><span class="nc">Channel</span> <span class="n">parent</span><span class="o">,</span> <span class="nc">SocketChannel</span> <span class="n">socket</span><span class="o">)</span> <span class="o">{</span>
     <span class="kd">super</span><span class="o">(</span><span class="n">parent</span><span class="o">,</span> <span class="n">socket</span><span class="o">);</span>
     <span class="n">config</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">NioSocketChannelConfig</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="k">new</span> <span class="nc">Socket</span><span class="o">());</span> <i class="conum" data-value="1"></i><b>(1)</b>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -562,7 +640,22 @@ retrieval of a <code>PgPool</code> instance is a tad more verbose than usual:</p
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="nc">PgConnectOptions</span> <span class="n">connectOptions</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">PgConnectOptions</span><span class="o">()</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre><span class="nc">PgConnectOptions</span> <span class="n">connectOptions</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">PgConnectOptions</span><span class="o">()</span>
     <span class="o">.</span><span class="na">setPort</span><span class="o">(</span><span class="mi">5432</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
     <span class="o">.</span><span class="na">setHost</span><span class="o">(</span><span class="s">&#34;/var/run/postgresql&#34;</span><span class="o">)</span>
     <span class="o">.</span><span class="na">setDatabase</span><span class="o">(</span><span class="s">&#34;test_db&#34;</span><span class="o">)</span>
@@ -576,7 +669,8 @@ retrieval of a <code>PgPool</code> instance is a tad more verbose than usual:</p
 <span class="n">fv</span><span class="o">.</span><span class="na">transport</span><span class="o">(</span><span class="k">new</span> <span class="nc">UnixDomainTransport</span><span class="o">());</span> <i class="conum" data-value="2"></i><b>(2)</b>
 <span class="nc">Vertx</span> <span class="n">v</span> <span class="o">=</span> <span class="n">fv</span><span class="o">.</span><span class="na">vertx</span><span class="o">();</span>
 
-<span class="nc">PgPool</span> <span class="n">client</span> <span class="o">=</span> <span class="nc">PgPool</span><span class="o">.</span><span class="na">pool</span><span class="o">(</span><span class="n">v</span><span class="o">,</span> <span class="n">connectOptions</span><span class="o">,</span> <span class="n">poolOptions</span><span class="o">);</span> <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+<span class="nc">PgPool</span> <span class="n">client</span> <span class="o">=</span> <span class="nc">PgPool</span><span class="o">.</span><span class="na">pool</span><span class="o">(</span><span class="n">v</span><span class="o">,</span> <span class="n">connectOptions</span><span class="o">,</span> <span class="n">poolOptions</span><span class="o">);</span> <i class="conum" data-value="3"></i><b>(3)</b>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">

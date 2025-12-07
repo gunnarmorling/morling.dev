@@ -347,9 +347,13 @@ so if you’d like to try out things by yourself, you’ll have to clone my repo
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>git clone git@github.com:gunnarmorling/docker-images.git
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="nv">$ </span>git clone git@github.com:gunnarmorling/docker-images.git
 <span class="nv">$ </span><span class="nb">cd </span>docker-images/kafka/1.6
-<span class="nv">$ </span>docker build <span class="nt">-t</span> debezium/zkless-kafka:1.6 <span class="nt">--build-arg</span> <span class="nv">DEBEZIUM_VERSION</span><span class="o">=</span>1.6.0 .</code></pre>
+<span class="nv">$ </span>docker build <span class="nt">-t</span> debezium/zkless-kafka:1.6 <span class="nt">--build-arg</span> <span class="nv">DEBEZIUM_VERSION</span><span class="o">=</span>1.6.0 .
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -379,7 +383,36 @@ i.e. the container image currently only supports combined nodes</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="yaml"><span class="na">version</span><span class="pi">:</span> <span class="s1">&#39;</span><span class="s">2&#39;</span>
+<pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+</pre></td><td class="code"><pre><span class="na">version</span><span class="pi">:</span> <span class="s1">&#39;</span><span class="s">2&#39;</span>
 <span class="na">services</span><span class="pi">:</span>
   <span class="na">kafka-1</span><span class="pi">:</span>
     <span class="na">image</span><span class="pi">:</span> <span class="s">debezium/zkless-kafka:1.6</span>
@@ -407,7 +440,8 @@ i.e. the container image currently only supports combined nodes</p>
     <span class="na">environment</span><span class="pi">:</span>
       <span class="pi">-</span> <span class="s">CLUSTER_ID=oh-sxaDRTcyAr6pFRbXyzA</span> <i class="conum" data-value="1"></i><b>(1)</b>
       <span class="pi">-</span> <span class="s">BROKER_ID=3</span> <i class="conum" data-value="2"></i><b>(2)</b>
-      <span class="pi">-</span> <span class="s">KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093</span> <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+      <span class="pi">-</span> <span class="s">KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093</span> <i class="conum" data-value="3"></i><b>(3)</b>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -436,7 +470,34 @@ I’m also going to add Connect and a Postgres database for testing purposes
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="yaml"><span class="na">version</span><span class="pi">:</span> <span class="s1">&#39;</span><span class="s">2&#39;</span>
+<pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+</pre></td><td class="code"><pre><span class="na">version</span><span class="pi">:</span> <span class="s1">&#39;</span><span class="s">2&#39;</span>
 <span class="na">services</span><span class="pi">:</span>
 
   <span class="c1"># ...</span>
@@ -462,7 +523,8 @@ I’m also going to add Connect and a Postgres database for testing purposes
       <span class="pi">-</span> <span class="s">5432:5432</span>
     <span class="na">environment</span><span class="pi">:</span>
       <span class="pi">-</span> <span class="s">POSTGRES_USER=postgres</span>
-      <span class="pi">-</span> <span class="s">POSTGRES_PASSWORD=postgres</span></code></pre>
+      <span class="pi">-</span> <span class="s">POSTGRES_PASSWORD=postgres</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -470,7 +532,9 @@ I’m also going to add Connect and a Postgres database for testing purposes
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>docker-compose <span class="nt">-f</span> docker-compose-zkless-kafka.yaml up</code></pre>
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>docker-compose <span class="nt">-f</span> docker-compose-zkless-kafka.yaml up
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -480,7 +544,28 @@ so we got some topics with a few messages to play with:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>curl <span class="nt">-0</span> <span class="nt">-v</span> <span class="nt">-X</span> POST http://localhost:8083/connectors <span class="se">\</span>
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+</pre></td><td class="code"><pre><span class="nv">$ </span>curl <span class="nt">-0</span> <span class="nt">-v</span> <span class="nt">-X</span> POST http://localhost:8083/connectors <span class="se">\</span>
   <span class="nt">-H</span> <span class="s2">&#34;Expect:&#34;</span> <span class="se">\</span>
   <span class="nt">-H</span> <span class="s1">&#39;Content-Type: application/json; charset=utf-8&#39;</span> <span class="se">\</span>
   <span class="nt">--data-binary</span> @- <span class="o">&lt;&lt;</span> <span class="no">EOF</span><span class="sh">
@@ -500,7 +585,8 @@ so we got some topics with a few messages to play with:</p>
         &#34;topic.creation.default.partitions&#34;: 10
     }
 }
-EOF</span></code></pre>
+EOF</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -517,7 +603,23 @@ only the <code>__consumer_offsets</code> topic, the change data topics created b
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash"><span class="c"># Get a shell on one of the broker containers</span>
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+</pre></td><td class="code"><pre><span class="c"># Get a shell on one of the broker containers</span>
 <span class="nv">$ </span>docker-compose <span class="nt">-f</span> docker-compose-zkless-kafka.yaml <span class="nb">exec </span>kafka-1 bash
 
 <span class="c"># In that shell</span>
@@ -532,7 +634,8 @@ dbserver1.inventory.products_on_hand
 dbserver1.inventory.spatial_ref_sys
 my_connect_configs
 my_connect_offsets
-my_connect_statuses</code></pre>
+my_connect_statuses
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -548,14 +651,23 @@ e.g. filtering out all <code>RegisterBroker</code> records:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>/kafka/bin/kafka-dump-log.sh <span class="nt">--cluster-metadata-decoder</span> <span class="se">\</span>
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre><span class="nv">$ </span>/kafka/bin/kafka-dump-log.sh <span class="nt">--cluster-metadata-decoder</span> <span class="se">\</span>
   <span class="nt">--skip-record-metadata</span> <span class="se">\</span>
   <span class="nt">--files</span> /kafka/data//<span class="se">\@</span>metadata-0/<span class="k">*</span>.log | <span class="nb">grep </span>REGISTER_BROKER
 
  payload: <span class="o">{</span><span class="s2">&#34;type&#34;</span>:<span class="s2">&#34;REGISTER_BROKER_RECORD&#34;</span>,<span class="s2">&#34;version&#34;</span>:0,<span class="s2">&#34;data&#34;</span>:<span class="o">{</span><span class="s2">&#34;brokerId&#34;</span>:3,<span class="s2">&#34;incarnationId&#34;</span>:<span class="s2">&#34;O_PiUrjNTsqVEQv61gB2Vg&#34;</span>,<span class="s2">&#34;brokerEpoch&#34;</span>:0,<span class="s2">&#34;endPoints&#34;</span>:[<span class="o">{</span><span class="s2">&#34;name&#34;</span>:<span class="s2">&#34;PLAINTEXT&#34;</span>,<span class="s2">&#34;host&#34;</span>:<span class="s2">&#34;172.18.0.2&#34;</span>,<span class="s2">&#34;port&#34;</span>:9092,<span class="s2">&#34;securityProtocol&#34;</span>:0<span class="o">}]</span>,<span class="s2">&#34;features&#34;</span>:[],<span class="s2">&#34;rack&#34;</span>:null<span class="o">}}</span>
  payload: <span class="o">{</span><span class="s2">&#34;type&#34;</span>:<span class="s2">&#34;REGISTER_BROKER_RECORD&#34;</span>,<span class="s2">&#34;version&#34;</span>:0,<span class="s2">&#34;data&#34;</span>:<span class="o">{</span><span class="s2">&#34;brokerId&#34;</span>:1,<span class="s2">&#34;incarnationId&#34;</span>:<span class="s2">&#34;FbOZdz9rSZqTyuSKr12JWg&#34;</span>,<span class="s2">&#34;brokerEpoch&#34;</span>:2,<span class="s2">&#34;endPoints&#34;</span>:[<span class="o">{</span><span class="s2">&#34;name&#34;</span>:<span class="s2">&#34;PLAINTEXT&#34;</span>,<span class="s2">&#34;host&#34;</span>:<span class="s2">&#34;172.18.0.3&#34;</span>,<span class="s2">&#34;port&#34;</span>:9092,<span class="s2">&#34;securityProtocol&#34;</span>:0<span class="o">}]</span>,<span class="s2">&#34;features&#34;</span>:[],<span class="s2">&#34;rack&#34;</span>:null<span class="o">}}</span>
  payload: <span class="o">{</span><span class="s2">&#34;type&#34;</span>:<span class="s2">&#34;REGISTER_BROKER_RECORD&#34;</span>,<span class="s2">&#34;version&#34;</span>:0,<span class="s2">&#34;data&#34;</span>:<span class="o">{</span><span class="s2">&#34;brokerId&#34;</span>:2,<span class="s2">&#34;incarnationId&#34;</span>:<span class="s2">&#34;ZF_WQqk_T5q3l1vhiWT_FA&#34;</span>,<span class="s2">&#34;brokerEpoch&#34;</span>:4,<span class="s2">&#34;endPoints&#34;</span>:[<span class="o">{</span><span class="s2">&#34;name&#34;</span>:<span class="s2">&#34;PLAINTEXT&#34;</span>,<span class="s2">&#34;host&#34;</span>:<span class="s2">&#34;172.18.0.4&#34;</span>,<span class="s2">&#34;port&#34;</span>:9092,<span class="s2">&#34;securityProtocol&#34;</span>:0<span class="o">}]</span>,<span class="s2">&#34;features&#34;</span>:[],<span class="s2">&#34;rack&#34;</span>:null<span class="o">}}</span>
- ...</code></pre>
+ ...
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -570,7 +682,20 @@ For instance, you can list all brokers and get the metadata of the registration 
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>/kafka/bin/kafka-metadata-shell.sh <span class="nt">--snapshot</span> /kafka/data/@metadata-0/00000000000000000000.log
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="nv">$ </span>/kafka/bin/kafka-metadata-shell.sh <span class="nt">--snapshot</span> /kafka/data/@metadata-0/00000000000000000000.log
 
 Loading...
 Starting...
@@ -582,7 +707,8 @@ Starting...
 <span class="o">&gt;&gt;</span> <span class="nb">cd </span>brokers/1
 <span class="o">&gt;&gt;</span> <span class="nb">cat </span>registration
 RegisterBrokerRecord<span class="o">(</span><span class="nv">brokerId</span><span class="o">=</span>1, <span class="nv">incarnationId</span><span class="o">=</span>TmM_u-_cQ2ChbUy9NZ9wuA, <span class="nv">brokerEpoch</span><span class="o">=</span>265, <span class="nv">endPoints</span><span class="o">=[</span>BrokerEndpoint<span class="o">(</span><span class="nv">name</span><span class="o">=</span><span class="s1">&#39;PLAINTEXT&#39;</span>, <span class="nv">host</span><span class="o">=</span><span class="s1">&#39;172.18.0.3&#39;</span>, <span class="nv">port</span><span class="o">=</span>9092, <span class="nv">securityProtocol</span><span class="o">=</span>0<span class="o">)]</span>, <span class="nv">features</span><span class="o">=[]</span>, <span class="nv">rack</span><span class="o">=</span>null<span class="o">)</span>
-<span class="o">&gt;&gt;</span></code></pre>
+<span class="o">&gt;&gt;</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -590,9 +716,13 @@ RegisterBrokerRecord<span class="o">(</span><span class="nv">brokerId</span><spa
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash"><span class="o">&gt;&gt;</span> <span class="nb">cat</span> /metadataQuorum/leader
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="o">&gt;&gt;</span> <span class="nb">cat</span> /metadataQuorum/leader
 
-MetaLogLeader<span class="o">(</span><span class="nv">nodeId</span><span class="o">=</span>1, <span class="nv">epoch</span><span class="o">=</span>12<span class="o">)</span></code></pre>
+MetaLogLeader<span class="o">(</span><span class="nv">nodeId</span><span class="o">=</span>1, <span class="nv">epoch</span><span class="o">=</span>12<span class="o">)</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -600,7 +730,20 @@ MetaLogLeader<span class="o">(</span><span class="nv">nodeId</span><span class="
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash"><span class="o">&gt;&gt;</span> <span class="nb">cat</span> /topics/dbserver1.inventory.customers/0/data
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="o">&gt;&gt;</span> <span class="nb">cat</span> /topics/dbserver1.inventory.customers/0/data
 <span class="o">{</span>
   <span class="s2">&#34;partitionId&#34;</span> : 0,
   <span class="s2">&#34;topicId&#34;</span> : <span class="s2">&#34;8xjqykVRT_WpkqbXHwbeCA&#34;</span>,
@@ -612,7 +755,8 @@ MetaLogLeader<span class="o">(</span><span class="nv">nodeId</span><span class="
   <span class="s2">&#34;leaderEpoch&#34;</span> : 0,
   <span class="s2">&#34;partitionEpoch&#34;</span> : 0
 <span class="o">}</span>
-<span class="o">&gt;&gt;</span></code></pre>
+<span class="o">&gt;&gt;</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -624,9 +768,13 @@ While the former worked for me:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>/kafka/bin/kafka-cluster.sh cluster-id <span class="nt">--bootstrap-server</span> kafka-1:9092
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="nv">$ </span>/kafka/bin/kafka-cluster.sh cluster-id <span class="nt">--bootstrap-server</span> kafka-1:9092
 
-Cluster ID: oh-sxaDRTcyAr6pFRbXyzA</code></pre>
+Cluster ID: oh-sxaDRTcyAr6pFRbXyzA
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -634,9 +782,13 @@ Cluster ID: oh-sxaDRTcyAr6pFRbXyzA</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>/kafka/bin/kafka-cluster.sh unregister <span class="nt">--bootstrap-server</span> kafka-1:9092 <span class="nt">--id</span> 3
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="nv">$ </span>/kafka/bin/kafka-cluster.sh unregister <span class="nt">--bootstrap-server</span> kafka-1:9092 <span class="nt">--id</span> 3
 
-<span class="o">[</span>2021-05-15 20:52:54,626] ERROR <span class="o">[</span>AdminClient <span class="nv">clientId</span><span class="o">=</span>adminclient-1] Unregister broker request <span class="k">for </span>broker ID 3 failed: This is not the correct controller <span class="k">for </span>this cluster.</code></pre>
+<span class="o">[</span>2021-05-15 20:52:54,626] ERROR <span class="o">[</span>AdminClient <span class="nv">clientId</span><span class="o">=</span>adminclient-1] Unregister broker request <span class="k">for </span>broker ID 3 failed: This is not the correct controller <span class="k">for </span>this cluster.
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -687,7 +839,35 @@ and also all partitions which had the previous active controller as partition le
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>/kafka/bin/kafka-topics.sh <span class="nt">--bootstrap-server</span> kafka-2:9092 <span class="nt">--describe</span> <span class="nt">--topic</span> dbserver1.inventory.customers
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+</pre></td><td class="code"><pre><span class="nv">$ </span>/kafka/bin/kafka-topics.sh <span class="nt">--bootstrap-server</span> kafka-2:9092 <span class="nt">--describe</span> <span class="nt">--topic</span> dbserver1.inventory.customers
 
 Topic: dbserver1.inventory.customers	TopicId: a6qzjnQwQ2eLNSXL5svW8g	PartitionCount: 10	ReplicationFactor: 2	Configs: segment.bytes<span class="o">=</span>1073741824
 	Topic: dbserver1.inventory.customers	Partition: 0	Leader: 1	Replicas: 1,3	Isr: 1,3
@@ -714,7 +894,8 @@ Topic: dbserver1.inventory.customers	TopicId: a6qzjnQwQ2eLNSXL5svW8g	PartitionCo
 	Topic: dbserver1.inventory.customers	Partition: 6	Leader: 2	Replicas: 3,2	Isr: 2,3
 	Topic: dbserver1.inventory.customers	Partition: 7	Leader: 2	Replicas: 2,3	Isr: 2,3
 	Topic: dbserver1.inventory.customers	Partition: 8	Leader: 2	Replicas: 2,1	Isr: 2
-	Topic: dbserver1.inventory.customers	Partition: 9	Leader: 2	Replicas: 3,2	Isr: 2,3</code></pre>
+	Topic: dbserver1.inventory.customers	Partition: 9	Leader: 2	Replicas: 3,2	Isr: 2,3
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -725,7 +906,32 @@ Logs of the remaining node are flooded with an <code>UnknownHostException</code>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash">kafka-3_1   | 2021-05-16 10:16:45,282 - WARN  <span class="o">[</span>kafka-raft-outbound-request-thread:NetworkClient@992] - <span class="o">[</span>RaftManager <span class="nv">nodeId</span><span class="o">=</span>3] Error connecting to node kafka-2:9093 <span class="o">(</span><span class="nb">id</span>: 2 rack: null<span class="o">)</span>
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+</pre></td><td class="code"><pre>kafka-3_1   | 2021-05-16 10:16:45,282 - WARN  <span class="o">[</span>kafka-raft-outbound-request-thread:NetworkClient@992] - <span class="o">[</span>RaftManager <span class="nv">nodeId</span><span class="o">=</span>3] Error connecting to node kafka-2:9093 <span class="o">(</span><span class="nb">id</span>: 2 rack: null<span class="o">)</span>
 kafka-3_1   | java.net.UnknownHostException: kafka-2
 kafka-3_1   | 	at java.base/java.net.InetAddress<span class="nv">$CachedAddresses</span>.get<span class="o">(</span>InetAddress.java:797<span class="o">)</span>
 kafka-3_1   | 	at java.base/java.net.InetAddress.getAllByName0<span class="o">(</span>InetAddress.java:1505<span class="o">)</span>
@@ -749,7 +955,8 @@ kafka-3_1   | 	at scala.collection.AbstractIterable.foreach<span class="o">(</sp
 kafka-3_1   | 	at kafka.common.InterBrokerSendThread.sendRequests<span class="o">(</span>InterBrokerSendThread.scala:99<span class="o">)</span>
 kafka-3_1   | 	at kafka.common.InterBrokerSendThread.pollOnce<span class="o">(</span>InterBrokerSendThread.scala:73<span class="o">)</span>
 kafka-3_1   | 	at kafka.common.InterBrokerSendThread.doWork<span class="o">(</span>InterBrokerSendThread.scala:94<span class="o">)</span>
-kafka-3_1   | 	at kafka.utils.ShutdownableThread.run<span class="o">(</span>ShutdownableThread.scala:96<span class="o">)</span></code></pre>
+kafka-3_1   | 	at kafka.utils.ShutdownableThread.run<span class="o">(</span>ShutdownableThread.scala:96<span class="o">)</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -768,14 +975,23 @@ Very often I’d then see a very high CPU consumption on the Kafka nodes as well
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash"><span class="nv">$ </span>docker stats
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre><span class="nv">$ </span>docker stats
 
 CONTAINER ID   NAME                  CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O       PIDS
 642eb697fed6   tutorial_connect_1    122.04%   668.3MiB / 7.775GiB   8.39%     99.7MB / 46.9MB   131kB / 106kB   47
 5d9806526f92   tutorial_kafka-1_1    9.24%     386.4MiB / 7.775GiB   4.85%     105kB / 104kB     0B / 877kB      93
 767e6c0f6cd3   tutorial_kafka-3_1    176.40%   739.2MiB / 7.775GiB   9.28%     14.5MB / 40.6MB   0B / 1.52MB     120
 a0ce8438557f   tutorial_kafka-2_1    87.51%    567.8MiB / 7.775GiB   7.13%     6.52MB / 24.9MB   0B / 881kB      95
-df978d220132   tutorial_postgres_1   0.00%     36.39MiB / 7.775GiB   0.46%     243kB / 5.49MB    0B / 79.4MB     9</code></pre>
+df978d220132   tutorial_postgres_1   0.00%     36.39MiB / 7.775GiB   0.46%     243kB / 5.49MB    0B / 79.4MB     9
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">

@@ -282,7 +282,16 @@ As an example, let’s consider this simple &#34;Hello World&#34; program:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="kn">package</span> <span class="nn">com.example</span><span class="o">;</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="kn">package</span> <span class="nn">com.example</span><span class="o">;</span>
 
 <span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
 
@@ -290,7 +299,8 @@ As an example, let’s consider this simple &#34;Hello World&#34; program:</p>
   <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">...</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
     <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="nc">List</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">&#34;Hello&#34;</span><span class="o">,</span> <span class="s">&#34;World!&#34;</span><span class="o">));</span>
   <span class="o">}</span>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -300,9 +310,13 @@ Historically, the Java compiler has provided the <em>--source</em> and <em>--tar
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javac <span class="nt">--source</span> 1.8 <span class="nt">--target</span> 1.8 <span class="nt">-d</span> classes HelloWorld.java
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="nv">$ </span>javac <span class="nt">--source</span> 1.8 <span class="nt">--target</span> 1.8 <span class="nt">-d</span> classes HelloWorld.java
 warning: <span class="o">[</span>options] bootstrap class path not <span class="nb">set </span><span class="k">in </span>conjunction with <span class="nt">-source</span> 8
-1 warning</code></pre>
+1 warning
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -311,10 +325,15 @@ But if you actually try to run that class on Java 8, you’re in for a bad supri
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>java <span class="nt">-classpath</span> classes com.example.HelloWorld
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="nv">$ </span>java <span class="nt">-classpath</span> classes com.example.HelloWorld
 Exception <span class="k">in </span>thread <span class="s2">&#34;main&#34;</span> java.lang.NoSuchMethodError: ↩
   java.util.List.of<span class="o">(</span>Ljava/lang/Object<span class="p">;</span>Ljava/lang/Object<span class="p">;</span><span class="o">)</span>Ljava/util/List<span class="p">;</span>
-  at com.example.HelloWorld.main<span class="o">(</span>HelloWorld.java:7<span class="o">)</span></code></pre>
+  at com.example.HelloWorld.main<span class="o">(</span>HelloWorld.java:7<span class="o">)</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -327,7 +346,17 @@ This is done using the <em>-Xbootclasspath</em> option:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javac <span class="nt">--source</span> 1.8 <span class="nt">--target</span> 1.8 <span class="se">\</span>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre><span class="nv">$ </span>javac <span class="nt">--source</span> 1.8 <span class="nt">--target</span> 1.8 <span class="se">\</span>
   <span class="nt">-d</span> classes <span class="se">\</span>
   <span class="nt">-Xbootclasspath</span>:<span class="k">${</span><span class="nv">JAVA_8_HOME</span><span class="k">}</span>/jre/lib/rt.jar <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
   HelloWorld.java
@@ -336,7 +365,8 @@ HelloWorld.java:7: error: cannot find symbol
                                ^
   symbol:   method of<span class="o">(</span>String,String<span class="o">)</span>
   location: interface List
-1 error</code></pre>
+1 error
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -364,13 +394,21 @@ Let’s give this a try:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javac <span class="nt">--release</span> 8 <span class="nt">-d</span> classes HelloWorld.java
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre><span class="nv">$ </span>javac <span class="nt">--release</span> 8 <span class="nt">-d</span> classes HelloWorld.java
 HelloWorld.java:7: error: cannot find symbol
         System.out.println<span class="o">(</span>List.of<span class="o">(</span><span class="s2">&#34;Hello&#34;</span>, <span class="s2">&#34;World!&#34;</span><span class="o">))</span><span class="p">;</span>
                                ^
   symbol:   method of<span class="o">(</span>String,String<span class="o">)</span>
   location: interface List
-1 error</code></pre>
+1 error
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -393,7 +431,23 @@ So I started by taking a look at what’s in there:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>unzip <span class="nt">-l</span> <span class="nv">$JAVA_HOME</span>/lib/ct.sym
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+</pre></td><td class="code"><pre><span class="nv">$ </span>unzip <span class="nt">-l</span> <span class="nv">$JAVA_HOME</span>/lib/ct.sym
 
 Archive:  /Library/Java/JavaVirtualMachines/jdk-16.sdk/Contents/Home/lib/ct.sym
   Length      Date    Time    Name
@@ -408,7 +462,8 @@ Archive:  /Library/Java/JavaVirtualMachines/jdk-16.sdk/Contents/Home/lib/ct.sym
       ...
      1566  03-26-2021 18:11   9ABCDE/java.base/java/lang/Byte.sig
      1616  03-26-2021 18:11   9ABCDE/java.base/java/lang/Short.sig
-      ...</code></pre>
+      ...
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -417,12 +472,19 @@ So let’s see what’s there for the <code>java.util.List</code> class:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>unzip <span class="nt">-l</span> <span class="nv">$JAVA_HOME</span>/lib/ct.sym | <span class="nb">grep</span> <span class="s2">&#34;java/util/List.sig&#34;</span>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="nv">$ </span>unzip <span class="nt">-l</span> <span class="nv">$JAVA_HOME</span>/lib/ct.sym | <span class="nb">grep</span> <span class="s2">&#34;java/util/List.sig&#34;</span>
      1481  03-26-2021 18:11   7/java.base/java/util/List.sig
      1771  03-26-2021 18:11   8/java.base/java/util/List.sig
      4040  03-26-2021 18:11   9/java.base/java/util/List.sig
      4184  03-26-2021 18:11   A/java.base/java/util/List.sig
-     4097  03-26-2021 18:11   BCDEF/java.base/java/util/List.sig</code></pre>
+     4097  03-26-2021 18:11   BCDEF/java.base/java/util/List.sig
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -444,7 +506,32 @@ save the result in text files and compare them using git:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javap List8.class <span class="o">&gt;</span> List8.txt
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+</pre></td><td class="code"><pre><span class="nv">$ </span>javap List8.class <span class="o">&gt;</span> List8.txt
 <span class="nv">$ </span>javap List9.class <span class="o">&gt;</span> List9.txt
 <span class="nv">$ </span>git diff <span class="nt">--no-index</span> List8.txt List9.txt
 
@@ -468,7 +555,8 @@ index b2ca320..b276286 100644
 +  public static &lt;E&gt; java.util.List&lt;E&gt; of<span class="o">(</span>E, E, E, E, E, E, E, E, E<span class="o">)</span><span class="p">;</span>
 +  public static &lt;E&gt; java.util.List&lt;E&gt; of<span class="o">(</span>E, E, E, E, E, E, E, E, E, E<span class="o">)</span><span class="p">;</span>
 +  public static &lt;E&gt; java.util.List&lt;E&gt; of<span class="o">(</span>E...<span class="o">)</span><span class="p">;</span>
- <span class="o">}</span></code></pre>
+ <span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -492,9 +580,13 @@ which must be prepended with <em>-J</em> in this case:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javac <span class="nt">-J-Xdebug</span> <span class="se">\</span>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="nv">$ </span>javac <span class="nt">-J-Xdebug</span> <span class="se">\</span>
   <span class="nt">-J-Xrunjdwp</span>:transport<span class="o">=</span>dt_socket,server<span class="o">=</span>y,suspend<span class="o">=</span>y,address<span class="o">=</span>8000 <span class="se">\</span>
-  HelloWorld.java</code></pre>
+  HelloWorld.java
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -515,7 +607,28 @@ To find out what’s going on, again <em>javap</em> — this time with a bit
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javap <span class="nt">-p</span> <span class="nt">-c</span> <span class="nt">-s</span> <span class="nt">-v</span> <span class="nt">-l</span> List10.class <span class="o">&gt;</span> List10.txt
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+</pre></td><td class="code"><pre><span class="nv">$ </span>javap <span class="nt">-p</span> <span class="nt">-c</span> <span class="nt">-s</span> <span class="nt">-v</span> <span class="nt">-l</span> List10.class <span class="o">&gt;</span> List10.txt
 <span class="nv">$ </span>javap <span class="nt">-p</span> <span class="nt">-c</span> <span class="nt">-s</span> <span class="nt">-v</span> <span class="nt">-l</span> List11.class <span class="o">&gt;</span> List11.txt
 <span class="nv">$ </span>git diff <span class="nt">--no-index</span> <span class="nt">-w</span> List10.txt List11.txt
 
@@ -535,7 +648,8 @@ To find out what’s going on, again <em>javap</em> — this time with a bit
 -  0: <span class="c">#97(#98=I#99)</span>
 -    jdk.Profile+Annotation<span class="o">(</span>
 -      <span class="nv">value</span><span class="o">=</span>1
--    <span class="o">)</span></code></pre>
+-    <span class="o">)</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">

@@ -342,9 +342,13 @@ If you’d like to follow along, clone the repo and build the project:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">git clone git@github.com:gunnarmorling/quarkus-cds.git
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre>git clone git@github.com:gunnarmorling/quarkus-cds.git
 <span class="nb">cd </span>quarkus-cds
-mvn clean verify <span class="nt">-DskipTests</span><span class="o">=</span><span class="nb">true</span></code></pre>
+mvn clean verify <span class="nt">-DskipTests</span><span class="o">=</span><span class="nb">true</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -353,12 +357,19 @@ fire it up via Docker:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nb">cd </span>compose
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="nb">cd </span>compose
 docker run <span class="nt">-d</span> <span class="nt">-p</span> 5432:5432 <span class="nt">--name</span> pgdemodb <span class="se">\</span>
     <span class="nt">-v</span> <span class="si">$(</span><span class="nb">pwd</span><span class="si">)</span>/init.sql:/docker-entrypoint-initdb.d/init.sql <span class="se">\</span>
     <span class="nt">-e</span> <span class="nv">POSTGRES_USER</span><span class="o">=</span>todouser <span class="se">\</span>
     <span class="nt">-e</span> <span class="nv">POSTGRES_PASSWORD</span><span class="o">=</span>todopw <span class="se">\</span>
-    <span class="nt">-e</span> <span class="nv">POSTGRES_DB</span><span class="o">=</span>tododb postgres:11</code></pre>
+    <span class="nt">-e</span> <span class="nv">POSTGRES_DB</span><span class="o">=</span>tododb postgres:11
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -367,8 +378,11 @@ Do so by passing the <em>-XX:ArchiveClassesAtExit</em> option:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">java <span class="nt">-XX</span>:ArchiveClassesAtExit<span class="o">=</span>target/app-cds.jsa <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
-    <span class="nt">-jar</span> target/todo-manager-1.0.0-SNAPSHOT-runner.jar</code></pre>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre>java <span class="nt">-XX</span>:ArchiveClassesAtExit<span class="o">=</span>target/app-cds.jsa <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="nt">-jar</span> target/todo-manager-1.0.0-SNAPSHOT-runner.jar
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -386,7 +400,9 @@ For that to happen, open the application’s API endpoint in a browser or invoke
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">http localhost:8080/api</code></pre>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>http localhost:8080/api
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -397,11 +413,17 @@ Also observe the log messages about classes which were skipped from archiving:</
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">...
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>...
 <span class="o">[</span>190.220s][warning][cds] Skipping java/lang/invoke/LambdaForm<span class="nv">$MH</span>+0x0000000800bd0c40: Hidden or Unsafe anonymous class
 <span class="o">[</span>190.220s][warning][cds] Skipping java/lang/invoke/LambdaForm<span class="nv">$DMH</span>+0x0000000800fdc840: Hidden or Unsafe anonymous class
 <span class="o">[</span>190.220s][warning][cds] Pre JDK 6 class not supported by CDS: 46.0 antlr/TokenStreamIOException
-...</code></pre>
+...
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -430,10 +452,15 @@ resulting in better start-up times in turn.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">java <span class="nt">-XX</span>:SharedArchiveFile<span class="o">=</span>target/app-cds.jsa <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre>java <span class="nt">-XX</span>:SharedArchiveFile<span class="o">=</span>target/app-cds.jsa <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
     <span class="nt">-Xlog</span>:class+load:file<span class="o">=</span>target/classload.log <span class="se">\ </span><i class="conum" data-value="2"></i><b>(2)</b>
     <span class="nt">-Xshare</span>:on <span class="se">\ </span><i class="conum" data-value="3"></i><b>(3)</b>
-    <span class="nt">-jar</span> target/todo-manager-1.0.0-SNAPSHOT-runner.jar</code></pre>
+    <span class="nt">-jar</span> target/todo-manager-1.0.0-SNAPSHOT-runner.jar
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -459,13 +486,21 @@ while some classes such as the ancient Antlr classes are loaded just as usual fr
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="o">[</span>0.016s][info][class,load] java.lang.Object <span class="nb">source</span>: shared objects file
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre><span class="o">[</span>0.016s][info][class,load] java.lang.Object <span class="nb">source</span>: shared objects file
 <span class="o">[</span>0.016s][info][class,load] java.io.Serializable <span class="nb">source</span>: shared objects file
 <span class="o">[</span>0.016s][info][class,load] java.lang.Comparable <span class="nb">source</span>: shared objects file
 <span class="o">[</span>0.016s][info][class,load] java.lang.CharSequence <span class="nb">source</span>: shared objects file
 ...
 <span class="o">[</span>2.555s][info][class,load] antlr.Parser <span class="nb">source</span>: file:/.../antlr.antlr-2.7.7.jar
-...</code></pre>
+...
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -550,7 +585,42 @@ this turned out to not be viable as <a href="https://github.com/mojohaus/exec-ma
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="xml">...
+<pre class="rouge highlight"><code data-lang="xml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+</pre></td><td class="code"><pre>...
 <span class="nt">&lt;plugin&gt;</span>
   <span class="nt">&lt;groupId&gt;</span>com.bazaarvoice.maven.plugins<span class="nt">&lt;/groupId&gt;</span>
   <span class="nt">&lt;artifactId&gt;</span>process-exec-maven-plugin<span class="nt">&lt;/artifactId&gt;</span>
@@ -584,7 +654,8 @@ this turned out to not be viable as <a href="https://github.com/mojohaus/exec-ma
       <span class="nt">&lt;/execution&gt;</span>
   <span class="nt">&lt;/executions&gt;</span>
 <span class="nt">&lt;/plugin&gt;</span>
-...</code></pre>
+...
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -615,7 +686,18 @@ A simple &#34;integration test&#34; via <a href="http://rest-assured.io/">REST A
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ExampleResourceAppCds</span> <span class="o">{</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ExampleResourceAppCds</span> <span class="o">{</span>
 
   <span class="nd">@Test</span>
   <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getAll</span><span class="o">()</span> <span class="o">{</span>
@@ -625,7 +707,8 @@ A simple &#34;integration test&#34; via <a href="http://rest-assured.io/">REST A
       <span class="o">.</span><span class="na">then</span><span class="o">()</span>
         <span class="o">.</span><span class="na">statusCode</span><span class="o">(</span><span class="mi">200</span><span class="o">);</span>
     <span class="o">}</span>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -635,7 +718,27 @@ so to keep them apart from actual integration tests:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="xml">...
+<pre class="rouge highlight"><code data-lang="xml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre></td><td class="code"><pre>...
 <span class="nt">&lt;plugin&gt;</span>
   <span class="nt">&lt;groupId&gt;</span>org.apache.maven.plugins<span class="nt">&lt;/groupId&gt;</span>
   <span class="nt">&lt;artifactId&gt;</span>maven-failsafe-plugin<span class="nt">&lt;/artifactId&gt;</span>
@@ -654,7 +757,8 @@ so to keep them apart from actual integration tests:</p>
     <span class="nt">&lt;/execution&gt;</span>
   <span class="nt">&lt;/executions&gt;</span>
 <span class="nt">&lt;/plugin&gt;</span>
-...</code></pre>
+...
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">

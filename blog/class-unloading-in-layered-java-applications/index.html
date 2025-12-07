@@ -336,22 +336,36 @@ Layrry exposes this functionality via a very basic <a href="https://github.com/m
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">PluginLifecycleListener</span> <span class="o">{</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">PluginLifecycleListener</span> <span class="o">{</span>
 
     <span class="kt">void</span> <span class="nf">pluginAdded</span><span class="o">(</span><span class="nc">PluginDescriptor</span> <span class="n">plugin</span><span class="o">);</span>
 
     <span class="kt">void</span> <span class="nf">pluginRemoved</span><span class="o">(</span><span class="nc">PluginDescriptor</span> <span class="n">plugin</span><span class="o">);</span>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">PluginDescriptor</span> <span class="o">{</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">PluginDescriptor</span> <span class="o">{</span>
 
     <span class="kd">public</span> <span class="nc">String</span> <span class="nf">getName</span><span class="o">()</span> <span class="o">{</span> <span class="o">...</span> <span class="o">}</span>
 
     <span class="kd">public</span> <span class="nc">ModuleLayer</span> <span class="nf">getModuleLayer</span><span class="o">()</span> <span class="o">{</span> <span class="o">...</span> <span class="o">}</span>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -394,10 +408,15 @@ Then run the Layrry launcher with the <code>-Xlog:class+unload=info</code> optio
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">java <span class="nt">-Xlog</span>:class+unload<span class="o">=</span>info <span class="se">\</span>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre>java <span class="nt">-Xlog</span>:class+unload<span class="o">=</span>info <span class="se">\</span>
   <span class="nt">-jar</span> path/to/layrry-launcher-1.0-SNAPSHOT-all.jar <span class="se">\</span>
   <span class="nt">--layers-config</span> staging/layers.toml <span class="se">\</span>
-  <span class="nt">--properties</span> staging/versions.properties</code></pre>
+  <span class="nt">--properties</span> staging/versions.properties
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -405,8 +424,11 @@ Then run the Layrry launcher with the <code>-Xlog:class+unload=info</code> optio
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nb">cp</span> <span class="nt">-r</span> staging/plugins-prepared/<span class="k">*</span> staging/plugins
-<span class="nb">rm</span> <span class="nt">-rf</span> staging/plugins/<span class="k">*</span></code></pre>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre><span class="nb">cp</span> <span class="nt">-r</span> staging/plugins-prepared/<span class="k">*</span> staging/plugins
+<span class="nb">rm</span> <span class="nt">-rf</span> staging/plugins/<span class="k">*</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -438,7 +460,9 @@ also Nicolai Parlog discusses JEP 158 in great depth in this <a href="https://ni
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">jcmd &lt;pid&gt; GC.run</code></pre>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>jcmd &lt;pid&gt; GC.run
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -447,11 +471,17 @@ Instead, if you’re on JDK 12 or later, you can use the new <code>G1PeriodicGCI
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">java <span class="nt">-Xlog</span>:class+unload<span class="o">=</span>info <span class="se">\</span>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>java <span class="nt">-Xlog</span>:class+unload<span class="o">=</span>info <span class="se">\</span>
   <span class="nt">-XX</span>:G1PeriodicGCInterval<span class="o">=</span>5000 <span class="se">\</span>
   <span class="nt">-jar</span> path/to/layrry-launcher-1.0-SNAPSHOT-all.jar <span class="se">\</span>
   <span class="nt">--layers-config</span> staging/layers.toml <span class="se">\</span>
-  <span class="nt">--properties</span> staging/versions.properties</code></pre>
+  <span class="nt">--properties</span> staging/versions.properties
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -460,11 +490,17 @@ Add and remove some plug-ins again, and after some time you should see messages 
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">...
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>...
 <span class="o">[</span>138.912s][info][class,unload] unloading class org.kordamp.tiles.sparkline.SparklineTilePlugin 0x0000000800de1840
 <span class="o">[</span>138.912s][info][class,unload] unloading class org.kordamp.tiles.gauge.GaugeTilePlugin 0x0000000800de2040
 <span class="o">[</span>138.913s][info][class,unload] unloading class org.kordamp.tiles.clock.ClockTilePlugin 0x0000000800de2840
-...</code></pre>
+...
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -589,7 +625,19 @@ It maps each class to its own &#34;table&#34;, so that e.g. classes loaded more 
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="sql"><span class="k">select</span>
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+</pre></td><td class="code"><pre><span class="k">select</span>
   <span class="k">c</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
   <span class="n">listagg</span><span class="p">(</span><span class="n">toString</span><span class="p">(</span><span class="k">c</span><span class="p">.</span><span class="nv">&#34;@classLoader&#34;</span><span class="p">))</span> <span class="k">as</span> <span class="s1">&#39;loaders&#39;</span><span class="p">,</span>
   <span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="k">as</span> <span class="s1">&#39;count&#39;</span>
@@ -600,7 +648,8 @@ It maps each class to its own &#34;table&#34;, so that e.g. classes loaded more 
 <span class="k">group</span> <span class="k">by</span>
   <span class="k">c</span><span class="p">.</span><span class="n">name</span>
 <span class="k">having</span>
-  <span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span></code></pre>
+  <span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">

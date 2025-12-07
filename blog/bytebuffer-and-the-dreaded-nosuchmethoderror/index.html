@@ -281,11 +281,17 @@ They were using Debezium with Java 1.8 and got an odd <code>NoSuchMethodError</c
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">java.lang.NoSuchMethodError: java.nio.ByteBuffer.position<span class="o">(</span>I<span class="o">)</span>Ljava/nio/ByteBuffer<span class="p">;</span>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>java.lang.NoSuchMethodError: java.nio.ByteBuffer.position<span class="o">(</span>I<span class="o">)</span>Ljava/nio/ByteBuffer<span class="p">;</span>
   at io.debezium.connector.postgresql.connection.Lsn.valueOf<span class="o">(</span>Lsn.java:86<span class="o">)</span>
   at io.debezium.connector.postgresql.connection.PostgresConnection.tryParseLsn<span class="o">(</span>PostgresConnection.java:270<span class="o">)</span>
   at io.debezium.connector.postgresql.connection.PostgresConnection.parseConfirmedFlushLsn<span class="o">(</span>PostgresConnection.java:235<span class="o">)</span>
-  ...</code></pre>
+  ...
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -338,7 +344,9 @@ So why would the user run into this error then?</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javac <span class="nt">--source</span> 1.8 <span class="nt">--target</span> 1.8 ByteBufferTest.java</code></pre>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>javac <span class="nt">--source</span> 1.8 <span class="nt">--target</span> 1.8 ByteBufferTest.java
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -346,10 +354,15 @@ So why would the user run into this error then?</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>java ByteBufferTest
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="nv">$ </span>java ByteBufferTest
 
 Exception <span class="k">in </span>thread <span class="s2">&#34;main&#34;</span> java.lang.NoSuchMethodError: java.nio.ByteBuffer.position<span class="o">(</span>I<span class="o">)</span>Ljava/nio/ByteBuffer<span class="p">;</span>
-	at ByteBufferTest.main<span class="o">(</span>ByteBufferTest.java:6<span class="o">)</span></code></pre>
+	at ByteBufferTest.main<span class="o">(</span>ByteBufferTest.java:6<span class="o">)</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -360,7 +373,20 @@ A look at the byte code of the class using <em>javap</em> confirms that:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javap <span class="nt">-p</span> <span class="nt">-c</span> <span class="nt">-s</span> <span class="nt">-v</span> <span class="nt">-l</span> <span class="nt">-constants</span> ByteBufferTest
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="nv">$ </span>javap <span class="nt">-p</span> <span class="nt">-c</span> <span class="nt">-s</span> <span class="nt">-v</span> <span class="nt">-l</span> <span class="nt">-constants</span> ByteBufferTest
 
 ...
 public static void main<span class="o">(</span>java.lang.String...<span class="o">)</span><span class="p">;</span>
@@ -372,7 +398,8 @@ public static void main<span class="o">(</span>java.lang.String...<span class="o
       19: aload_1
       20: iconst_1
       21: invokevirtual <span class="c">#13 // Method java/nio/ByteBuffer.position:(I)Ljava/nio/ByteBuffer;</span>
-...</code></pre>
+...
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -423,7 +450,9 @@ For this purpose, the JDK contains the signature data for all supported Java ver
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javac <span class="nt">--release</span><span class="o">=</span>8 ByteBufferTest.java</code></pre>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>javac <span class="nt">--release</span><span class="o">=</span>8 ByteBufferTest.java
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -431,7 +460,9 @@ For this purpose, the JDK contains the signature data for all supported Java ver
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">21: invokevirtual <span class="c">#13 // Method java/nio/ByteBuffer.position:(I)Ljava/nio/Buffer;</span></code></pre>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>21: invokevirtual <span class="c">#13 // Method java/nio/ByteBuffer.position:(I)Ljava/nio/Buffer;</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -460,10 +491,15 @@ as the return type of the JDK 1.8 method <code>Buffer#position(int)</code> canno
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nv">$ </span>javac <span class="nt">--release</span><span class="o">=</span>8 ByteBufferTest.java
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="nv">$ </span>javac <span class="nt">--release</span><span class="o">=</span>8 ByteBufferTest.java
 
 ByteBufferTest.java:6: error: incompatible types: Buffer cannot be converted to ByteBuffer
-        buffer <span class="o">=</span> buffer.position<span class="o">(</span>1<span class="o">)</span><span class="p">;</span></code></pre>
+        buffer <span class="o">=</span> buffer.position<span class="o">(</span>1<span class="o">)</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">

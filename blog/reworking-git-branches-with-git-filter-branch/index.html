@@ -344,7 +344,9 @@ using this command it should be possible to isolate all the documentation change
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">git checkout <span class="nt">-b</span> docs_backport 1.0</code></pre>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>git checkout <span class="nt">-b</span> docs_backport 1.0
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -353,13 +355,21 @@ as that’s where the <em>1.0</em> and <em>master</em> branches diverged.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><span class="nb">rm</span> <span class="nt">-rf</span> documentation
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre><span class="nb">rm</span> <span class="nt">-rf</span> documentation
 git add documentation
 git checkout v1.0.0.Final documentation
 git commit <span class="nt">-m</span> <span class="s2">&#34;Resetting documentation dir to v1.0.0.Final&#34;</span>
 
 <span class="c"># This should yield no differences</span>
-git diff v1.0.0.Final..docs_backport documentation</code></pre>
+git diff v1.0.0.Final..docs_backport documentation
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -369,11 +379,17 @@ The <code>--subdirectory-filter</code> option comes in handy for that:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">git checkout <span class="nt">-b</span> docs_filtered master
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>git checkout <span class="nt">-b</span> docs_filtered master
 
 git filter-branch <span class="nt">-f</span> <span class="nt">--prune-empty</span> <span class="se">\</span>
     <span class="nt">--subdirectory-filter</span> documentation <span class="se">\</span>
-    v1.0.0.Final..docs_filtered</code></pre>
+    v1.0.0.Final..docs_filtered
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -388,11 +404,17 @@ We can use this to move the contents of <em>documentation</em> back to that dire
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">git filter-branch <span class="nt">-f</span> <span class="se">\</span>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>git filter-branch <span class="nt">-f</span> <span class="se">\</span>
     <span class="nt">--tree-filter</span> <span class="s1">&#39;mkdir -p documentation; \
       mv antora.yml documentation 1&gt;/dev/null 2&gt;/dev/null; \
       mv modules documentation 1&gt;/dev/null 2&gt;/dev/null;&#39;</span> <span class="se">\</span>
-    v1.0.0.Final..docs_filtered</code></pre>
+    v1.0.0.Final..docs_filtered
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -407,7 +429,9 @@ beginning at the <em>v1.0.0.Final</em> tag:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">git rebase <span class="nt">-i</span> v1.0.0.Final</code></pre>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>git rebase <span class="nt">-i</span> v1.0.0.Final
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -418,9 +442,13 @@ I simply ran <code>git checkout</code> for all the other resources:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">git checkout v1.0.0.Final debezium-connector-mongodb
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre>git checkout v1.0.0.Final debezium-connector-mongodb
 git checkout v1.0.0.Final debezium-connector-mysql
-...</code></pre>
+...
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -430,7 +458,9 @@ whereas it should be based off of the <em>docs_backport</em> branch.
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">git rebase <span class="nt">--onto</span> docs_backport v1.0.0.Final docs_filtered</code></pre>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>git rebase <span class="nt">--onto</span> docs_backport v1.0.0.Final docs_filtered
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -440,7 +470,9 @@ i.e. the following should yield no differences:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell">git diff docs_filtered..master documentation</code></pre>
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>git diff docs_filtered..master documentation
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">

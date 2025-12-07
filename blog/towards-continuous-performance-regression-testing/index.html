@@ -340,7 +340,35 @@ execute some test routine, and then assert the JFR events which should have been
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="nd">@JfrEventTest</span> <i class="conum" data-value="1"></i><b>(1)</b>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+</pre></td><td class="code"><pre><span class="nd">@JfrEventTest</span> <i class="conum" data-value="1"></i><b>(1)</b>
 <span class="kd">public</span> <span class="kd">class</span> <span class="nc">JfrUnitTest</span> <span class="o">{</span>
 
   <span class="kd">public</span> <span class="nc">JfrEvents</span> <span class="n">jfrEvents</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">JfrEvents</span><span class="o">();</span>
@@ -367,7 +395,8 @@ execute some test routine, and then assert the JFR events which should have been
 
     <span class="n">assertThat</span><span class="o">(</span><span class="n">jfrEvents</span><span class="o">.</span><span class="na">ofType</span><span class="o">(</span><span class="s">&#34;jdk.GarbageCollection&#34;</span><span class="o">)).</span><span class="na">hasSize</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span> <i class="conum" data-value="5"></i><b>(5)</b>
   <span class="o">}</span>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -488,7 +517,70 @@ so to average out numbers from individual API calls.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="nd">@Test</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+</pre></td><td class="code"><pre><span class="nd">@Test</span>
 <span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">&#34;jdk.ObjectAllocationInNewTLAB&#34;</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
 <span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">&#34;jdk.ObjectAllocationOutsideTLAB&#34;</span><span class="o">)</span>
 <span class="kd">public</span> <span class="kt">void</span> <span class="nf">retrieveTodoBaseline</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
@@ -550,7 +642,8 @@ so to average out numbers from individual API calls.</p>
     <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="na">getThread</span><span class="o">().</span><span class="na">getJavaName</span><span class="o">().</span><span class="na">startsWith</span><span class="o">(</span><span class="s">&#34;vert.x-eventloop&#34;</span><span class="o">)</span> <span class="o">||</span>
         <span class="n">re</span><span class="o">.</span><span class="na">getThread</span><span class="o">().</span><span class="na">getJavaName</span><span class="o">().</span><span class="na">startsWith</span><span class="o">(</span><span class="s">&#34;executor-thread&#34;</span><span class="o">);</span>
   <span class="o">}</span>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -595,7 +688,17 @@ but rather calculate some custom value — the overall object allocation in 
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code>Requests executed: 10000, memory allocated: 34096 bytes/request
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre>Requests executed: 10000, memory allocated: 34096 bytes/request
 Requests executed: 20000, memory allocated: 31768 bytes/request
 Requests executed: 30000, memory allocated: 31473 bytes/request
 Requests executed: 40000, memory allocated: 31462 bytes/request
@@ -604,7 +707,8 @@ Requests executed: 60000, memory allocated: 31545 bytes/request
 Requests executed: 70000, memory allocated: 31537 bytes/request
 Requests executed: 80000, memory allocated: 31624 bytes/request
 Requests executed: 90000, memory allocated: 31703 bytes/request
-Requests executed: 100000, memory allocated: 31682 bytes/request</code></pre>
+Requests executed: 100000, memory allocated: 31682 bytes/request
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -652,7 +756,34 @@ as a higher sampling rate may lead to stable results more quickly, in turn resul
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="nd">@Test</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+</pre></td><td class="code"><pre><span class="nd">@Test</span>
 <span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">&#34;jdk.ObjectAllocationInNewTLAB&#34;</span><span class="o">)</span>
 <span class="nd">@EnableEvent</span><span class="o">(</span><span class="s">&#34;jdk.ObjectAllocationOutsideTLAB&#34;</span><span class="o">)</span>
 <span class="kd">public</span> <span class="kt">void</span> <span class="nf">retrieveTodo</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
@@ -678,7 +809,8 @@ as a higher sampling rate may lead to stable results more quickly, in turn resul
       <span class="o">.</span><span class="na">sum</span><span class="o">();</span>
 
   <span class="n">assertThat</span><span class="o">(</span><span class="n">sum</span> <span class="o">/</span> <span class="mi">10_000</span><span class="o">).</span><span class="na">isLessThan</span><span class="o">(</span><span class="mi">33_000</span><span class="o">);</span> <i class="conum" data-value="3"></i><b>(3)</b>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -705,11 +837,17 @@ One day, the <code>retrieveTodo()</code> performance test method fails though:</
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code>java.lang.AssertionError:
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>java.lang.AssertionError:
 Expecting:
  &lt;388370L&gt;
 to be less than:
- &lt;33000L&gt;</code></pre>
+ &lt;33000L&gt;
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -719,10 +857,15 @@ To find the answer, we can take a look at the test’s JFR recording, which JfrU
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="bash"><span class="nb">ls </span>target/jfrunit
+<pre class="rouge highlight"><code data-lang="bash"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="nb">ls </span>target/jfrunit
 
 dev.morling.demos.quarkus.TodoResourcePerformanceTest-createTodo.jfr
-dev.morling.demos.quarkus.TodoResourcePerformanceTest-retrieveTodo.jfr</code></pre>
+dev.morling.demos.quarkus.TodoResourcePerformanceTest-retrieveTodo.jfr
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -755,7 +898,25 @@ At this point we know where to look into the source code of the application:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="nd">@GET</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre></td><td class="code"><pre><span class="nd">@GET</span>
 <span class="nd">@Transactional</span>
 <span class="nd">@Produces</span><span class="o">(</span><span class="nc">MediaType</span><span class="o">.</span><span class="na">APPLICATION_JSON</span><span class="o">)</span>
 <span class="nd">@Path</span><span class="o">(</span><span class="s">&#34;/{id}&#34;</span><span class="o">)</span>
@@ -772,7 +933,8 @@ At this point we know where to look into the source code of the application:</p>
   <span class="k">return</span> <span class="nc">Response</span><span class="o">.</span><span class="na">ok</span><span class="o">()</span>
       <span class="o">.</span><span class="na">entity</span><span class="o">(</span><span class="n">res</span><span class="o">)</span>
       <span class="o">.</span><span class="na">build</span><span class="o">();</span>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -807,11 +969,17 @@ either enabling all the GC-related JFR event types, or by enabling a pre-existin
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="nd">@Test</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="nd">@Test</span>
 <span class="nd">@EnableConfiguration</span><span class="o">(</span><span class="s">&#34;profile&#34;</span><span class="o">)</span>
 <span class="kd">public</span> <span class="kt">void</span> <span class="nf">retrieveTodo</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
   <span class="c1">// ...</span>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -893,7 +1061,43 @@ Once that’s done, you can implement the actual test, including an assertion on
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="nd">@Test</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+</pre></td><td class="code"><pre><span class="nd">@Test</span>
 <span class="nd">@EnableEvent</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&#34;jdk.SocketRead&#34;</span><span class="o">,</span> <span class="n">stackTrace</span><span class="o">=</span><span class="no">INCLUDED</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
 <span class="nd">@EnableEvent</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&#34;jdk.SocketWrite&#34;</span><span class="o">,</span> <span class="n">stackTrace</span><span class="o">=</span><span class="no">INCLUDED</span><span class="o">)</span>
 <span class="kd">public</span> <span class="kt">void</span> <span class="nf">retrieveTodo</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
@@ -928,7 +1132,8 @@ Once that’s done, you can implement the actual test, including an assertion on
   <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="na">getEventType</span><span class="o">().</span><span class="na">getName</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="s">&#34;jdk.SocketRead&#34;</span><span class="o">)</span> <span class="o">?</span>
       <span class="n">re</span><span class="o">.</span><span class="na">getLong</span><span class="o">(</span><span class="s">&#34;bytesRead&#34;</span><span class="o">)</span> <span class="o">:</span>
       <span class="n">re</span><span class="o">.</span><span class="na">getLong</span><span class="o">(</span><span class="s">&#34;bytesWritten&#34;</span><span class="o">);</span>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -961,12 +1166,19 @@ This time it’s the assertion on the number of executed reads and writes:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code>AssertionFailedError:
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>AssertionFailedError:
 Expecting:
  &lt;18L&gt;
 to be equal to:
  &lt;4L&gt;
-but was not.</code></pre>
+but was not.
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -974,11 +1186,17 @@ but was not.</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code>java.lang.AssertionError:
+<pre class="rouge highlight"><code><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>java.lang.AssertionError:
 Expecting:
  &lt;1117L&gt;
 to be less than:
- &lt;250L&gt;</code></pre>
+ &lt;250L&gt;
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -1003,7 +1221,17 @@ as our <code>User</code> entity didn’t have any <code>BLOB</code> attribute be
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="java"><span class="nd">@Entity</span>
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre><span class="nd">@Entity</span>
 <span class="kd">public</span> <span class="kd">class</span> <span class="nc">Todo</span> <span class="kd">extends</span> <span class="nc">PanacheEntity</span> <span class="o">{</span>
 
   <span class="kd">public</span> <span class="nc">String</span> <span class="n">title</span><span class="o">;</span>
@@ -1012,7 +1240,8 @@ as our <code>User</code> entity didn’t have any <code>BLOB</code> attribute be
 
   <span class="nd">@Lob</span> <i class="conum" data-value="1"></i><b>(1)</b>
   <span class="kd">public</span> <span class="kt">byte</span><span class="o">[]</span> <span class="n">image</span><span class="o">;</span>
-<span class="o">}</span></code></pre>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
 <div class="colist arabic">
