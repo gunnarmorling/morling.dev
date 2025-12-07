@@ -32,7 +32,7 @@
 	
 	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
 	
-	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.1f7c90fe21e9cb9a420de17091548a5bddce9099924773750cedf84f08a3adce.css" />
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.9f75089b0afb31fccce7d914240f60495e15754c4a7ad8e64c66f57ae24cbc01.css" />
 	
 
 	<script>
@@ -280,7 +280,7 @@
 <p>With the continued move towards running software in the cloud and on Kubernetes in particular, it’s just natural that many folks also try to run Kafka Connect on Kubernetes. On first thought, this should be simple enough: just take the Connect binary and some connector(s), put them into a container image, and schedule it for execution on Kubernetes. As so often, the devil is in the details though: should you use Connect’s standalone or distributed mode? How can you control the lifecycle of specific connectors via the Kubernetes control plane? How to make sure different connectors don’t compete unfairly on resources such as CPU, RAM, or network bandwidth? In the remainder of this blog post, I’d like to explore running Kafka Connect on Kubernetes, what some of the challenges are for doing so, and how Kafka Connect could potentially be reimagined to become more &#34;Kubernetes-friendly&#34; in the future.</p>
 </div>
 <div class="sect1">
-<h2 id="_standalone_or_distributed">Standalone or Distributed?</h2>
+<h2 id="_standalone_or_distributed">Standalone or Distributed?<a class="anchor" href="#_standalone_or_distributed"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>If you’ve used Kafka Connect before, then you’ll know that it has <a href="https://kafka.apache.org/documentation/#connect_running">two modes of execution</a>: standalone and distributed. In the former, you configure Connect via property files which you pass as parameters during launch. There will be a single process which executes all the configured connectors and their tasks. In distributed mode, multiple Kafka Connect worker nodes running on different machines form a cluster onto which the workload of the connectors and their tasks is distributed. Configuration is done via a REST API which is exposed on all the worker nodes. Internally, A Connect-specific protocol (which itself is based on Kafka’s <a href="https://medium.com/streamthoughts/apache-kafka-rebalance-protocol-or-the-magic-behind-your-streams-applications-e94baf68e4f2">group membership protocol</a>) is used for the purposes of coordination and task assignment.</p>
@@ -294,7 +294,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_issues_with_kafka_connect_on_kubernetes">Issues with Kafka Connect on Kubernetes</h2>
+<h2 id="_issues_with_kafka_connect_on_kubernetes">Issues with Kafka Connect on Kubernetes<a class="anchor" href="#_issues_with_kafka_connect_on_kubernetes"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>So let’s explore a bit more the challenges users often encounter when running Kafka Connect on Kubernetes. One general problem is the lack of awareness for running on Kubernetes from a Connect perspective.</p>
@@ -345,7 +345,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_a_vision_for_kubernetes_native_kafka_connect">A Vision for Kubernetes-native Kafka Connect</h2>
+<h2 id="_a_vision_for_kubernetes_native_kafka_connect">A Vision for Kubernetes-native Kafka Connect<a class="anchor" href="#_a_vision_for_kubernetes_native_kafka_connect"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Having explored the potential issues with running Kafka Connect on Kubernetes, let’s finally discuss how Connect could be reimagined for being more Kubernetes-friendly. What are the parts that could remain? Which things would have to change? Many of the questions and shortcomings raised above – such as workload isolation, applying resource constraints, capability-based scheduling, lifecycle management – have been solved by Kubernetes at the pod level already, so how could that foundation be leveraged for Kafka Connect?</p>

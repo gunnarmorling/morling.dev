@@ -32,7 +32,7 @@
 	
 	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
 	
-	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.1f7c90fe21e9cb9a420de17091548a5bddce9099924773750cedf84f08a3adce.css" />
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.9f75089b0afb31fccce7d914240f60495e15754c4a7ad8e64c66f57ae24cbc01.css" />
 	
 
 	<script>
@@ -287,7 +287,7 @@
 <p>When not being careful, a replication slot may cause unduly large amounts of WAL segments to be retained by the database. This post describes best practices helping to prevent this and other issues, discussing aspects like heartbeats, replication slot failover, monitoring, the management of Postgres publications, and more. While this is primarily based on my experience of using replication slots via <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html">Debezium’s Postgres connector</a>, the principles are generally applicable and are worth considering also when using other CDC tools for Postgres based on logical replication.</p>
 </div>
 <div class="sect1">
-<h2 id="_use_the_pgoutput_logical_decoding_output_plug_in">Use the pgoutput Logical Decoding Output Plug-in</h2>
+<h2 id="_use_the_pgoutput_logical_decoding_output_plug_in">Use the pgoutput Logical Decoding Output Plug-in<a class="anchor" href="#_use_the_pgoutput_logical_decoding_output_plug_in"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Postgres uses <a href="https://www.postgresql.org/docs/current/logicaldecoding-output-plugin.html">logical decoding output plug-ins</a> for serializing the data sent to logical replication clients. When creating a replication slot, you need to specify which plug-in to use. While several options exist, I’d recommend using the pgoutput plug-in, which is the standard decoding plug-in also used for logical replication between Postgres servers. It has a couple of advantages:</p>
@@ -440,7 +440,7 @@ A consumer subscribing to this slot will receive change events starting from thi
 </div>
 </div>
 <div class="sect1">
-<h2 id="_define_a_maximum_replication_slot_size">Define a Maximum Replication Slot Size</h2>
+<h2 id="_define_a_maximum_replication_slot_size">Define a Maximum Replication Slot Size<a class="anchor" href="#_define_a_maximum_replication_slot_size"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Replication protocols like Postgres&#39; need to balance keeping transaction logs around long enough so that consumers can catch up after a downtime—​for instance during an upgrade, and making sure transaction logs don’t consume an unreasonable amount of disk space on the database machine.</p>
@@ -464,7 +464,7 @@ A consumer subscribing to this slot will receive change events starting from thi
 </div>
 </div>
 <div class="sect1">
-<h2 id="_enable_heartbeats">Enable Heartbeats</h2>
+<h2 id="_enable_heartbeats">Enable Heartbeats<a class="anchor" href="#_enable_heartbeats"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>A situation which is particularly prone to accidental WAL growth is the combination of multiple logical databases with different traffic patterns on one Postgres host. This is because there is one shared WAL for the entire instance, whereas replication slots are scoped to individual databases. Now, imagine a situation where there are many transactions run against one database—​thus adding many entries to the WAL—​while there’s another database which is idle. A replication slot for that second database can’t make any progress, as it never receives any change events, and therefore will cause more and more WAL segments to be retained.</p>
@@ -504,7 +504,7 @@ A consumer subscribing to this slot will receive change events starting from thi
 </div>
 </div>
 <div class="sect1">
-<h2 id="_use_table_level_publications">Use Table-level Publications</h2>
+<h2 id="_use_table_level_publications">Use Table-level Publications<a class="anchor" href="#_use_table_level_publications"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>If you are using the <code>pgoutput</code> logical decoding plug-in, you have fine-grained control over the contents of the replication stream. If you are interested only in changes to ten tables out of 100 tables in your database, streaming changes for exactly those ten tables not only helps with saving resources (CPU, network I/O) on the database side, but it also can drastically reduce egress cost, when streaming change events into another availability zone of your cloud provider.</p>
@@ -541,7 +541,7 @@ A consumer subscribing to this slot will receive change events starting from thi
 </div>
 </div>
 <div class="sect1">
-<h2 id="_use_column_and_row_filters">Use Column and Row Filters</h2>
+<h2 id="_use_column_and_row_filters">Use Column and Row Filters<a class="anchor" href="#_use_column_and_row_filters"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>As of Postgres 15 and beyond, publications let you further trim down the contents of a replication stream. Via <a href="https://www.postgresql.org/docs/current/logical-replication-col-lists.html">column lists</a>, you can specify which column(s) of a table should be published. This can be very useful to exclude large columns, for instance binary data, which isn’t required for a given use case. Unfortunately, there’s no way to exclude a given column; instead, the names of all columns to be captured need to be specified when creating the publication:</p>
@@ -579,7 +579,7 @@ A consumer subscribing to this slot will receive change events starting from thi
 </div>
 </div>
 <div class="sect1">
-<h2 id="_enable_fail_over_slots">Enable Fail-Over Slots</h2>
+<h2 id="_enable_fail_over_slots">Enable Fail-Over Slots<a class="anchor" href="#_enable_fail_over_slots"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>A long-standing shortcoming of logical replication in Postgres used to be the lack of fail-over support. Until relatively recently, replication slots could only be created on primary instances. If you had set up a Postgres cluster comprising a primary server and a read replica, logical replication couldn’t resume from the replica after promoting it to primary in case of a failure. Instead, you’d typically have to create a new replication slot, which also meant starting with a new initial snapshot if writes could occur on the new primary before creating a new replication slot.</p>
@@ -625,7 +625,7 @@ A consumer subscribing to this slot will receive change events starting from thi
 </div>
 </div>
 <div class="sect1">
-<h2 id="_consider_using_replica_identity_full">Consider Using Replica Identity FULL</h2>
+<h2 id="_consider_using_replica_identity_full">Consider Using Replica Identity FULL<a class="anchor" href="#_consider_using_replica_identity_full"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>In Postgres, a table’s replica identity determines which fields of a row will be written to the WAL for the old row image for update and delete events. By default, the old value will be only recorded for primary columns. In addition, the value of any <a href="https://www.postgresql.org/docs/current/storage-toast.html">TOAST</a> columns will only be contained in the new row image if their value changed.</p>
@@ -649,7 +649,7 @@ A consumer subscribing to this slot will receive change events starting from thi
 </div>
 </div>
 <div class="sect1">
-<h2 id="_monitor_monitor_monitor">Monitor, Monitor, Monitor!</h2>
+<h2 id="_monitor_monitor_monitor">Monitor, Monitor, Monitor!<a class="anchor" href="#_monitor_monitor_monitor"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Deep observability is key for operating data systems successfully in production. When running Postgres, you should put monitoring and alerting for your replication slots in place to make sure that they’ll never consume unreasonably large amounts of WAL. The following metrics should be constantly tracked using observability tools such as Prometheus and Grafana, Datadog, Elastic, or similar:</p>
@@ -831,7 +831,7 @@ A consumer subscribing to this slot will receive change events starting from thi
 </div>
 </div>
 <div class="sect1">
-<h2 id="_drop_unused_replication_slots">Drop Unused Replication Slots</h2>
+<h2 id="_drop_unused_replication_slots">Drop Unused Replication Slots<a class="anchor" href="#_drop_unused_replication_slots"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Finally, a housekeeping tip: don’t forget to delete any unused replication slots! In particular, when stopping and deleting a Debezium connector, its replication slot in Postgres will not automatically be removed. If the slot is not required any more for other connectors or other types of replication consumers, you should drop the slot in order to prevent it from blocking the removal of WAL segments. To do so, call the function <a href="https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-REPLICATION"><code>pg_drop_replication_slot()</code></a> like so:</p>
@@ -849,7 +849,7 @@ A consumer subscribing to this slot will receive change events starting from thi
 </div>
 </div>
 <div class="sect1">
-<h2 id="_summary">Summary</h2>
+<h2 id="_summary">Summary<a class="anchor" href="#_summary"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Logical replication slots are an essential building block for building CDC pipelines with Postgres.

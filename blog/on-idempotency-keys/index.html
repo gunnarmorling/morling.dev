@@ -32,7 +32,7 @@
 	
 	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
 	
-	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.1f7c90fe21e9cb9a420de17091548a5bddce9099924773750cedf84f08a3adce.css" />
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.9f75089b0afb31fccce7d914240f60495e15754c4a7ad8e64c66f57ae24cbc01.css" />
 	
 
 	<script>
@@ -285,7 +285,7 @@
 <p>In addition, it stores the idempotency key of the message. Critically, these two things must happen atomically, typically by wrapping them in a database transaction. Either the message gets processed <em>and</em> its idempotency key gets persisted. Or, the transaction gets rolled back and no changes are applied at all. That way, it is ensured that the consumer will process a message again upon redelivery, if it failed to do so before. It also is ensured that duplicates received after successfully processing the message are skipped over.</p>
 </div>
 <div class="sect1">
-<h2 id="_uuids">UUIDs</h2>
+<h2 id="_uuids">UUIDs<a class="anchor" href="#_uuids"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>So let’s discuss what makes for a good idempotency key then. One possible option would be to use a UUIDv4. These random identifiers solve the requirement of uniquely identifying each message. However, they require the consumer to store the UUIDs of all the previous messages it ever has received in order to reliably identify a duplicate. Depending on the message volume, this may not be practical. Pragmatically, you might get away with discarding received UUIDs after some time period, if it is acceptable to occasionally receive and process a duplicate after that period. Unfortunately, neither the producer of the message nor the consumer will have any indication of the duplicated processing in that case.</p>
@@ -296,7 +296,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_monotonically_increasing_sequences">Monotonically Increasing Sequences</h2>
+<h2 id="_monotonically_increasing_sequences">Monotonically Increasing Sequences<a class="anchor" href="#_monotonically_increasing_sequences"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>All these intricacies can be avoided when it is possible to use a monotonically increasing sequence value as the idempotency key. In that case, the consumer does not need to store all the keys it ever has processed (or a reasonably sized subset thereof). It only needs to store a single value, the one of the latest message which it has processed. If it receives a message with the same or a lower idempotency key, that message must be a duplicate and can be ignored. When receiving messages from a partitioned source, such as a Kafka topic with multiple partitions, or from multiple independent producers (e.g., different clients of a REST API, each using their own separate sequence), then the latest key value per partition must be stored.</p>
@@ -314,7 +314,7 @@ instances you deploy. Note that if you really wanted to go down that route, sole
 </div>
 </div>
 <div class="sect1">
-<h2 id="_deriving_idempotency_keys_from_the_transaction_log">Deriving Idempotency Keys From the Transaction Log</h2>
+<h2 id="_deriving_idempotency_keys_from_the_transaction_log">Deriving Idempotency Keys From the Transaction Log<a class="anchor" href="#_deriving_idempotency_keys_from_the_transaction_log"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Now, is there a way for us to have this cake and eat it too? Can we get the space efficiency for consumers when using monotonically increasing idempotency keys, without hampering performance of multi-threaded producers? Turns out we can, at least when the emission of messages can be made an asynchronous activity in the producer system, happening independently from processing inbound requests.
@@ -334,7 +334,7 @@ When using Postgres to implement this pattern, you don’t even need a dedicated
 </div>
 </div>
 <div class="sect1">
-<h2 id="_discussion">Discussion</h2>
+<h2 id="_discussion">Discussion<a class="anchor" href="#_discussion"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>So, when to use which kind of idempotency key then?

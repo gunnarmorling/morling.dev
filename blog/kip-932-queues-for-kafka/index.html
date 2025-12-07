@@ -32,7 +32,7 @@
 	
 	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
 	
-	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.1f7c90fe21e9cb9a420de17091548a5bddce9099924773750cedf84f08a3adce.css" />
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.9f75089b0afb31fccce7d914240f60495e15754c4a7ad8e64c66f57ae24cbc01.css" />
 	
 
 	<script>
@@ -324,7 +324,7 @@
 <p>As of Kafka 4.0—​due in a couple of weeks—​things will change though: after two years of work, an Early Access of <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-932%3A+Queues+for+Kafka">KIP-932: Queues for Kafka</a> is part of this release. It promises to add queue-like semantics to Kafka. Let’s take a look!</p>
 </div>
 <div class="sect1">
-<h2 id="_towards_queue_support_in_kafkaintroducing_share_groups">Towards Queue Support in Kafka—​Introducing Share Groups</h2>
+<h2 id="_towards_queue_support_in_kafkaintroducing_share_groups">Towards Queue Support in Kafka—​Introducing Share Groups<a class="anchor" href="#_towards_queue_support_in_kafkaintroducing_share_groups"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>At the core of KIP-932 are so-called <em>share groups</em> : expanding the existing notion of Kafka consumer groups, a share group is a set of cooperative consumers processing the messages from a topic. Unlike consumer groups though, multiple members of a share group can process the messages on one and the same partition. This means that there can be more (active) members in a share group than there are partitions, and a high degree of consumer parallelism can be achieved also when having just a few or even only a single partition. Membership in a share group is coordinated using the new consumer rebalance protocol introduced in Kafka 4.0 via <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-848%3A+The+Next+Generation+of+the+Consumer+Rebalance+Protocol">KIP-898</a>. A partition consumed by a share group is called a <em>share partition</em>.</p>
@@ -374,7 +374,7 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_share_groups_in_action">Share Groups in Action</h2>
+<h2 id="_share_groups_in_action">Share Groups in Action<a class="anchor" href="#_share_groups_in_action"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Let’s shift gears a bit and take a look at how share groups can be used from within a Java application. At the time of writing, there’s no preview build of Apache Kafka 4.0 available yet, so I’ve built Kafka and its client libraries from source, which luckily is as straight forward as running the following:</p>
@@ -585,7 +585,7 @@ In particular, DLQ support is explicitly being mentioned in the KIP as a future 
 </div>
 </div>
 <div class="sect1">
-<h2 id="_retry_behavior_and_state_management">Retry Behavior and State Management</h2>
+<h2 id="_retry_behavior_and_state_management">Retry Behavior and State Management<a class="anchor" href="#_retry_behavior_and_state_management"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Let’s dig a bit deeper and explore how retries are currently handled by the share group API. To do so, I’ve built a share consumer which processes some messages as shown in the <a href="https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=255070434#KIP932:QueuesforKafka-In-flightrecordsexample">in-flight records example</a> in the KIP:</p>
@@ -749,7 +749,7 @@ In particular, DLQ support is explicitly being mentioned in the KIP as a future 
 </div>
 </div>
 <div class="sect1">
-<h2 id="_share_group_state_persistence">Share Group State Persistence</h2>
+<h2 id="_share_group_state_persistence">Share Group State Persistence<a class="anchor" href="#_share_group_state_persistence"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The state of inflight messages needs to be made durable by the share-partition coordinator. This responsibility is handled through a component called the <em>share-group state persister</em> ; While the KIP mentions that his could be a pluggable component eventually, there’s only a single persister implementation right now. It stores the state of share groups in a special Kafka topic named <code>__share_group_state</code>.</p>
@@ -940,7 +940,7 @@ my-share-group	my-topic-2   0          -             2
 </div>
 </div>
 <div class="sect1">
-<h2 id="_summary_and_outlook">Summary and Outlook</h2>
+<h2 id="_summary_and_outlook">Summary and Outlook<a class="anchor" href="#_summary_and_outlook"></a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p><a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-932%3A+Queues+for+Kafka">KIP-932: Queues for Kafka</a> adds a long awaited capability to the Apache Kafka project: queue-like semantics, including the ability to acknowledge messages on a one-by-one basis. This positions Kafka for use cases such as job queuing, for which it hasn’t been a good fit historically. As multiple members of a share group can process the messages from a single topic partition, the partition count does not limit the degree of consumer parallelism any longer. The number of consumers in a group can quickly be increased and decreased as needed, without requiring to repartition the topic.</p>
