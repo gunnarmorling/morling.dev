@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>compatibility on Gunnar Morling</title>
+    <link>https://www.morling.dev/tags/compatibility/</link>
+    <description>Recent content in compatibility on Gunnar Morling</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>© 2019 - 2025 Gunnar Morling</copyright>
+    <lastBuildDate>Mon, 22 Nov 2021 18:30:00 +0100</lastBuildDate>
+    <atom:link href="https://www.morling.dev/tags/compatibility/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Refining The Return Type Of Java Methods Without Breaking Backwards-Compatibility</title>
+      <link>https://www.morling.dev/blog/refining-return-type-java-methods-without-breaking-backwards-compatibility/</link>
+      <pubDate>Mon, 22 Nov 2021 18:30:00 +0100</pubDate>
+      <guid>https://www.morling.dev/blog/refining-return-type-java-methods-without-breaking-backwards-compatibility/</guid>
+      <description>&lt;div id=&#34;toc&#34; class=&#34;toc&#34;&gt;&#xA;&lt;div id=&#34;toctitle&#34;&gt;Table of Contents&lt;/div&gt;&#xA;&lt;ul class=&#34;sectlevel1&#34;&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#_the_problem&#34;&gt;The Problem&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#_bridge_methods_to_the_rescue&#34;&gt;Bridge Methods to the Rescue&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#_creating_bridge_methods_ourselves&#34;&gt;Creating Bridge Methods Ourselves&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/div&gt;&#xA;&lt;div class=&#34;paragraph&#34;&gt;&#xA;&lt;p&gt;If you work on any kind of software library,&#xA;ensuring backwards-compatibility is a key concern:&#xA;if there’s one thing which users really dislike, it is breaking changes in a new version of a library.&#xA;The rules of what can (and cannot) be changed in a Java API without breaking existing consumers are well defined in the Java language specification (JLS),&#xA;but things can get pretty interesting in certain corner cases.&lt;/p&gt;&#xA;&lt;/div&gt;&#xA;&lt;div class=&#34;paragraph&#34;&gt;&#xA;&lt;p&gt;The Eclipse team provides a &lt;a href=&#34;https://wiki.eclipse.org/Evolving_Java-based_APIs_2&#34;&gt;comprehensive overview&lt;/a&gt; about API evolution guidelines in their wiki.&#xA;When I shared the link to this great resource on Twitter the other day,&#xA;I received an &lt;a href=&#34;https://twitter.com/lukaseder/status/1462358911072317440&#34;&gt;interesting reply&lt;/a&gt; from Lukas Eder:&lt;/p&gt;&#xA;&lt;/div&gt;&#xA;&lt;div class=&#34;quoteblock&#34;&gt;&#xA;&lt;blockquote&gt;&#xA;I wish Java had a few tools to prevent some cases of binary compatibility breakages. E.g. when refining a method return type, I’d like to keep the old method around in byte code (but not in source code).&#xA;&lt;br/&gt;&#xA;&lt;br/&gt;&#xA;I think kotlin has such tools?&#xA;&lt;/blockquote&gt;&#xA;&lt;/div&gt;&#xA;&lt;div class=&#34;paragraph&#34;&gt;&#xA;&lt;p&gt;In the remainder of this post,&#xA;I’d like to provide some more insight into that problem mentioned by Lukas,&#xA;and how it can be addressed using an open-source tool called &lt;a href=&#34;https://github.com/dmlloyd/bridger&#34;&gt;Bridger&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;/div&gt;</description>
+    </item>
+    <item>
+      <title>The Anatomy of ct.sym — How javac Ensures Backwards Compatibility</title>
+      <link>https://www.morling.dev/blog/the-anatomy-of-ct-sym-how-javac-ensures-backwards-compatibility/</link>
+      <pubDate>Mon, 26 Apr 2021 18:45:00 +0100</pubDate>
+      <guid>https://www.morling.dev/blog/the-anatomy-of-ct-sym-how-javac-ensures-backwards-compatibility/</guid>
+      <description>&lt;div class=&#34;paragraph&#34;&gt;&#xA;&lt;p&gt;One of the ultimate strengths of Java is its strong notion of backwards compatibility:&#xA;Java applications and libraries built many years ago oftentimes run without problems on current JVMs,&#xA;and the compiler of current JDKs can produce byte code, that is executable with earlier Java versions.&lt;/p&gt;&#xA;&lt;/div&gt;&#xA;&lt;div class=&#34;paragraph&#34;&gt;&#xA;&lt;p&gt;For instance, JDK 16 supports byte code levels going back as far as to Java 1.7;&#xA;But: &lt;em&gt;hic sunt dracones&lt;/em&gt;.&#xA;The emitted byte code level is just one part of the story.&#xA;It’s equally important to consider which APIs of the JDK are used by the compiled code,&#xA;and whether they are available in the targeted Java runtime version.&#xA;As an example, let’s consider this simple &amp;#34;Hello World&amp;#34; program:&lt;/p&gt;&#xA;&lt;/div&gt;</description>
+    </item>
+    <item>
+      <title>ByteBuffer and the Dreaded NoSuchMethodError</title>
+      <link>https://www.morling.dev/blog/bytebuffer-and-the-dreaded-nosuchmethoderror/</link>
+      <pubDate>Mon, 21 Dec 2020 17:45:00 +0100</pubDate>
+      <guid>https://www.morling.dev/blog/bytebuffer-and-the-dreaded-nosuchmethoderror/</guid>
+      <description>&lt;div id=&#34;toc&#34; class=&#34;toc&#34;&gt;&#xA;&lt;div id=&#34;toctitle&#34;&gt;Table of Contents&lt;/div&gt;&#xA;&lt;ul class=&#34;sectlevel1&#34;&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#_how_to_prevent_this_situation&#34;&gt;How to Prevent This Situation?&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/div&gt;&#xA;&lt;div class=&#34;paragraph&#34;&gt;&#xA;&lt;p&gt;The other day, a user in the &lt;a href=&#34;https://debezium.io/&#34;&gt;Debezium&lt;/a&gt; community reported an interesting issue;&#xA;They were using Debezium with Java 1.8 and got an odd &lt;code&gt;NoSuchMethodError&lt;/code&gt;:&lt;/p&gt;&#xA;&lt;/div&gt;</description>
+    </item>
+  </channel>
+</rss>
