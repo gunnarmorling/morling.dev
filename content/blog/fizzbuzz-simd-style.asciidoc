@@ -94,14 +94,14 @@ we're going to emit -1, -2, and -3, respectively.
 The input of the program will be an array with the numbers from 1 ... 256,
 the output an array with the FizzBuzz sequence:
 
-[source]
+[source,linenums=true]
 ----
 1, 2, -1, 4, -2, -1, 7, 8, -1, -2, 11, -1, 13, 14, -3, 16, ...
 ----
 
 The task is easily solved using a plain `for` loop processing scalar values one by one:
 
-[source,java]
+[source,java,linenums=true]
 ----
 private static final int FIZZ = -1;
 private static final int BUZZ = -2;
@@ -140,7 +140,7 @@ public int[] scalarFizzBuzz(int[] values) {
 As a baseline, this implementation can be executed ~2.2M times per second in a simple https://openjdk.java.net/projects/code-tools/jmh/[JMH] benchmark running on my Macbook Pro 2019,
 with a 2.6 GHz 6-Core Intel Core i7 CPU:
 
-[source,subs=+quotes]
+[source,subs=+quotes,linenums=true]
 ----
 Benchmark                              (arrayLength)   Mode  Cnt        Score        Error  Units
 *FizzBuzzBenchmark.scalarFizzBuzz                 256  thrpt    5  2204774,792 ±  76581,374  ops/s*
@@ -180,14 +180,15 @@ The mask and second input vector repeat every 120 elements (least common multipl
 so 15 masks and vectors need to be determined.
 They can be created like so:
 
-[source,java]
+[source,java,linenums=true]
 ----
 public class FizzBuzz {
 
   private static final VectorSpecies<Integer> SPECIES =
       IntVector.SPECIES_256; // <1>
 
-  private final List<VectorMask<Integer>> resultMasks = new ArrayList<>(15);
+  private final List<VectorMask<Integer>> resultMasks =
+      new ArrayList<>(15);
   private final IntVector[] resultVectors = new IntVector[15];
 
   public FizzBuzz() {
@@ -227,7 +228,7 @@ public class FizzBuzz {
 
 With this infrastructure in place, we can implement the actual method for calculating the FizzBuzz values for an arbitrarily long input array: 
 
-[source,java]
+[source,java,linenums=true]
 ----
 public int[] simdFizzBuzz(int[] values) {
   int[] result = new int[values.length];
@@ -283,7 +284,7 @@ i.e. is this vectorized approach actually faster then the basic scalar implement
 Turns out it is!
 Here are the numbers I get from JMH on my machine, showing through-put increasing by factor 3:
 
-[source,subs=+quotes]
+[source,subs=+quotes,linenums=true]
 ----
 Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
 FizzBuzzBenchmark.scalarFizzBuzz                     256  thrpt    5  2204774,792 ±  76581,374  ops/s
@@ -295,7 +296,7 @@ I'm pretty sure, but as said I'm not an expert here, so I'll leave it to smarter
 One thing I figured is that the division and modulo operation for obtaining the current mask index isn't ideal.
 Keeping a separate loop variable that's reset to 0 after reaching 15 proved to be quite a bit faster:
 
-[source,java]
+[source,java,linenums=true]
 ----
 public int[] simdFizzBuzz(int[] values) {
   int[] result = new int[values.length];
@@ -318,7 +319,7 @@ public int[] simdFizzBuzz(int[] values) {
 }
 ----
 
-[source,subs=+quotes]
+[source,subs=+quotes,linenums=true]
 ----
 Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
 FizzBuzzBenchmark.scalarFizzBuzz                     256  thrpt    5  2204774,792 ±  76581,374  ops/s
@@ -331,7 +332,7 @@ Now, to make this a true apple-to-apple comparison,
 a mask-based approach can also be applied to the purely scalar implementation,
 only that each value needs to be looked up individually:
 
-[source,java]
+[source,java,linenums=true]
 ----
 private int[] serialMask = new int[] {0, 0, -1, 0, -2,
                                      -1, 0, 0, -1, -10,
@@ -358,7 +359,7 @@ public int[] serialFizzBuzzMasked(int[] values) {
 Indeed, this implementation is quite a bit better than the original one,
 but still the SIMD-based approach is more than twice as fast:
 
-[source,subs=+quotes]
+[source,subs=+quotes,linenums=true]
 ----
 Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
 FizzBuzzBenchmark.scalarFizzBuzz                     256  thrpt    5  2204774,792 ±  76581,374  ops/s
@@ -376,7 +377,7 @@ see link:/blog/building-hsdis-for-openjdk-15/[this post] for instructions on how
 Let's create a simple main class which executes the method in question in a loop,
 so to make sure the method actually gets JIT-compiled:
 
-[source,java]
+[source,java,linenums=true]
 ----
 public class Main {
 
@@ -396,7 +397,7 @@ public class Main {
 
 Run the program, enabling the output of the assembly, and piping its output into a log file:
 
-[source]
+[source,linenums=true]
 ----
 java -XX:+UnlockDiagnosticVMOptions \
   -XX:+PrintAssembly -XX:+LogCompilation \
@@ -409,7 +410,7 @@ Open the _fizzbuzz.log_ file and look for the `C2-compiled nmethod` block of the
 Somewhere within the method's native code, you should find the `vpblendvb` instruction
 (output slightly adjusted for better readability):
 
-[source,subs=+quotes]
+[source,subs=+quotes,linenums=true]
 ----
 ...
 
@@ -453,7 +454,7 @@ The Vector API recognizes the desire for avoiding this duplication and provides 
 so that during the last iteration no access beyond the array length will happen.
 Using this approach, the SIMD FizzBuzz method looks like this:
 
-[source,java]
+[source,java,linenums=true]
 ----
 public int[] simdFizzBuzzMasked(int[] values) {
   int[] result = new int[values.length];
@@ -480,7 +481,7 @@ public int[] simdFizzBuzzMasked(int[] values) {
 The implementation looks quite a bit nicer than the version with the explicit scalar processing of the remainder portion.
 But the impact on throughput is significant, the result is quite a disappointing:
 
-[source,subs=+quotes]
+[source,subs=+quotes,linenums=true]
 ----
 Benchmark                                  (arrayLength)   Mode  Cnt        Score        Error  Units
 FizzBuzzBenchmark.scalarFizzBuzz                     256  thrpt    5  2204774,792 ±  76581,374  ops/s
@@ -504,7 +505,7 @@ before drawing any conclusions.
 Speaking of which, I also ran the benchmark on that shiny new Mac Mini M1 (i.e. an AArch64-based machine) that found its way to my desk recently,
 and numbers are, mh, interesting:
 
-[source,subs=+quotes]
+[source,subs=+quotes,linenums=true]
 ----
 Benchmark                                  (arrayLength)   Mode  Cnt        Score       Error  Units
 FizzBuzzBenchmark.scalarFizzBuzz                     256  thrpt    5  2717990,097 ±  4203,628  ops/s
@@ -529,7 +530,7 @@ By passing the `-XX:+PrintIntrinsics` flag you can inspect which API calls get i
 When running the main class from above with this option, we get the relevant information
 (output slightly adjusted for better readability):
 
-[source]
+[source,linenums=true]
 ----
 @ 31   jdk.internal.vm.vector.VectorSupport::load (38 bytes) ↩
     failed to inline (intrinsic)

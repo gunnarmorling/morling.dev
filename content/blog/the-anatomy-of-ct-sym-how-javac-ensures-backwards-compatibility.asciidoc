@@ -25,7 +25,7 @@ As an example, let's consider this simple "Hello World" program:
 
 <!--more-->
 
-[source,java]
+[source,java,linenums=true]
 ----
 package com.example;
 
@@ -42,7 +42,7 @@ Let's assume we're using Java 16 for compiling this code,
 aiming for compatibility with Java 1.8.
 Historically, the Java compiler has provided the _--source_ and _--target_ options for this purpose, which are well known to most Java developers:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 $ javac --source 1.8 --target 1.8 -d classes HelloWorld.java
 warning: [options] bootstrap class path not set in conjunction with -source 8
@@ -52,7 +52,7 @@ warning: [options] bootstrap class path not set in conjunction with -source 8
 This compiles successfully (we'll come back on that warning in a bit).
 But if you actually try to run that class on Java 8, you're in for a bad suprise:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 $ java -classpath classes com.example.HelloWorld
 Exception in thread "main" java.lang.NoSuchMethodError: ↩
@@ -67,7 +67,7 @@ Absolutely, and that's where this warning about the bootstrap class path is comi
 the compiler recognized our potentially dangerous endavour and essentially suggested to compile against the class library matching the targeted Java version instead of that one of the JDK used for compilation.
 This is done using the _-Xbootclasspath_ option:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 $ javac --source 1.8 --target 1.8 \
   -d classes \
@@ -94,7 +94,7 @@ Luckily, Java 9 improved things significantly here;
 by means of the new _--release_ option, code can be compiled for older Java versions in a fully safe and portable way.
 Let's give this a try:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 $ javac --release 8 -d classes HelloWorld.java
 HelloWorld.java:7: error: cannot find symbol
@@ -121,7 +121,7 @@ Details about the implementation are sparse, though.
 The JEP only mentions a ZIP file named _ct.sym_ which contains those signature files.
 So I started by taking a look at what's in there:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 $ unzip -l $JAVA_HOME/lib/ct.sym
 
@@ -144,7 +144,7 @@ Archive:  /Library/Java/JavaVirtualMachines/jdk-16.sdk/Contents/Home/lib/ct.sym
 That's interesting, lots of _*.sig_ files, organized in some at first odd-looking directory structure.
 So let's see what's there for the `java.util.List` class:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 $ unzip -l $JAVA_HOME/lib/ct.sym | grep "java/util/List.sig"
      1481  03-26-2021 18:11   7/java.base/java/util/List.sig
@@ -169,7 +169,7 @@ In order to so, I had to change the file extensions from _*.sig_ to _*.class_, t
 After that, I could decompile the files using _javap_,
 save the result in text files and compare them using git:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 $ javap List8.class > List8.txt
 $ javap List9.class > List9.txt
@@ -210,7 +210,7 @@ As _javac_ is written in Java itself, this can be done exactly the same way as w
 You only need to start _javac_ using the usual debug switches,
 which must be prepended with _-J_ in this case:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 $ javac -J-Xdebug \
   -J-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000 \
@@ -228,7 +228,7 @@ While doing so, one more thing piqued my curiosity: these reports don't show any
 whereas _ct.sym_ contains a new version of the corresponding signature file;
 To find out what's going on, again _javap_ -- this time with a bit more detail level -- came in handy:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 $ javap -p -c -s -v -l List10.class > List10.txt
 $ javap -p -c -s -v -l List11.class > List11.txt

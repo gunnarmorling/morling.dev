@@ -17,7 +17,7 @@ They were using Debezium with Java 1.8 and got an odd `NoSuchMethodError`:
 
 <!--more-->
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 java.lang.NoSuchMethodError: java.nio.ByteBuffer.position(I)Ljava/nio/ByteBuffer;
   at io.debezium.connector.postgresql.connection.Lsn.valueOf(Lsn.java:86)
@@ -53,14 +53,14 @@ public class ByteBufferTest {
 
 Compile this with a current JDK:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 $ javac --source 1.8 --target 1.8 ByteBufferTest.java
 ----
 
 And sure enough, the `NoSuchMethodError` shows up when running this with Java 1.8:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 $ java ByteBufferTest
 
@@ -73,7 +73,7 @@ Now, if we take a closer look at the error message again, the missing method is 
 I.e. for an invoked method like `position()`, not only its name, parameter type(s), and the name of the declaring class are part of the byte code for that invocation, but also the method's return type.
 A look at the byte code of the class using _javap_ confirms that:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 $ javap -p -c -s -v -l -constants ByteBufferTest
 
@@ -128,14 +128,14 @@ For this purpose, the JDK contains the signature data for all supported Java ver
 
 So all that's needed really is compiling the code with `--release=8`:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 $ javac --release=8 ByteBufferTest.java
 ----
 
 Examine the bytecode using _javap_ again, and now the expected signature is in place:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 21: invokevirtual #13 // Method java/nio/ByteBuffer.position:(I)Ljava/nio/Buffer;
 ----
@@ -156,7 +156,7 @@ buffer = buffer.position(1);
 Et voilà, this gets rejected by the compiler when targeting Java 1.8,
 as the return type of the JDK 1.8 method `Buffer#position(int)` cannot be assigned to `ByteBuffer`:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 $ javac --release=8 ByteBufferTest.java
 

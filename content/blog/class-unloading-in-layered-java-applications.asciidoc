@@ -56,7 +56,7 @@ Layers are the perfect means of adding new code into a running Java application:
 they can be added and removed dynamically, and code in an already running layer can invoke functionality from a dynamically added layer in different ways, e.g. via reflection or by using the https://docs.oracle.com/en/java/javase/15/docs/api/java.base/java/util/ServiceLoader.html[service loader API].
 Layrry exposes this functionality via a very basic https://github.com/moditect/layrry/blob/master/layrry-platform/src/main/java/org/moditect/layrry/platform/PluginLifecycleListener.java[plug-in API]:
 
-[source,java]
+[source,java,linenums=true]
 ----
 public interface PluginLifecycleListener {
 
@@ -66,7 +66,7 @@ public interface PluginLifecycleListener {
 }
 ----
 
-[source,java]
+[source,java,linenums=true]
 ----
 public class PluginDescriptor {
 
@@ -105,7 +105,7 @@ The tiles themselves are implemented using the fabulous https://github.com/HanSo
 If you want to follow along, check out the source code of the demo and build it as per https://github.com/moditect/layrry-examples/tree/master/modular-tiles#build[the instructions] in the README file.
 Then run the Layrry launcher with the `-Xlog:class+unload=info` option, so to be notified about any unloaded classes in the system output:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 java -Xlog:class+unload=info \
   -jar path/to/layrry-launcher-1.0-SNAPSHOT-all.jar \
@@ -115,7 +115,7 @@ java -Xlog:class+unload=info \
 
 Now add and remove some tiles plug-ins a few times:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 cp -r staging/plugins-prepared/* staging/plugins
 rm -rf staging/plugins/*
@@ -137,7 +137,7 @@ also Nicolai Parlog discusses JEP 158 in great depth in this https://nipafx.dev/
 
 So at this point you could trigger a GC explicitly, e.g. via _jcmd_:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 jcmd <pid> GC.run
 ----
@@ -145,7 +145,7 @@ jcmd <pid> GC.run
 But of course that's not too desirable when running things in production.
 Instead, if you're on JDK 12 or later, you can use the new `G1PeriodicGCInterval` option for triggering a _periodic GC_:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 java -Xlog:class+unload=info \
   -XX:G1PeriodicGCInterval=5000 \
@@ -157,7 +157,7 @@ java -Xlog:class+unload=info \
 Introduced via https://openjdk.java.net/jeps/346[JEP 346] ("Promptly Return Unused Committed Memory from G1"), this will periodically initiate a concurrent GC cycle (or optionally even a full GC).
 Add and remove some plug-ins again, and after some time you should see messages about the unloaded classes in the log:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 ...
 [138.912s][info][class,unload] unloading class org.kordamp.tiles.sparkline.SparklineTilePlugin 0x0000000800de1840
@@ -245,7 +245,7 @@ As a quick side note, there's a really https://github.com/vlsi/mat-calcite-plugi
 which allows you to query heap dumps using SQL.
 It maps each class to its own "table", so that e.g. classes loaded more than once could be selected using the following SQL query on the `java.lang.Class` class:
 
-[source,sql]
+[source,sql,linenums=true]
 ----
 select 
   c.name,

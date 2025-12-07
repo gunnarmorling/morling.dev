@@ -47,7 +47,7 @@ one small adjustment to _/var/lib/pgsql/13/data/pg_hba.conf_ is needed:
 the access `method` for the `local` connection type must be switched from the default value `peer`
 (which would try to authenticate using the operating system user name of the client process) to `md5`.
 
-[source]
+[source,linenums=true]
 ----
 ...
 # TYPE  DATABASE        USER            ADDRESS                 METHOD
@@ -73,7 +73,7 @@ Custom socket factories must extend `javax.net.SocketFactory`,
 and their fully-qualified class name needs to be specified using the https://jdbc.postgresql.org/documentation/head/connect.html#unix%20sockets[socketFactory] driver parameter.
 So it should be easy to create `SocketFactory` implementation based on the new https://download.java.net/java/early_access/jdk16/docs/api/java.base/java/net/UnixDomainSocketAddress.html[UnixDomainSocketAddress] class, right?
 
-[source,java]
+[source,java,linenums=true]
 ----
 public class PostgresUnixDomainSocketFactory extends SocketFactory {
 
@@ -95,7 +95,7 @@ but it turns out not all socket addresses are equal,
 and `java.net.Socket` only connects to addresses of type `InetSocketAddress`
 (and the PG driver maintainers seem to sense some air of mystery around these "unusual" events, too):
 
-[source]
+[source,linenums=true]
 ----
 org.postgresql.util.PSQLException: Something unusual has occurred to cause the driver to fail. Please report this exception.
   at org.postgresql.Driver.connect(Driver.java:285)
@@ -112,7 +112,7 @@ java.lang.IllegalArgumentException: Unsupported address type
 Now JEP 380 solely speaks about `SocketChannel` and stays silent about `Socket`;
 but perhaps obtaining a socket from a domain socket channel works?
 
-[source,java]
+[source,java,linenums=true]
 ----
 public Socket createSocket() throws IOException {
   var sc = SocketChannel.open(UnixDomainSocketAddress.of(
@@ -123,7 +123,7 @@ public Socket createSocket() throws IOException {
 
 Nope, no luck either:
 
-[source]
+[source,linenums=true]
 ----
 java.lang.UnsupportedOperationException: Not supported
   at java.base/sun.nio.ch.SocketChannelImpl.socket(SocketChannelImpl.java:226)
@@ -159,7 +159,7 @@ Two methods needed changes:
 `channelFactory()` for obtaining a factory for the actual Netty transport channel,
 and `convert()` for converting a Vert.x `SocketAddress` into a NIO one:
 
-[source,java]
+[source,java,linenums=true]
 ----
 public class UnixDomainTransport extends Transport {
 
@@ -209,7 +209,7 @@ I ended up doing two small changes:
 
 * Avoiding the call to `SocketChannel#socket()` in the constructor:
 +
-[source,java]
+[source,java,linenums=true]
 ----
 public UnixDomainSocketChannel(Channel parent, SocketChannel socket) {
     super(parent, socket);
@@ -233,7 +233,7 @@ So it was time to give this thing a test ride.
 As we need to configure the custom `Transport` implementation,
 retrieval of a `PgPool` instance is a tad more verbose than usual:
 
-[source,java]
+[source,java,linenums=true]
 ----
 PgConnectOptions connectOptions = new PgConnectOptions()
     .setPort(5432) // <1>

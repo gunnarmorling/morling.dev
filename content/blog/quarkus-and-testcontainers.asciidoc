@@ -36,7 +36,7 @@ First, create an implementation of the `QuarkusTestResourceLifecycleManager` int
 which controls your resource's lifecycle.
 In case of a Postgres database, this could look like this:
 
-[source,java]
+[source,java,linenums=true]
 ----
 public class PostgresResource implements
         QuarkusTestResourceLifecycleManager {
@@ -67,7 +67,7 @@ public class PostgresResource implements
 
 All you then need to do is to reference that test resource from your test class using the `@QuarkusTestResource` annotation:
 
-[source,java]
+[source,java,linenums=true]
 ----
 @QuarkusTest
 @QuarkusTestResource(PostgresResource.class) // <1>
@@ -109,7 +109,7 @@ before starting the first test.
 One other subtle issue is the creation of the database schema for the test.
 E.g. for my https://github.com/gunnarmorling/jfr-custom-events/tree/master/example-service[Todo example application], I'd like to use a schema named "todo" in the Postgres database:
 
-[source,sql]
+[source,sql,linenums=true]
 ----
 create schema todo;
 ----
@@ -126,7 +126,7 @@ The Postgres image is no exception,
 so it's just a matter of exposing that script via Testcontainers.
 All it needs for that is a bit of tweaking of the Quarkus test resource for Postgres:
 
-[source,java]
+[source,java,linenums=true]
 ----
 static PostgreSQLContainer<?> db =
         new PostgreSQLContainer<>("postgres:13")

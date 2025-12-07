@@ -120,7 +120,7 @@ by means of a https://gohugo.io/templates/output-formats/#output-formats-for-pag
 In my _config.toml_ I declared the new output format and activate it for the homepage
 (largely inspired by this https://xdeb.org/post/2017/06/11/make-hugo-generate-a-json-search-index-and-json-feed/[write-up]):
 
-[source,toml]
+[source,toml,linenums=true]
 ----
 [outputFormats.SearchIndex]
 mediaType = "application/json"
@@ -134,7 +134,7 @@ home = ["HTML","RSS", "SearchIndex"]
 
 The template in _layouts/_default/list.searchindex.json_ isn't too complex either:
 
-[source]
+[source,linenums=true]
 ----
 {{- $.Scratch.Add "searchindex" slice -}}
 {{- range $index, $element := .Site.Pages -}}
@@ -145,7 +145,7 @@ The template in _layouts/_default/list.searchindex.json_ isn't too complex eithe
 
 The result is link:/searchindex.json[this JSON file]:
 
-[source,json]
+[source,json,linenums=true]
 ----
 [
   ...
@@ -206,7 +206,7 @@ One way for dealing with this is to define _substitutions_,
 custom methods or classes which will override a specific original implementation.
 As an example, here's one of the substitution classes I had to create:
 
-[source,java]
+[source,java,linenums=true]
 ----
 @TargetClass(className = "org.apache.lucene.util.AttributeFactory$DefaultAttributeFactory")
 public final class DefaultAttributeFactorySubstitution {
@@ -261,7 +261,7 @@ In any case it's a price worth paying: only with start-up times in the range of 
 The actual HTTP service implementation for running queries is rather unspectacular;
 It's based on https://projects.eclipse.org/projects/ee4j.jaxrs[JAX-RS] and exposes as simple endpoint which can be invoked with a given query like so:
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 http "https://my-search-service/search?q=java"
 
@@ -319,7 +319,7 @@ This means the search feature won't work for users who have JavaScript disabled 
 I deemed this an acceptable limitation; in order to avoid unnecessary confusion and frustration,
 the search text input field is hidden in that case via CSS:
 
-[source,xml]
+[source,xml,linenums=true]
 ----
 <noscript>
   <style type="text/css">
@@ -415,7 +415,7 @@ Lastly, I used a specific pre-configured execution role instead of the default `
 
 With the SAM descriptor in place, re-building and publishing the search service becomes a procedure of three steps:
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 mvn clean package -Pnative,lambda -DskipTests=true \
   -Dquarkus.native.container-build=true

@@ -54,7 +54,7 @@ execute some test routine, and then assert the JFR events which should have been
 
 Here is a basic example of a JfrUnit test:
 
-[source,java]
+[source,java,linenums=true]
 ----
 @JfrEventTest // <1>
 public class JfrUnitTest {
@@ -154,7 +154,7 @@ we first invoke that method in a loop and print out the actual allocation values
 This should happen in intervals, e.g. every 10,000 invocations,
 so to average out numbers from individual API calls.
 
-[source, java]
+[source, java,linenums=true]
 ----
 @Test
 @EnableEvent("jdk.ObjectAllocationInNewTLAB") // <1>
@@ -234,7 +234,7 @@ but rather calculate some custom value -- the overall object allocation in bytes
 
 Here are the numbers I got from running 100,000 invocations:
 
-[source]
+[source,linenums=true]
 ----
 Requests executed: 10000, memory allocated: 34096 bytes/request
 Requests executed: 20000, memory allocated: 31768 bytes/request
@@ -277,7 +277,7 @@ as a higher sampling rate may lead to stable results more quickly, in turn resul
 
 Based on that, the actual test could look like so:
 
-[source, java]
+[source, java,linenums=true]
 ----
 @Test
 @EnableEvent("jdk.ObjectAllocationInNewTLAB")
@@ -316,7 +316,7 @@ which otherwise may hide subsequent regressions
 Now let's assume we've wrapped up the initial round of work on this application, and its tests have been passing on CI for a while.
 One day, the `retrieveTodo()` performance test method fails though:
 
-[source]
+[source,linenums=true]
 ----
 java.lang.AssertionError: 
 Expecting:
@@ -329,7 +329,7 @@ Ugh, it's suddenly allocating about ten times more memory per request than befor
 What has happened?
 To find the answer, we can take a look at the test's JFR recording, which JfrUnit persists under _target/jfrunit_:
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 ls target/jfrunit
 
@@ -355,7 +355,7 @@ image::continuous_perf_testing_tlab_stacktrace.png[Complete stacktrace of the TL
 So it seems a REST call to another service is made from within the `TodoResource#get(long)` method!
 At this point we know where to look into the source code of the application:
 
-[source,java]
+[source,java,linenums=true]
 ----
 @GET
 @Transactional
@@ -402,7 +402,7 @@ In order to so, you can run the performance test method again,
 either enabling all the GC-related JFR event types, or by enabling a pre-existing JFR configuration
 (the JDK comes with two built-in JFR configurations, _default_ and _profile_, but you can also create and export them via JMC):
 
-[source, java]
+[source, java,linenums=true]
 ----
 @Test
 @EnableConfiguration("profile")
@@ -461,7 +461,7 @@ The general approach is the same as before with memory allocations:
 first define a baseline of the bytes read and written by invoking the API under test for a given number of executions.
 Once that's done, you can implement the actual test, including an assertion on the expected number of bytes read or written:
 
-[source, java]
+[source, java,linenums=true]
 ----
 @Test
 @EnableEvent(value="jdk.SocketRead", stackTrace=INCLUDED) // <1>
@@ -509,7 +509,7 @@ private long getBytesReadOrWritten(RecordedEvent re) { // <5>
 Now let's again assume that after some time the test begins to fail.
 This time it's the assertion on the number of executed reads and writes:
 
-[source]
+[source,linenums=true]
 ----
 AssertionFailedError: 
 Expecting:
@@ -521,7 +521,7 @@ but was not.
 
 Also the number of bytes read and written has substantially increased:
 
-[source]
+[source,linenums=true]
 ----
 java.lang.AssertionError: 
 Expecting:
@@ -544,7 +544,7 @@ as our `User` entity didn't have any `BLOB` attribute before.
 In reality, comparing with the latest version and a look into the git history of that class could confirm that there's a new attribute storing an image
 (perhaps not a best practice to do so ;):
 
-[source,java]
+[source,java,linenums=true]
 ----
 @Entity
 public class Todo extends PanacheEntity {

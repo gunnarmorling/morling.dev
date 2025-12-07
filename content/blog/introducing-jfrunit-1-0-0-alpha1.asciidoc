@@ -31,7 +31,7 @@ JfrUnit is available on Maven Central
 (a big shout-out to https://twitter.com/aalmiray[Andres Almiray] for setting up a fully automated release pipeline using the excellent https://jreleaser.org/[JReleaser] project!).
 If you're working with Apache Maven, add the following dependency to your _pom.xml_ file:
 
-[source,xml]
+[source,xml,linenums=true]
 ----
 ...
 <dependency>
@@ -40,7 +40,7 @@ If you're working with Apache Maven, add the following dependency to your _pom.x
   <version>1.0.0.Alpha1</version>
   <scope>test</scope>
 </dependency>
-  ...
+...
 ----
 
 Alternatively, you can of course build JfrUnit from source yourself,
@@ -67,12 +67,14 @@ With that dependency in place, the steps of using JfrUnit are the following:
 
 To make things more tangible, here's an example that asserts the memory allocation done by a Quarkus-based web application for a specific use case:
 
-[source,java]
+[source,java,linenums=true]
 ----
 @Test
 @EnableEvent("jdk.ObjectAllocationInNewTLAB") // <1>
 @EnableEvent("jdk.ObjectAllocationOutsideTLAB")
-public void retrieveTodoShouldYieldExpectedAllocation() throws Exception {
+public void retrieveTodoShouldYieldExpectedAllocation()
+        throws Exception {
+
     Random r = new Random();
 
     HttpClient client = HttpClient.newBuilder()
@@ -128,7 +130,7 @@ you can also use Groovy and the https://spockframework.org/[Spock framework] for
 which makes for very compact and nicely readable tests.
 Here's an example for asserting two JFR events using the Spock integration:
 
-[source,groovy]
+[source,groovy,linenums=true]
 ----
 class JfrSpec extends Specification {
 

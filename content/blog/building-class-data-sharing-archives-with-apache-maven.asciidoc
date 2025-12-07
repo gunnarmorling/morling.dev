@@ -60,7 +60,7 @@ I've created a https://github.com/gunnarmorling/quarkus-cds/[small web applicati
 using the https://quarkus.io/[Quarkus] stack.
 If you'd like to follow along, clone the repo and build the project:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 git clone git@github.com:gunnarmorling/quarkus-cds.git
 cd quarkus-cds
@@ -70,7 +70,7 @@ mvn clean verify -DskipTests=true
 The application uses a Postgres database for persisting the to-dos;
 fire it up via Docker:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 cd compose
 docker run -d -p 5432:5432 --name pgdemodb \
@@ -83,7 +83,7 @@ docker run -d -p 5432:5432 --name pgdemodb \
 The next step is to _run_ the application and create the CDS archive file.
 Do so by passing the _-XX:ArchiveClassesAtExit_ option:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 java -XX:ArchiveClassesAtExit=target/app-cds.jsa \ #<1>
     -jar target/todo-manager-1.0.0-SNAPSHOT-runner.jar
@@ -94,7 +94,7 @@ Only loaded classes will be added to the archive.
 As classloading on the JVM happens lazily, you must invoke some functionality in your application in order to cause all the relevant classes to be loaded.
 For that to happen, open the application's API endpoint in a browser or invoke it via _curl_, _httpie_ or similar:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 http localhost:8080/api
 ----
@@ -104,7 +104,7 @@ This will create the CDS archive under _target/app-cds.jsa_.
 In our case it should have a size of about 41 MB.
 Also observe the log messages about classes which were skipped from archiving:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 ...
 [190.220s][warning][cds] Skipping java/lang/invoke/LambdaForm$MH+0x0000000800bd0c40: Hidden or Unsafe anonymous class
@@ -130,7 +130,7 @@ resulting in better start-up times in turn.
 
 Now let's run the application again, this time _using_ the previously created CDS archive:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 java -XX:SharedArchiveFile=target/app-cds.jsa \ # <1>
     -Xlog:class+load:file=target/classload.log \ # <2>
@@ -145,7 +145,7 @@ When examining the _classload.log_ file,
 you should see how most class metadata is obtained from the CDS archive ("source: shared object file"),
 while some classes such as the ancient Antlr classes are loaded just as usual from the corresponding JAR:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 [0.016s][info][class,load] java.lang.Object source: shared objects file
 [0.016s][info][class,load] java.io.Serializable source: shared objects file
@@ -201,7 +201,7 @@ this turned out to not be viable as https://github.com/mojohaus/exec-maven-plugi
 
 Here's the relevant configuration:
 
-[source,xml]
+[source,xml,linenums=true]
 ----
 ...
 <plugin>
@@ -249,7 +249,7 @@ the invocation of the required application logic so to trigger the loading of al
 This can be done with help of the http://maven.apache.org/surefire/maven-surefire-plugin/[Maven Surefire] plug-in.
 A simple "integration test" via http://rest-assured.io/[REST Assured] does the trick:
 
-[source,java]
+[source,java,linenums=true]
 ----
 public class ExampleResourceAppCds {
 
@@ -268,7 +268,7 @@ We just need to configure a specific execution of the plug-in,
 which _only_ picks up any test classes whose names end with _*AppCds.java_,
 so to keep them apart from actual integration tests:
 
-[source,xml]
+[source,xml,linenums=true]
 ----
 ...
 <plugin>

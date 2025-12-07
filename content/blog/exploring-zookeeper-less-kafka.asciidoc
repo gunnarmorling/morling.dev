@@ -65,7 +65,7 @@ which updates Kafka from 2.7 to Kafka 2.8, and also does the required changes to
 Note this change hasn't been merged yet to the upstream Debezium repository,
 so if you'd like to try out things by yourself, you'll have to clone my repo, and then build the container image yourself like this:
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 $ git clone git@github.com:gunnarmorling/docker-images.git
 $ cd docker-images/kafka/1.6
@@ -86,7 +86,7 @@ i.e. the container image currently only supports combined nodes
 
 Based on that, here is what's needed in a Docker Compose file for spinning up a Kafka cluster with three nodes:
 
-[source,yaml]
+[source,yaml,linenums=true]
 ----
 version: '2'
 services:
@@ -128,7 +128,7 @@ Working on https://debezium.io/[Debezium], and being a Kafka Connect aficionado 
 I'm also going to add Connect and a Postgres database for testing purposes
 (you can find the complete Compose file https://github.com/gunnarmorling/debezium-examples/blob/zk-less-kafka/tutorial/docker-compose-zkless-kafka.yaml[here]):
 
-[source,yaml]
+[source,yaml,linenums=true]
 ----
 version: '2'
 services:
@@ -161,7 +161,7 @@ services:
 
 Now let's start everything:
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 $ docker-compose -f docker-compose-zkless-kafka.yaml up
 ----
@@ -170,7 +170,7 @@ Let's also register an instance of the Debezium Postgres connector,
 which will connect to the PG database and take an initial snapshot,
 so we got some topics with a few messages to play with:
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 $ curl -0 -v -X POST http://localhost:8083/connectors \
   -H "Expect:" \
@@ -205,7 +205,7 @@ it should be named `@metadata`.
 But no such topic shows up when listing the available topics;
 only the `__consumer_offsets` topic, the change data topics created by Debezium, and some Kafka Connect specific topics are shown:
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 # Get a shell on one of the broker containers
 $ docker-compose -f docker-compose-zkless-kafka.yaml exec kafka-1 bash
@@ -234,7 +234,7 @@ since https://cwiki.apache.org/confluence/display/KAFKA/KIP-595%3A+A+Raft+Protoc
 In the meantime, we can take a look at the contents of the metadata topic using the https://jaceklaskowski.gitbooks.io/apache-kafka/content/kafka-tools-kafka-dump-log.html[_kafka-dump-log.sh_] utility,
 e.g. filtering out all `RegisterBroker` records:
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 $ /kafka/bin/kafka-dump-log.sh --cluster-metadata-decoder \
   --skip-record-metadata \
@@ -254,7 +254,7 @@ this utility script allows to browse a cluster's metadata,
 similarly to _zookeeper-shell.sh_ known from earlier releases.
 For instance, you can list all brokers and get the metadata of the registration of node 1 like this:
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 $ /kafka/bin/kafka-metadata-shell.sh --snapshot /kafka/data/@metadata-0/00000000000000000000.log
 
@@ -273,7 +273,7 @@ RegisterBrokerRecord(brokerId=1, incarnationId=TmM_u-_cQ2ChbUy9NZ9wuA, brokerEpo
 
 Or to display the current leader:
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 >> cat /metadataQuorum/leader
 
@@ -282,7 +282,7 @@ MetaLogLeader(nodeId=1, epoch=12)
 
 Or to show the metadata of a specific topic partition:
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 >> cat /topics/dbserver1.inventory.customers/0/data
 {
@@ -305,7 +305,7 @@ Another new tool is _kafka-cluster.sh_, which currently can do two things:
 displaying the unique id of a cluster, and unregistering a broker.
 While the former worked for me:
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 $ /kafka/bin/kafka-cluster.sh cluster-id --bootstrap-server kafka-1:9092
 
@@ -314,7 +314,7 @@ Cluster ID: oh-sxaDRTcyAr6pFRbXyzA
 
 The latter always failed with a `NotControllerException`, no matter on which node I invoked the command:
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 $ /kafka/bin/kafka-cluster.sh unregister --bootstrap-server kafka-1:9092 --id 3
 
@@ -347,7 +347,7 @@ As you'd expect, when stopping the active controller, a new leader was elected (
 and also all partitions which had the previous active controller as partition leader, got re-assigned
 (in this case node `1` was the active controller and got stopped):
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 $ /kafka/bin/kafka-topics.sh --bootstrap-server kafka-2:9092 --describe --topic dbserver1.inventory.customers
 
@@ -384,7 +384,7 @@ At this point, the cluster isn't in a healthy state any longer,
 as no majority of nodes of the cluster is available for leader election.
 Logs of the remaining node are flooded with an `UnknownHostException` in this situation:
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 kafka-3_1   | 2021-05-16 10:16:45,282 - WARN  [kafka-raft-outbound-request-thread:NetworkClient@992] - [RaftManager nodeId=3] Error connecting to node kafka-2:9093 (id: 2 rack: null)
 kafka-3_1   | java.net.UnknownHostException: kafka-2
@@ -424,7 +424,7 @@ so I suspect this is more an artifact of displaying the cluster state rather tha
 Things get a bit more troublesome when restarting the two stopped nodes;
 Very often I'd then see a very high CPU consumption on the Kafka nodes as well as the Connect node:
 
-[source,bash]
+[source,bash,linenums=true]
 ----
 $ docker stats
 

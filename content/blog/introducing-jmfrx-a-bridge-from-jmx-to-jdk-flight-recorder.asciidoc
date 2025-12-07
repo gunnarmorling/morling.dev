@@ -65,7 +65,7 @@ Until a stable release will be provided, you can obtain JmFrX snapshot builds vi
 For that, add the JitPack repository to your _pom.xml_ when using Apache Maven
 (or apply equivalent configuration for your preferred build tool):
 
-[source,xml]
+[source,xml,linenums=true]
 ----
 ...
 <repositories>
@@ -79,7 +79,7 @@ For that, add the JitPack repository to your _pom.xml_ when using Apache Maven
 
 Then add the JmFrX dependency:
 
-[source,xml]
+[source,xml,linenums=true]
 ----
 ...
 <dependency>
@@ -96,7 +96,7 @@ A Java agent for this purpose will be provided as part of this project soon.
 
 When building applications with https://quarkus.io/[Quarkus], you could use an application start-up event like so:
 
-[source,java]
+[source,java,linenums=true]
 ----
 @ApplicationScoped
 public class EventRegisterer {
@@ -156,7 +156,7 @@ When creating an event for a given JMX MBean, JmFrX will look for a correspondin
 Event profiles are defined by implementing the https://github.com/gunnarmorling/jmfrx/blob/master/src/main/java/dev/morling/jmfrx/spi/EventProfileContributor.java[`EventProfileContributor`] SPI.
 As an example here's a subset of the the built-in profile definition for the `OperatingSystem` MBean:
 
-[source,java]
+[source,java,linenums=true]
 ----
 public class JavaLangEventProfileContributor implements
     EventProfileContributor {
@@ -189,7 +189,7 @@ public class JavaLangEventProfileContributor implements
 
 Once you've defined the event profiles for your MBean type(s), don't forget to register the contributor type either as a service implementation in your _module-info.java_ descriptor (when building a modular Java application):
 
-[source,java]
+[source,java,linenums=true]
 ----
 module com.example {
     requires jdk.jfr;
@@ -219,7 +219,7 @@ Unlike most JFR event types which are emitted when some specific JVM or applicat
 periodic events are produced in a regular interval.
 The default interval (which can be overridden by the user) is specified using the `@Period` annotation on the event type definition:
 
-[source,java]
+[source,java,linenums=true]
 ----
 @Name(JmxDumpEvent.NAME)
 @Label("JMX Dump")
@@ -237,7 +237,7 @@ public class JmxDumpEvent extends Event {
 
 Upon application start-up, JmFrX https://github.com/gunnarmorling/jmfrx/blob/master/src/main/java/dev/morling/jmfrx/Jmfrx.java#L74[registers] this event type with the JFR environment:
 
-[source,java]
+[source,java,linenums=true]
 ----
 ...
 private Runnable hook;
@@ -281,7 +281,7 @@ Using the https://docs.oracle.com/en/java/javase/11/docs/api/jdk.jfr/jdk/jfr/Eve
 Under the covers, JFR will create a corresponding `Event` sub-class dynamically using the ASM API.
 Here's the relevant JmFrX code which defines the event type for a given MBean:
 
-[source,java]
+[source,java,linenums=true]
 ----
 ...
 public static EventDescriptor getDescriptorFor(String mBeanName) {
@@ -296,7 +296,8 @@ public static EventDescriptor getDescriptorFor(String mBeanName) {
         new AnnotationElement(StackTrace.class, false),
         new AnnotationElement(Name.class, getName(objectName)),
         new AnnotationElement(Label.class, getLabel(objectName)),
-        new AnnotationElement(Description.class,  mBeanInfo.getDescription())
+        new AnnotationElement(Description.class,
+            mBeanInfo.getDescription())
     );
 
     List<AttributeDescriptor> fields = getFields(objectName, mBeanInfo);

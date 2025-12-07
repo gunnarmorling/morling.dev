@@ -34,7 +34,7 @@ So here is what you need to do in order to build _hsdis_ for OpenJDK 15;
 in my case I'm running on macOS, slightly different steps may apply for other platforms.
 First, get the OpenJDK source code and check out the version for which you want to build _hsdis_:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 git clone git@github.com:openjdk/jdk.git
 git checkout jdk-15+36 # Current stable JDK 15 build
@@ -42,14 +42,14 @@ git checkout jdk-15+36 # Current stable JDK 15 build
 
 The source location of _hsdis_ has changed with the move from Mercurial to git:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 cd src/utils/hsdis
 ----
 
 In order to build _hsdis_, you'll need the https://www.gnu.org/software/binutils/[GNU Binutils], a collection of several binary tools:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 wget https://ftp.gnu.org/gnu/binutils/binutils-2.35.tar.gz
 tar xvf binutils-2.35.tar.gz
@@ -57,7 +57,7 @@ tar xvf binutils-2.35.tar.gz
 
 Then run the actual _hsdis_ build (macOS comes with all the required tools like _make_):
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 make BINUTILS=binutils-2.35 ARCH=amd64
 ----
@@ -66,7 +66,7 @@ This will take a few minutes; if all goes well, there'll be _hsdis_ binary in th
 in my case this is _build/macosx-amd64/hsdis-amd64.dylib_.
 Copy the library to _lib/server_ of our JDK:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 sudo cp build/macosx-amd64/hsdis-amd64.dylib $JAVA_HOME/lib/server
 ----
@@ -75,7 +75,7 @@ sudo cp build/macosx-amd64/hsdis-amd64.dylib $JAVA_HOME/lib/server
 ====
 If you're on Linux, you also can provide the _hsdis_ tool via the `LD_LIBRARY_PATH` environment variable:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:path/to/hsdis/build/linux-amd64
 ----
@@ -87,7 +87,7 @@ Congrats! You now can use the https://wiki.openjdk.java.net/display/HotSpot/Prin
 Let's give it a try.
 Create a Java source file with the following contents:
 
-[source,java]
+[source,java,linenums=true]
 ----
 public class PrintAssemblyTest {
 
@@ -108,7 +108,7 @@ public class PrintAssemblyTest {
 
 Compile and run it like so:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 javac PrintAssemblyTest.java
 java -XX:+UnlockDiagnosticVMOptions -XX:+PrintAssembly \
@@ -118,7 +118,7 @@ java -XX:+UnlockDiagnosticVMOptions -XX:+PrintAssembly \
 
 You should then find the assembly code of the `hello()` method somewhere in the output:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 ============================= C2-compiled nmethod ==============================
 ----------------------------------- Assembly -----------------------------------

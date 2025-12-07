@@ -55,7 +55,7 @@ and which thus are the ones that need to go into the custom runtime image.
 Having built the example application from the previous blog post via _mvn clean verify_,
 let's try and invoke jdeps like so:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 jdeps --print-module-deps \
     --class-path target/lib/* \
@@ -64,7 +64,7 @@ jdeps --print-module-deps \
 
 This results in an error though:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 Error: com.sun.istack.istack-commons-runtime-3.0.10.jar is a multi-release jar file but --multi-release option is not set
 ----
@@ -72,7 +72,7 @@ Error: com.sun.istack.istack-commons-runtime-3.0.10.jar is a multi-release jar f
 Ok, we need to tell which code version to analyse for https://openjdk.java.net/jeps/238[multi-release JARs];
 no problem:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 jdeps --print-module-deps \
     --multi-release 15 \
@@ -82,7 +82,7 @@ jdeps --print-module-deps \
 
 Hum, some progress, but still an issue:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 Exception in thread "main" java.lang.module.FindException: Module java.xml.bind not found, required by java.ws.rs
 ----
@@ -97,7 +97,7 @@ But it's not a big problem, we simply can add the JAXB API (which also is provid
 The same issue arises for some other dependencies which are explicit modules already,
 so we end up with the following configuration:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 jdeps --print-module-deps \
     --multi-release 15 \
@@ -108,7 +108,7 @@ jdeps --print-module-deps \
 
 And another issue, now about some missing dependencies:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 ...
 org.postgresql.util.internal.Nullness              -> org.checkerframework.dataflow.qual.Pure            not found
@@ -122,7 +122,7 @@ or dependencies of optional features which are not relevant for our case.
 These can be safely ignored using the _--ignore-missing-deps_ switch,
 which leaves us with this jdeps invocation:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 jdeps --print-module-deps \
     --ignore-missing-deps \
@@ -134,7 +134,7 @@ jdeps --print-module-deps \
 
 The required JDK modules are printed out finally:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 java.base,java.compiler,java.instrument,java.naming,java.rmi,java.security.jgss,java.security.sasl,java.sql,jdk.jconsole,jdk.unsupported
 ----
@@ -151,7 +151,7 @@ What is this application doing with `jdk.jconsole` for instance?
 To gain insight into this, jdeps can help, too.
 Run it again without the _--print-module-deps_ switch, and you can grep for interesting module references:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 jdeps <...> | grep jconsole
 
@@ -169,7 +169,7 @@ resulting in a further decreased size of custom runtime images.
 With the list of required modules,
 creating the actual runtime image is rather simple:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 $JAVA_HOME/bin/jlink \
   --add-modules java.base,java.compiler,java.instrument,java.naming,java.rmi,java.security.jgss,java.security.sasl,java.sql,jdk.jconsole,jdk.unsupported \
@@ -183,7 +183,7 @@ In order to create a dynamic AppCDS archive for our application classes later on
 we now need to add the class data archive for all of the classes of the image itself.
 Failing to do so results in this error message:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 Error occurred during initialization of VM
 DynamicDumpSharedSpaces is unsupported when base CDS archive is not loaded
@@ -193,7 +193,7 @@ This step isn't very well documented, and at this point I was somewhat stuck.
 But you always can count on the OpenJDK community: after asking about this on Twitter,
 Claes Redestad https://twitter.com/cl4es/status/1337797258058862597[pointed me]  into the right direction:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 ./target/runtime-image/bin/java -Xshare:dump
 ----
@@ -209,7 +209,7 @@ let's now add the AppCDS archive to it.
 Since the introduction of dynamic AppCDS archives in JDK 13,
 this is one simple step which only requires to run the application with the _-XX:ArchiveClassesAtExit_ option:
 
-[source,shell]
+[source,shell,linenums=true]
 ----
 cd target <1>
 
@@ -245,7 +245,7 @@ and an AppCDS archive for the application's classes.
 The final step is to put everything into a Linux container image,
 which is quickly done via a small Dockerfile:
 
-[source,Dockerfile]
+[source,Dockerfile,linenums=true]
 ----
 FROM registry.fedoraproject.org/fedora-minimal:33
 
@@ -286,7 +286,7 @@ which means that typically rather stable base image layers don't need to be redi
 The container's entry point, _todo-manager.sh_, is a basic shell script,
 which starts the actual Java application via the Java runtime image:
 
-[source,sh]
+[source,sh,linenums=true]
 ----
 #!/bin/bash
 
