@@ -73,7 +73,7 @@ image::push_pull_02.jpg["Push, pull. Why not both?"]
 There are several ways for implementing this. This could be a stream processor such as https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/overview/[Flink SQL], operating on https://www.morling.dev/blog/ingesting-debezium-events-from-kafka-with-flink-sql/[change events sourced from a database via change data capture], and writing data into Elasticsearch, or an Iceberg table. It could be a database supporting incremental view maintenance (IVM), such as Postgres with the https://github.com/sraoss/pg_ivm[pg_ivm] extension. Or it could be an external IVM engine such as https://www.feldera.com/[Feldera], https://materialize.com/[Materialize], or https://risingwave.com/[RisingWave].
 
 --
-The IVM space has seen considerable activity over the past few years, with vendors working to extend incremental computation to increasingly complex SQL queries, e.g. with windowed aggregations or recursive logic, managing the potentially large state+++<sup>[2]</sup>+++ required for incremental computations and amortizing it across multiple queries, supporting edge-based caching (https://readyset.io/[ReadySet]), and much more.
+The IVM space has seen https://materializedview.io/p/everything-to-know-incremental-view-maintenance[considerable activity] over the past few years, with vendors working to extend incremental computation to increasingly complex SQL queries, e.g. with windowed aggregations or recursive logic, managing the potentially large state+++<sup>[2]</sup>+++ required for incremental computations and amortizing it across multiple queries, supporting edge-based caching (https://readyset.io/[ReadySet]), and much more.
 
 [.aside]
 ****
@@ -81,7 +81,6 @@ The IVM space has seen considerable activity over the past few years, with vendo
 Thus, that operator needs to store all row values for that column.
 ****
 --
-
 
 However, no matter which specific solution you choose, this approach allows you to materialize views incrementally and efficiently, making your data available for pull-based querying in the right format and shape, at the right location.
 
