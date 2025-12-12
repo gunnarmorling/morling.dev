@@ -37,7 +37,11 @@ To open the Apache Flink web UI, do the following steps:
 * Select a custom pipeline. The *Overview* page for that pipeline opens.
 * Select *Flink Web Dashboard.*The Flink web UI**opens in a new browser tab or window.
 
+image::decodable-flink-ui-1.png[]
+
 Within the Apache Flink web UI itself, you can perform common tasks like examining the history of checkpoints, monitoring for any potential backpressure (and then for instance use that information to resize the job), analyzing watermarks and task metrics, retrieving the job logs, and much more.
+
+image::decodable-flink-ui-2.png[]
 
 Adding support for the Apache Flink web UI moves Custom Pipelines to the next level, helping users feel confident about running their jobs in production.
 We can't wait for you to give this a try and let us know about any feedback you may have!
@@ -52,11 +56,31 @@ I am also excited to announce the Decodable SDK version link:https://mvnreposito
 
 [source,java,linenums]
 ----
+@SourceStreams(PURCHASE_ORDERS_STREAM)
+@SinkStreams(PURCHASE_ORDERS_PROCESSED_STREAM)
+public class DataStreamJob {
 
+
+   static final String PURCHASE_ORDERS_STREAM = "purchase-orders";
+   static final String PURCHASE_ORDERS_PROCESSED_STREAM = "purchase-orders-processed";
+
+
+   public static void main(String[] args) throws Exception {
+       StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+
+       // ...
+
+
+       env.execute("Purchase Order Processor");
+   }
+}
 ----
 
 
 This metadata is used within the lineage bar of the Decodable console, allowing you to easily navigate between pipelines and the streams they read from and write to:
+
+image::decodable-flink-ui-3.png[]
 
 At this point, the *SourceStreams* and *SinkStreams* annotations can be used for providing the names of all referenced streams.
 In a future version of the SDK, this metadata will be extracted from the stream topology and propagated automatically to the backend, further simplifying the user experience.

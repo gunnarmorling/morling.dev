@@ -25,7 +25,7 @@ In this blog post I'd like to discuss why we've built Custom Pipelines and this 
 
 <!--more-->
 
-=== Decodable Custom Pipelines
+== Decodable Custom Pipelines
 link:https://www.decodable.co/blog/support-for-running-your-own-apache-flink-jobs-is-coming-to-decodable[Custom Pipelines], written in any JVM language such as Java or Scala, complement Decodable's support for SQL-based data streaming pipelines.
 While SQL is a great choice for a large share of data streaming use cases, allowing you to map and project, filter and join, group and aggregate your data, in some cases it might not be flexible enough.
 
@@ -38,14 +38,22 @@ When running your own Flink jobs, it should be possible to benefit from Decodabl
 This is where the new link:https://github.com/decodableco/decodable-pipeline-sdk/[Custom Pipelines SDK] comes in, providing you with all the right integration points needed.
 
 
-=== Getting Started With the Custom Pipelines SDK
+== Getting Started With the Custom Pipelines SDK
 The simplest way for getting started with building your Flink jobs for the Decodable platform is to use the link:https://nightlies.apache.org/flink/flink-docs-release-1.16/docs/dev/configuration/overview/[quickstart archetype] provided by Apache Flink.
 Run the following to start a new Maven project:
 
 
 [source,shell,linenums]
 ----
-
+mvn archetype:generate \
+  -DarchetypeGroupId=org.apache.flink \
+  -DarchetypeArtifactId=flink-quickstart-java \
+  -DarchetypeVersion=1.16.1 \
+  -DgroupId=com.example.decodable \
+  -DartifactId=my-first-decodable-custom-pipeline \
+  -Dversion=0.1 \
+  -Dpackage=com.example.custompipeline \
+  -DinteractiveMode=false
 ----
 
 
@@ -54,16 +62,32 @@ The SDK is link:https://central.sonatype.com/artifact/co.decodable/decodable-pip
 
 [source,xml,linenums]
 ----
-
+...
+<dependencies>
+  ...
+  <dependency>
+    <groupId>co.decodable</groupId>
+    <artifactId>decodable-pipeline-sdk</artifactId>
+    <version>1.0.0.Beta1</version>
+  </dependency>
+  ..
+</dependencies>
+...
 ----
 
 
 Alternatively, if you are using Gradle, add the dependency to your _build.gradle_ file like so:
 
 
-[source,xml,linenums]
+[source,groovy,linenums]
 ----
-
+...
+dependencies {
+  ...
+  implementation 'co.decodable:decodable-pipeline-sdk:1.0.0-SNAPSHOT'
+  ...
+}
+...
 ----
 
 
@@ -77,7 +101,24 @@ Here's an example of a typical job implementation:
 
 [source,java,linenums]
 ----
-
+public static void main(String[] args) throws Exception {
+  StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+ 
+  DecodableStreamSource<PurchaseOrder> source = DecodableStreamSource.<PurchaseOrder>builder()
+    .withStreamName("purchase-orders")
+    .withDeserializationSchema(new JsonDeserializationSchema<>(PurchaseOrder.class))
+    .build();
+ 
+  DecodableStreamSink<PurchaseOrder> sink = DecodableStreamSink.<PurchaseOrder>builder()
+    .withStreamName("purchase-orders-processed")
+    .withSerializationSchema(new JsonSerializationSchema<>())
+    .build();
+ 
+  DataStream<PurchaseOrder> stream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "Purchase Orders Source")
+    .map(new PurchaseOrderProcessor());
+  stream.sinkTo(sink);
+  env.execute("Purchase Order Processor");
+}
 ----
 
 
@@ -91,7 +132,7 @@ Another managed Decodable connector could take the data from that stream and sen
 To learn more about the Decodable SDK for Custom Pipelines, see the link:https://decodableco.github.io/decodable-pipeline-sdk/api-docs/current/co/decodable/sdk/pipeline/package-summary.html[API documentation] for the project.
 
 
-=== Testing
+== Testing
 Good testability is a key requirement during modern application development.
 To that end, the SDK comes with a complete testing framework, letting you validate the logic of your stream processing job in end-to-end tests.
 The testing framework uses the link:https://testcontainers.com/[Testcontainers] project for spinning up the underlying infrastructure.
@@ -100,7 +141,48 @@ Here is a test for the stream processing job above:
 
 [source,java,linenums]
 ----
+@Testcontainers
+public class DataStreamJobTest {
 
+  private static final String PURCHASE_ORDERS = "purchase-orders";
+  private static final String PURCHASE_ORDERS_PROCESSED = "purchase-orders-processed";
+
+  @Container
+  public RedpandaContainer broker =
+    new RedpandaContainer("docker.redpanda.com/redpandadata/redpanda:v23.1.2");
+ 
+  @Test
+  public void shouldUpperCaseCustomerName() throws Exception {
+    TestEnvironment testEnvironment = TestEnvironment.builder()
+      .withBootstrapServers(broker.getBootstrapServers())
+      .withStreams(PURCHASE_ORDERS, PURCHASE_ORDERS_PROCESSED)
+      .build();
+
+    try (PipelineTestContext ctx = new PipelineTestContext(testEnvironment)) {
+      String value =
+        "{\n"
+        + "  \"order_id\" : 19001,\n"
+        + "  \"order_date\" : \"2023-06-09 10:18:38\",\n"
+        + "  \"customer_name\" : \"Yolanda Hagenes\",\n"
+        + "  \"price\" : 15.00,\n"
+        + "  \"product_id\" : 108,\n"
+        + "  \"order_status\" : false\n"
+        + "}";
+
+      // given
+      ctx.stream(PURCHASE_ORDERS).add(new StreamRecord<>(value));
+     
+      // when (as an example, PurchaseOrderProcessingJob upper-cases the customer name)
+      ctx.runJobAsync(PurchaseOrderProcessingJob::main);
+      StreamRecord<String> result =
+        ctx.stream(PURCHASE_ORDERS_PROCESSED).takeOne().get(30, TimeUnit.SECONDS);
+      ObjectNode purchaseOrder = (ObjectNode) new ObjectMapper().readTree(result.value());
+     
+      // then
+      assertThat(purchaseOrder.get("customer_name").asText()).isEqualTo("YOLANDA HAGENES");
+    }
+  }
+}
 ----
 
 
@@ -124,7 +206,9 @@ Next, deploy your job to Decodable using the Decodable CLI:
 
 [source,shell,linenums]
 ----
-
+decodable pipeline create \
+  --name purchase_order_processor \
+  --job-file target/my-first-decodable-custom-pipeline-0.1.jar
 ----
 
 
@@ -138,7 +222,7 @@ You can activate it either in the CLI like so:
 
 [source,shell,linenums]
 ----
-
+decodable pipeline activate <pipeline id>
 ----
 
 
@@ -149,7 +233,7 @@ image::decodable-sdk-3.webp[]
 After waiting a few moments, your job is running and processing purchase orders from the input stream and sending them to the output stream.
 
 
-=== Next Steps
+== Next Steps
 Today's Beta1 release marks the first step towards a fully supported and feature-rich SDK for Decodable Custom Pipelines.
 This is a perfect time for you to join the link:https://decodablecommunity.slack.com/ssb/redirect#/shared-invite/email[Decodable user community], sign up for Custom Pipelines, and give it a try.
 

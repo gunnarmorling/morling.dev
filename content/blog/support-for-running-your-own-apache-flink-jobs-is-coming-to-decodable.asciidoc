@@ -67,7 +67,37 @@ The following example code shows how this could look like (subject to change, th
 
 [source,java,linenums]
 ----
+public class CustomDecodablePipeline {
 
+  public static void main(String[] args) throws Exception {
+    StreamExecutionEnvironment env = StreamExecutionEnvironment
+        .getExecutionEnvironment();
+    GeoCodeService geoCodeService = ...; // Some geo-coding API
+
+    // Source: A managed Decodable stream
+    DecodableSource<Address> addresses = DecodableStreams.<Address>source()
+        .withName("addresses")
+        .withStartingOffsets(Offsets.EARLIEST)
+        .build();
+
+    // Sink: Another managed Decodable stream
+    DecodableSink<Address> addressesWithCoordinates = DecodableStreams.<Address>sink()
+        .withName("enrichedAddresses")
+        .build();
+
+    DataStream<Address> stream = env.fromSource(
+        addresses, WatermarkStrategy.noWatermarks(), "Addresses source");
+
+    // For each incoming address, enrich it with the coordinates from the
+    // geo-coding service; showing a simple synchronous call for illustration
+    // purposes; in production code, Flink’s Async I/O API should be used
+    stream.map(address -> address.withCoordinates(
+            geoCodeService.encode(address.asText())))
+        .sinkTo(addressesWithCoordinates);
+
+    env.execute("My custom Flink job");
+  }
+}
 ----
 _Listing 1: A Flink job using the upcoming Decodable SDK._
 

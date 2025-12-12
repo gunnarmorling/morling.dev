@@ -40,6 +40,8 @@ For processing webhook events in Decodable, we'll need three things:
 Let's dive into each of these elements in more detail, beginning with the stream.
 We can create one by going to the "Streams" view in the Decodable web UI and clicking "New Stream".
 
+image::decodable-webhooks-1.png[]
+
 Decodable's data model is strongly typed, with schemas describing the exact structure of each data flow.
 GitHub maintains a description of each event structure on their website (e.g., the link:https://docs.github.com/en/webhooks/webhook-events-and-payloads#push[push event]), and we could use this information to manually create a corresponding schema when creating the stream.
 But it's even simpler than that: the link:https://github.com/octokit/webhooks[octocat/webhooks] project provides an up-to-date, machine-readable link:https://unpkg.com/@octokit/webhooks-schemas/schema.json[JSON schema] for the Webhooks API.
@@ -52,7 +54,50 @@ It's an array with an element for each pushed commit, looking like so:
 
 [source,json,linenums]
 ----
-
+...
+"commits": [
+   {
+     "id": "472...3d0",
+     "tree_id": "0d2...0eb",
+     "distinct": true,
+     "message": "Some commit",
+     "timestamp": "2023-08-31T12:39:07+02:00",
+     "url": "https://github.com/gunnarmorling/decodable-webhook-demo/commit/472...3d0",
+     "author": {
+       "name": "Thuy Schamberger",
+       "email": "thuy.schamberger@example.com"
+     },
+     "committer": {
+       "name": "Gunnar Morling",
+       "email": "...",
+       "username": "gunnarmorling"
+     },
+     "added": ["some-file-5.txt"],
+     "removed": [],
+     "modified": []
+   },
+   {
+     "id": "48c...09a",
+     "tree_id": "c77...9dc",
+     "distinct": true,
+     "message": "Some commit",
+     "timestamp": "2023-08-31T12:39:08+02:00",
+     "url": "https://github.com/gunnarmorling/decodable-webhook-demo/commit/48c...09a",
+     "author": {
+       "name": "Gerry Marquardt",
+       "email": "gerry.marquardt@example.com"
+     },
+     "committer": {
+       "name": "Gunnar Morling",
+       "email": "...",
+       "username": "gunnarmorling"
+     },
+     "added": ["some-file-6.txt"],
+     "removed": [],
+     "modified": []
+   }
+]
+...
 ----
 
 
@@ -62,7 +107,41 @@ Note how the *commits* field of the stream schema precisely matches the event st
 
 [source,shell,linenums]
 ----
-
+decodable stream get f4ef1a03
+webhook_events
+  id                      f4ef1a03
+  description             input stream for REST events
+  type                    APPEND
+  schema
+    0  commits            ARRAY<
+                            ROW<
+                              `id` STRING,
+                              `tree_id` STRING,
+                              `distinct` BOOLEAN,
+                              `message` STRING,
+                              `timestamp` STRING,
+                              `url` STRING,
+                              `author` ROW<
+                                 `name` STRING,
+                                 `email` STRING, 
+                                 `date` STRING,
+                                 `username` STRING>,
+                              `committer` ROW<
+                                 `name` STRING, 
+                                 `email` STRING, 
+                                 `date` STRING,
+                                 `username` STRING>,
+                              `added` ARRAY<STRING>,
+                              `modified` ARRAY<STRING>,
+                              `removed` ARRAY<STRING>>> NOT NULL
+  partition key           <none>
+  watermark               <none>
+  properties
+    compaction.enable            false
+    partition.count              10
+    properties.compression.type  zstd
+  create time             2023-08-28T15:10:02Z
+  update time             2023-08-30T09:42:12Z
 ----
 
 
@@ -71,6 +150,8 @@ Note how the *commits* field of the stream schema precisely matches the event st
 With the stream in place, let's create an instance of the Decodable link:https://docs.decodable.co/docs/connector-reference-rest[REST source connector] which we'll use for ingesting the webhook events.
 This connector publishes an HTTP endpoint to which the events can be sent via POST requests.
 In the Decodable web UI, it is available under "Connections" → "New Connection" → "REST":
+
+image::decodable-webhooks-2.png[]
 
 The defaults provided by the wizard are fine, so we just need to click "Next", select the previously created stream as the destination for this connector, and specify a name for the new connection.
 Note that the connection is stopped initially, it still needs to be activated from the connections list view.
@@ -91,7 +172,30 @@ A simple worker which adds the required authorization header and wraps the webho
 
 [source,javascript,linenums]
 ----
+export default {
+  async fetch(request) {
+    const url = "https://<account>.api.decodable.co/v1alpha2/connections/<id>/events";
 
+    // wrap the event into an array
+    const json = await request.json();
+    const payload = { events: [json] };
+
+    // prepare a new request with the updated body and the bearer token header
+    const newRequestInit = {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: {
+        Authorization: "Bearer 5lR...m44",
+      },
+    };
+
+    // execute that new request
+    const newRequest = new Request(url, newRequestInit);
+    const response = await fetch(newRequest);
+
+    return response;
+  },
+};
 ----
 
 
@@ -107,7 +211,10 @@ The total number of commits per author in the stream can be easily expressed usi
 
 [source,sql,linenums]
 ----
-
+INSERT INTO commit_count_by_author
+SELECT c.author.name AS author, count(*) AS commits
+FROM webhook_events e, UNNEST(e.commits) AS c
+GROUP BY c.author.name
 ----
 
 
@@ -123,6 +230,8 @@ Finally, it's time to create the actual webhook in GitHub itself.
 This can be done under "Settings" → "Webhooks" of the repository.
 After specifying the Cloudflare Worker's URL as the payload URL and selecting "application/json" as the content type, we have everything configured for testing this data pipeline.
 
+image::decodable-webhooks-3.png[]
+
 If a commit gets pushed to the repository on GitHub, the webhook will be triggered, sending a push event to the Cloudflare worker.
 This wraps the request body, adds the authorization header, and sends the request to the Decodable REST connector.
 For each incoming event, the stream processing pipeline will be executed, emitting the updated commit count per author to the output stream.
@@ -130,7 +239,7 @@ For each incoming event, the stream processing pipeline will be executed, emitti
 At this point we could configure, for instance, an Elasticsearch sink connector for picking up the results from that stream and sending them over to an Elasticsearch cluster, where we could visualize them on a Kibana dashboard.
 But we can also take a look at a preview of the output stream within the Decodable platform itself, as demonstrated in this animation based on a small random commit creator I've built (note that the stream preview samples results, which is why the number of results goes up and down):
 
-
+image::decodable-webhooks-4.gif[]
 
 And that's it--we've set up a stream processing pipeline for processing GitHub webhook events, allowing us to react to events in a GitHub repository in real-time and drive all kinds of interesting use cases based on that.
 Whether its analyses as shown above, alerting, or feeding data to machine learning models, the sky's the limit.

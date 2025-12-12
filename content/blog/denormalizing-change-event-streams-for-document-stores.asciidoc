@@ -27,8 +27,11 @@ This means that data needs to be denormalized at ingestion time, nesting joined 
 This allows to serve queries solely from one given data collection at a time, for instance an index in OpenSearch.
 
 <!--more-->
-_Fig._
-_1: Data pipeline from RDBMS to search index with denormalization step_In a link:https://www.youtube.com/watch?v=ICJ7-YyaC-4[Data Streaming Quick Tips episode] a few months ago, I showed how to implement a user-defined function (UDF) for Apache Flink for exactly this purpose: it takes a list of values and emits them as a strongly-typed array.
+
+.Data pipeline from RDBMS to search index with denormalization step
+image::denormalize-pipeline.webp[]
+
+In a link:https://www.youtube.com/watch?v=ICJ7-YyaC-4[Data Streaming Quick Tips episode] a few months ago, I showed how to implement a user-defined function (UDF) for Apache Flink for exactly this purpose: it takes a list of values and emits them as a strongly-typed array.
 That way, you can join two or more data streams and create nested data structures from that.
 In scenarios like above, this function allows you to take the change event streams from multiple tables of your source database and create a denormalized representation of the same data in a single index in a document store.
 
@@ -49,8 +52,10 @@ If you don't have one yet you can link:https://app.decodable.co/-/accounts/creat
 The data model is similar to the one from the link:https://www.youtube.com/watch?v=ICJ7-YyaC-4[original quick tip video] —there are three tables in MySQL, `purchase_orders` , `order_lines` , and`products`.
 There's a many-to-one relationship between purchase orders and order lines, as well as a many-to-one relationship between order lines and products.
 
-_Fig._
-_2: Data model in the source MySQL database_The change streams for the three tables will be ingested into Decodable, where we'll join them with a simple link:https://docs.decodable.co/pipelines/create-a-pipeline.html[SQL pipeline], using the `ARRAY_AGG()` function for emitting a single document for each purchase order, with all its lines and their product data as elements of an embedded array.
+.Data model in the source MySQL database
+image::denormalize-datamodel.webp[]
+
+The change streams for the three tables will be ingested into Decodable, where we'll join them with a simple link:https://docs.decodable.co/pipelines/create-a-pipeline.html[SQL pipeline], using the `ARRAY_AGG()` function for emitting a single document for each purchase order, with all its lines and their product data as elements of an embedded array.
 The OpenSearch sink connector will be used for updating (or removing) the data in the corresponding index in OpenSearch, whenever there's a change to a record in any of the source tables.
 The denormalized data in the index will look like this:
 
@@ -109,9 +114,10 @@ This launches a MySQL database and an OpenSearch cluster on your local machine.
 In order to make these resources available to Decodable running in the cloud, we are going to expose them via ngrok.
 This tool creates tunnels for the two resources, making them publicly accessible (our resources are password protected, which is good enough for the purposes of this example; needless to say that you should put strong security into place for a production deployment).
 Here is an overview of all the components involved:
+.Solution overview
+image::denormalize-solution.webp[]
 
-_Fig._
-_3: Solution overview_Now grab your auth token link:https://dashboard.ngrok.com/get-started/your-authtoken[from the ngrok dashboard].
+Now grab your auth token link:https://dashboard.ngrok.com/get-started/your-authtoken[from the ngrok dashboard].
 Open up the _ngrok.yml_ file which is in the same folder as the Docker Compose file and add your auth token on line 2 where indicated.
 
 Then start the tunnels like so:
@@ -167,18 +173,24 @@ As the name suggests, this is a logical stream of messages, essentially like a K
 
 Select "Sync" for the tables`ecom.purchase_orders, ecom.order_lines` and`ecom.products`, then click "Next".
 
-_Fig._
-_4: Discovered source tables and corresponding streams in Decodable_Specify a name for the new connection, for instance`ecom_source`, then click "Create Connection".
+.Discovered source tables and corresponding streams in Decodable
+image::denormalize-source-streams.webp[]
+
+Specify a name for the new connection, for instance`ecom_source`, then click "Create Connection".
 This connection will now link:https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/[subscribe to the transaction log] of the source database and ingest any change events from the three tables.
 
 Click "Start" to fire up the connector and "Start" again on the next dialog (the defaults are fine).
 After a few moments you'll see the connector switch to "Running" and the metrics show data is being fetched successfully:
 
-_Fig._
-_5: Running connector with output metrics_To examine the incoming data, click on "Outbound to 3 streams", select any one of the streams and click "Run Preview":
+.Running connector with output metrics
+image::denormalize-connector-running.webp[]
 
-_Fig._
-_6: Preview of data ingested into Decodable_When starting up, the connector automatically took an initial snapshot of the data at this point in time.
+To examine the incoming data, click on "Outbound to 3 streams", select any one of the streams and click "Run Preview":
+
+.Preview of data ingested into Decodable
+image::denormalize-preview.webp[]
+
+When starting up, the connector automatically took an initial snapshot of the data at this point in time.
 If you now were to do any changes, for instance an update to an existing purchase order record, the state in the corresponding stream would reflect this shortly thereafter.
 
 
@@ -210,8 +222,10 @@ For each order line, a SQL `ROW` is created with the line and product attributes
 You can take a look at the results of this query by clicking on the "Run Preview" button.
 Click on the triangle to the right of the button and choose "Earliest" as the starting position in the drop-down, as otherwise you wouldn't see any results until there are any actual data changes in the source MySQL database.
 
-_Fig._
-_7: SQL editor with preview of the query results_Note that the fields of the array elements still use default names like `EXPR$0`.
+.SQL editor with preview of the query results
+image::denormalize-array-agg-query.webp[]
+
+Note that the fields of the array elements still use default names like `EXPR$0`.
 This is because Flink SQL currently does not allow for the specification of aliases within `ROW` constructor calls.
 We'll take care of this in a second.
 
@@ -252,8 +266,10 @@ Click "Save" and go back to your newly created pipeline.
 Make sure to set the start position to "Earliest", and then click Start.
 After a few moments, the pipeline will be in state "Running" and you'll see the metrics update on the Pipeline:
 
-_Fig._
-_8: Running SQL pipeline with input and output metrics_You can also take a look at the joined records in the `ecom__orders_with_lines` stream.
+.Running SQL pipeline with input and output metrics
+image::denormalize-pipeline-running.webp[]
+
+You can also take a look at the joined records in the `ecom__orders_with_lines` stream.
 
 
 == Creating the Sink Connection
@@ -266,8 +282,10 @@ Specify the connection details: +
 * *User name:* `admin`
 * *Password:* `admin` (as with the source connection password, create a Decodable secret for this)
 
-_Fig._
-_9: Setting up an OpenSearch sink connector_Click "Next" and select the `ecom_orders_with_lines` stream as the source for this connection.
+.Setting up an OpenSearch sink connector
+image::denormalize-sink-config.webp[]
+
+Click "Next" and select the `ecom_orders_with_lines` stream as the source for this connection.
 Click "Next" twice more and on the final screen specify a name for this connection, for instance`ecom_sink`.
 Start the connection, choosing "Earliest" as the starting position.
 Once the connection is running, you'll see HTTP requests being logged by ngrok in the terminal.
@@ -378,12 +396,16 @@ The advantage is the higher query performance, and thanks to the streaming query
 But of course, you can also take advantage of the powerful query capabilities of OpenSearch, for instance fuzzy and proximity search, pagination, query string completion, results scoring and highlighting, geo-spatial queries, and much more.
 As a very basic example, this shows a simple phrase query with results highlighting in the OpenSearch Dev Tools (accessible at link:http://localhost:5601/app/dev_tools#/console[http://localhost:5601/app/dev_tools#/console]):
 
-_Fig._
-_10: Fuzzy query in the OpenSearch Dev Tools_And it doesn't stop there; ingesting your data into a system like OpenSearch enables a wide range of analytics and dashboarding use cases.
+.Fuzzy query in the OpenSearch Dev Tools
+image::denormalize-opensearch-query.webp[]
+
+And it doesn't stop there; ingesting your data into a system like OpenSearch enables a wide range of analytics and dashboarding use cases.
 For example, building a dashboard which shows the count of purchase orders with items in specific categories just takes a few clicks, updated automatically in real-time as your operational data changes:
 
-_Fig._
-_11: An OpenSearch dashboard for the counts of orders with items in specific categories_This concludes this experiment for setting up a real-time data movement and processing pipeline on Decodable.
+.An OpenSearch dashboard for the counts of orders with items in specific categories
+image::denormalize-dashboard.webp[]
+
+This concludes this experiment for setting up a real-time data movement and processing pipeline on Decodable.
 Once you are done, don't forget to stop and clean up all the involved resources: +
 
 * Stop and delete the connections and pipeline in Decodable
