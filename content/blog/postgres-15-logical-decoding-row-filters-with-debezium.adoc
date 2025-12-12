@@ -48,12 +48,14 @@ The Postgres community took care of this super fast: a bug fix has already been 
 
 == Using Logical Decoding Row Filters With Debezium
 To follow along, check out the link:https://github.com/gunnarmorling/postgres-publication-filtering[postgres-publication-filtering] demo project from GitHub.
-It contains a Docker Compose file for running Postgres as well as Apache Kafka and Kafka Connect with Debezium::
+It contains a Docker Compose file for running Postgres as well as Apache Kafka and Kafka Connect with Debezium:
 
 
-[source,json,linenums]
+[source,bash,linenums]
 ----
-
+git clone git@github.com:gunnarmorling/postgres-publication-filtering.git
+cd postgres-publication-filtering
+docker-compose up --build
 ----
 
 
@@ -69,18 +71,22 @@ As Debezium can only create publications with the default settings (at least for
 To do so, launch a Postgres session via pgcli:
 
 
-[source,json,linenums]
+[source,bash,linenums]
 ----
-
+docker run --tty --rm -i \
+   --network postgres-publication-filtering_default \
+   quay.io/debezium/tooling:1.2 \
+   bash -c 'pgcli postgresql://postgresuser:postgrespw@postgres:5432/postgresdb'
 ----
 
 
 Then create a publication like so:
 
 
-[source,json,linenums]
+[source,sql,linenums]
 ----
-
+SET search_path TO inventory;
+CREATE PUBLICATION inventory_publication FOR TABLE products WHERE (quantity < 10);
 ----
 
 
@@ -96,7 +102,9 @@ Now let's take a look at the required Debezium configuration:
 
 [source,json,linenums]
 ----
-
+"plugin.name" : "pgoutput",
+"publication.autocreate.mode" : "disabled",
+"publication.name" : "inventory_publication",
 ----
 
 
@@ -107,7 +115,7 @@ This can be done via the following configuration:
 
 [source,json,linenums]
 ----
-
+"snapshot.select.statement.overrides" : "inventory.products:WHERE quantity < 10"
 ----
 
 
@@ -116,7 +124,27 @@ Altogether, the connector configuration looks like this:
 
 [source,json,linenums]
 ----
-
+{
+  "name": "inventory-connector",
+  "config": {
+    "connector.class":"io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "postgresuser",
+    "database.password": "postgrespw",
+    "database.dbname" : "postgresdb",
+    "topic.prefix": "dbserver1",
+    "schema.include.list": "inventory",
+    "table.include.list" : "inventory.products,inventory.customers,inventory.test",
+    "plugin.name" : "pgoutput",
+    "publication.autocreate.mode" : "disabled",
+    "publication.name" : "inventory_publication",
+    "snapshot.select.statement.overrides" : "inventory.products",
+    "snapshot.select.statement.overrides.inventory.products" :
+        "SELECT * FROM inventory.products WHERE quantity < 10"
+  }
+}
 ----
 
 
@@ -124,41 +152,82 @@ Now register a connector instance with this configuration.
 If you have link:https://github.com/kcctl/kcctl[kcctl] 🧸 installed (which I highly recommend), that's as simple as that:
 
 
-[source,json,linenums]
+[source,bash,linenums]
 ----
-
+kcctl apply -f inventory-connector.json
 ----
 
 
 Alternatively, use curl to post the configuration directly to Kafka Connect's REST API:
 
 
-[source,json,linenums]
+[source,bash,linenums]
 ----
-
+curl -i -X POST -H "Accept:application/json" -H"Content-Type:application/json" \
+    http://localhost:8083/connectors/ -d @inventory-connector.json
 ----
 
 == Observing Filtered Change Events
 Return to your Postgres session and display the contents of the products table:
 
 
-[source,json,linenums]
+[source,sql,linenums]
 ----
-
+postgresdb> select id, name, quantity from inventory.products;
++------+--------------------+------------+
+| id   | name               | quantity   |
+|------+--------------------+------------|
+| 101  | scooter            | 5          |
+| 102  | car battery        | 10         |
+| 103  | 12-pack drill bits | 44         |
+| 104  | hammer             | 12         |
+| 105  | hammer             | 42         |
+| 106  | hammer             | 37         |
+| 107  | rocks              | 9          |
+| 108  | jacket             | 19         |
+| 109  | spare tire         | 28         |
++------+--------------------+------------+
+SELECT 9
+Time: 0.050s
 ----
 
 
 Out of those nine product items, only those with a quantity of less than ten show up as snapshot events in the corresponding Kafka topic:
 
 
+[source,bash,linenums]
+----
+docker run --tty --rm \
+  --network postgres-publication-filtering_default \
+  quay.io/debezium/tooling:1.2 \
+  kafkacat -b kafka:9092 -C -o beginning -q \
+  -t dbserver1.inventory.products | jq '.payload | { op, ts_ms, after }'
+----
+
 [source,json,linenums]
 ----
-
-----
-
-[source,json,linenums]
-----
-
+{
+  "op": "r",
+  "ts_ms": 1669375471236,
+  "after": {
+    "id": 101,
+    "name": "scooter",
+    "description": "Small 2-wheel scooter",
+    "weight": 3.14,
+    "quantity": 5
+  }
+}
+{
+  "op": "r",
+  "ts_ms": 1669375471238,
+  "after": {
+    "id": 107,
+    "name": "rocks",
+    "description": "box of assorted rocks",
+    "weight": 5.3,
+    "quantity": 9
+  }
+}
 ----
 
 
@@ -168,7 +237,10 @@ First, insert a few records into the table:
 
 [source,sql,linenums]
 ----
-
+INSERT INTO products
+VALUES (DEFAULT, 'deck chair', 'A cozy wooden deck chair', 15.7, 7),
+			(DEFAULT, 'paint', 'A bucket of white paint', 5.0, 15),
+			(DEFAULT, 'lamp', 'A green library style lamp', 4.8, 3);
 ----
 
 
@@ -178,7 +250,10 @@ Things get a bit more interesting when doing some updates:
 
 [source,sql,linenums]
 ----
-
+UPDATE products SET quantity = 6 WHERE NAME = 'deck chair';
+UPDATE products SET quantity = 14 WHERE NAME = 'paint';
+UPDATE products SET quantity = 9 WHERE NAME = 'paint';
+UPDATE products SET quantity = 11 WHERE NAME = 'lamp';
 ----
 
 
@@ -187,7 +262,51 @@ The following three events are emitted to Kafka for those:
 
 [source,json,linenums]
 ----
-
+{
+  "op": "u",
+  "ts_ms": 1669382021989,
+  "before": {
+    "id": 110,
+    "name": "deck chair",
+    "description": "A cozy wooden deck chair",
+    "weight": 15.7,
+    "quantity": 7
+   },
+  "after": 
+   {
+     "id": 110,
+    "name": "deck chair",
+    "description": "A cozy wooden deck chair",
+    "weight": 15.7,
+  "quantity": 6
+   }
+}
+{
+  "op": "c",
+  "ts_ms": 1669382021990,
+  "before": null,
+  "after": 
+  {
+    "id": 111,
+    "name": "paint",
+    "description": "A bucket of white paint",
+    "weight": 5,
+    "quantity": 9
+  }
+}
+{
+  "op": "d",
+  "ts_ms": 1669382021990,
+  "before": 
+  {
+    "id": 112,
+    "name": "lamp",
+    "description": "A green library style lamp",
+    "weight": 4.8,
+    "quantity": 3
+  },
+"after": null
+}
 ----
 
 
@@ -205,7 +324,8 @@ Finally, let's delete some product items:
 
 [source,sql,linenums]
 ----
-
+DELETE FROM products WHERE NAME = 'lamp';
+DELETE FROM products WHERE NAME = 'deck chair';
 ----
 
 
@@ -230,4 +350,4 @@ Please reach out to us if you think this would be an interesting capability to h
 If you would like to get started with your own experimentations around 15 Postgres row filters using Debezium, you can find the complete source code of the example shown above in link:https://github.com/gunnarmorling/postgres-publication-filtering[this repository] on GitHub.
 You can find more information about row filters in link:https://www.postgresql.fastware.com/blog/introducing-publication-row-filters[this blog post] ; also refer to link:http://amitkapila16.blogspot.com/2022/11/logical-replication-improvements-in.html[this post] to learn more about this and other new features related to logical replication in Postgres 15.
 
-_Many thanks to_ link:https://twitter.com/rmetzger_[Robert Metzger] _for his feedback while writing this post!_
+_Many thanks to link:https://twitter.com/rmetzger$$_$$[Robert Metzger] for his feedback while writing this post!_
