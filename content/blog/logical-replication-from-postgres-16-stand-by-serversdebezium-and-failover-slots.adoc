@@ -22,7 +22,7 @@ a situation where your primary Postgres server becomes unavailable and a stand-b
 If you want to learn more about logical replication in general, and why and how to use it with stand-by servers in Postgres 16, then I suggest heading over to  link:/blog/logical-replication-from-postgres-16-stand-by-servers-part-1-of-2[part one]  of this blog series before continuing here.
 
 
-=== Stand-By Logical Replication With Debezium
+== Stand-By Logical Replication With Debezium
 The beauty of Postgres logical replication is that not only other Postgres instances can serve as the consumer of a replication stream, but that also other clients can subscribe to a replication slot for ingesting realtime change event feeds from Postgres.
 link:https://debezium.io/[Debezium] , offering CDC support for many databases, including Postgres, makes use of that for exposing change event streams via Apache Kafka, but also—via its  link:https://debezium.io/documentation/reference/stable/operations/debezium-server.html[Debezium Server]  component—to other kinds of messaging and streaming platforms such as AWS Kinesis, Apache Pulsar, NATS, and others.
 So let’s quickly test how to stream changes from a Postgres stand-by with Debezium.
@@ -205,7 +205,7 @@ And shortly thereafter, the corresponding change event should show up in the Kaf
 At this point, you could hook up that change event stream with  link:https://flink.apache.org/[Apache Flink] , or the  link:https://docs.decodable.co/docs/kafka[Decodable Kafka source connector]  for feeding it into a real-time stream processing pipeline, but I’ll leave that for another day 🙂.
 
 
-=== Towards Fail-Over Slots
+== Towards Fail-Over Slots
 Postgres’ support for logical replication has been  link:https://amitkapila16.blogspot.com/2023/09/evolution-of-logical-replication.html[built out significantly]  over the last few years.
 One thing still is missing, though: failover slots.
 Logical replication slots on the primary are not propagated to stand-bys.
@@ -261,7 +261,7 @@ Specifically, when setting up the stand-by slot, it will in all likelihood be on
 To do so, wait for the next LSN to be confirmed by the primary slot, make sure this LSN has been replicated to the stand-by, and then advance the stand-by slot to that LSN.
 
 
-=== Wrap-Up
+== Wrap-Up
 Logical replication from Postgres stand-by servers has been a long awaited functionality, and it finally shipped with Postgres 16.
 Not only does it allow you to build chains of Postgres replicas (one stand-by server subscribing to another), but also non-Postgres clients, such as Debezium are not limited any longer to solely being able to connect to primary Postgres instances.
 This can be very useful for the purposes of load distribution or in situations where you prefer a CDC tool not to connect directly to your primary database.

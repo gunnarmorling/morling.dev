@@ -33,7 +33,7 @@ For processing webhook events in Decodable, we’ll need three things:
 * A  link:https://docs.decodable.co/docs/sqlpipeline-reference[pipeline] , which processes the elements of the stream, aggregating and counting commits by author, and emits the results to another (output) stream.
 
 
-=== Creating a Stream
+== Creating a Stream
 Let’s dive into each of these elements in more detail, beginning with the stream.
 We can create one by going to the “Streams” view in the Decodable web UI and clicking “New Stream”.
 
@@ -64,7 +64,7 @@ Note how the *commits* field of the stream schema precisely matches the event st
 
 
 
-=== Creating a REST Connection
+== Creating a REST Connection
 With the stream in place, let’s create an instance of the Decodable  link:https://docs.decodable.co/docs/connector-reference-rest[REST source connector]  which we’ll use for ingesting the webhook events.
 This connector publishes an HTTP endpoint to which the events can be sent via POST requests.
 In the Decodable web UI, it is available under “Connections” → “New Connection” → “REST”:
@@ -95,7 +95,7 @@ A simple worker which adds the required authorization header and wraps the webho
 The exact endpoint URL can be retrieved from the connector settings, while the  link:https://docs.decodable.co/docs/connector-reference-rest?_gl=1*7roel9*_ga*NTI1NjU5MDcyLjE2OTMyMTU2NDQ.*_ga_G4YHDQYS1G*MTY5MzM5NTgxNy42LjEuMTY5MzM5NTgxOC41OS4wLjA.[REST connector documentation]  discusses in detail how to obtain the required bearer token.
 
 
-=== Creating a Pipeline
+== Creating a Pipeline
 The last missing piece within Decodable is a pipeline for processing the incoming webhook events.
 Based on  link:https://flink.apache.org[Apache Flink] , Decodable supports stream processing pipelines  link:https://docs.decodable.co/docs/create-a-pipeline[written in SQL] , as well as  link:https://www.decodable.co/blog/introducing-the-decodable-sdk-for-custom-pipelines[custom Flink jobs]  for more advanced requirements.
 For the given task, a SQL pipeline is an excellent fit.
@@ -115,7 +115,7 @@ We then just need to group the rows by author and emit the author name and commi
 Similar to connections, pipelines are in a stopped state  after being created, so they must be started once they’re ready to be used.
 
 
-=== Creating a GitHub Webhook
+== Creating a GitHub Webhook
 Finally, it’s time to create the actual webhook in GitHub itself.
 This can be done under “Settings” → “Webhooks” of the repository.
 After specifying the Cloudflare Worker’s URL as the payload URL and selecting “application/json” as the content type, we have everything configured for testing this data pipeline.

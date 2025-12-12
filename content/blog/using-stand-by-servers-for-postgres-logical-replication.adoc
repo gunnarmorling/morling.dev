@@ -24,7 +24,7 @@ I am going to take a closer look at this new feature in this two-part blog serie
 * link:/blog/logical-replication-from-postgres-16-stand-by-servers-part-2-of-2[Part II] : Discussing how to use logical replication on Postgres stand-bys with Debezium and how to handle failover scenarios
 
 
-=== What is Postgres Logical Replication?
+== What is Postgres Logical Replication?
 Let’s start with the fundamentals.
 Replication is the process of synchronizing all the data from one database server to one or more other servers, for the purposes of ensuring high availability (HA)—if the primary server fails, one of the stand-bys can take over—and load distribution, as replicas can serve read requests.
 When it comes to replication in Postgres, it supports two kinds of continuous replication from primary to replicas: streaming and logical replication.
@@ -54,7 +54,7 @@ This is how tools such as Debezium implement change data capture (CDC) for Postg
 Having established what logical replication is and why it is such an important part of the data engineering toolbox, let’s explore why it is so interesting that Postgres now supports logical replication from stand-by servers and how to set this up.
 
 
-=== Why Use Logical Replication On Stand-By Servers?
+== Why Use Logical Replication On Stand-By Servers?
 The first and most important reason for using logical replication from stand-by servers is load distribution.
 When you have many logical replication slots and corresponding clients, this potentially can create an unduly heavy load on the primary database server.
 In that case it can be beneficial to set up the replication slots on one or even multiple read replicas of the primary, thus distributing resource consumption (CPU, network bandwidth) across multiple machines.
@@ -77,7 +77,7 @@ _If you want to use these features, then you’ll need to create a replication s
 Enough with all the theory, let’s have a look at logical replication on stand-bys in practice, starting with setting it up.
 
 
-=== Provisioning a Testing Environment
+== Provisioning a Testing Environment
 As a testing environment I am going to use  link:https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/postgresql-versions.html[Postgres 16 on Amazon RDS]  (engine version “PostgreSQL 16.1-R1” at the time of writing), as this makes setting up a Postgres primary and an associated read replica a matter of just a few clicks.
 A free tier instance type like t4g.micro will do for this experiment.
 Instead of the pre-configured Multi-AZ cluster deployment option (which isn’t available in the free tier anyways), a single DB instance can be used, with a manually created replica.
@@ -97,7 +97,7 @@ If you would like to work with a local set-up instead, you can follow the steps 
 Set `wal_level` to logical in the _postgresql.conf_ of the stand-by in this case.
 
 
-=== Testing Things Out
+== Testing Things Out
 With our database cluster up and running, let’s take a look at the existing replication slots on the primary and on the stand-by server:
 
 

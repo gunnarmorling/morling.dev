@@ -28,7 +28,7 @@ These are some of the questions I’d like to answer in this post by developing 
 * *Id-only events,* which contain only the id (primary key) of a changed record.
 
 
-=== Full Events
+== Full Events
 Let’s start with the type of event which most users of CDC probably will be familiar with: full, or complete, data change events.
 Whenever something changes to a record in a source datastore, such a change event will contain the complete state of that record.
 As an example, let’s consider a table `customers` with columns `id`, `first_name`, and `last_name`, as well as an array-typed column `emails`.
@@ -79,7 +79,7 @@ As an example, in order to emit the old row version in change events with Postgr
 *Data Change Events and Apache Kafka:* When transferring data change events via partitioned systems such as Apache Kafka, you also need to define a key for your messages. It defines which partition of a change event topic a record will be sent to, ensuring correct ordering of all the records with the same key. For data change events, the key should be derived from the primary key of the represented record in the source data store. That way, all change events for one record will go into one and the same partition of the corresponding change event topic, and consumers will receive them in the exact same order as they occurred in the source database.
 
 
-=== Delta Events
+== Delta Events
 Let’s look at delta events, or partial change events, next.
 They don’t contain the full state of the represented record, but only those columns or fields whose value actually changed as well as the record’s id.
 In other words, they describe exactly what has changed compared to the previous version of a record (but nothing more).
@@ -138,7 +138,7 @@ One example is Debezium’s connector for Postgres, which  link:https://debezium
 Stateful stream processing as described above can help to shield consumers from this behavior and always expose complete events to event consumers.
 
 
-=== Id-only Events
+== Id-only Events
 The last and most basic form of a data change event are id-only events.
 They merely describe which record in the source database was affected by a change.
 For this purpose, all which the event must contain is the id of the record, for instance, the primary key value of a row in an RDBMS):
@@ -190,7 +190,7 @@ Before comparing the three types of data change events and discussing their indi
 data which describes contextual information for an event.
 
 
-=== Change Event Metadata
+== Change Event Metadata
 Besides the actual change event payload, representing the data change itself, it often is useful to have additional metadata for an event.
 This typically includes:
 
@@ -243,7 +243,7 @@ That way, queries against the sink data store are subject to the same isolation 
 Another interesting metadata field is the `sequence` attribute emitted by Debezium’s Postgres connector, which can be used by clients for deduplication in data pipelines with at-least once semantics.
 
 
-=== Comparison
+== Comparison
 Having explored the three kinds of data change event, which one should you use?
 As so often, there is not an universal answer to that.
 Each of the types has its respective advantages and disadvantages and you’ll need to make an informed decision based on your specific context.

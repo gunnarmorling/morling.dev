@@ -37,7 +37,7 @@ Their state on the replica is kept in sync with the upstream slot on the primary
 This is really great news for using tools like Debezium (and by extension, data platforms such as Decodable, which provides a fully-managed  link:https://docs.decodable.co/connect/source/postgres-cdc.html[Postgres CDC connector]  based on Debezium) in HA scenarios, so let’s take a closer look at how this works.
 
 
-=== Hello, Failover Slots!
+== Hello, Failover Slots!
 Let’s start by exploring failover slots solely from the perspective of using Postgres’ SQL interface to logical replication.
 If you want to follow along, check out  link:https://github.com/decodableco/examples/tree/main/failover-slots[this project]  from the Decodable examples repository.
 It contains a  link:https://github.com/decodableco/examples/blob/main/failover-slots/docker-compose.yaml[Docker Compose file]  which brings up a Postgres primary and a read replica (based on  link:https://medium.com/@eremeykin/how-to-setup-single-primary-postgresql-replication-with-docker-compose-98c48f233bbf[this set-up]  by Peter Eremeykin, which makes it really easy to spin up an ephemeral Postgres cluster for testing purposes), as well as a few other components which we’ll use later on.
@@ -246,7 +246,7 @@ Only after promoting a replica to the primary, clients can connect to that slot 
 Let’s give this a try by setting up an instance of the Decodable Postgres CDC connector next!
 
 
-=== Failover Slots in Decodable
+== Failover Slots in Decodable
 Decodable is a fully managed realtime data platform based on Apache Flink.
 It offers  link:https://docs.decodable.co/connections.html[managed connectors]  for a wide range of source and sink systems, allowing you to build robust and efficient ETL pipelines with ease.
 Its Postgres CDC connector is using Debezium under the hood, which in turn uses logical replication for ingesting data change events from Postgres.
@@ -487,7 +487,7 @@ If you retrieve the state of the replication state again, using the same query a
 +----------+--------------------+-----------+--------+----------+-------------+----------+--------+---------------------+
 ----
 
-=== Wrapping Up
+== Wrapping Up
 Failover slots are an essential part to using Postgres and logical replication in HA scenarios.
 Added in Postgres 17, they allow logical replication clients such as Debezium to seamlessly continue streaming change events after a database fail-over, ensuring no events are lost in the process.
 This renders previous solutions such as manually synchronizing slots on a standby server (as supported since Postgres 16) or external tools such as  link:https://github.com/EnterpriseDB/pg_failover_slots[pg_failover_slots]  obsolete (although the latter still comes in handy if you are on an older Postgres version and can’t upgrade to 17 just yet).

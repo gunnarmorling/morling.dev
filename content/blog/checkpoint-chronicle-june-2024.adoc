@@ -23,58 +23,58 @@ Feel free to send our way any choice nuggets that you think we should feature in
 _I’m going to do something a bit different and open with some coverage of the broader data ecosystem, because it’s been a busy few weeks!_
 
 
-=== Data Ecosystem
+== Data Ecosystem
 
-==== Catalogs
+=== Catalogs
 * Databricks and Snowflake each announced the intention to open-source their catalog implementations ( link:https://www.databricks.com/blog/open-sourcing-unity-catalog[Unity]  and  link:https://www.snowflake.com/blog/introducing-polaris-catalog/[Polaris] , respectively).
 * Polaris is not yet available open-source, but there’s a nice write up from Sem Sinchenko of  link:https://semyonsinchenko.github.io/ssinchenko/post/uniticatalog-first-look/[their initial experiences with Unity] .
 * Chris Riccomini has  link:https://materializedview.io/p/begun-the-catalog-wars-have[a good explainer of the importance of catalogs]  in data architectures.
 
 
-==== Table Formats
+=== Table Formats
 * As well as announcing the open-sourcing of Unity, Databricks  link:https://www.databricks.com/company/newsroom/press-releases/databricks-agrees-acquire-tabular-company-founded-original-creators[announced the acquisition of Tabular] . This is the company founded by Ryan Blue, the original creator of Apache Iceberg. What this means for Iceberg is going to be fascinating to see. Will Databricks use the Iceberg expertise that they’ve now got to advance the format in parallel with their own Delta Lake, or perhaps just evolve intra-compatibility?
 * If you’re not familiar with Iceberg, there’s  link:https://seattledataguy.substack.com/p/apache-iceberg-what-is-it[a nice primer]  from Seattle Data Guy, and you can see it in action in this blog that I wrote about  link:https://www.decodable.co/blog/kafka-to-iceberg-with-decodable[writing Kafka data to Iceberg] .
 * There’s an interesting analysis from Confluent—who are backing Iceberg with their TableFlow product—looking at whether  link:https://medium.com/confluent/will-apache-iceberg-win-the-table-format-war-01f6ff0d556d?source=rss----09dcc6e07db7---4[Apache Iceberg will win over Delta Lake]  (tl;dr: yes). That said, plenty of vendors are hedging their bets, with BigQuery recently announcing  link:https://www.databricks.com/blog/bigquery-adds-first-party-support-delta-lake[first-party support for Delta Lake] .
 * Lastly, there were cries of “don’t forget us!” from the Apache Hudi crowd, telling us that Hudi is  link:https://www.onehouse.ai/blog/apache-hudi-the-open-data-lakehouse-platform-we-need[the Open Data Lakehouse Platform We Need] .
 
 
-==== And finally…
+=== And finally…
 * link:https://redpanda.com/press/redpanda-acquires-benthos[Redpanda acquired Benthos]  and swiftly rebranded it as RedPanda Connect with some licensing changes, prompting competitor WarpStream to  link:https://www.warpstream.com/blog/announcing-bento-the-open-source-fork-of-the-project-formerly-known-as-benthos[fork it] .
 * In all of this,  link:https://data.techcommunitycontent.com/shades-of-open-source-understanding-the-many-meanings-of-open-79b944363c07[Alex Merced’s article about open source]  is particularly timely. He explains well what open source means, how it's governed, and its relationship with commercial entities—relevant to the catalog announcements, table formats, and Benthos acquisition.
 
 
-=== Stream Processing, Streaming SQL, and Streaming Databases
+== Stream Processing, Streaming SQL, and Streaming Databases
 * A solid post from Maciej Maciejko looking at several aspects of  link:https://getindata.com/blog/optimizing-flink-sql-joins-state-management-efficient-checkpointing/[optimizing Flink SQL] .
 * Jaehyeon Kim writes some excellent hands-on articles and  link:https://jaehyeon.me/blog/2024-05-30-beam-deploy-1/[this one about PyFlink]  is well worth a read—and complements Gunnar's link:https://www.decodable.co/blog/getting-started-with-pyflink-on-kubernetes[article about PyFlink]  from last year well.
 * I do enjoy a good methodical troubleshooting story, and this one from Matvey Mitnitsky about  link:https://medium.com/@matvey.mtn/fixing-kafka-streams-uneven-tasks-distribution-at-logz-io-50e7ac071b5b[fixing Kafka Streams uneven tasks distribution]  is a good read.
 * This  link:https://medium.com/@adam.bellemare/preventing-and-fixing-bad-data-in-event-streams-part-1-27bf2a99b48e[article from Adam Bellemere]  does a really good job of outlining the kind of problem scenarios that can occur with bad data, and the differences in handling it with batch vs stream processing (plus it has some excellent memes 😉). If you’re interested in this area then take a look at the concept of Write-Audit-Publish too; I  link:https://lakefs.io/blog/data-engineering-patterns-write-audit-publish/[wrote about this last year] .
 
 
-=== Event Streaming
+== Event Streaming
 * Walmart have been using Kafka for many years, and share some really useful experiences and suggestions in this article about  link:https://medium.com/walmartglobaltech/reliably-processing-trillions-of-kafka-messages-per-day-23494f553ef9[Reliably Processing Trillions of Kafka Messages Per Day] .
 * An interesting look at how booking.com use  link:https://medium.com/booking-com-development/events-as-the-4th-pillar-of-booking-observability-platform-f41480a68f5a?source=rss----1c36c35f9c76---4[events as part of their observability strategy] .
 * Getting metrics out of Kafka clients has previously been limited to what you could do with JMX. KIP-714 proposes improvements in this area, adding support for OpenTelemetry. My friend and former colleague Ricardo Ferreira has done a nice writeup of it in  link:https://community.aws/content/2i3i0osdRihttgQ8AZii6F0Bv4F/kip-714-keep-your-kafka-clusters-close-and-your-kafka-clients-closer[this article] .
 
 
-=== Data Platforms and Architecture
+== Data Platforms and Architecture
 * As an active user of Reddit, and a mod over on the  link:https://old.reddit.com/r/apachekafka/[r/apachekafka subreddit] , I’m always particularly interested to learn more about the platform itself. This blog from Stephan Weinwurm and colleagues in the engineering team at Reddit explains  link:https://www.reddit.com/r/RedditEng/comments/1dnklb6/enriching_data_for_reddit_safetys_rules_engine_in/[how they implemented and rolled out a new Python-based microservice based around Kafka]  for scoring new content as its posted to check for any breach of Reddit’s content rules.
 * I wince every time I see someone give the hackneyed and generic “fraud detection” as a reason for needing real-time data—so these examples from  link:https://eng.lyft.com/eta-estimated-time-of-arrival-reliability-at-lyft-d4ca2720bda8?source=rss----25cd379abb8---4[Lyft]  and  link:https://www.uber.com/en-GB/blog/personalized-marketing-at-scale/[Uber]  of how they use data are a really refreshing read.
 * I was fascinated by  link:https://engineering.atspotify.com/2024/04/data-platform-explained/[this teaser]  from Spotify about more details of their data platform, and delighted when they published  link:https://engineering.atspotify.com/2024/05/data-platform-explained-part-ii/[this followup]  going into details of some of the design as well as technologies used, including Apache Flink and BigQuery.
 * Uber are not mucking about when it comes to data volumes in their batch systems—over an exabyte is held across their estate of Hadoop (HDFS) servers.  link:https://www.uber.com/en-GB/blog/modernizing-ubers-data-infrastructure-with-gcp/[This blog]  details their migration from purely on-premises infrastructure to a hybrid deployment with GCP. Whilst adopting Google’s object store (GCS) they are for now continuing to run their own software, with a move to native PaaS on GCP planned in for the future.
 
 
-=== RDBMS and Change Data Capture
+== RDBMS and Change Data Capture
 * A very nice deep dive from Jason Fulghum looking at  link:https://www.dolthub.com/blog/2024-06-17-mysql-replication/[MySQL's Replication Protocol] , which pairs nicely with an article looking at  link:https://medium.com/@atakanserbes/understanding-database-replication-a-practical-overview-dbe23344acc7[database replication concepts in general]  from earlier this year by Atakan Serbes.
 * Elad Leev has  link:https://leevs.dev/bridging-the-gap-between-eras-using-debezium-and-cdc/[a good review]  of the benefits that CDC, and specifically Debezium, provide.
 
 
-=== PapersRant of the Month
+== PapersRant of the Month
 _A departure from this regular section’s content—this month I came across this article which so perfectly blended common-sense, good analysis, and a sweary rant, so I just had to include it_😀
 
 * link:https://ludic.mataroa.blog/blog/i-will-fucking-piledrive-you-if-you-mention-ai-again/[I Will F**king Piledrive You If You Mention AI Again]
 
 
-=== Events & Call for Papers (CfP)
+== Events & Call for Papers (CfP)
 * link:https://beamsummit.org/[Beam Summit]  (Sunnyvale, CA) *September 4-5*
 * link:http://2024.javazone.no[JavaZone]  (Oslo, Norway) *September 4-5*
 * link:https://current.confluent.io[Current '24 | The Next Generation of Kafka Summit]  (Austin, TX) *September 17-18*
@@ -83,7 +83,7 @@ _A departure from this regular section’s content—this month I came across th
 * link:https://bigdataconference.eu/[Big Data Conference Europe]  (Vilnius, Lithuania & Online) *November 19-22*
 
 
-=== New Releases
+== New Releases
 A few new releases this month:
 
 * link:https://debezium.io/blog/2024/06/06/debezium-2-7-beta1-released/[Debezium 2.7.0.Beta1]

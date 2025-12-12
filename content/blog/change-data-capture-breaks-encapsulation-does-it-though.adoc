@@ -23,7 +23,7 @@ in terms of data exposure but also when it comes to changes to the schema of you
 In this blog post I am going to dive into this problem space, discuss when—and when not—CDC can break encapsulation, whether it matters, and explore strategies for avoiding these problems when it does.
 
 
-=== CDC—A Quick Primer
+== CDC—A Quick Primer
 With log-based change data capture—for instance, using  link:https://debezium.io/[Debezium] —you can expose realtime change event streams for the tables of your database, sourced from the database’s transaction log.
 For each executed `INSERT`, `UPDATE`, and `DELETE`, an event is appended to the log, from where it is captured by the CDC tool and propagated to consumers, usually through data streaming platforms such as Apache Kafka or Amazon Kinesis.
 
@@ -31,7 +31,7 @@ These event streams enable a  link:https://www.decodable.co/blog/seven-ways-to-p
 While there are different alternatives for implementing CDC systems (for instance based on polling for changed rows, or using database triggers), log-based CDC is generally the  link:https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/[most powerful and efficient approach]  and should be preferred whenever possible.
 
 
-=== Does CDC Break Encapsulation?
+== Does CDC Break Encapsulation?
 In software design,  link:https://en.wikipedia.org/wiki/Encapsulation_(computer_programming)[encapsulation]  refers to the practice of hiding the implementation details and inner data structures of a component from the outside world, providing access to the component’s functionality and data only through well-defined interfaces.
 By publishing change event streams for the tables of an application’s database, this encapsulation may be violated.
 
@@ -59,7 +59,7 @@ In situations like these, directly exposing change streams from your internal da
 Tying these kinds of external consumers to your own data model and its lifecycle can lead to a loss of agility (changes to your model require convoluted and time-consuming change control processes tightly synchronized between different teams) and service disruptions (downstream pipelines and consumers fail due to incompatible schema changes).
 
 
-=== Entering Data Contracts
+== Entering Data Contracts
 So how do you mitigate these risks of using CDC between bounded contexts and/or teams?
 The solution is similar to what you’d do for exposing any other remote API—such as REST or gRPC—from your application: you have an API layer which is separate from the internal data model.
 This layer exposes a service’s functionality and data in exactly the way it’s needed, evolving at its own pace and independently from changes you make to your internal model, with a strong notion of not breaking compatibility in mind.
@@ -90,13 +90,13 @@ Regardless of how it’s implemented, the development team building a service fr
 That way, the contracts are part of that team’s product—developed and maintained by that team, just as they would for any other APIs of the service.
 
 
-=== Implementation Approaches For Data Contracts
+== Implementation Approaches For Data Contracts
 Having established that explicitly designed data contracts are very useful, how can you go about implementing them—specifically event schemas and their evolution—for your CDC events?
 In the following, I’d like to describe two approaches for doing so: the Outbox Pattern, and stream processing using something like Apache Flink.
 I’ll also illustrate exactly how data contracts help you address some of the potential encapsulation risks identified earlier on.
 
 
-==== The Outbox Pattern
+=== The Outbox Pattern
 The idea of the  link:https://debezium.io/blog/2019/02/19/reliable-microservices-data-exchange-with-the-outbox-pattern/[Outbox Pattern]  is that instead of capturing the changes from your internal domain model tables, your application emits bespoke events via a separate table, typically called the _outbox table_.
 A CDC tool like Debezium will capture only the events inserted into that outbox table and relay them to any downstream consumers.
 Very importantly, any actual data changes (e.g.
@@ -119,7 +119,7 @@ On the downside, it does require you to modify your service so that it emits the
 There is a potential performance impact (as you do another insert call in write transactions) and for high-volume use cases, the additional disk space required for storing outbox events in the database could be an issue.
 
 
-==== Stream Processing
+=== Stream Processing
 As we saw above, when we implement data contracts using the Outbox Pattern, the application itself is responsible for forming and emitting the change events that adhere to the contract specified.
 But what if we can’t—or don’t want to, for whatever reason—change the application to do this?
 The alternative is to use  link:https://www.decodable.co/blog/stream-processing-an-overview[stream processing]  to publish change event streams with explicit data contracts after the fact.
@@ -246,7 +246,7 @@ Depending on your database, you may even exclude specific data from the ingested
 As an example, Postgres supports the definition of column lists and  link:https://www.decodable.co/blog/postgres-15-logical-decoding-row-filters-with-debezium[row filters] , providing fine-grained control over the contents of any logical replication streams, thus helping to reduce network traffic and any potential cost associated with it.
 
 
-=== Streaming Data Contracts—Beyond the Basics
+== Streaming Data Contracts—Beyond the Basics
 Once you have embarked onto your journey of creating data contracts with stateful stream processing, the sky's the limit, and you have all kinds of interesting related capabilities at your disposal.
 
 So let’s discuss how to expose a complexly structured change event stream, derived from two tables in the source database.
@@ -302,7 +302,7 @@ This could be addressed by implementing a job for publishing a data contract wit
 Another very interesting option would be taking advantage of the metadata emitted by Debezium for  link:https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-transaction-metadata[transaction boundaries] ; with this information you could  link:https://www.slideshare.net/FlinkForward/squirreling-away-640-billion-how-stripe-leverages-flink-for-change-data-capture[implement buffering logic]  for emitting change events originating from one and the same transaction only when all the events from that transaction have been ingested, which is particularly useful when joining multiple raw change event streams into a single one.
 
 
-=== Handling Schema Changes
+== Handling Schema Changes
 As the saying goes: Nothing is permanent except change.
 It’s only a question of time until new columns are added to your application’s data schema, existing ones are renamed or removed, or their types get changed.
 With explicitly defined data contracts in place, you have taken the first step for making sure that any changes to your internal data schema do not directly affect the consumers of your change event streams.
@@ -372,7 +372,7 @@ For dropped `NOT NULL` columns, the streaming job could omit a sentinel value su
 Also cardinality changes—for instance, going from a single `phone` column within the `customers` table to a separate table with multiple phone numbers per customer, as shown above—are possible by aggregating all the values into a new array-typed field in the public data stream.
 
 
-=== Summary
+== Summary
 Now, does CDC break data encapsulation?
 As we’ve seen, the answer to this question is surprisingly nuanced and depends a lot on how and where change event streams are consumed: the key consideration is whether events cross team and/or context boundaries, or not.
 

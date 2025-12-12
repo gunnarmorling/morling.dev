@@ -37,7 +37,7 @@ We’ll also use link:https://flink.apache.org/[Apache Flink]  and the link:http
 You can learn more about the foundations of change data capture and Debezium in link:https://www.infoq.com/presentations/data-streaming-kafka-debezium/[this talk]  from QCon San Francisco.
 
 
-=== Logical Decoding Messages 101
+== Logical Decoding Messages 101
 Before diving into specific use cases, let’s take a look at how logical decoding messages can be emitted and consumed.
 To follow along, make sure to have Docker installed on your machine.
 Start by checking out link:https://github.com/decodableco/examples/tree/main/postgres-logical-decoding[this example project]  from GitHub:
@@ -134,11 +134,11 @@ There are a few other useful functions dealing with logical decoding messages an
 You also can query the `pg_replication_slots` view for examining the current status of your replication slots, latest confirmed LSN, and more.
 
 
-=== Use Cases
+== Use Cases
 Having discussed the foundations of logical decoding messages, let’s now explore a few use cases of this useful Postgres API.
 
 
-==== The Outbox Pattern
+=== The Outbox Pattern
 For microservices, it’s a common requirement that, when processing a request, a service needs to update its own database and simultaneously send a message to other services.
 As an example, consider a “fulfillment” service in an e-commerce scenario: when the status of a shipment changes from `READY_TO_SHIP` to `SHIPPED`, the shipment’s record in the fulfillment service database needs to be updated accordingly, but also a message should be sent to the “customer” service so that it can update the customer’s account history and trigger an email notification for the customer.
 
@@ -279,7 +279,7 @@ The link:https://cloudevents.io/[CloudEvents]  specification comes in handy here
 It is an option worth considering to have your applications emit outbox events adhering to the CloudEvents standard.
 
 
-==== Logging
+=== Logging
 While log management of modern applications typically happens through dedicated platforms like Datadog or Splunk, which ingest changes from dedicated APIs or logs in the file system, it sometimes can be convenient to persist log messages in the database of an application.
 Log libraries such as the widely used log4j 2 provide link:https://logging.apache.org/log4j/2.x/manual/appenders.html#JDBCAppender[database-backed appenders]  for this purpose.
 These will typically require a second connection for the logger, though, because in case of a rollback of an application transaction itself, you still (and in particular then) want to write out any log messages, helping you with failure analysis.
@@ -332,7 +332,7 @@ But as the logical decoding message was non-transactional, it still was written 
 I.e., you actually can have that cake and eat it too!
 
 
-==== Audit Logs
+=== Audit Logs
 In enterprise applications, keeping an audit log of your data is a common requirement, i.e., a complete trail of all the changes done to a database record, such as a purchase order or a customer.
 
 There are multiple possible approaches for building such an audit log; one of them is to copy earlier record versions into a separate history table whenever a data change is made.
@@ -479,7 +479,7 @@ Alternatively, depending on your business requirements, it can be a good idea to
 You could use the same approach for enriching change events with contextual metadata for other purposes too, generally speaking for capturing all kinds of “intent” which isn’t directly persisted in the business tables of your application.
 
 
-==== Bonus: Advancing Replication Slots
+=== Bonus: Advancing Replication Slots
 Finally, let’s discuss a technical use case for logical decoding messages: advancing Postgres replication slots.
 This can come in handy in certain scenarios, where otherwise large segments of the WAL could be retained by the database, eventually causing the database machine to run out of disk space.
 
@@ -554,7 +554,7 @@ With the next checkpoint issued by Flink (look for “Completed checkpoint XYZ f
 If you now examine the replication slot again, you should find that the “retained WAL” value is much lower than before (as this process is asynchronous, it may take a bit until the disk space is freed up).
 
 
-=== Wrapping Up
+== Wrapping Up
 Logical decoding messages are not widely known yet very powerful tools, which should be in the box for every software engineer working with Postgres.
 As you’ve seen, the ability to emit messages into the write-ahead log without them ever surfacing in any actual table allows for a number of interesting use cases, such as reliable data exchange between microservices (thus avoiding unsafe dual writes), application logging, or providing metadata for building audit logs.
 Employing stateful stream processing using Apache Flink, you can enrich and route your captured messages as well as apply other operations on your data change events, such as filtering, joining, windowed aggregations, and more.

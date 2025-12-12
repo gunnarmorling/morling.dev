@@ -32,7 +32,7 @@ In the remainder of this blog post, I’m going to explore how to
 The overall solution is going to look like this:
 
 _Fig.1: Solution Overview (click to enlarge)_
-=== What Is PyFlink and Why Should You Care?
+== What Is PyFlink and Why Should You Care?
 In a nutshell, PyFlink is the Python-based API to  link:https://flink.apache.org/[Apache Flink] .
 Per the docs, it  link:https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/python/overview/[enables you]  to
 
@@ -56,7 +56,7 @@ At runtime, Flink will call back to the Python VM for executing any Python-based
 As of Flink 1.15, there’s also support for a new execution mode called  link:https://flink.apache.org/2022/05/06/exploring-the-thread-mode-in-pyflink/[“thread mode”] , where Python code is executed on the JVM itself (via JNI), avoiding the overhead of cross-process communication.
 
 
-=== Prerequisites
+== Prerequisites
 So let’s set up a Kubernetes cluster and install the aforementioned operators onto it.
 To follow along, make sure to have the following things installed on your machine:
 
@@ -89,7 +89,7 @@ pyflink-test-2-control-plane  Ready  control-plane  67s  v1.27.3
 pyflink-test-2-worker         Ready           48s  v1.27.3
 ----
 
-==== Installing the Flink Kubernetes Operator
+=== Installing the Flink Kubernetes Operator
 Next, install the  link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/[Flink Kubernetes Operator] .
 Official part of the Flink project, its task will be to deploy and run Flink jobs on Kubernetes, based on custom resource definitions.
 It is installed using a Helm chart, using the following steps (refer to the  link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/try-flink-kubernetes-operator/quick-start/[upstream documentation]  for more details):
@@ -108,7 +108,7 @@ NAME                                     READY  STATUS   RESTARTS  AGE
 flink-kubernetes-operator-f4bbff6-jtd4x  2/2    Running  0         0h17m
 ----
 
-==== Installing Strimzi and Apache Kafka
+=== Installing Strimzi and Apache Kafka
 With the Flink Kubernetes Operator up and running, it’s time to install  link:https://strimzi.io/[Strimzi] .
 It is another Kubernetes Operator, in this case in charge of deploying and running Kafka clusters.
 Strimzi is a very powerful tool, supporting all kinds of Kafka deployments, Kafka Connect, MirrorMaker2, and much more.
@@ -132,7 +132,7 @@ kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
 Once the Kafka broker is up, the command will return and you’re ready to go.
 
 
-=== A Simple PyFlink Job
+== A Simple PyFlink Job
 With the operators for Flink and Kafka as well as a single-node Kafka cluster in place, let’s create a simple stream processing job using PyFlink.
 Inspired by the  link:https://github.com/apache/flink-kubernetes-operator/tree/main/examples/flink-python-example[Python example job]  coming with the Flink Kubernetes operator, it uses the Flink  link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/connectors/table/datagen/[DataGen SQL connector]  for creating random purchase orders.
 But instead of just printing them to sysout, we’re going to emit the stream of orders to a Kafka topic, using Flink's link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/connectors/table/kafka/[Apache Kafka SQL Connector] .
@@ -209,7 +209,7 @@ Then two tables are created: a source table `orders`, based on the datagen conne
 Finally, an `INSERT` query is issued, which propagates any changed rows from the source to the sink table.
 
 
-=== Building a Container Image With Your PyFlink Job
+== Building a Container Image With Your PyFlink Job
 In order to deploy our PyFlink job onto Kubernetes, you’ll need to create a container image, containing the Python job itself and all its dependencies: PyFlink, any required Python packages, as well as any Flink connectors used by the job.
 
 Unfortunately, the  link:https://github.com/apache/flink-kubernetes-operator/blob/main/examples/flink-python-example/Dockerfile[Dockerfile]  of the aforementioned Python example coming with the Flink Kubernetes operator didn’t quite work for me.
@@ -288,7 +288,7 @@ In order to use that image from within Kubernetes, you’ll finally need to load
 kind load docker-image decodable-examples/pyflink-hello-world:latest –name pyflink-test
 ----
 
-=== Deploying a PyFlink Job On Kubernetes
+== Deploying a PyFlink Job On Kubernetes
 At this point, you have everything in place for deploying your PyFlink job to Kubernetes.
 The operator project comes with an  link:https://github.com/apache/flink-kubernetes-operator/blob/main/examples/flink-python-example/python-example.yaml[example resource]  of type `FlinkDeployment`, which works pretty much as-is for our purposes.
 Only the image name and the Flink version need to be changed to the image you’ve just created:

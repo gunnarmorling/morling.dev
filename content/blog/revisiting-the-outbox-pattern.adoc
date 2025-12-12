@@ -22,7 +22,7 @@ It’s time to take another look at the outbox pattern, what it is and how to im
 
 <!--more-->
 
-=== Recap: What’s The Outbox Pattern?
+== Recap: What’s The Outbox Pattern?
 _Congrats!_
 _You’ve landed that job as a software engineer at Oh-my-Dawg, the nation’s latest and hottest franchise in beauty care for our four-pawed friends._
 _Pedicure for poodles, lathering for labradors, grooming for greyhounds—there’s a lot of money to be made in this business, and your task is gonna be to build robust and reliable backend systems for that._
@@ -60,11 +60,11 @@ Note that, while the outbox pattern ensures atomicity of a local database update
 Specifically, the pattern provides _eventual consistency_ semantics: changes to the local datastore of the writing service become visible immediately, while the notification of other services happens asynchronously.
 
 
-=== Implementation Considerations
+== Implementation Considerations
 Having discussed what the outbox pattern is and what it is used for, let’s dive into some of the implementation details.
 
 
-==== Polling vs. Log-Based CDC
+=== Polling vs. Log-Based CDC
 One key component to an outbox pattern implementation is the mechanism for retrieving messages from the outbox table.
 A commonly suggested solution is polling: Some background process queries the outbox table at regular intervals for newly inserted messages and sends them to Kafka.
 Once that’s done, all emitted messages are marked as processed in the database, or they are deleted right away.
@@ -87,7 +87,7 @@ Log-based CDC comes with a few  link:https://debezium.io/blog/2018/07/19/advanta
 It should be the preferred option whenever possible.
 
 
-==== The Outbox Table
+=== The Outbox Table
 At the center of the outbox pattern is a table for storing the outbox events.
 The writing service—such as the appointment service in the Oh-my-Dawg example—only ever makes inserts into this table, but it never updates.
 Existing events are immutable and cannot be altered after the fact.
@@ -106,7 +106,7 @@ As an example, here is the default outbox table format when using  link:https://
 * *payload* (`JSONB`): The actual event payload
 
 
-===== Housekeeping
+==== Housekeeping
 One detail which can be easy to ignore at first but which is critical in production scenarios is housekeeping for the outbox table: once events have been picked up from the outbox table, they can and should be removed from the outbox table, preventing it from growing larger and larger.
 With a polling-based approach as described above this can be done as part of the polling loop (which has to issue read-write transactions to do this, though).
 
@@ -116,7 +116,7 @@ As both operations are represented as entries in the append-only transaction log
 This mitigates at least in parts the concern about storage overhead that is occasionally brought up against the outbox pattern (see below for details).
 
 
-==== pg_logical_emit_message()
+=== pg_logical_emit_message()
 What if, instead of implementing what is, in effect, an append-only log in a custom table, you could just use the database’s actual transaction log itself for relaying outbox events?
 Turns out you can—at least with Postgres!
 
@@ -152,7 +152,7 @@ Note you can use `BLACKHOLE` and `InnoDB` tables in one shared transaction, ensu
 If you are aware of similar capabilities for other databases, I’d love to hear from you!
 
 
-==== Format Considerations
+=== Format Considerations
 Whether you are using an actual outbox table or are storing outbox events only in the transaction log, you’ll need to decide on the format for the actual event payload.
 As far the logical format is concerned, it’s completely up to you how the events should be structured.
 Being independent from the schema of a service’s actual data tables, the schema of outbox messages can be considered as a form of a data contract, allowing you to evolve your internal table model without impacting or even breaking any external services.
@@ -171,7 +171,7 @@ Another interesting option to consider can be whether to adopt  link:https://clo
 It’s a specification for describing events in a standardized way, allowing consumers to uniformly access common attributes such as event id, source, and timestamp.
 
 
-==== Backfills
+=== Backfills
 One of the most common questions I’ve seen around the outbox pattern is how to deal with backfills.
 Let’s assume Oh-my-Dawg has been operating for a while already, and only now the need comes up for notifying other services about appointment updates.
 So you adjust the appointment service to use the outbox pattern for that purpose, but how do you emit messages describing the appointments already existing in the database at this point?
@@ -201,7 +201,7 @@ This buffering could happen in different ways, for instance using a Kafka Connec
 To learn more about this approach to concurrent incremental backfilling, refer to  link:https://debezium.io/blog/2021/10/07/incremental-snapshots/[this post]  on the Debezium blog.
 
 
-==== Idempotency for Consumers
+=== Idempotency for Consumers
 Let’s spend a few minutes thinking about how event consumers such as the inventory service could be implemented.
 A key requirement there is to make sure that each event is processed not more than once.
 Otherwise, we might end up allocating too much inventory, say two portions of shampoo for one and the same treatment.
@@ -224,14 +224,14 @@ Instead, the records position (offset) in the source database’s transaction lo
 Similar ids exist in other databases too, check their documentation on the exact format and semantics.
 
 
-=== Criticisms of the Outbox pattern
+== Criticisms of the Outbox pattern
 The outbox pattern definitely fulfills its purpose: allowing a service to update its own database and send out notifications to other services via streaming platforms such as Kafka, in a safe and reliable way, without  link:/blog/why-do-i-need-cdc#the-best-way-to-do-cdc-is-log-based-cdc[requiring distributed transactions] .
 When it comes to critique on this pattern, I mostly see two things being mentioned: overhead on the database, and complexity.
 A less commonly brought up concern is latency.
 Let’s take a look at all of these in turn.
 
 
-==== Database Overhead
+=== Database Overhead
 This concern is about the additional load put onto a service’s database by using it for storing and emitting outbox messages.
 The potential impact is twofold: more data needs to be stored in the database (adding to the overall size of the database), and transactions have a larger payload, as besides the actual table writes, there’s also the outbox inserts (adding to the overall I/O of the database, thus potentially impacting latency and throughput).
 
@@ -245,7 +245,7 @@ Doing one more insert for an outbox event probably won’t be significant in mos
 So far I have seen this mostly as a theoretical concern rather than as an actual, empirically demonstrated problem.
 
 
-==== Complexity
+=== Complexity
 The complexity argument needs consideration from two different angles: an external perspective looking from the outside at a service landscape such as Oh-my-Dawg’s as a whole, and an internal perspective looking at how individual services are implemented.
 
 From the external perspective, you’re looking at things such as the overall number of moving parts of the solution as well as their interactions.
@@ -287,7 +287,7 @@ Similar solutions exist for other stacks,  link:https://www.wimdeblauwe.com/blog
 Whether using a ready-made solution or implementing something from scratch, the required infrastructure for enabling the outbox pattern within an application can and should be encapsulated in an easy-to-use component, shielding application logic from the implementation details.
 
 
-==== Latency
+=== Latency
 A minor disadvantage of the outbox pattern is the increased latency of messages sent to external consumers.
 This will take longer when routing them through the database than when publishing them to Kafka directly.
 While that’s true, I don’t think this is really significant in practice.
@@ -295,7 +295,7 @@ The notification of external processes is designed as an asynchronous process an
 If it is a problem in a microservices architecture when one service receives a message sent by another service with a delay of a few hundred milliseconds, then probably there’s something not quite right with how the services are cut in the first place.
 
 
-==== Discussion
+=== Discussion
 If you want to achieve consistency in a distributed system, such as an ensemble of cooperating microservices, there is going to be a cost.
 This goes for the outbox pattern, as well as for the potential alternatives discussed in the next section.
 As such, there are valid criticisms of the outbox pattern, but in the end it’s all about trade-offs: does the outbox put an additional load onto your database?
@@ -306,12 +306,12 @@ But this will be a price well worth paying most of the time, in order to achieve
 In the next section, we are going to take a look at other solutions to this problem and the trade-offs they make.
 
 
-=== Alternatives to the Outbox Pattern
+== Alternatives to the Outbox Pattern
 The outbox pattern isn’t the only solution for implementing reliable data exchanges between different systems in a microservices architecture.
 Let’s explore some of the options and their specific pros and cons.
 
 
-==== Dapr
+=== Dapr
 Not so much an alternative as a variation of the outbox pattern is provided by  link:https://dapr.io/[Dapr] , a distributed platform for building reliable microservices.
 In  link:https://docs.dapr.io/developing-applications/building-blocks/state-management/howto-outbox/[its outbox pattern implementation] , Dapr first writes the message to be published to an internal Pub/Sub topic.
 If that succeeds, it updates the local state, also writing an identifier of that previously sent message.
@@ -325,7 +325,7 @@ That is being paid for though by having two Pub/Sub writes (internal and externa
 So the trade-offs are slightly different, but not clearly advantageous to me.
 
 
-==== Read-yourself
+=== Read-yourself
 Instead of having a service write to its database and drive the update to Kafka from there via an outbox,  link:https://www.squer.io/blog/stop-overusing-the-outbox-pattern[a commonly suggested alternative]  is to reverse this order.
 When handling a request, the service writes only to Kafka.
 Thanks to transactional producers, writes to an internal data topic and a public topic for external consumption can happen atomically.
@@ -339,7 +339,7 @@ Also other tasks which are trivial when writing to a database first—such as en
 While some techniques for mitigation exist, it’s not an approach I’d recommend due to the inherent complexities.
 
 
-==== Stream Processing on “Raw” Change Event Streams
+=== Stream Processing on “Raw” Change Event Streams
 Another alternative is to use change data capture not for an outbox table, but for the actual data tables of the service itself, such as the “Appointment” table in the Oh-my-Dawg example.
 Exposing these change event streams across service—and team—boundaries can be problematic, as it exposes a service's internal data model and its structure to external consumers.
 In particular when it comes to changes to the data schema, this can cause friction and disruption.
@@ -359,7 +359,7 @@ emitting a derived public event only once all relevant events from a source tran
 With the outbox pattern, which emits messages in the context of transactions in the source database, this comes for free.
 
 
-==== 2PC
+=== 2PC
 Some folks argue that the outbox pattern essentially is a work-around for the lack of  link:https://en.wikipedia.org/wiki/Two-phase_commit_protocol[2PC (two-phase commit)]  support in Kafka.
 A spicy take, I like it!
 And indeed, there’s something to this.
@@ -376,7 +376,7 @@ Another way to see this is as eating into your “synchrony budget” (a notion 
 Another, minor, advantage of the outbox pattern is that developers of the writing service only need to know one API (for interacting with the database) rather than two APIs, for database access and for message platform access, respectively.
 
 
-==== Durable Execution
+=== Durable Execution
 Using the outbox pattern and a bit of glue code,  link:https://www.infoq.com/articles/saga-orchestration-outbox/[it is possible to orchestrate Sagas] , long-running business transactions, across distributed services.
 Durable execution frameworks such as  link:https://temporal.io/[Temporal] ,  link:https://restate.dev/[Restate] , or  link:https://www.dbos.dev/dbos-transact[DBOS Transact]  aim to take things one step further with a higher-level programming experience.
 In a nutshell, they provide a form of persistent continuations, transparently retrying failed operations, keeping track of the execution state of a service, and automatically restoring it in case of failures.
@@ -387,7 +387,7 @@ In particular the requirement to implement workflows using particular SDKs—pot
 But if they manage to live up to their promise, they may free developers from having to deal with details such as outboxes, retries, etc.
 
 
-=== Summary
+== Summary
 So, where does all that leave us?
 Is the outbox pattern still relevant and should the development team at Oh-my-Dawg use it for implementing data exchanges between their microservices?
 Or are there clearly superior alternatives, rendering the pattern obsolete?

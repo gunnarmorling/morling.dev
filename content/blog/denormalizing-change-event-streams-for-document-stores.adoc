@@ -31,7 +31,7 @@ Inspired by the same function in data stores such as  link:https://www.postgresq
 This makes it easier than ever to keep a search index in sync with your operational data in a relational database such as MySQL or Postgres, with Decodable updating the nested documents in the index as the upstream data changes, allowing for fast and efficient queries of the data, without the need for expensive application-side joins at query time.
 
 
-=== Let’s Build a Data Streaming Pipeline!
+== Let’s Build a Data Streaming Pipeline!
 In this blog post I’m going to show you how to set up such a real-time streaming pipeline between  link:https://www.mysql.com/[MySQL]  as a system of record and  link:https://opensearch.org/[OpenSearch]  as a derived data store, enabling use cases such as full-text search and dashboarding.
 To follow along, make sure you’ve downloaded and installed the following things on your machine: +
 
@@ -136,7 +136,7 @@ In a production environment, Decodable would typically connect to source and sin
 It is also possible to run the Decodable data plane in your own AWS virtual private cloud (VPC), thus making sure your data never leaves your security perimeter.
 
 
-=== Creating the Source Connection
+== Creating the Source Connection
 At this point, both MySQL and OpenSearch are up and running, accessible from the internet via ngrok.
 Next, let’s set up the source connection for ingesting change events from the three tables into Decodable.
 Note that while the following describes the required steps when using the Decodable web UI, you could alternatively use the  link:https://docs.decodable.co/api/the-decodable-apis.html[REST API]  or the  link:https://docs.decodable.co/cli.html[command line interface] , which for instance comes in handy when configuring data pipelines via CI/CD.
@@ -177,7 +177,7 @@ _6: Preview of data ingested into Decodable_When starting up, the connector auto
 If you now were to do any changes, for instance an update to an existing purchase order record, the state in the corresponding stream would reflect this shortly thereafter.
 
 
-=== Joining the Change Event Streams
+== Joining the Change Event Streams
 Let’s now create a SQL pipeline for joining the three streams, emitting nested documents for each purchase order and its lines and product details.
 In the Decodable web UI, go to “Pipelines” → “New Pipeline”, then select one of the `ecom*` streams as the input stream.
 Replace the SQL in the editor which opens up with the following:
@@ -251,7 +251,7 @@ _Fig._
 _8: Running SQL pipeline with input and output metrics_You can also take a look at the joined records in the `ecom__orders_with_lines` stream.
 
 
-=== Creating the Sink Connection
+== Creating the Sink Connection
 The last step is to set up a sink connector which takes the data from the new stream of joined records and sends it to OpenSearch.
 To do so, go to “Connections” -> “New Connection” and select the “OpenSearch” tile.
 Specify the connection details: +
@@ -268,7 +268,7 @@ Start the connection, choosing “Earliest” as the starting position.
 Once the connection is running, you’ll see HTTP requests being logged by ngrok in the terminal.
 
 
-=== Examining the Data in OpenSearch
+== Examining the Data in OpenSearch
 And with that, the entire data pipeline is running: it ingests any data changes as they occur in the source database, continuously computes the join for maintaining a denormalized view of all the purchase orders with all lines and product details, and persists these documents in OpenSearch.
 All that in real-time, i.e.
 the index in OpenSearch reflects any changes to the upstream data with a low latency.
@@ -387,7 +387,7 @@ Once you are done, don’t forget to stop and clean up all the involved resource
 * Run `docker volume rm array-agg_opensearch-data1` and `docker volume rm array-agg_opensearch-data2` for removing the Docker volumes for OpenSearch
 
 
-=== Wrapping Up
+== Wrapping Up
 Decodable’s mission is to make real-time data movement as simple and efficient as possible, with as little, or as much processing as needed.
 Setting up a fully managed data pipeline from an OLTP database such as MySQL to a search and analytics store like OpenSearch is a matter of just a few minutes.
 
