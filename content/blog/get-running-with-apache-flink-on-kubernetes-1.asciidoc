@@ -1,7 +1,7 @@
 ---
 title: 'Get Running with Apache Flink on Kubernetes, part 1 of 2'
 date: "2025-01-21T00:00:00+00:00"
-draft: true
+draft: false
 markup: adoc
 canonical_url: https://www.decodable.co/blog/get-running-with-apache-flink-on-kubernetes-1
 tags:
@@ -20,7 +20,7 @@ endif::[]
 _This post originally appeared on the link:https://www.decodable.co/blog/get-running-with-apache-flink-on-kubernetes-1[Decodable blog]._
 
 Kubernetes is a widely used deployment platform for Apache Flink.
-While Flink has had native support for Kubernetes for quite a while, it is in particular the operator pattern which makes deploying Flink jobs onto Kubernetes clusters a  compelling option: you define jobs in a declarative resource, and a control loop running in a component called a Kubernetes operator takes care of provisioning and maintaining (e.g.
+While Flink has had native support for Kubernetes for quite a while, it is in particular the operator pattern which makes deploying Flink jobs onto Kubernetes clusters a compelling option: you define jobs in a declarative resource, and a control loop running in a component called a Kubernetes operator takes care of provisioning and maintaining (e.g.
 scaling, updating) all the required resources.
 Automation is the keyword here, significantly reducing the manual effort required for running Flink jobs in production.
 
@@ -116,7 +116,7 @@ The operator Helm chart can be customized upon installation with a link:https://
 We're gonna make the following adjustments:
 
 * Inject the configuration required for running Flink jobs on Java 17; while Flink itself provides support for Java 17 since version 1.18, the operator in version 1.10 doesn't pass the `--add-opens` flags required to run Flink on Java 17 and newer. This has been added recently (see link:https://issues.apache.org/jira/browse/FLINK-36646[FLINK-36646]), but no release of the operator with those changes is available as of now
-* Shorten the lifetime of Flink job managers after a job has been suspended; this setting, `kubernetes.operator.jm-deployment.shutdown-ttl`*,*defaults to one day, which means you'll have a superfluous job manager pod in your cluster for quite a while when suspending a job
+* Shorten the lifetime of Flink job managers after a job has been suspended; this setting, `kubernetes.operator.jm-deployment.shutdown-ttl`, defaults to one day, which means you'll have a superfluous job manager pod in your cluster for quite a while when suspending a job
 
 The Helm values file with these configuration amendments looks like so:
 
@@ -131,7 +131,7 @@ defaultConfiguration:
 
     kubernetes.operator.jm-deployment.shutdown-ttl: 10000
 ----
-_Listing 2:_ link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/helm-values.yaml[helm-values.yaml] _for customizing the operator configuration_
+_Listing 2: link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/helm-values.yaml[helm-values.yaml] for customizing the operator configuration_
 
 Install the Helm chart, using this values file:
 
@@ -190,8 +190,8 @@ Session mode can be more resource-efficient due to the shared job manager, at th
 
 In the following, we are going to use application mode, i.e., a dedicated Flink cluster per job.
 
-Sticking to the recommendations from the operator documentation, we'll deploy Flink using the link:https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/resource-providers/native_kubernetes/[Native Kubernetes] resource provider, which means that Flink will directly talk to the Kubernetes API to orchestrate resources such as task manager pods._
-_In particular when deploying jobs of unknown provenience, it can make sense to use the link:https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/resource-providers/standalone/overview/[Standalone] provider instead, in which case Flink jobs don't have access to the Kubernetes API, but instead the operator is managing all the required resources.
+Sticking to the recommendations from the operator documentation, we'll deploy Flink using the link:https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/resource-providers/native_kubernetes/[Native Kubernetes] resource provider, which means that Flink will directly talk to the Kubernetes API to orchestrate resources such as task manager pods.
+In particular when deploying jobs of unknown provenience, it can make sense to use the link:https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/resource-providers/standalone/overview/[Standalone] provider instead, in which case Flink jobs don't have access to the Kubernetes API, but instead the operator is managing all the required resources.
 
 
 == Deploying Your First Flink Job on Kubernetes
@@ -426,7 +426,7 @@ spec:
     parallelism: 1
     upgradeMode: stateless
 ----
-_Listing 4: Resource definition_ link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/custom-job.yaml[custom-job.yaml] _for a custom Flink job_
+_Listing 4: Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/custom-job.yaml[custom-job.yaml] for a custom Flink job_
 
 Apply the descriptor:
 
