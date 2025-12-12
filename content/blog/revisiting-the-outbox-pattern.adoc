@@ -39,10 +39,10 @@ We're members of the link:https://boringtechnology.club/[boring technology club]
 At the same time, the appointment service needs to notify the inventory service about the new appointment, so that shampoo and whatever else is needed can be reserved, and backordered, if needed.
 To decouple the two services, the notification is sent via link:/kafka[Apache Kafka].
 
-
+.The Oh-my-Dawg microservices architecture
 image::outbox-pattern-1.webp[]
-_Fig._
-_1: The Oh-my-Dawg microservices architecture_Now, it is vital that these two operations, updating the appointment database and sending the notification, happen link:/blog/aggregating-change-data-capture-events-based-on-transactional-boundaries[atomically—that is, they either both happen, or neither of them does].
+
+Now, it is vital that these two operations, updating the appointment database and sending the notification, happen link:/blog/aggregating-change-data-capture-events-based-on-transactional-boundaries[atomically—that is, they either both happen, or neither of them does].
 Otherwise, the overall state of the system would be inconsistent:
 
 * If the database transaction commits but the inventory notification isn't sent, we'd end up without shampoo for the appointment. Our furry customers won't be happy!
@@ -53,10 +53,10 @@ Fortunately, the link:https://microservices.io/patterns/data/transactional-outbo
 As part of its local database transaction, the appointment service inserts the notification message which it wants to send into a table in that database.
 The transaction ensures atomicity for writing the actual data and that message.
 
-
+.The outbox pattern for atomically updating the Appointments table and emitting a notification
 image::outbox-pattern-2.webp[]
-_Fig._
-_2: The outbox pattern for atomically updating the Appointments table and emitting a notification_A separate process, called the outbox relay, picks up that message from this outbox table and sends it to Kafka.
+
+A separate process, called the outbox relay, picks up that message from this outbox table and sends it to Kafka.
 This happens asynchronously and can be retried if needed, without impacting the clients of the appointment service in any way.
 Different approaches exist for implementing the outbox relay, with one popular option being log-based link:https://www.decodable.co/blog/introduction-to-change-data-capture-cdc[change data capture (CDC)], using tools such as link:https://debezium.io/[Debezium].
 You can learn more about the foundations of the outbox pattern in link:https://debezium.io/blog/2019/02/19/reliable-microservices-data-exchange-with-the-outbox-pattern/[this article], while link:https://romankudryashov.com/blog/2024/07/event-driven-architecture/[this post] provides an in-depth hands-on example.
@@ -144,7 +144,7 @@ SELECT * FROM pg_logical_emit_message(
   '{ ... }'
 );
 ----
-_Listing 1.: Writing an outbox message to the transaction log with_`pg_logical_emit_message()` +
+_Listing 1: Writing an outbox message to the transaction log with `pg_logical_emit_message()`_
 
 These messages never materialize in any tables (and thus don't cause any database growth apart from the WAL itself) and you also don't need to take care of housekeeping, as any obsolete WAL segments will automatically be disposed of.
 If you are on Postgres, such a log-only outbox implementation is the one I'd recommend to use; you can learn more about the details in link:https://www.decodable.co/blog/the-wonders-of-postgres-logical-decoding-messages-for-cdc[this article].
@@ -286,7 +286,7 @@ As an example, link:https://debezium.io/documentation/reference/stable/integrati
   return appointment;
 }
 ----
-_Listing 2.: Persisting an appointment and emitting an outbox message in a Quarkus-based microservice_
+_Listing 2: Persisting an appointment and emitting an outbox message in a Quarkus-based microservice_
 
 Similar solutions exist for other stacks, link:https://www.wimdeblauwe.com/blog/2024/06/25/transactional-outbox-pattern-with-spring-boot/[for instance for Spring Boot], and programming languages.
 Whether using a ready-made solution or implementing something from scratch, the required infrastructure for enabling the outbox pattern within an application can and should be encapsulated in an easy-to-use component, shielding application logic from the implementation details.
@@ -352,10 +352,10 @@ Stream processing, for instance via Apache Flink or Kafka Streams, can be a way 
 With tools like Flink SQL, you can apply data transformations for shaping the published events, limit which events get published, create denormalized events by joining multiple change event streams, and much more.
 Flink CDC can be used to run Debezium natively within Flink, essentially letting a Flink job take the role of the outbox relay.
 
-
+.Joining "raw" change event streams (produced by Debezium and Flink CDC) via Flink SQL
 image::outbox-pattern-3.webp[]
-_Fig._
-_3: Joining "raw" change event streams (produced by Debezium and Flink CDC) via Flink SQL_The big advantage of this over the outbox pattern is that no code changes to the source application itself are required.
+
+The big advantage of this over the outbox pattern is that no code changes to the source application itself are required.
 Also there is no impact on the source database, as it only contains the actual data tables and nothing more.
 The shaping of published events sent to other services happens completely asynchronously.
 The downside is that you need to add a stream processing solution to the overall architecture (though managed services can help navigate this complexity), and stream processing has a learning curve on its own.

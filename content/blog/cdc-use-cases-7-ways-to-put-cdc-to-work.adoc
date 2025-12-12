@@ -29,9 +29,8 @@ This is because it enables the tight integration of transactional databases into
 CDC responds to changes--such as inserts, updates, and deletions--as they are made in a transactional database and sends those changes in real time to another system for ingesting and processing.
 While there are multiple possible ways for implementing a CDC solution, the most powerful approach is log-based CDC, which retrieves change events from the transaction log of a database.
 
+.Log-based change data capture
 image::cdc-use-cases-fig1.webp[]
-_Fig._
-_1: Log-based change data capture_
 
 Compared to other styles of CDC, such as periodic polling for changed records, log-based CDC has a number of link:https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/[advantages], including:
 
@@ -73,10 +72,8 @@ CDC responds to changes to the database in real time and can feed those changes 
 Besides dedicated caching solutions such as Redis, link:https://github.com/debezium/debezium-examples/tree/main/distributed-caching[Infinispan], or Hazelcast, embedded SQLite databases are an interesting option for implementing application-side caches, as they not only allow for simple key-based look-ups but support full query flexibility via SQL.
 If you would like to learn more about this kind of architecture, take a look at my talk "Keep Your Cache Always Fresh With Debezium", which explores one implementation of this in depth ( link:https://www.youtube.com/watch?v=zOOFMHAjoPI[video recording], link:https://speakerdeck.com/gunnarmorling/keep-your-cache-always-fresh-with-debezium-current-22[slides] ).
 
+.Application-side caches in a distributed service, kept in sync with the primary DB via CDC
 image::cdc-use-cases-fig2.webp[]
-_Fig._
-_2: Application-side caches in a distributed service, kept in sync with the primary DB via CDC_ +
-+
 
 Instead of caching raw data as-is, it can be useful to create denormalized data views of your data which are then stored in the cache.
 For instance, Apache Flink could be used to join the change event streams from two tables in an RDBMS and create one single nested data structure from that.
@@ -107,9 +104,8 @@ Flink's datastream API can be used for enriching all the change events from one 
 As all change events emitted by Debezium contain the id of the transaction they originate from, correlating the events of one transaction isn't complicated.
 You can find link:https://github.com/decodableco/examples/tree/main/postgres-logical-decoding[a basic implementation of this] in the Decodable examples repository.
 
+.Enriching CDC events with transactional metadata using stream processing
 image::cdc-use-cases-fig3.webp[]
-_Fig._
-_3: Enriching CDC events with transactional metadata using stream processing_
 
 Within the same Flink job, you now could add a sink connector and for instance write the enriched events into a Kafka topic.
 Alternatively, depending on your business requirements, the enriched change events could also be written as an audit log to an object store such as S3, or a queryable analytics data store.
@@ -122,9 +118,8 @@ However, in contrast to a static table query, a query on a dynamic table runs co
 
 CDC streams can be used as the source that drives a continuous query, representing a form of an incrementally updated materialized view, always yielding the latest results, as the underlying data changes.
 
+.Continuous query for incrementally computing a join between two CDC streams
 image::cdc-use-cases-fig4.webp[]
-_Fig._
-_4: Continuous query for incrementally computing a join between two CDC streams_
 
 This allows you to create a data pipeline that ingests CDC data into Flink, create continuous queries to perform aggregations, filters, or pattern recognition on the CDC data stream, and the results can be used to enable real-time analytics and decision-making.
 For instance, you may consider pushing any updates directly to a dashboard in connected web browsers using technologies such as server-sent events or Web Sockets, completely avoiding the need for any intermediary query layer.
@@ -134,9 +129,8 @@ For instance, you may consider pushing any updates directly to a dashboard in co
 As part of their business logic, microservices often not only have to update their own local data store, but also need to notify other services about data changes that have happened.
 The link:https://debezium.io/blog/2019/02/19/reliable-microservices-data-exchange-with-the-outbox-pattern/[outbox pattern] —which is implemented using CDC—is an approach for letting services execute these two tasks in a safe and consistent manner, avoiding the pitfalls of unsafe dual writes.
 
+.Microservices data exchange with the outbox pattern
 image::cdc-use-cases-fig5.webp[]
-_Fig._
-_5: Microservices data exchange with the outbox pattern_
 
 CDC is a great fit for responding to new entries in the outbox table and streaming them to a messaging service such as Apache Kafka for propagation to other services.
 By only modifying a single resource—the source microservice's own database—it avoids any potential inconsistencies of altering multiple resources at the same time which don't share one common transactional context.
