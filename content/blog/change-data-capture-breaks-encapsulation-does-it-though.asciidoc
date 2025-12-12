@@ -1,7 +1,7 @@
 ---
 title: '"Change Data Capture Breaks Encapsulation". Does it, though?'
 date: "2023-11-21T00:00:00+00:00"
-draft: true
+draft: false
 markup: adoc
 canonical_url: https://www.decodable.co/blog/change-data-capture-breaks-encapsulation-does-it-though
 tags:
@@ -14,11 +14,12 @@ tags:
 :rouge-style: base16.dark
 :icons: font
 :imagesdir: /images
+:emdash: &#8212;&#8203;
 ifdef::env-github[]
 :imagesdir: ../../static/images
 endif::[]
 
-_This post originally appeared on the link:https://www.decodable.co/blog/change-data-capture-breaks-encapsulation-does-it-though[Decodable blog]._
+_This post originally appeared on the link:https://www.decodable.co/blog/change-data-capture-breaks-encapsulation-does-it-though[Decodable blog]. All rights reserved._
 
 Having worked on Debezium--an open-source platform for Change Data Capture (CDC)--for several years, one concern I've heard repeatedly is this: aren't you breaking the encapsulation of your application when you expose change event feeds directly from your database?
 After all, CDC exposes your internal persistent data model to the outside world, which may have unintended consequences, e.g.
@@ -29,7 +30,7 @@ In this blog post I am going to dive into this problem space, discuss when--and 
 
 
 == CDC--A Quick Primer
-With log-based change data capture--for instance, using link:https://debezium.io/[Debezium]--you can expose realtime change event streams for the tables of your database, sourced from the database's transaction log.
+With log-based change data capture--for instance, using link:https://debezium.io/[Debezium]{emdash}you can expose realtime change event streams for the tables of your database, sourced from the database's transaction log.
 For each executed `INSERT`, `UPDATE`, and `DELETE`, an event is appended to the log, from where it is captured by the CDC tool and propagated to consumers, usually through data streaming platforms such as Apache Kafka or Amazon Kinesis.
 
 These event streams enable a link:/blog/seven-ways-to-put-cdc-to-work[large variety of use cases], such as low-latency data feeds for analytical data stores, cache updates, full-text search indexes, and many more.

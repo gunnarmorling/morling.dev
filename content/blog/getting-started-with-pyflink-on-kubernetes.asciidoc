@@ -1,7 +1,7 @@
 ---
 title: 'Getting Started With PyFlink on Kubernetes'
 date: "2023-12-07T00:00:00+00:00"
-draft: true
+draft: false
 markup: adoc
 canonical_url: https://www.decodable.co/blog/getting-started-with-pyflink-on-kubernetes
 tags:
@@ -17,7 +17,7 @@ ifdef::env-github[]
 :imagesdir: ../../static/images
 endif::[]
 
-_This post originally appeared on the link:https://www.decodable.co/blog/getting-started-with-pyflink-on-kubernetes[Decodable blog]._
+_This post originally appeared on the link:https://www.decodable.co/blog/getting-started-with-pyflink-on-kubernetes[Decodable blog]. All rights reserved._
 
 The other day, I wanted to get my feet wet with PyFlink.
 While there is a fair amount of related information out there, I couldn't find really up-to-date documentation on using current versions of PyFlink with Flink on Kubernetes.
@@ -51,9 +51,9 @@ link:https://numpy.org/[NumPy]), but also for ML and AI (e.g.
 link:https://pytorch.org/[PyTorch] and link:https://www.tensorflow.org/[TensorFlow]), which makes PyFlink the ideal link between these fields and real-time stream processing.
 So if for instance you wanted to train your ML models on real time event data sourced from your production RDBMS, doing some data cleaning, filtering, and aggregation along the way, PyFlink would be a great option.
 
-Similar to Flink's Java APIs, PyFlink comes with a link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/datastream_tutorial/[DataStream] API and a link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/table_api_tutorial/[Table] API._
-_The former lets you implement operations such as filtering and mapping, joining, grouping and aggregation, and much more on data streams, providing you with a large degree of freedom and control over aspects such as state management, late event handling, or output control._
-_In contrast, the Table API offers a more rigid but also easier-to-use and less verbose relational programming interface, including support for defining stream processing pipelines using SQL, benefitting from automatic optimizations by Flink's query planner.
+Similar to Flink's Java APIs, PyFlink comes with a link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/datastream_tutorial/[DataStream] API and a link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/table_api_tutorial/[Table] API.
+The former lets you implement operations such as filtering and mapping, joining, grouping and aggregation, and much more on data streams, providing you with a large degree of freedom and control over aspects such as state management, late event handling, or output control.
+In contrast, the Table API offers a more rigid but also easier-to-use and less verbose relational programming interface, including support for defining stream processing pipelines using SQL, benefitting from automatic optimizations by Flink's query planner.
 
 Implementation-wise, PyFlink acts as a wrapper around Flink's Java APIs.
 Upon start-up, the job graph is retrieved from the Python job using link:https://www.py4j.org/[Py4J], a bridge between the Python VM and the JVM.
@@ -286,7 +286,7 @@ RUN apt-get update -y && \
 # install PyFlink
 RUN pip3 install apache-flink==1.18.0
 ----
-_Listing 2: Dockerfile.pyflink-base (link:https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile.pyflink-base[source])
+_Listing 2: Dockerfile.pyflink-base (link:https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile.pyflink-base[source])_
 
 Create an image from that Dockerfile and store it in your local container image registry:
 
@@ -305,7 +305,7 @@ FROM decodable-examples/pyflink-base:latest
 RUN wget -P /opt/flink/usrlib https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.0.2-1.18/flink-sql-connector-kafka-3.0.2-1.18.jar
 ADD --chown=flink:flink python_demo.py /opt/flink/usrlib/pyflink_hello_world.py
 ----
-_Listing 3: Dockerfile (link:https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile[source])
+_Listing 3: Dockerfile (link:https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile[source])_
 
 Let's also build an image for that:
 
@@ -355,7 +355,7 @@ spec:
    parallelism: 1
    upgradeMode: stateless
 ----
-_Listing 4: pyflink-hello-world.yaml (link:https://github.com/decodableco/examples/blob/main/pyflink/pyflink-hello-world.yaml[source])
+_Listing 4: pyflink-hello-world.yaml (link:https://github.com/decodableco/examples/blob/main/pyflink/pyflink-hello-world.yaml[source])_
 
 Note how the `PythonDriver` class is used as the entry point for running a PyFlink job and the job to run is passed in via the `-py` argument.
 Just as any other Kubernetes resource, this Flink job can be deployed using `kubectl`:
@@ -399,7 +399,7 @@ kubectl port-forward service/python-hello-world-rest 8081:rest
 ----
 This makes the Flink Dashboard accessible at link:http://localhost:8081[http://localhost:8081], allowing you to take a look at the job's health status, metrics, etc.:
 
-.PyFlink job in the Apache Flink Dashboard (click to enlarge)_
+.PyFlink job in the Apache Flink Dashboard
 image::pyflink-on-kubernetes-2.png[]
 
 Finally, to stop your job, simply delete its resource definition:

@@ -1,7 +1,7 @@
 ---
 title: 'A Taxonomy Of Data Change Events'
 date: "2024-03-13T00:00:00+00:00"
-draft: true
+draft: false
 markup: adoc
 canonical_url: https://www.decodable.co/blog/taxonomy-of-data-change-events
 tags:
@@ -17,7 +17,7 @@ ifdef::env-github[]
 :imagesdir: ../../static/images
 endif::[]
 
-_This post originally appeared on the link:https://www.decodable.co/blog/taxonomy-of-data-change-events[Decodable blog]._
+_This post originally appeared on the link:https://www.decodable.co/blog/taxonomy-of-data-change-events[Decodable blog]. All rights reserved._
 
 Data change events are at the core of Change Data Capture (CDC) solutions such as link:https://debezium.io/[Debezium].
 They describe the changes made to a specific record in a database and allow event consumers to take action based on this information, enabling a wide range of link:/blog/seven-ways-to-put-cdc-to-work[use cases], such as real-time ETL (by propagating the updated data into downstream data stores such as data warehouses, analytics databases, or fulltext search indexes), microservices data exchange, or audit logging.
@@ -82,7 +82,9 @@ As an example, in order to emit the old row version in change events with Postgr
 
 [NOTE]
 ====
-*Data Change Events and Apache Kafka:* When transferring data change events via partitioned systems such as Apache Kafka, you also need to define a key for your messages. It defines which partition of a change event topic a record will be sent to, ensuring correct ordering of all the records with the same key. For data change events, the key should be derived from the primary key of the represented record in the source data store. That way, all change events for one record will go into one and the same partition of the corresponding change event topic, and consumers will receive them in the exact same order as they occurred in the source database.
+_Data Change Events and Apache Kafka_
+
+When transferring data change events via partitioned systems such as Apache Kafka, you also need to define a key for your messages. It defines which partition of a change event topic a record will be sent to, ensuring correct ordering of all the records with the same key. For data change events, the key should be derived from the primary key of the represented record in the source data store. That way, all change events for one record will go into one and the same partition of the corresponding change event topic, and consumers will receive them in the exact same order as they occurred in the source database.
 ====
 
 == Delta Events
@@ -121,9 +123,9 @@ Formats such as link:https://jsonpatch.com/[JSON Patch] are useful here, as they
 {
   "id" : 42,
   "patch" : [
-    { "op": "replace", "path": "/first_name", "value": "Barry" }
-         { "op": "add", "path": "/emails/-", "value": { "berry@example.com" } }
-    ]
+    { "op": "replace", "path": "/first_name", "value": "Barry" },
+    { "op": "add", "path": "/emails/-", "value": { "berry@example.com" } }
+  ]
 }
 ----
 Unlike full events, delta data change events are not fully self-contained.

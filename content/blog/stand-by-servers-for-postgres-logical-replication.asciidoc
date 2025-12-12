@@ -1,7 +1,7 @@
 ---
 title: 'Using Stand-by Servers for Postgres Logical Replication'
 date: "2023-12-19T00:00:00+00:00"
-draft: true
+draft: false
 markup: adoc
 canonical_url: https://www.decodable.co/blog/postgres-logical-replication
 tags:
@@ -17,7 +17,7 @@ ifdef::env-github[]
 :imagesdir: ../../static/images
 endif::[]
 
-_This post originally appeared on the link:https://www.decodable.co/blog/postgres-logical-replication[Decodable blog]._
+_This post originally appeared on the link:https://www.decodable.co/blog/postgres-logical-replication[Decodable blog]. All rights reserved._
 
 For users of Change Data Capture (CDC), one of the most exciting features in Postgres version 16 (released in September this year) is the support for logical replication from stand-by servers.
 Instead of connecting to your primary server, you can now point CDC tools such as Debezium to a replica server, which is very interesting for instance from a load distribution perspective.
@@ -75,9 +75,9 @@ On the flip-side, there are some implications of this to consider.
 One is the slightly increased end-to-end latency: as changes are traveling from the primary server to the stand-by and then to the client, things will take a bit longer than when connecting your replication consumers directly to the primary.
 The other aspect is that read replicas are exactly that—read-only.
 While CDC in general doesn't require write access to the database, there are some exceptions to that.
-In case of Debezium, you won't be able to use its incremental snapshotting implementation, as this requires inserting watermarking events into a signaling table (you can learn more about this in my talk link:https://www.youtube.com/watch?v=Lp0Rg8_nxUs["Debezium Snapshots Revisited!"])._
-_Also you cannot use the link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-property-heartbeat-action-query[heartbeat feature], which lets the connector update its restart offsets also in cases where there are no change events for any table the connector is capturing are coming in._
-_If you want to use these features, then you'll need to create a replication slot on the primary server.
+In case of Debezium, you won't be able to use its incremental snapshotting implementation, as this requires inserting watermarking events into a signaling table (you can learn more about this in my talk link:https://www.youtube.com/watch?v=Lp0Rg8_nxUs["Debezium Snapshots Revisited!"]).
+Also you cannot use the link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-property-heartbeat-action-query[heartbeat feature], which lets the connector update its restart offsets also in cases where there are no change events for any table the connector is capturing are coming in.
+If you want to use these features, then you'll need to create a replication slot on the primary server.
 
 Enough with all the theory, let's have a look at logical replication on stand-bys in practice, starting with setting it up.
 
