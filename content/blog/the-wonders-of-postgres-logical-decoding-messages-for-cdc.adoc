@@ -31,7 +31,7 @@ In this article, we'll explore how to take advantage of this feature for impleme
 * Application logging
 * Enriching audit logs with metadata
 
-For retrieving logical decoding messages from Postgres we are going to use link:https://debezium.io/[Debezium] , a popular open-source platform for log-based change data capture (CDC), which can stream data changes from a large variety of databases into data streaming platforms like Apache Kafka or AWS Kinesis.
+For retrieving logical decoding messages from Postgres we are going to use link:https://debezium.io/[Debezium], a popular open-source platform for log-based change data capture (CDC), which can stream data changes from a large variety of databases into data streaming platforms like Apache Kafka or AWS Kinesis.
 
 We'll also use link:https://flink.apache.org/[Apache Flink]  and the link:https://github.com/ververica/flink-cdc-connectors[Flink CDC]  project, which seamlessly integrates Debezium into the Flink ecosystem, for enriching and routing raw change event streams.
 You can learn more about the foundations of change data capture and Debezium in link:https://www.infoq.com/presentations/data-streaming-kafka-debezium/[this talk]  from QCon San Francisco.
@@ -66,7 +66,7 @@ docker run --tty --rm -i \
   quay.io/debezium/tooling:1.2 bash -c \
   'pgcli postgresql://postgresuser:postgrespw@postgres:5432/demodb'
 ----
-Next, you need to create a link:https://www.postgresql.org/docs/current/logicaldecoding-explanation.html[replication slot] .
+Next, you need to create a link:https://www.postgresql.org/docs/current/logicaldecoding-explanation.html[replication slot].
 A replication slot represents one specific stream of changes coming from a Postgres database and keeps track of how far a consumer has processed this stream.
 For this purpose, it stores the latest log sequence number ( link:https://www.postgresql.org/docs/current/wal-internals.html[LSN] ) that the slot's consumer has processed and acknowledged.
 
@@ -204,7 +204,7 @@ This creates a transactional message (i.e., it would not be emitted if the trans
 It uses the “outbox” prefix (allowing it to distinguish it from messages of other types) and contains a JSON message as the actual payload.
 
 Regarding retrieving change events and propagating them to Kafka, the details depend on how exactly Debezium, as the underlying CDC tool, is deployed.
-When used with link:https://kafka.apache.org/documentation/#connect[Kafka Connect] , Debezium provides a link:https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html[single message transform]  (SMT) that supports outbox tables and, for instance, routes outbox events to different topics in Kafka based on a configurable column containing the aggregate type.
+When used with link:https://kafka.apache.org/documentation/#connect[Kafka Connect], Debezium provides a link:https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html[single message transform]  (SMT) that supports outbox tables and, for instance, routes outbox events to different topics in Kafka based on a configurable column containing the aggregate type.
 However, this SMT doesn't yet support using logical decoding messages as the outbox format.
 
 When using Debezium via Flink CDC, you could implement a similar logic using a custom `KafkaRecordSerializationSchema` which routes outbox events to the right Kafka topic and propagates the aggregate id to the Kafka message key, thus ensuring correct ordering semantics.
@@ -337,7 +337,7 @@ In enterprise applications, keeping an audit log of your data is a common requir
 
 There are multiple possible approaches for building such an audit log; one of them is to copy earlier record versions into a separate history table whenever a data change is made.
 Arguably, this increases application complexity.
-Depending on the specific implementation strategy, you might have to deploy triggers for all the tables that should be audited or add libraries such as link:https://hibernate.org/orm/envers/[Hibernate Envers] , an extension to the popular Hibernate object-relational mapping tool.
+Depending on the specific implementation strategy, you might have to deploy triggers for all the tables that should be audited or add libraries such as link:https://hibernate.org/orm/envers/[Hibernate Envers], an extension to the popular Hibernate object-relational mapping tool.
 In addition, there's a performance impact, as the audit records are inserted as part of the application's transactions, thus increasing write latency.
 
 Change data capture is an interesting alternative for building audit logs: extracting data changes from the database transaction log requires no changes to writing applications.
@@ -475,7 +475,7 @@ The enriched change events, as emitted by Apache Flink, would look like so:
 }
 ----
 Within the same Flink job, you now could add a sink connector and for instance write the enriched events into a Kafka topic.
-Alternatively, depending on your business requirements, it can be a good idea to propagate the change events into a queryable store, for instance, an OLAP store like link:https://pinot.apache.org/[Apache Pinot]  or link:https://clickhouse.com/[Clickhouse] .
+Alternatively, depending on your business requirements, it can be a good idea to propagate the change events into a queryable store, for instance, an OLAP store like link:https://pinot.apache.org/[Apache Pinot]  or link:https://clickhouse.com/[Clickhouse].
 You could use the same approach for enriching change events with contextual metadata for other purposes too, generally speaking for capturing all kinds of “intent” which isn't directly persisted in the business tables of your application.
 
 
@@ -565,7 +565,7 @@ The CloudEvents format can be a useful foundation for your custom message schema
 
 If you'd like to get started with your explorations around logical decoding messages, look at the link:https://github.com/decodableco/examples/tree/main/postgres-logical-decoding[GitHub repo]  accompanying this article, which contains the source code of all the examples shown above and detailed instructions for running them.
 
-Many thanks to link:https://twitter.com/hpgrahsl/[Hans-Peter Grahsl] , link:https://twitter.com/rmetzger_[Robert Metzger] , and link:https://www.infoq.com/profile/Srini-Penchikala/[Srini Penchikala]  for their feedback while writing this article.
+Many thanks to link:https://twitter.com/hpgrahsl/[Hans-Peter Grahsl], link:https://twitter.com/rmetzger_[Robert Metzger], and link:https://www.infoq.com/profile/Srini-Penchikala/[Srini Penchikala]  for their feedback while writing this article.
 
 
 

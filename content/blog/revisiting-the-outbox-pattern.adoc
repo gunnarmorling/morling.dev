@@ -29,22 +29,22 @@ _Pedicure for poodles, lathering for labradors, grooming for greyhounds—there'
 
 Let's look at one of the business processes, the creation of appointments for a treatment, and how it could be implemented.
 Oh-my-Dawg runs a microservices architecture, with one service for managing appointments, and another one for managing inventory.
-When the appointment service receives a request via its  link:/blog/exploring-the-flink-sql-gateway-rest-api[REST API] , it must persist the information about the requested treatment in its own database.
-We're members of the  link:https://boringtechnology.club/[boring technology club] , so Postgres is used as a data store.
+When the appointment service receives a request via its link:/blog/exploring-the-flink-sql-gateway-rest-api[REST API], it must persist the information about the requested treatment in its own database.
+We're members of the link:https://boringtechnology.club/[boring technology club], so Postgres is used as a data store.
 At the same time, the appointment service needs to notify the inventory service about the new appointment, so that shampoo and whatever else is needed can be reserved, and backordered, if needed.
-To decouple the two services, the notification is sent via  link:/kafka[Apache Kafka] .
+To decouple the two services, the notification is sent via link:/kafka[Apache Kafka].
 
 
 image::/images/2024/10/6722604ffce61a7e064cd527_672251781005cb3d2528d63e_AD_4nXcJ6wjdd_w8Kj-6p8k-0pBcpXLk1tYcaCBEA0JomfmHajPT-ZtTCwiFbWZFg_IfM0_Lu3514P8YqVnTi4cOP0SFQClf3cNWjud-p02MmL5cIyAeytyXcP8K4jqR14jifDo3tAw6STM-y986IVWNoA3LR65C.webp[]
 _Fig._
-_1: The Oh-my-Dawg microservices architecture_Now, it is vital that these two operations, updating the appointment database and sending the notification, happen  link:/blog/aggregating-change-data-capture-events-based-on-transactional-boundaries[atomically—that is, they either both happen, or neither of them does] .
+_1: The Oh-my-Dawg microservices architecture_Now, it is vital that these two operations, updating the appointment database and sending the notification, happen link:/blog/aggregating-change-data-capture-events-based-on-transactional-boundaries[atomically—that is, they either both happen, or neither of them does].
 Otherwise, the overall state of the system would be inconsistent:
 
 * If the database transaction commits but the inventory notification isn't sent, we'd end up without shampoo for the appointment. Our furry customers won't be happy!
 * If the database transaction fails but the notification is sent, we'd inform the customer about the failed request but still have allocated inventory for a non-existent appointment. The folks over at Oh-my-Dawg accounting won't like that!
 
 As of today, there's no way for Kafka to participate in a distributed transaction shared with a database (more on that, in particular whether it is a good idea or not, later on).
-Fortunately, the  link:https://microservices.io/patterns/data/transactional-outbox.html[outbox pattern]  provides a solution which doesn't require distributed transactions to begin with.
+Fortunately, the link:https://microservices.io/patterns/data/transactional-outbox.html[outbox pattern]  provides a solution which doesn't require distributed transactions to begin with.
 As part of its local database transaction, the appointment service inserts the notification message which it wants to send into a table in that database.
 The transaction ensures atomicity for writing the actual data and that message.
 
@@ -53,10 +53,10 @@ image::/images/2024/10/67226050fce61a7e064cd536_6722517823e5e6fb168ab29a_AD_4nXd
 _Fig._
 _2: The outbox pattern for atomically updating the Appointments table and emitting a notification_A separate process, called the outbox relay, picks up that message from this outbox table and sends it to Kafka.
 This happens asynchronously and can be retried if needed, without impacting the clients of the appointment service in any way.
-Different approaches exist for implementing the outbox relay, with one popular option being log-based  link:https://www.decodable.co/blog/introduction-to-change-data-capture-cdc[change data capture (CDC)] , using tools such as  link:https://debezium.io/[Debezium] .
-You can learn more about the foundations of the outbox pattern in  link:https://debezium.io/blog/2019/02/19/reliable-microservices-data-exchange-with-the-outbox-pattern/[this article] , while  link:https://romankudryashov.com/blog/2024/07/event-driven-architecture/[this post]  provides an in-depth hands-on example.
+Different approaches exist for implementing the outbox relay, with one popular option being log-based link:https://www.decodable.co/blog/introduction-to-change-data-capture-cdc[change data capture (CDC)], using tools such as link:https://debezium.io/[Debezium].
+You can learn more about the foundations of the outbox pattern in link:https://debezium.io/blog/2019/02/19/reliable-microservices-data-exchange-with-the-outbox-pattern/[this article], while link:https://romankudryashov.com/blog/2024/07/event-driven-architecture/[this post]  provides an in-depth hands-on example.
 
-Note that, while the outbox pattern ensures atomicity of a local database update and sending out a message to external consumers, it does not provide complete  link:https://en.wikipedia.org/wiki/ACID[ACID transactional guarantees] .
+Note that, while the outbox pattern ensures atomicity of a local database update and sending out a message to external consumers, it does not provide complete link:https://en.wikipedia.org/wiki/ACID[ACID transactional guarantees].
 Specifically, the pattern provides _eventual consistency_ semantics: changes to the local datastore of the writing service become visible immediately, while the notification of other services happens asynchronously.
 
 
@@ -73,17 +73,17 @@ While deceptively simple, there's a number of problems with this approach.
 For one, it can be resource-intensive, creating spikes of high load on the database upon each polling attempt.
 There's a natural conflict between achieving low latency and not overwhelming the database due to polling too frequently.
 
-The biggest challenge of this approach though, as  link:https://x.com/martinkl/status/1349099872897658880[pointed out]  by Martin Kleppmann, are its poor ordering semantics.
-If there are multiple transactions running in parallel, and each one emits an outbox message, it can't be guaranteed that the order of messages in the outbox table—e.g.,  link:/blog/understanding-apache-flink-event-time-and-watermarks[designated by timestamps]  or a sequence field—is the same as the order of commits.
+The biggest challenge of this approach though, as link:https://x.com/martinkl/status/1349099872897658880[pointed out]  by Martin Kleppmann, are its poor ordering semantics.
+If there are multiple transactions running in parallel, and each one emits an outbox message, it can't be guaranteed that the order of messages in the outbox table—e.g., link:/blog/understanding-apache-flink-event-time-and-watermarks[designated by timestamps]  or a sequence field—is the same as the order of commits.
 This can have severe implications.
-When not being very careful, it can cause the relay to miss outbox messages, providing consumers with an incomplete feed of events (Oskar Dudycz does a great job in  link:https://event-driven.io/en/ordering_in_postgres_outbox/[explaining the problem and describing one potential solution] ; the basic idea is to consider an outbox event only once there are no more transactions running which are older than the one emitting the outbox event)._
+When not being very careful, it can cause the relay to miss outbox messages, providing consumers with an incomplete feed of events (Oskar Dudycz does a great job in link:https://event-driven.io/en/ordering_in_postgres_outbox/[explaining the problem and describing one potential solution] ; the basic idea is to consider an outbox event only once there are no more transactions running which are older than the one emitting the outbox event)._
 _But this also means that there can be inconsistencies between the state of the writing service's local database and the external state as represented by its published messages._
 _While serialization may be enforced in some cases, for instance using optimistic locking on a specific record, the problem can't be solved generically in the presence of concurrent writers.
 
-A much better solution is to retrieve  link:/blog/why-do-i-need-cdc#the-best-way-to-do-cdc-is-log-based-cdc[the outbox events via log-based CDC] .
+A much better solution is to retrieve link:/blog/why-do-i-need-cdc#the-best-way-to-do-cdc-is-log-based-cdc[the outbox events via log-based CDC].
 By tailing the database's transaction log (e.g.
-the  link:https://www.postgresql.org/docs/current/wal-intro.html[write-ahead log] , WAL, in case of Postgres), events are emitted in the exact same order as transactions were committed to the database, ensuring consistency between internal and external representation of the data.
-Log-based CDC comes with a few  link:https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/[other advantages] : it avoids the polling overhead and ensures a low latency (typically, changes can be propagated from Postgres to Kafka within a two-digit milliseconds timeframe).
+the link:https://www.postgresql.org/docs/current/wal-intro.html[write-ahead log], WAL, in case of Postgres), events are emitted in the exact same order as transactions were committed to the database, ensuring consistency between internal and external representation of the data.
+Log-based CDC comes with a few link:https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/[other advantages] : it avoids the polling overhead and ensures a low latency (typically, changes can be propagated from Postgres to Kafka within a two-digit milliseconds timeframe).
 It should be the preferred option whenever possible.
 
 
@@ -97,7 +97,7 @@ Besides the actual event payload (often JSON, but you can use any format of your
 “Appointment”) to different topics.
 When using a partitioned streaming platform such as Kafka, you'll also need a column for the id of the represented entity (for instance, the appointment id), so that all events pertaining to the same record will be written to the same partition, thus ensuring correct ordering of these events.
 
-As an example, here is the default outbox table format when using  link:https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html[Debezium as a log-based outbox relay] :
+As an example, here is the default outbox table format when using link:https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html[Debezium as a log-based outbox relay] :
 
 * *id* (`UUID`): unique event identifier
 * *aggregatetype* (`VARCHAR(255)`): the type of domain object described by an event, e.g. “appointment”; used for routing outbox events of different types to different Kafka topics
@@ -142,8 +142,8 @@ SELECT * FROM pg_logical_emit_message(
 _Listing 1.: Writing an outbox message to the transaction log with_`pg_logical_emit_message()` +
 
 These messages never materialize in any tables (and thus don't cause any database growth apart from the WAL itself) and you also don't need to take care of housekeeping, as any obsolete WAL segments will automatically be disposed of.
-If you are on Postgres, such a log-only outbox implementation is the one I'd recommend to use; you can learn more about the details in  link:https://www.decodable.co/blog/the-wonders-of-postgres-logical-decoding-messages-for-cdc[this article] .
-It shows how to implement the outbox pattern with Postgres logical decoding messages, using  link:https://nightlies.apache.org/flink/flink-cdc-docs-stable/[Flink CDC]  and Debezium as a log-based outbox relay.
+If you are on Postgres, such a log-only outbox implementation is the one I'd recommend to use; you can learn more about the details in link:https://www.decodable.co/blog/the-wonders-of-postgres-logical-decoding-messages-for-cdc[this article].
+It shows how to implement the outbox pattern with Postgres logical decoding messages, using link:https://nightlies.apache.org/flink/flink-cdc-docs-stable/[Flink CDC]  and Debezium as a log-based outbox relay.
 
 For services using MySQL as a datastore, the `BLACKHOLE` storage engine can be used in a similar way.
 Akin to writing something to _/dev/null_, any data written to a table with this storage engine will be immediately thrown away.
@@ -156,7 +156,7 @@ If you are aware of similar capabilities for other databases, I'd love to hear f
 Whether you are using an actual outbox table or are storing outbox events only in the transaction log, you'll need to decide on the format for the actual event payload.
 As far the logical format is concerned, it's completely up to you how the events should be structured.
 Being independent from the schema of a service's actual data tables, the schema of outbox messages can be considered as a form of a data contract, allowing you to evolve your internal table model without impacting or even breaking any external services.
-The event format should be evolved in a  link:https://speakerdeck.com/gunnarmorling/data-contracts-in-practice-with-debezium-and-apache-flink?slide=39[forward-compatible manner] , i.e.
+The event format should be evolved in a link:https://speakerdeck.com/gunnarmorling/data-contracts-in-practice-with-debezium-and-apache-flink?slide=39[forward-compatible manner], i.e.
 you can add new fields and drop existing optional fields.
 That way, the data producer can evolve the schema without having to synchronize with consumers, as consumers with an old schema version will still be able to process events adhering to a new schema version.
 
@@ -165,9 +165,9 @@ It is verbose though, so you may consider using compression, or working with a b
 With the latter option it can be interesting— instead of connecting to a schema registry from within the writing service—to use a registryless serializer.
 As schemas won't change while a service is running, they can be statically defined at build time.
 That way, there's no runtime dependency from the application to a schema registry and thus one less failure point on the synchronous request processing path.
-If required, schemas can still be published to a registry (for instance, the  link:https://docs.confluent.io/platform/current/schema-registry/index.html[Confluent schema registry] , or  link:https://www.apicur.io/[Apicurio] ) via a CI/CD pipeline when deploying a new version of the source microservice, making them available for discovery and consumption by downstream processes.
+If required, schemas can still be published to a registry (for instance, the link:https://docs.confluent.io/platform/current/schema-registry/index.html[Confluent schema registry], or link:https://www.apicur.io/[Apicurio] ) via a CI/CD pipeline when deploying a new version of the source microservice, making them available for discovery and consumption by downstream processes.
 
-Another interesting option to consider can be whether to adopt  link:https://cloudevents.io/[CloudEvents]  for your event payloads.
+Another interesting option to consider can be whether to adopt link:https://cloudevents.io/[CloudEvents]  for your event payloads.
 It's a specification for describing events in a standardized way, allowing consumers to uniformly access common attributes such as event id, source, and timestamp.
 
 
@@ -184,7 +184,7 @@ At Oh-my-Dawg, you'd scan the existing dataset and insert an event for each exis
 Unfortunately, in a live production system you usually won't have the luxury of exclusive write access.
 In which case you'll need to deal with concurrent updates and make sure that any backfill events don't overwrite updates to a record which is happening in parallel.
 
-This can be done by implementing the watermark-based snapshotting approach introduced in the  link:https://arxiv.org/abs/2010.12597[DBLog paper]  (which since then has been  link:https://github.com/debezium/debezium-design-documents/blob/main/DDD-3.md[implemented by Debezium] , Flink CDC, and others).
+This can be done by implementing the watermark-based snapshotting approach introduced in the link:https://arxiv.org/abs/2010.12597[DBLog paper]  (which since then has been link:https://github.com/debezium/debezium-design-documents/blob/main/DDD-3.md[implemented by Debezium], Flink CDC, and others).
 The high-level intuition for this algorithm is to incrementally step through the dataset to be backfilled in ordered chunks, consuming change events from the transaction log in parallel, and apply a deduplication step for giving any events from the log precedence over backfill events.
 Chunks are segmented by marker events which are inserted into the log by the snapshotting mechanism.
 A backfilling job for outbox events could look like this:
@@ -198,7 +198,7 @@ When extracting events from the outbox, for each of the windowed chunks, process
 All the regular, non-backfill events are propagated.
 A backfill event will only be propagated if there's no non-backfill event for the same record (for instance, the appointment with id 42) in the current chunk, otherwise it will be discarded.
 This buffering could happen in different ways, for instance using a Kafka Connect SMT, or using a Flink stream processing job.
-To learn more about this approach to concurrent incremental backfilling, refer to  link:https://debezium.io/blog/2021/10/07/incremental-snapshots/[this post]  on the Debezium blog.
+To learn more about this approach to concurrent incremental backfilling, refer to link:https://debezium.io/blog/2021/10/07/incremental-snapshots/[this post]  on the Debezium blog.
 
 
 === Idempotency for Consumers
@@ -220,12 +220,12 @@ That way, consumers need to store only the latest value they've seen, just like 
 When they receive an event with a sequence value which is the same as or lower than the current watermark (and transport semantics are not at-most-once, i.e.
 events are guaranteed to not get lost), this must be a duplicate which can be discarded.
 Now, as discussed above, you can't use a standard database sequence for creating that value, as you can't guarantee that it is going to be monotonically increasing for events created in multiple concurrent transactions.
-Instead, the records position (offset) in the source database's transaction log can be used, for instance the  link:https://www.postgresql.org/docs/current/wal-internals.html[LSN (log sequence number)]  in case of Postgres, a “byte offset into the [transaction log], increasing monotonically with each new record”.
+Instead, the records position (offset) in the source database's transaction log can be used, for instance the link:https://www.postgresql.org/docs/current/wal-internals.html[LSN (log sequence number)]  in case of Postgres, a “byte offset into the [transaction log], increasing monotonically with each new record”.
 Similar ids exist in other databases too, check their documentation on the exact format and semantics.
 
 
 == Criticisms of the Outbox pattern
-The outbox pattern definitely fulfills its purpose: allowing a service to update its own database and send out notifications to other services via streaming platforms such as Kafka, in a safe and reliable way, without  link:/blog/why-do-i-need-cdc#the-best-way-to-do-cdc-is-log-based-cdc[requiring distributed transactions] .
+The outbox pattern definitely fulfills its purpose: allowing a service to update its own database and send out notifications to other services via streaming platforms such as Kafka, in a safe and reliable way, without link:/blog/why-do-i-need-cdc#the-best-way-to-do-cdc-is-log-based-cdc[requiring distributed transactions].
 When it comes to critique on this pattern, I mostly see two things being mentioned: overhead on the database, and complexity.
 A less commonly brought up concern is latency.
 Let's take a look at all of these in turn.
@@ -253,8 +253,8 @@ In a microservices architecture, there'll be a database for each service and a s
 When implementing the outbox pattern, you'll also need the outbox relay.
 If you don't do CDC yet, adding a system like Debezium—for instance by standing up a Kafka Connect cluster—for this purpose will add one more component indeed.
 This component needs to be operated, updated, kept secure, etc.
-On the other hand, chances are you  link:https://www.decodable.co/blog/why-do-i-need-cdc[need CDC anyways] , in which case configuring it for also capturing outbox events doesn't change the consideration much.
-Another option can be to run the outbox relay within the writing service yourself: via its embedded engine, Debezium can be used  link:https://www.decodable.co/blog/understanding-cdc-with-debezium-server-and-debezium-engine[as a library in Java-based applications] , thus avoiding the need for running the outbox relay in a separate process.
+On the other hand, chances are you link:https://www.decodable.co/blog/why-do-i-need-cdc[need CDC anyways], in which case configuring it for also capturing outbox events doesn't change the consideration much.
+Another option can be to run the outbox relay within the writing service yourself: via its embedded engine, Debezium can be used link:https://www.decodable.co/blog/understanding-cdc-with-debezium-server-and-debezium-engine[as a library in Java-based applications], thus avoiding the need for running the outbox relay in a separate process.
 
 The other, internal, angle to the complexity argument is primarily about the programming model, i.e.
 how hard or simple is it to make use of the outbox pattern from an application development perspective.
@@ -262,7 +262,7 @@ For that I'd argue, when done right, the outbox pattern can actually _reduce_ co
 Instead of dealing with database APIs such as JDBC _and_ the Kafka client, developers of the writing service only need to concern themselves with the database access.
 As the Kafka access happens behind the scenes via the CDC process, they don't need to be aware of the intricacies of Kafka producers, how to configure and tune them, etc.
 The key thing here is to find the right abstractions, so as to simplify the process of emitting outbox messages as much as possible.
-As an example,  link:https://debezium.io/documentation/reference/stable/integrations/outbox.html[Debezium's extension]  for implementing the outbox pattern within  link:https://quarkus.io/[Quarkus] -based microservices allows you to use  link:https://www.cdi-spec.org/[CDI]  events for doing so:
+As an example, link:https://debezium.io/documentation/reference/stable/integrations/outbox.html[Debezium's extension]  for implementing the outbox pattern within link:https://quarkus.io/[Quarkus] -based microservices allows you to use link:https://www.cdi-spec.org/[CDI]  events for doing so:
 
 
 [source,java]
@@ -283,7 +283,7 @@ As an example,  link:https://debezium.io/documentation/reference/stable/integrat
 ----
 _Listing 2.: Persisting an appointment and emitting an outbox message in a Quarkus-based microservice_
 
-Similar solutions exist for other stacks,  link:https://www.wimdeblauwe.com/blog/2024/06/25/transactional-outbox-pattern-with-spring-boot/[for instance for Spring Boot] , and programming languages.
+Similar solutions exist for other stacks, link:https://www.wimdeblauwe.com/blog/2024/06/25/transactional-outbox-pattern-with-spring-boot/[for instance for Spring Boot], and programming languages.
 Whether using a ready-made solution or implementing something from scratch, the required infrastructure for enabling the outbox pattern within an application can and should be encapsulated in an easy-to-use component, shielding application logic from the implementation details.
 
 
@@ -291,7 +291,7 @@ Whether using a ready-made solution or implementing something from scratch, the 
 A minor disadvantage of the outbox pattern is the increased latency of messages sent to external consumers.
 This will take longer when routing them through the database than when publishing them to Kafka directly.
 While that's true, I don't think this is really significant in practice.
-The notification of external processes is designed as an asynchronous process anyways, and the  link:/blog/change-data-capture-breaks-encapsulation-does-it-though[publication of messages via log-based CDC can be really fast] .
+The notification of external processes is designed as an asynchronous process anyways, and the link:/blog/change-data-capture-breaks-encapsulation-does-it-though[publication of messages via log-based CDC can be really fast].
 If it is a problem in a microservices architecture when one service receives a message sent by another service with a delay of a few hundred milliseconds, then probably there's something not quite right with how the services are cut in the first place.
 
 
@@ -312,8 +312,8 @@ Let's explore some of the options and their specific pros and cons.
 
 
 === Dapr
-Not so much an alternative as a variation of the outbox pattern is provided by  link:https://dapr.io/[Dapr] , a distributed platform for building reliable microservices.
-In  link:https://docs.dapr.io/developing-applications/building-blocks/state-management/howto-outbox/[its outbox pattern implementation] , Dapr first writes the message to be published to an internal Pub/Sub topic.
+Not so much an alternative as a variation of the outbox pattern is provided by link:https://dapr.io/[Dapr], a distributed platform for building reliable microservices.
+In link:https://docs.dapr.io/developing-applications/building-blocks/state-management/howto-outbox/[its outbox pattern implementation], Dapr first writes the message to be published to an internal Pub/Sub topic.
 If that succeeds, it updates the local state, also writing an identifier of that previously sent message.
 
 A separate Dapr process reads from the internal topic and looks for the identifier in the state store.
@@ -326,7 +326,7 @@ So the trade-offs are slightly different, but not clearly advantageous to me.
 
 
 === Read-yourself
-Instead of having a service write to its database and drive the update to Kafka from there via an outbox,  link:https://www.squer.io/blog/stop-overusing-the-outbox-pattern[a commonly suggested alternative]  is to reverse this order.
+Instead of having a service write to its database and drive the update to Kafka from there via an outbox, link:https://www.squer.io/blog/stop-overusing-the-outbox-pattern[a commonly suggested alternative]  is to reverse this order.
 When handling a request, the service writes only to Kafka.
 Thanks to transactional producers, writes to an internal data topic and a public topic for external consumption can happen atomically.
 The service subscribes to this data topic and updates data views in its local state store based on that (Event Sourcing).
@@ -343,7 +343,7 @@ While some techniques for mitigation exist, it's not an approach I'd recommend d
 Another alternative is to use change data capture not for an outbox table, but for the actual data tables of the service itself, such as the “Appointment” table in the Oh-my-Dawg example.
 Exposing these change event streams across service—and team—boundaries can be problematic, as it exposes a service's internal data model and its structure to external consumers.
 In particular when it comes to changes to the data schema, this can cause friction and disruption.
-Stream processing, for instance via Apache Flink or Kafka Streams, can be a way out, establishing consciously crafted  link:https://current.confluent.io/2024-sessions/data-contracts-in-practice-with-debezium-and-apache-flink[data contracts]  between the providing service and event consumers.
+Stream processing, for instance via Apache Flink or Kafka Streams, can be a way out, establishing consciously crafted link:https://current.confluent.io/2024-sessions/data-contracts-in-practice-with-debezium-and-apache-flink[data contracts]  between the providing service and event consumers.
 With tools like Flink SQL, you can apply data transformations for shaping the published events, limit which events get published, create denormalized events by joining multiple change event streams, and much more.
 Flink CDC can be used to run Debezium natively within Flink, essentially letting a Flink job take the role of the outbox relay.
 
@@ -360,12 +360,12 @@ With the outbox pattern, which emits messages in the context of transactions in 
 
 
 === 2PC
-Some folks argue that the outbox pattern essentially is a work-around for the lack of  link:https://en.wikipedia.org/wiki/Two-phase_commit_protocol[2PC (two-phase commit)]  support in Kafka.
+Some folks argue that the outbox pattern essentially is a work-around for the lack of link:https://en.wikipedia.org/wiki/Two-phase_commit_protocol[2PC (two-phase commit)]  support in Kafka.
 A spicy take, I like it!
 And indeed, there's something to this.
 If you are using messaging infrastructure like a good ol' JMS broker which supports enlisting in global transactions alongside databases, you'll get the all-or-nothing semantics for writing to a service's database and sending a message to other services which we're after.
 
-So it should be good news then that something similar will be possible with Kafka soon, as the Kafka community currently is working on  link:https://cwiki.apache.org/confluence/display/KAFKA/KIP-939:+Support+Participation+in+2PC[KIP-939]  (“Support Participation in 2PC”).
+So it should be good news then that something similar will be possible with Kafka soon, as the Kafka community currently is working on link:https://cwiki.apache.org/confluence/display/KAFKA/KIP-939:+Support+Participation+in+2PC[KIP-939]  (“Support Participation in 2PC”).
 But in my opinion, this KIP won't render the outbox pattern obsolete; the reason being the implications on service availability.
 With the outbox pattern, a service only needs a single resource to be available in order to process an incoming request—its own database.
 Whereas with 2PC, it needs two resources, the database and the Kafka cluster, which means that the service's overall availability actually is lower.
@@ -377,8 +377,8 @@ Another, minor, advantage of the outbox pattern is that developers of the writin
 
 
 === Durable Execution
-Using the outbox pattern and a bit of glue code,  link:https://www.infoq.com/articles/saga-orchestration-outbox/[it is possible to orchestrate Sagas] , long-running business transactions, across distributed services.
-Durable execution frameworks such as  link:https://temporal.io/[Temporal] ,  link:https://restate.dev/[Restate] , or  link:https://www.dbos.dev/dbos-transact[DBOS Transact]  aim to take things one step further with a higher-level programming experience.
+Using the outbox pattern and a bit of glue code, link:https://www.infoq.com/articles/saga-orchestration-outbox/[it is possible to orchestrate Sagas], long-running business transactions, across distributed services.
+Durable execution frameworks such as link:https://temporal.io/[Temporal], link:https://restate.dev/[Restate], or link:https://www.dbos.dev/dbos-transact[DBOS Transact]  aim to take things one step further with a higher-level programming experience.
 In a nutshell, they provide a form of persistent continuations, transparently retrying failed operations, keeping track of the execution state of a service, and automatically restoring it in case of failures.
 
 There has been a fair amount of buzz around these solutions lately and their promise of drastically simplifying the creation of robust and fault-tolerant distributed workflows.
@@ -408,4 +408,4 @@ In particular, in the absence of distributed transactions, it is not sufficient 
 Processes will shut down uncleanly, machines will crash, and networks will stop working.
 So inconsistencies are bound to happen when not taking the right precautions.
 
-Better don't go there and always remember:  link:https://x.com/gunnarmorling/status/1446864452486316040[Friends don't let friends do dual writes] !
+Better don't go there and always remember: link:https://x.com/gunnarmorling/status/1446864452486316040[Friends don't let friends do dual writes] !

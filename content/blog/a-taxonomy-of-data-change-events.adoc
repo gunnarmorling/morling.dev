@@ -15,8 +15,8 @@ endif::[]
 
 _This post originally appeared on the link:https://www.decodable.co/blog/taxonomy-of-data-change-events[Decodable blog]._
 
-Data change events are at the core of Change Data Capture (CDC) solutions such as  link:https://debezium.io/[Debezium] .
-They describe the changes made to a specific record in a database and allow event consumers to take action based on this information, enabling a wide range of  link:https://www.decodable.co/blog/seven-ways-to-put-cdc-to-work[use cases] , such as real-time ETL (by propagating the updated data into downstream data stores such as data warehouses, analytics databases, or fulltext search indexes), microservices data exchange, or audit logging.
+Data change events are at the core of Change Data Capture (CDC) solutions such as link:https://debezium.io/[Debezium].
+They describe the changes made to a specific record in a database and allow event consumers to take action based on this information, enabling a wide range of link:https://www.decodable.co/blog/seven-ways-to-put-cdc-to-work[use cases], such as real-time ETL (by propagating the updated data into downstream data stores such as data warehouses, analytics databases, or fulltext search indexes), microservices data exchange, or audit logging.
 
 <!--more-->
 What is contained within a change event, really?
@@ -74,7 +74,7 @@ Which parts are present in an event, depends on the kind of the data change:
 
 Whether the old row image actually is present in insert and update events also depends on the configuration of the source database.
 Typically, the retention of old row images must be explicitly enabled, as it comes at the cost of additional disk space consumption by the database system.
-As an example, in order to emit the old row version in change events with Postgres, the table's  link:https://www.postgresql.org/docs/current/sql-altertable.html#SQL-ALTERTABLE-REPLICA-IDENTITY[replica identity]  must be set to `FULL`.
+As an example, in order to emit the old row version in change events with Postgres, the table's link:https://www.postgresql.org/docs/current/sql-altertable.html#SQL-ALTERTABLE-REPLICA-IDENTITY[replica identity]  must be set to `FULL`.
 
 *Data Change Events and Apache Kafka:* When transferring data change events via partitioned systems such as Apache Kafka, you also need to define a key for your messages. It defines which partition of a change event topic a record will be sent to, ensuring correct ordering of all the records with the same key. For data change events, the key should be derived from the primary key of the represented record in the source data store. That way, all change events for one record will go into one and the same partition of the corresponding change event topic, and consumers will receive them in the exact same order as they occurred in the source database.
 
@@ -107,7 +107,7 @@ omitting it from the event payload.
 A second option for partial data change events is to describe which operations were applied to which attributes specifically.
 This can come in handy in particular when dealing with array-valued attributes.
 In case of updates, when the change event format contains the full new value, then a small change could cause write amplification, when for instance adding or removing one element to/from an array with twenty entries.
-Formats such as  link:https://jsonpatch.com/[JSON Patch]  are useful here, as they allow you to describe the changes on a more fine-grained basis:
+Formats such as link:https://jsonpatch.com/[JSON Patch]  are useful here, as they allow you to describe the changes on a more fine-grained basis:
 
 
 [source,json]
@@ -125,16 +125,16 @@ When receiving a partial update event, an event consumer must be able to access 
 If for instance the consuming system is a SQL database, an `UPDATE` statement could be issued for updating the affected columns.
 
 But what to do when a sink data system does not support partial updates and instead always requires ingesting the complete record when an update has happened?
-For cases like this, stateful stream processing, for instance using  link:https://flink.apache.org/[Apache Flink] , can be a useful option.
+For cases like this, stateful stream processing, for instance using link:https://flink.apache.org/[Apache Flink], can be a useful option.
 You'd put this stream processor between your event source and sink, and it would “re-hydrate” full events, this means apply all the incoming partial events one after the other.
-To do so, it would utilize an internal state store (such as  link:https://rocksdb.org/[RocksDB] , in case of Flink).
+To do so, it would utilize an internal state store (such as link:https://rocksdb.org/[RocksDB], in case of Flink).
 When processing an insert change event for a record, this event would be put into the state store, before emitting it downstream.
 
 Later on, when processing update events, the stream processor can obtain any attribute values absent from incoming partial events from the state store, thus exposing only ever full events to the downstream event consumers.
 While a similar read-before-write approach could also be implemented within sink data stores, doing it in a stream processing pipeline allows to build the re-hydration logic once and then let multiple sinks benefit from it.
 
 This technique can also come in handy for situations where a CDC system emits full data change events most of the time, but may emit partial events in certain cases.
-One example is Debezium's connector for Postgres, which  link:https://debezium.io/blog/2019/10/08/handling-unchanged-postgres-toast-values/[doesn't emit the value for TOAST columns]  if their value hasn't changed.
+One example is Debezium's connector for Postgres, which link:https://debezium.io/blog/2019/10/08/handling-unchanged-postgres-toast-values/[doesn't emit the value for TOAST columns]  if their value hasn't changed.
 Stateful stream processing as described above can help to shield consumers from this behavior and always expose complete events to event consumers.
 
 
@@ -151,13 +151,13 @@ For this purpose, all which the event must contain is the id of the record, for 
 }
 ----
 Id-only events are used in contexts other than databases and CDC in the strict sense of the word, too.
-One example are  link:https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html[Amazon S3 event notifications] , which you can use for subscribing to changes occurring in an S3 bucket, such as the addition or removal of files.
+One example are link:https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html[Amazon S3 event notifications], which you can use for subscribing to changes occurring in an S3 bucket, such as the addition or removal of files.
 The id-only event style is used here as would not be practical to expose the entire file state in the corresponding change events.
 
 By its very nature, such an id-only event doesn't tell you what exactly has changed about the represented record.
 This makes this event type only useful for quite a narrow range of applications.
 For instance, you could use it to _invalidate_ items in a cache, but you couldn't use it by itself to _update_ at a cache.
-Examples for systems working with id-only events include the  link:https://learn.microsoft.com/en-us/sql/relational-databases/track-changes/about-change-tracking-sql-server?view=sql-server-ver16[Change Tracking]  feature of Microsoft SQL Server, the  link:https://www.cockroachlabs.com/docs/v23.2/create-changefeed#options[“key only” mode of CockroachDB] , and the  link:https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html#Streams.Enabling[KEYS_ONLY stream view type in DynamoDB] .
+Examples for systems working with id-only events include the link:https://learn.microsoft.com/en-us/sql/relational-databases/track-changes/about-change-tracking-sql-server?view=sql-server-ver16[Change Tracking]  feature of Microsoft SQL Server, the link:https://www.cockroachlabs.com/docs/v23.2/create-changefeed#options[“key only” mode of CockroachDB], and the link:https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html#Streams.Enabling[KEYS_ONLY stream view type in DynamoDB].
 
 If you'd like to obtain the entire row, you don't have any other choice than re-selecting it from the source store.
 This could be done by change event consumers themselves, but also by a stream processor which then emits full change events to downstream consumers.
@@ -201,7 +201,7 @@ This typically includes:
 * Position of the event in the source database's transaction log
 * The query triggering a change
 
-As an example, here's an update event as emitted by the  link:https://debezium.io/documentation/reference/stable/connectors/postgresql[Debezium connector for Postgres] , with a range of event metadata in the `ts_ms`, `op`, and `source` fields (you'd find similar metadata in the events emitted by other CDC tools such as  link:https://maxwells-daemon.io/[Maxwell's Daemon] ):
+As an example, here's an update event as emitted by the link:https://debezium.io/documentation/reference/stable/connectors/postgresql[Debezium connector for Postgres], with a range of event metadata in the `ts_ms`, `op`, and `source` fields (you'd find similar metadata in the events emitted by other CDC tools such as link:https://maxwells-daemon.io/[Maxwell's Daemon] ):
 
 
 [source,json]
@@ -274,4 +274,4 @@ Which one to use depends not only on the capabilities of the systems you're work
 
 Real-time stream processing with solutions such as Apache Flink, is a powerful companion to CDC tools like Debezium, allowing you to transform and amend change event streams if and when needed.
 Examples include the expansion of id-only change events—by selecting the entire row state from the source database—as well as the hydration of full events from delta change events by using a state store.
-But you also can employ stream processing to great effect for other CDC-related tasks, for instance for establishing stable data contracts for your change events streams, as I've discussed in  link:https://www.decodable.co/blog/change-data-capture-breaks-encapsulation-does-it-though[another blog post]  not too long ago.
+But you also can employ stream processing to great effect for other CDC-related tasks, for instance for establishing stable data contracts for your change events streams, as I've discussed in link:https://www.decodable.co/blog/change-data-capture-breaks-encapsulation-does-it-though[another blog post]  not too long ago.

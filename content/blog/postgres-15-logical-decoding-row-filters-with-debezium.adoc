@@ -15,8 +15,8 @@ endif::[]
 
 _This post originally appeared on the link:https://www.decodable.co/blog/postgres-15-logical-decoding-row-filters-with-debezium[Decodable blog]._
 
-Since  link:https://www.postgresql.org/docs/current/logicaldecoding-explanation.html[logical decoding]  was added to Postgres in version 9.4, this powerful feature for capturing changes from the write-ahead log of the database has been continuously improved.
-link:https://www.postgresql.org/about/news/postgresql-15-released-2526/[Postgres 15] , released in October this year, added support for fine-grained control over which columns (by means of _column lists_) and rows (via _row filters_) should be exported from captured tables.
+Since link:https://www.postgresql.org/docs/current/logicaldecoding-explanation.html[logical decoding]  was added to Postgres in version 9.4, this powerful feature for capturing changes from the write-ahead log of the database has been continuously improved.
+link:https://www.postgresql.org/about/news/postgresql-15-released-2526/[Postgres 15], released in October this year, added support for fine-grained control over which columns (by means of _column lists_) and rows (via _row filters_) should be exported from captured tables.
 This means, in relational terminology, projections and filters are now natively supported by Postgres change event publications.
 
 <!--more-->
@@ -26,24 +26,24 @@ Reasons for specifically configuring which columns and rows should be contained 
 * Excluding columns or rows with sensitive data can be necessary in order to satisfy privacy requirements, when for instance Personally Identifiable Information (PII) shouldn't be exposed to external systems
 * Filtering published rows by tenant id can be useful for setting up tenant-specific change streams in a multi-tenant architecture
 
-Before the advent of Postgres-native column lists and row filters, users of  link:https://debezium.io/[Debezium]  – a popular open-source platform for change data capture (CDC), which also is used by several Decodable CDC connectors – would typically have implemented these kinds of use cases via a combination of configuration options and single message transformations (SMTs).
+Before the advent of Postgres-native column lists and row filters, users of link:https://debezium.io/[Debezium]  – a popular open-source platform for change data capture (CDC), which also is used by several Decodable CDC connectors – would typically have implemented these kinds of use cases via a combination of configuration options and single message transformations (SMTs).
 
-Projections are supported in Debezium via the  link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-property-column-include-list[column.include.list]  and  link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-property-column-exclude-list[column.exclude.list]  options.
+Projections are supported in Debezium via the link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-property-column-include-list[column.include.list]  and link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-property-column-exclude-list[column.exclude.list]  options.
 These configuration options are applied client-side, i.e.
 within the Debezium connector, which makes them less efficient to server-side column lists, potentially causing large amounts of data to be streamed to Debezium, only to be discarded there.
 
-Filters are a bit more involved: while there is built-in support for filtering the contents of  link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-property-snapshot-select-statement-overrides[initial]  and ad-hoc  link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-ad-hoc-snapshots[incremental snapshots] , filtering change events emitted from the WAL requires a custom SMT.
+Filters are a bit more involved: while there is built-in support for filtering the contents of link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-property-snapshot-select-statement-overrides[initial]  and ad-hoc link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-ad-hoc-snapshots[incremental snapshots], filtering change events emitted from the WAL requires a custom SMT.
 Pushing this logic into the logical replication mechanism of the database itself makes a lot of sense from a usability and efficiency perspective.
 
 So let's see how Postgres 15 row filters can be used together with Debezium.
 Initially, I meant to demonstrate the usage of column lists, too.
-But in the course of exploring that feature, I  link:https://www.postgresql.org/message-id/flat/CADGJaX9kiRZ-OH0EpWF5Fkyh1ZZYofoNRCrhapBfdk02tj5EKg%40mail.gmail.com[discovered a bug]  in Postgres which causes incorrect events to be emitted for UPDATE and DELETE statements when column lists are present.
+But in the course of exploring that feature, I link:https://www.postgresql.org/message-id/flat/CADGJaX9kiRZ-OH0EpWF5Fkyh1ZZYofoNRCrhapBfdk02tj5EKg%40mail.gmail.com[discovered a bug]  in Postgres which causes incorrect events to be emitted for UPDATE and DELETE statements when column lists are present.
 So this will have to wait for another time.
 The Postgres community took care of this super fast: a bug fix has already been applied, so that column lists should work as expected in the next Postgres release.
 
 
 == Using Logical Decoding Row Filters With Debezium
-To follow along, check out the  link:https://github.com/gunnarmorling/postgres-publication-filtering[postgres-publication-filtering]  demo project from GitHub.
+To follow along, check out the link:https://github.com/gunnarmorling/postgres-publication-filtering[postgres-publication-filtering]  demo project from GitHub.
 It contains a Docker Compose file for running Postgres as well as Apache Kafka and Kafka Connect with Debezium::
 
 
@@ -60,7 +60,7 @@ image::/images/2022/12/6717dc0782a396e17c578f57_665de628e01a0041a62ed251_GWlEFHc
 Let's set up a change event stream for that table which only contains events if the quantity of the given product item is below 10.
 We could then for instance envision a microservice which subscribes to that stream and places backfill orders with our suppliers for those products.
 
-Row filters are configured via Postgres  link:https://www.postgresql.org/docs/current/logical-replication-publication.html[publications] , as used with the  link:https://www.postgresql.org/docs/current/protocol-logicalrep-message-formats.html[pgoutput]  logical decoding plug-in.
+Row filters are configured via Postgres link:https://www.postgresql.org/docs/current/logical-replication-publication.html[publications], as used with the link:https://www.postgresql.org/docs/current/protocol-logicalrep-message-formats.html[pgoutput]  logical decoding plug-in.
 As Debezium can only create publications with the default settings (at least for now), you need to manually create a custom publication with the required configurations and have Debezium make use of it.
 To do so, launch a Postgres session via pgcli:
 
@@ -81,9 +81,9 @@ Then create a publication like so:
 
 
 As of Postgres 15, the CREATE PUBLICATION statement allows you to narrow down the events to be emitted for a given table via a custom WHERE clause.
-A few conditions apply to that clause (see  link:http://amitkapila16.blogspot.com/2022/11/logical-replication-improvements-in.html[this post]  for more information), most importantly:
+A few conditions apply to that clause (see link:http://amitkapila16.blogspot.com/2022/11/logical-replication-improvements-in.html[this post]  for more information), most importantly:
 
-* If the publication publishes UPDATE or DELETE events, only columns which are part of the table's  link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-replica-identity[replica identity]  may be referenced
+* If the publication publishes UPDATE or DELETE events, only columns which are part of the table's link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-replica-identity[replica identity]  may be referenced
 * Only simple expressions are allowed, for example not referring to user-defined functions or types, system columns etc.
 
 That's all we need to do on the Postgres side.
@@ -117,7 +117,7 @@ Altogether, the connector configuration looks like this:
 
 
 Now register a connector instance with this configuration.
-If you have  link:https://github.com/kcctl/kcctl[kcctl]  🧸 installed (which I highly recommend), that's as simple as that:
+If you have link:https://github.com/kcctl/kcctl[kcctl]  🧸 installed (which I highly recommend), that's as simple as that:
 
 
 [source,json]
@@ -208,7 +208,7 @@ Finally, let's delete some product items:
 In the Kafka topic you can observe that no change event is emitted for the first deletion (as there's 11 lamps in stock).
 But there is an event for the deletion of the deck chair record with a quantity of six.
 
-As they say, a picture is worth a thousand words (and I'd never pass on an opportunity for using my favorite tool  link:https://excalidraw.com/[Excalidraw] ), so here is an overview of the published events, depending on the specifics of a given data change:
+As they say, a picture is worth a thousand words (and I'd never pass on an opportunity for using my favorite tool link:https://excalidraw.com/[Excalidraw] ), so here is an overview of the published events, depending on the specifics of a given data change:
 
 
 image::/images/2022/12/6717dc0682a396e17c578f44_665de628e01a0041a62ed257_qOFZTHdBrDH60LB2osltR5E9C1BmYkh658McBIypNXPCexH3J_rDouuhPwW3gi7Bo_Sp9rh9iFjTF-WoCHv11viV0py3yubpU6hpe6Bp4pe-d7VFqtfdEliaRsAWUrRnMGa9MxS7Yd0jZmY2fIdRj70uAEGKGeVOM1heH4X-QeaOhuN6_hvHSAD5aTkIMA.webp[]
@@ -218,12 +218,12 @@ Row filters (and column lists) are a great addition to the Postgres logical deco
 Having fine-grained control over which change events should be published and which field they should contain, opens up many interesting opportunities from a perspective of efficiency and data privacy as well as the ability to set up content specific change data streams, as demonstrated in the example above.
 
 Going forward, a good next step usability-wise would be for Debezium to apply any configured row filters and column lists to the Postgres publications it creates, simplifying things for users a bit.
-As far as Flink SQL and Decodable are concerned, row filters and column lists potentially allow for the _push down_ of filter and projection operators of  link:https://docs.decodable.co/docs/sqlpipeline-reference[streaming SQL queries] ; Instead of applying these operators within the Flink stream processing engine, SELECT and WHERE clauses of queries could be re-written transparently and these operators executed as part of the logical replication publication within Postgres itself.
-Flink supports this kind of push down of logic into data sources via the  link:https://nightlies.apache.org/flink/flink-docs-release-1.16/api/java/org/apache/flink/table/connector/source/abilities/SupportsFilterPushDown.html[SupportsFilterPushDown]  and  link:https://nightlies.apache.org/flink/flink-docs-release-1.16/api/java/org/apache/flink/table/connector/source/abilities/SupportsProjectionPushDown.html[SupportsProjectionPushDown]  extension points.
+As far as Flink SQL and Decodable are concerned, row filters and column lists potentially allow for the _push down_ of filter and projection operators of link:https://docs.decodable.co/docs/sqlpipeline-reference[streaming SQL queries] ; Instead of applying these operators within the Flink stream processing engine, SELECT and WHERE clauses of queries could be re-written transparently and these operators executed as part of the logical replication publication within Postgres itself.
+Flink supports this kind of push down of logic into data sources via the link:https://nightlies.apache.org/flink/flink-docs-release-1.16/api/java/org/apache/flink/table/connector/source/abilities/SupportsFilterPushDown.html[SupportsFilterPushDown]  and link:https://nightlies.apache.org/flink/flink-docs-release-1.16/api/java/org/apache/flink/table/connector/source/abilities/SupportsProjectionPushDown.html[SupportsProjectionPushDown]  extension points.
 For example, this could be very interesting to customers who don't want specific segments of their data to leave the realm of their database.
 Please reach out to us if you think this would be an interesting capability to have.
 
-If you would like to get started with your own experimentations around 15 Postgres row filters using Debezium, you can find the complete source code of the example shown above in  link:https://github.com/gunnarmorling/postgres-publication-filtering[this repository]  on GitHub.
-You can find more information about row filters in link:https://www.postgresql.fastware.com/blog/introducing-publication-row-filters[this blog post] ; also refer to  link:http://amitkapila16.blogspot.com/2022/11/logical-replication-improvements-in.html[this post]  to learn more about this and other new features related to logical replication in Postgres 15.
+If you would like to get started with your own experimentations around 15 Postgres row filters using Debezium, you can find the complete source code of the example shown above in link:https://github.com/gunnarmorling/postgres-publication-filtering[this repository]  on GitHub.
+You can find more information about row filters in link:https://www.postgresql.fastware.com/blog/introducing-publication-row-filters[this blog post] ; also refer to link:http://amitkapila16.blogspot.com/2022/11/logical-replication-improvements-in.html[this post]  to learn more about this and other new features related to logical replication in Postgres 15.
 
 _Many thanks to_ link:https://twitter.com/rmetzger_[Robert Metzger] _for his feedback while writing this post!_

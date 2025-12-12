@@ -22,20 +22,20 @@ In this blog post I'd like to discuss why we've built Custom Pipelines and this 
 <!--more-->
 
 === Decodable Custom Pipelines
-link:https://www.decodable.co/blog/support-for-running-your-own-apache-flink-jobs-is-coming-to-decodable[Custom Pipelines] , written in any JVM language such as Java or Scala, complement Decodable's support for SQL-based data streaming pipelines.
+link:https://www.decodable.co/blog/support-for-running-your-own-apache-flink-jobs-is-coming-to-decodable[Custom Pipelines], written in any JVM language such as Java or Scala, complement Decodable's support for SQL-based data streaming pipelines.
 While SQL is a great choice for a large share of data streaming use cases, allowing you to map and project, filter and join, group and aggregate your data, in some cases it might not be flexible enough.
 
-Based on the powerful Java-based APIs of  link:https://flink.apache.org/[Apache Flink] , Custom Pipelines allow you to implement arbitrary custom logic, invoke external web services, integrate 3rd-party connectors which aren't natively supported by Decodable, and much more, into your data flows.
+Based on the powerful Java-based APIs of link:https://flink.apache.org/[Apache Flink], Custom Pipelines allow you to implement arbitrary custom logic, invoke external web services, integrate 3rd-party connectors which aren't natively supported by Decodable, and much more, into your data flows.
 Just like SQL pipelines, you do not need to provision, scale, or tune any infrastructure to leverage Custom Pipelines.
 
 As such, Custom Pipelines are the perfect escape hatch for cases where SQL doesn't quite cut it.
 At the same time, we wanted Custom Pipelines to be closely integrated with the rest of the platform.
-When running your own Flink jobs, it should be possible to benefit from Decodable  link:https://docs.decodable.co/docs/connections[managed connectors]  and persistent, replayable  link:https://docs.decodable.co/docs/streams[data streams] .
-This is where the new  link:https://github.com/decodableco/decodable-pipeline-sdk/[Custom Pipelines SDK]  comes in, providing you with all the right integration points needed.
+When running your own Flink jobs, it should be possible to benefit from Decodable link:https://docs.decodable.co/docs/connections[managed connectors]  and persistent, replayable link:https://docs.decodable.co/docs/streams[data streams].
+This is where the new link:https://github.com/decodableco/decodable-pipeline-sdk/[Custom Pipelines SDK]  comes in, providing you with all the right integration points needed.
 
 
 === Getting Started With the Custom Pipelines SDK
-The simplest way for getting started with building your Flink jobs for the Decodable platform is to use the  link:https://nightlies.apache.org/flink/flink-docs-release-1.16/docs/dev/configuration/overview/[quickstart archetype]  provided by Apache Flink.
+The simplest way for getting started with building your Flink jobs for the Decodable platform is to use the link:https://nightlies.apache.org/flink/flink-docs-release-1.16/docs/dev/configuration/overview/[quickstart archetype]  provided by Apache Flink.
 Run the following to start a new Maven project:
 
 
@@ -45,7 +45,7 @@ Run the following to start a new Maven project:
 ----
 
 
-The SDK is  link:https://central.sonatype.com/artifact/co.decodable/decodable-pipeline-sdk/1.0.0.Beta1[available from Maven Central] , so you can simply add it as a dependency to the _pom.xml_ file of the newly generated project:
+The SDK is link:https://central.sonatype.com/artifact/co.decodable/decodable-pipeline-sdk/1.0.0.Beta1[available from Maven Central], so you can simply add it as a dependency to the _pom.xml_ file of the newly generated project:
 
 
 [source,xml]
@@ -64,8 +64,8 @@ Alternatively, if you are using Gradle, add the dependency to your _build.gradle
 
 
 With the SDK dependency in place, you can start developing your stream processing job using the full power of Flink.
-At the time of publication, Flink's DataStream API is supported by the SDK, and  link:https://github.com/decodableco/decodable-pipeline-sdk/issues/27[support for the Table API]  is on the roadmap.
-For retrieving data from Decodable streams as well as sending data to them, the SDK provides the  link:https://decodableco.github.io/decodable-pipeline-sdk/api-docs/current/co/decodable/sdk/pipeline/DecodableStreamSource.html[DecodableStreamSource]  and  link:https://decodableco.github.io/decodable-pipeline-sdk/api-docs/current/co/decodable/sdk/pipeline/DecodableStreamSink.html[DecodableStreamSink]  interfaces.
+At the time of publication, Flink's DataStream API is supported by the SDK, and link:https://github.com/decodableco/decodable-pipeline-sdk/issues/27[support for the Table API]  is on the roadmap.
+For retrieving data from Decodable streams as well as sending data to them, the SDK provides the link:https://decodableco.github.io/decodable-pipeline-sdk/api-docs/current/co/decodable/sdk/pipeline/DecodableStreamSource.html[DecodableStreamSource]  and link:https://decodableco.github.io/decodable-pipeline-sdk/api-docs/current/co/decodable/sdk/pipeline/DecodableStreamSink.html[DecodableStreamSink]  interfaces.
 You can use these two interfaces to integrate your custom stream processing logic with managed connectors, or other SQL-based pipelines.
 
 Here's an example of a typical job implementation:
@@ -84,13 +84,13 @@ Each incoming purchase order is processed using a custom mapping function, _Purc
 Finally, the records are written to an output stream via a _DecodableStreamSink_.
 Another managed Decodable connector could take the data from that stream and send it to an external system.
 
-To learn more about the Decodable SDK for Custom Pipelines, see the  link:https://decodableco.github.io/decodable-pipeline-sdk/api-docs/current/co/decodable/sdk/pipeline/package-summary.html[API documentation]  for the project.
+To learn more about the Decodable SDK for Custom Pipelines, see the link:https://decodableco.github.io/decodable-pipeline-sdk/api-docs/current/co/decodable/sdk/pipeline/package-summary.html[API documentation]  for the project.
 
 
 === Testing
 Good testability is a key requirement during modern application development.
 To that end, the SDK comes with a complete testing framework, letting you validate the logic of your stream processing job in end-to-end tests.
-The testing framework uses the  link:https://testcontainers.com/[Testcontainers]  project for spinning up the underlying infrastructure.
+The testing framework uses the link:https://testcontainers.com/[Testcontainers]  project for spinning up the underlying infrastructure.
 Here is a test for the stream processing job above:
 
 
@@ -100,7 +100,7 @@ Here is a test for the stream processing job above:
 ----
 
 
-Using Testcontainers, an ephemeral  link:https://redpanda.com/[Redpanda]  broker is started as a data streaming platform.
+Using Testcontainers, an ephemeral link:https://redpanda.com/[Redpanda]  broker is started as a data streaming platform.
 The test inserts a purchase order as a JSON document into the “purchase-orders” stream.
 Next, the job under test is executed.
 Finally, one record is retrieved from the “purchase-orders-processed” stream and its content is asserted to match the expected structure.
@@ -147,11 +147,11 @@ After waiting a few moments, your job is running and processing purchase orders 
 
 === Next Steps
 Today's Beta1 release marks the first step towards a fully supported and feature-rich SDK for Decodable Custom Pipelines.
-This is a perfect time for you to join the  link:https://decodablecommunity.slack.com/ssb/redirect#/shared-invite/email[Decodable user community] , sign up for Custom Pipelines, and give it a try.
+This is a perfect time for you to join the link:https://decodablecommunity.slack.com/ssb/redirect#/shared-invite/email[Decodable user community], sign up for Custom Pipelines, and give it a try.
 
-Over the next few weeks and months,  link:https://github.com/decodableco/decodable-pipeline-sdk/issues[we plan]  to build out the SDK, e.g., adding integration with Flink's Table API, creating a bespoke Custom Pipelines Maven Archetype, providing support for collecting metrics and accessing Decodable secrets in your jobs, and much more.
+Over the next few weeks and months, link:https://github.com/decodableco/decodable-pipeline-sdk/issues[we plan]  to build out the SDK, e.g., adding integration with Flink's Table API, creating a bespoke Custom Pipelines Maven Archetype, providing support for collecting metrics and accessing Decodable secrets in your jobs, and much more.
 
-The SDK is fully open source (using the Apache License, version 2), and its  link:https://github.com/decodableco/decodable-pipeline-sdk[source code]  is managed on GitHub.
+The SDK is fully open source (using the Apache License, version 2), and its link:https://github.com/decodableco/decodable-pipeline-sdk[source code]  is managed on GitHub.
 Your contributions in the form of bug reports, feature requests, and pull requests are highly welcome.
 We'd also love to hear from you about your use cases for Custom Pipelines and the SDK.
 Until then, Happy Streaming!
@@ -160,7 +160,7 @@ Until then, Happy Streaming!
 
 *Additional Resources*
 
-* Have a question for Gunnar? Connect on  link:https://twitter.com/gunnarmorling[Twitter]  or  link:https://www.linkedin.com/in/ACoAADk0a-gBumlYou5VPjjZZrbz5W644EI7wQI[LinkedIn]
-* Ready to connect to a data stream and create a pipeline?  link:https://app.decodable.co/-/accounts/create[Start free]
-* Take a guided tour with our  link:https://docs.decodable.co/docs/web-quickstart-guide[Quickstart Guide]
-* Join our  link:https://decodablecommunity.slack.com/join/shared_invite/zt-uvow71bk-Uf914umgpoyIbOQSxriJkA#/shared-invite/email[Slack community]
+* Have a question for Gunnar? Connect on link:https://twitter.com/gunnarmorling[Twitter]  or link:https://www.linkedin.com/in/ACoAADk0a-gBumlYou5VPjjZZrbz5W644EI7wQI[LinkedIn]
+* Ready to connect to a data stream and create a pipeline? link:https://app.decodable.co/-/accounts/create[Start free]
+* Take a guided tour with our link:https://docs.decodable.co/docs/web-quickstart-guide[Quickstart Guide]
+* Join our link:https://decodablecommunity.slack.com/join/shared_invite/zt-uvow71bk-Uf914umgpoyIbOQSxriJkA#/shared-invite/email[Slack community]

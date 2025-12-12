@@ -23,14 +23,14 @@ Feeding such webhook events into a real-time stream processing platform like Dec
 You could search for anomalies or spam in GitHub discussions, maintain a database with enriched metadata of Dependabot alerts, and many more things.
 
 What can I say, this user's question (thank you!) nerd-sniped me into building a demo around this, and in this blog post I'd like to discuss some of the key aspects of the solution.
-For this demo, I'm going to react to the  link:https://docs.github.com/en/webhooks/webhook-events-and-payloads#push[push]  event (which is triggered whenever one or more commits are pushed to a GitHub repository), retrieve the information about the authors of the commit(s), and maintain a changelog stream with the total number of commits per author.
-You could then, for instance, use the Decodable connectors for  link:https://docs.decodable.co/docs/connector-reference-elasticsearch[Elasticsearch]  or  link:https://docs.decodable.co/docs/connector-reference-pinot[Apache Pinot]  for propagating that data into downstream datastores for further analysis and visualization—but that's beyond the scope of this post.
+For this demo, I'm going to react to the link:https://docs.github.com/en/webhooks/webhook-events-and-payloads#push[push]  event (which is triggered whenever one or more commits are pushed to a GitHub repository), retrieve the information about the authors of the commit(s), and maintain a changelog stream with the total number of commits per author.
+You could then, for instance, use the Decodable connectors for link:https://docs.decodable.co/docs/connector-reference-elasticsearch[Elasticsearch]  or link:https://docs.decodable.co/docs/connector-reference-pinot[Apache Pinot]  for propagating that data into downstream datastores for further analysis and visualization—but that's beyond the scope of this post.
 
 For processing webhook events in Decodable, we'll need three things:
 
-* A  link:https://docs.decodable.co/docs/streams[stream] , which contains the event data and makes it available for further processing (akin to a Kafka topic).
-* A REST source  link:https://docs.decodable.co/docs/connect-to-a-data-source[connector] , which exposes an HTTP endpoint for receiving the webhook events and which propagates each incoming event to the stream.
-* A  link:https://docs.decodable.co/docs/sqlpipeline-reference[pipeline] , which processes the elements of the stream, aggregating and counting commits by author, and emits the results to another (output) stream.
+* A link:https://docs.decodable.co/docs/streams[stream], which contains the event data and makes it available for further processing (akin to a Kafka topic).
+* A REST source link:https://docs.decodable.co/docs/connect-to-a-data-source[connector], which exposes an HTTP endpoint for receiving the webhook events and which propagates each incoming event to the stream.
+* A link:https://docs.decodable.co/docs/sqlpipeline-reference[pipeline], which processes the elements of the stream, aggregating and counting commits by author, and emits the results to another (output) stream.
 
 
 == Creating a Stream
@@ -38,8 +38,8 @@ Let's dive into each of these elements in more detail, beginning with the stream
 We can create one by going to the “Streams” view in the Decodable web UI and clicking “New Stream”.
 
 Decodable's data model is strongly typed, with schemas describing the exact structure of each data flow.
-GitHub maintains a description of each event structure on their website (e.g., the  link:https://docs.github.com/en/webhooks/webhook-events-and-payloads#push[push event] ), and we could use this information to manually create a corresponding schema when creating the stream.
-But it's even simpler than that: the  link:https://github.com/octokit/webhooks[octocat/webhooks]  project provides an up-to-date, machine-readable  link:https://unpkg.com/@octokit/webhooks-schemas/schema.json[JSON schema]  for the Webhooks API.
+GitHub maintains a description of each event structure on their website (e.g., the link:https://docs.github.com/en/webhooks/webhook-events-and-payloads#push[push event] ), and we could use this information to manually create a corresponding schema when creating the stream.
+But it's even simpler than that: the link:https://github.com/octokit/webhooks[octocat/webhooks]  project provides an up-to-date, machine-readable link:https://unpkg.com/@octokit/webhooks-schemas/schema.json[JSON schema]  for the Webhooks API.
 With some minor tweaks, the *push$event* type defined in that schema can be imported into Decodable, speeding up the process quite a bit.
 
 The push event is quite a large structure, also containing information about the affected repository, the sender of a PR, etc.
@@ -65,7 +65,7 @@ Note how the *commits* field of the stream schema precisely matches the event st
 
 
 == Creating a REST Connection
-With the stream in place, let's create an instance of the Decodable  link:https://docs.decodable.co/docs/connector-reference-rest[REST source connector]  which we'll use for ingesting the webhook events.
+With the stream in place, let's create an instance of the Decodable link:https://docs.decodable.co/docs/connector-reference-rest[REST source connector]  which we'll use for ingesting the webhook events.
 This connector publishes an HTTP endpoint to which the events can be sent via POST requests.
 In the Decodable web UI, it is available under “Connections” → “New Connection” → “REST”:
 
@@ -79,7 +79,7 @@ Unfortunately, the GitHub webhook events cannot be sent as-is directly to that e
 * The REST endpoint expects an _array_ of events (allowing to send multiple events at once with a single request for the sake of better performance), but the push event is a JSON _object_, and thus needs to be wrapped into an array.
 
 So we need to adjust the request structure accordingly.
-This could be done in many ways, with one rather easy-to-use option being  link:https://workers.cloudflare.com/[Cloudflare Workers] .
+This could be done in many ways, with one rather easy-to-use option being link:https://workers.cloudflare.com/[Cloudflare Workers].
 This service provides a serverless execution environment at many different edge locations around the world and comes in very handy for the task at hand.
 It offers a generous free tier which provides us with more than enough resources for this demo.
 
@@ -92,12 +92,12 @@ A simple worker which adds the required authorization header and wraps the webho
 ----
 
 
-The exact endpoint URL can be retrieved from the connector settings, while the  link:https://docs.decodable.co/docs/connector-reference-rest?_gl=1*7roel9*_ga*NTI1NjU5MDcyLjE2OTMyMTU2NDQ.*_ga_G4YHDQYS1G*MTY5MzM5NTgxNy42LjEuMTY5MzM5NTgxOC41OS4wLjA.[REST connector documentation]  discusses in detail how to obtain the required bearer token.
+The exact endpoint URL can be retrieved from the connector settings, while the link:https://docs.decodable.co/docs/connector-reference-rest?_gl=1*7roel9*_ga*NTI1NjU5MDcyLjE2OTMyMTU2NDQ.*_ga_G4YHDQYS1G*MTY5MzM5NTgxNy42LjEuMTY5MzM5NTgxOC41OS4wLjA.[REST connector documentation]  discusses in detail how to obtain the required bearer token.
 
 
 == Creating a Pipeline
 The last missing piece within Decodable is a pipeline for processing the incoming webhook events.
-Based on  link:https://flink.apache.org[Apache Flink] , Decodable supports stream processing pipelines  link:https://docs.decodable.co/docs/create-a-pipeline[written in SQL] , as well as  link:https://www.decodable.co/blog/introducing-the-decodable-sdk-for-custom-pipelines[custom Flink jobs]  for more advanced requirements.
+Based on link:https://flink.apache.org[Apache Flink], Decodable supports stream processing pipelines link:https://docs.decodable.co/docs/create-a-pipeline[written in SQL], as well as link:https://www.decodable.co/blog/introducing-the-decodable-sdk-for-custom-pipelines[custom Flink jobs]  for more advanced requirements.
 For the given task, a SQL pipeline is an excellent fit.
 The total number of commits per author in the stream can be easily expressed using SQL:
 
@@ -134,7 +134,7 @@ Whether its analyses as shown above, alerting, or feeding data to machine learni
 
 Taking a step back, the implementation of this use case sparked an interesting discussion within the engineering team about how we could further simplify things here.
 While it's not too much effort to bring the webhook request into the required shape via a separate JavaScript worker, ideally this would not be needed at all.
-To that end, having a bespoke GitHub connector would be a great addition to the Decodable platform, which could take care of this completely transparently, as well as taking advantage of GitHub's mechanism for  link:https://docs.github.com/en/webhooks/securing-your-webhooks[signing and validating]  webhook events.
+To that end, having a bespoke GitHub connector would be a great addition to the Decodable platform, which could take care of this completely transparently, as well as taking advantage of GitHub's mechanism for link:https://docs.github.com/en/webhooks/securing-your-webhooks[signing and validating]  webhook events.
 
 We've added this to the backlog, and if you think this would be useful, I'd love to hear from you–just hit me up in any of the channels listed below!
 
@@ -142,8 +142,8 @@ We've added this to the backlog, and if you think this would be useful, I'd love
 
 *Additional Resources*
 
-* Check out the example code in our  link:https://github.com/decodableco/examples/tree/main/github-webhooks[GitHub repository]
-* Have a question for Gunnar? Connect on  link:https://twitter.com/gunnarmorling[Twitter]  or  link:https://www.linkedin.com/in/ACoAADk0a-gBumlYou5VPjjZZrbz5W644EI7wQI[LinkedIn]
-* Ready to connect to a data stream and create a pipeline?  link:https://app.decodable.co/-/accounts/create[Start free]
-* Take a guided tour with our  link:https://docs.decodable.co/docs/web-quickstart-guide[Quickstart Guide]
-* Join our  link:https://decodablecommunity.slack.com/join/shared_invite/zt-uvow71bk-Uf914umgpoyIbOQSxriJkA#/shared-invite/email[Slack community]
+* Check out the example code in our link:https://github.com/decodableco/examples/tree/main/github-webhooks[GitHub repository]
+* Have a question for Gunnar? Connect on link:https://twitter.com/gunnarmorling[Twitter]  or link:https://www.linkedin.com/in/ACoAADk0a-gBumlYou5VPjjZZrbz5W644EI7wQI[LinkedIn]
+* Ready to connect to a data stream and create a pipeline? link:https://app.decodable.co/-/accounts/create[Start free]
+* Take a guided tour with our link:https://docs.decodable.co/docs/web-quickstart-guide[Quickstart Guide]
+* Join our link:https://decodablecommunity.slack.com/join/shared_invite/zt-uvow71bk-Uf914umgpoyIbOQSxriJkA#/shared-invite/email[Slack community]
