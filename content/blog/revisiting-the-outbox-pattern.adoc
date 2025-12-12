@@ -267,14 +267,14 @@ For that I'd argue, when done right, the outbox pattern can actually _reduce_ co
 Instead of dealing with database APIs such as JDBC _and_ the Kafka client, developers of the writing service only need to concern themselves with the database access.
 As the Kafka access happens behind the scenes via the CDC process, they don't need to be aware of the intricacies of Kafka producers, how to configure and tune them, etc.
 The key thing here is to find the right abstractions, so as to simplify the process of emitting outbox messages as much as possible.
-As an example, link:https://debezium.io/documentation/reference/stable/integrations/outbox.html[Debezium's extension] for implementing the outbox pattern within link:https://quarkus.io/[Quarkus] -based microservices allows you to use link:https://www.cdi-spec.org/[CDI] events for doing so:
+As an example, link:https://debezium.io/documentation/reference/stable/integrations/outbox.html[Debezium's extension] for implementing the outbox pattern within link:https://quarkus.io/[Quarkus]-based microservices allows you to use link:https://www.cdi-spec.org/[CDI] events for doing so:
 
 
 [source,java,linenums]
 ----
 @Inject AppointmentRepository appointmentRepository;
 
-@Inject Event> event;
+@Inject <Event> event;
 
 @Transactional public Appointment placeAppointment(Appointment appointment) {
   // update the database
