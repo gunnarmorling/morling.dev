@@ -15,7 +15,7 @@ endif::[]
 
 _This post originally appeared on the link:https://www.decodable.co/blog/logical-replication-from-postgres-16-stand-by-servers-part-2-of-2[Decodable blog]._
 
-Welcome back to this series about logical replication from Postgres 16 stand-by servers, in which we’ll discuss how to use this feature with Debezium—a popular open-source platform for Change Data Capture (CDC) for a wide range of databases—as well as how to manage logical replication in case of failover scenarios, i.e.
+Welcome back to this series about logical replication from Postgres 16 stand-by servers, in which we'll discuss how to use this feature with Debezium—a popular open-source platform for Change Data Capture (CDC) for a wide range of databases—as well as how to manage logical replication in case of failover scenarios, i.e.
 a situation where your primary Postgres server becomes unavailable and a stand-by server needs to take over.
 
 <!--more-->
@@ -25,16 +25,16 @@ If you want to learn more about logical replication in general, and why and how 
 == Stand-By Logical Replication With Debezium
 The beauty of Postgres logical replication is that not only other Postgres instances can serve as the consumer of a replication stream, but that also other clients can subscribe to a replication slot for ingesting realtime change event feeds from Postgres.
 link:https://debezium.io/[Debezium] , offering CDC support for many databases, including Postgres, makes use of that for exposing change event streams via Apache Kafka, but also—via its  link:https://debezium.io/documentation/reference/stable/operations/debezium-server.html[Debezium Server]  component—to other kinds of messaging and streaming platforms such as AWS Kinesis, Apache Pulsar, NATS, and others.
-So let’s quickly test how to stream changes from a Postgres stand-by with Debezium.
+So let's quickly test how to stream changes from a Postgres stand-by with Debezium.
 
-Note that we’ll need to use the latest Debezium release—2.5.0.Beta 1,  link:https://debezium.io/blog/2023/12/04/debezium-2-5-beta1-released/[released last week] —in order to stream changes from a stand-by server.
-When I first had tested this, things wouldn’t quite work, as the connector made use of the function `pg_current_wal_lsn()` in order to obtain the current WAL position.
+Note that we'll need to use the latest Debezium release—2.5.0.Beta 1,  link:https://debezium.io/blog/2023/12/04/debezium-2-5-beta1-released/[released last week] —in order to stream changes from a stand-by server.
+When I first had tested this, things wouldn't quite work, as the connector made use of the function `pg_current_wal_lsn()` in order to obtain the current WAL position.
 This is only available on primary servers, though.
 So I took the opportunity to make my first little  link:https://github.com/debezium/debezium/pull/5033/files[Debezium contribution]  for quite a while, changing it to invoke `pg_last_wal_receive_lsn()` instead when connecting against a stand-by.
 _Thanks a lot to the team for the quick merge and inclusion in the Beta1 release!_
 
-As a playground for this experiment, I’ve created a simple  link:https://github.com/decodableco/examples/tree/main/postgres-logical-replication-standby[Docker Compose file]  which launches Kafka, and Kafka Connect as the runtime environment for Debezium.
-Here’s an overview of all the involved components:
+As a playground for this experiment, I've created a simple  link:https://github.com/decodableco/examples/tree/main/postgres-logical-replication-standby[Docker Compose file]  which launches Kafka, and Kafka Connect as the runtime environment for Debezium.
+Here's an overview of all the involved components:
 
 _Fig._
 _1: Solution Overview (click to enlarge)_Fun fact: this uses Kafka in KRaft mode, i.e.
@@ -55,7 +55,7 @@ It is the  link:https://www.postgresql.org/docs/current/logical-replication-arch
 This plug-in requires a  link:https://www.postgresql.org/docs/current/logical-replication-publication.html[publication]  to be set up, which configures which kinds of changes should be published for which tables.
 Usually, Debezium will set up the publication—similar to the logical replication slot—automatically.
 Unfortunately, this is not supported when ingesting changes from a stand-by server, as publications (unlike replication slots) can only be created on a primary server.
-Debezium doesn’t know about the primary, so you’ll need to create that publication manually before setting up the connector:
+Debezium doesn't know about the primary, so you'll need to create that publication manually before setting up the connector:
 
 
 [source,shell]
@@ -63,14 +63,14 @@ Debezium doesn’t know about the primary, so you’ll need to create that publi
 primary> CREATE PUBLICATION my_publication FOR ALL TABLES;
 CREATE PUBLICATION
 ----
-Having to create publications for stand-by replication slots on the primary seems somewhat inconsistent and it’s also not ideal in terms of operations, but there may be a good reason for that requirement.
+Having to create publications for stand-by replication slots on the primary seems somewhat inconsistent and it's also not ideal in terms of operations, but there may be a good reason for that requirement.
 
 Note that instead of the `ALL TABLES` publication, you could also narrow this further down and only expose the changes for specific tables, omit certain columns (e.g.
 with PII data) or rows (e.g.
 logically deleted rows), and more.
 See the docs for the `CREATE PUBLICATION` command for more details.
 
-Let’s take a look at the connector configuration then.
+Let's take a look at the connector configuration then.
 This is done via a JSON-based configuration file looking like this:
 
 
@@ -95,7 +95,7 @@ This is done via a JSON-based configuration file looking like this:
 ----
 Adjust database host, user name, password, and database name as needed when applying this to your own environment.
 To apply this configuration, the REST API of Kafka Connect can be invoked.
-But if you’re like me and tend to forget all the exact endpoint URLs, then take a look at  link:https://github.com/kcctl/kcctl[kcctl]  🧸 (yes, the teddy bear emoji is part of the name), which I am going to use in the following.
+But if you're like me and tend to forget all the exact endpoint URLs, then take a look at  link:https://github.com/kcctl/kcctl[kcctl]  🧸 (yes, the teddy bear emoji is part of the name), which I am going to use in the following.
 It is  a command line client for Kafka Connect, which makes it very easy to create connectors, restart and stop them, etc.
 Following the semantics of _kubectl_, a configuration file is applied like this:
 
@@ -105,7 +105,7 @@ Following the semantics of _kubectl_, a configuration file is applied like this:
 kcctl apply -f postgres-connector.json
 Created connector inventory-connector
 ----
-Let’s take a look at the connector and its status:
+Let's take a look at the connector and its status:
 
 
 [source,shell]
@@ -135,7 +135,7 @@ Tasks:
 Topics:
   dbserver1.public.some_data
 ----
-Having confirmed that the connector is running, let’s do a quick update in the primary database and examine the corresponding change events in Kafka, ingested from the stand-by instance:
+Having confirmed that the connector is running, let's do a quick update in the primary database and examine the corresponding change events in Kafka, ingested from the stand-by instance:
 
 
 [source,shell]
@@ -177,7 +177,7 @@ docker run --tty --rm \
 ...
 ----
 These are the snapshot events emitted by the connector when starting up.
-Let’s do an update to one of the records on the primary:
+Let's do an update to one of the records on the primary:
 
 
 [source,shell]
@@ -202,11 +202,11 @@ And shortly thereafter, the corresponding change event should show up in the Kaf
   },
 ...
 ----
-At this point, you could hook up that change event stream with  link:https://flink.apache.org/[Apache Flink] , or the  link:https://docs.decodable.co/docs/kafka[Decodable Kafka source connector]  for feeding it into a real-time stream processing pipeline, but I’ll leave that for another day 🙂.
+At this point, you could hook up that change event stream with  link:https://flink.apache.org/[Apache Flink] , or the  link:https://docs.decodable.co/docs/kafka[Decodable Kafka source connector]  for feeding it into a real-time stream processing pipeline, but I'll leave that for another day 🙂.
 
 
 == Towards Fail-Over Slots
-Postgres’ support for logical replication has been  link:https://amitkapila16.blogspot.com/2023/09/evolution-of-logical-replication.html[built out significantly]  over the last few years.
+Postgres' support for logical replication has been  link:https://amitkapila16.blogspot.com/2023/09/evolution-of-logical-replication.html[built out significantly]  over the last few years.
 One thing still is missing, though: failover slots.
 Logical replication slots on the primary are not propagated to stand-bys.
 This means that when the primary unexpectedly goes down, any slots must be recreated on the new primary after promotion.
@@ -217,7 +217,7 @@ take a snapshot in Debezium terminology) to be sure that no data is missing.
 Discussions around adding support for fail-over slots go back to Postgres versions as  link:https://wiki.postgresql.org/wiki/Failover_slots[old as 9.6] ._
 _More recently, Patroni added their own  link:https://www.postgresql.eu/events/pgconfde2022/sessions/session/3745/slides/306/Implementing%20failover%20of%20logical%20replication%20slots%20in%20Patroni.pdf[solution to the problem] , and EnterpriseDB released  link:https://github.com/EnterpriseDB/pg_failover_slots[pg_failover_slots] , a Postgres extension for slot failover._
 _It remains to be seen when Postgres itself adds this feature (as hinted at in  link:https://www.pgcon.org/events/pgcon_2023/sessions/session/369/slides/83/PostgreSQL%2016%20and%20beyond.pdf[this presentation] , it may happen with Postgres 17).
-Until then, in cases where the pg_failover_slots extension isn’t available—such as on Amazon RDS—logical replication slots on stand-bys let you build your own version of failover slots.
+Until then, in cases where the pg_failover_slots extension isn't available—such as on Amazon RDS—logical replication slots on stand-bys let you build your own version of failover slots.
 The idea is to create two corresponding slots on primary and stand-by, and use the `pg_replication_slot_advance()` function (added in Postgres 11) to keep the two in sync.
 The replication consumer would connect to the slot on the primary at first.
 After a fail-over, when the stand-by server has been promoted to primary, it would reconnect to that slot.
@@ -269,7 +269,7 @@ This can be very useful for the purposes of load distribution or in situations w
 The last missing piece in the puzzle here is full support for fail-over slots, for which you still need either a separate extension ( link:https://github.com/EnterpriseDB/pg_failover_slots[pg_failover_slots] ) or implement your own approach by manually keeping two slots on primary and stand-by in sync.
 It would be great to see official support for this in a future Postgres release.
 
-Finally, if you’d like learn more about logical replication from stand-bys, check out these posts from some fine folks in the Postgres community:
+Finally, if you'd like learn more about logical replication from stand-bys, check out these posts from some fine folks in the Postgres community:
 
 * link:https://bdrouvot.github.io/2023/04/19/postgres-16-highlight-logical-decoding-on-standby/[Postgres 16 highlight: Logical decoding on standby] , by Bertrand Drouvot
 * link:https://www.crunchydata.com/blog/logical-replication-on-standbys-in-postgres-16[Logical Replication on Standbys in Postgres 16] , by Roberto Mello

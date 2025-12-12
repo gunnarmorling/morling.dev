@@ -22,11 +22,11 @@ link:https://docs.github.com/en/webhooks/about-webhooks[Webhooks]  let you react
 Feeding such webhook events into a real-time stream processing platform like Decodable opens up many interesting use cases such as using streaming queries to keep track of the issues created for a project or aggregating that data and feeding it into a dashboard.
 You could search for anomalies or spam in GitHub discussions, maintain a database with enriched metadata of Dependabot alerts, and many more things.
 
-What can I say, this user’s question (thank you!) nerd-sniped me into building a demo around this, and in this blog post I’d like to discuss some of the key aspects of the solution.
-For this demo, I’m going to react to the  link:https://docs.github.com/en/webhooks/webhook-events-and-payloads#push[push]  event (which is triggered whenever one or more commits are pushed to a GitHub repository), retrieve the information about the authors of the commit(s), and maintain a changelog stream with the total number of commits per author.
-You could then, for instance, use the Decodable connectors for  link:https://docs.decodable.co/docs/connector-reference-elasticsearch[Elasticsearch]  or  link:https://docs.decodable.co/docs/connector-reference-pinot[Apache Pinot]  for propagating that data into downstream datastores for further analysis and visualization—but that’s beyond the scope of this post.
+What can I say, this user's question (thank you!) nerd-sniped me into building a demo around this, and in this blog post I'd like to discuss some of the key aspects of the solution.
+For this demo, I'm going to react to the  link:https://docs.github.com/en/webhooks/webhook-events-and-payloads#push[push]  event (which is triggered whenever one or more commits are pushed to a GitHub repository), retrieve the information about the authors of the commit(s), and maintain a changelog stream with the total number of commits per author.
+You could then, for instance, use the Decodable connectors for  link:https://docs.decodable.co/docs/connector-reference-elasticsearch[Elasticsearch]  or  link:https://docs.decodable.co/docs/connector-reference-pinot[Apache Pinot]  for propagating that data into downstream datastores for further analysis and visualization—but that's beyond the scope of this post.
 
-For processing webhook events in Decodable, we’ll need three things:
+For processing webhook events in Decodable, we'll need three things:
 
 * A  link:https://docs.decodable.co/docs/streams[stream] , which contains the event data and makes it available for further processing (akin to a Kafka topic).
 * A REST source  link:https://docs.decodable.co/docs/connect-to-a-data-source[connector] , which exposes an HTTP endpoint for receiving the webhook events and which propagates each incoming event to the stream.
@@ -34,17 +34,17 @@ For processing webhook events in Decodable, we’ll need three things:
 
 
 == Creating a Stream
-Let’s dive into each of these elements in more detail, beginning with the stream.
+Let's dive into each of these elements in more detail, beginning with the stream.
 We can create one by going to the “Streams” view in the Decodable web UI and clicking “New Stream”.
 
-Decodable’s data model is strongly typed, with schemas describing the exact structure of each data flow.
+Decodable's data model is strongly typed, with schemas describing the exact structure of each data flow.
 GitHub maintains a description of each event structure on their website (e.g., the  link:https://docs.github.com/en/webhooks/webhook-events-and-payloads#push[push event] ), and we could use this information to manually create a corresponding schema when creating the stream.
-But it’s even simpler than that: the  link:https://github.com/octokit/webhooks[octocat/webhooks]  project provides an up-to-date, machine-readable  link:https://unpkg.com/@octokit/webhooks-schemas/schema.json[JSON schema]  for the Webhooks API.
+But it's even simpler than that: the  link:https://github.com/octokit/webhooks[octocat/webhooks]  project provides an up-to-date, machine-readable  link:https://unpkg.com/@octokit/webhooks-schemas/schema.json[JSON schema]  for the Webhooks API.
 With some minor tweaks, the *push$event* type defined in that schema can be imported into Decodable, speeding up the process quite a bit.
 
 The push event is quite a large structure, also containing information about the affected repository, the sender of a PR, etc.
-For the purposes of our use case, we’re just interested in the *commits* property, so let’s focus on that.
-It’s an array with an element for each pushed commit, looking like so:
+For the purposes of our use case, we're just interested in the *commits* property, so let's focus on that.
+It's an array with an element for each pushed commit, looking like so:
 
 
 [source,json]
@@ -65,17 +65,17 @@ Note how the *commits* field of the stream schema precisely matches the event st
 
 
 == Creating a REST Connection
-With the stream in place, let’s create an instance of the Decodable  link:https://docs.decodable.co/docs/connector-reference-rest[REST source connector]  which we’ll use for ingesting the webhook events.
+With the stream in place, let's create an instance of the Decodable  link:https://docs.decodable.co/docs/connector-reference-rest[REST source connector]  which we'll use for ingesting the webhook events.
 This connector publishes an HTTP endpoint to which the events can be sent via POST requests.
 In the Decodable web UI, it is available under “Connections” → “New Connection” → “REST”:
 
 The defaults provided by the wizard are fine, so we just need to click “Next”, select the previously created stream as the destination for this connector, and specify a name for the new connection.
 Note that the connection is stopped initially, it still needs to be activated from the connections list view.
 
-At this point, the connection’s HTTP endpoint is enabled and ready to receive events.
+At this point, the connection's HTTP endpoint is enabled and ready to receive events.
 Unfortunately, the GitHub webhook events cannot be sent as-is directly to that endpoint for two reasons:
 
-* For authentication purposes, the REST endpoint accepts a request header with a bearer token, but the GitHub webhook environment doesn’t support custom headers.
+* For authentication purposes, the REST endpoint accepts a request header with a bearer token, but the GitHub webhook environment doesn't support custom headers.
 * The REST endpoint expects an _array_ of events (allowing to send multiple events at once with a single request for the sake of better performance), but the push event is a JSON _object_, and thus needs to be wrapped into an array.
 
 So we need to adjust the request structure accordingly.
@@ -112,31 +112,31 @@ One small challenge is the fact that the commits property is an array and thus n
 The *UNNEST* operator in Flink SQL is used to perform that transformation.
 We then just need to group the rows by author and emit the author name and commit count per author.
 
-Similar to connections, pipelines are in a stopped state  after being created, so they must be started once they’re ready to be used.
+Similar to connections, pipelines are in a stopped state  after being created, so they must be started once they're ready to be used.
 
 
 == Creating a GitHub Webhook
-Finally, it’s time to create the actual webhook in GitHub itself.
+Finally, it's time to create the actual webhook in GitHub itself.
 This can be done under “Settings” → “Webhooks” of the repository.
-After specifying the Cloudflare Worker’s URL as the payload URL and selecting “application/json” as the content type, we have everything configured for testing this data pipeline.
+After specifying the Cloudflare Worker's URL as the payload URL and selecting “application/json” as the content type, we have everything configured for testing this data pipeline.
 
 If a commit gets pushed to the repository on GitHub, the webhook will be triggered, sending a push event to the Cloudflare worker.
 This wraps the request body, adds the authorization header, and sends the request to the Decodable REST connector.
 For each incoming event, the stream processing pipeline will be executed, emitting the updated commit count per author to the output stream.
 
 At this point we could configure, for instance, an Elasticsearch sink connector for picking up the results from that stream and sending them over to an Elasticsearch cluster, where we could visualize them on a Kibana dashboard.
-But we can also take a look at a preview of the output stream within the Decodable platform itself, as demonstrated in this animation based on a small random commit creator I’ve built (note that the stream preview samples results, which is why the number of results goes up and down):
+But we can also take a look at a preview of the output stream within the Decodable platform itself, as demonstrated in this animation based on a small random commit creator I've built (note that the stream preview samples results, which is why the number of results goes up and down):
 
 
 
-And that’s it–we’ve set up a stream processing pipeline for processing GitHub webhook events, allowing us to react to events in a GitHub repository in real-time and drive all kinds of interesting use cases based on that.
+And that's it–we've set up a stream processing pipeline for processing GitHub webhook events, allowing us to react to events in a GitHub repository in real-time and drive all kinds of interesting use cases based on that.
 Whether its analyses as shown above, alerting, or feeding data to machine learning models, the sky's the limit.
 
 Taking a step back, the implementation of this use case sparked an interesting discussion within the engineering team about how we could further simplify things here.
-While it’s not too much effort to bring the webhook request into the required shape via a separate JavaScript worker, ideally this would not be needed at all.
-To that end, having a bespoke GitHub connector would be a great addition to the Decodable platform, which could take care of this completely transparently, as well as taking advantage of GitHub’s mechanism for  link:https://docs.github.com/en/webhooks/securing-your-webhooks[signing and validating]  webhook events.
+While it's not too much effort to bring the webhook request into the required shape via a separate JavaScript worker, ideally this would not be needed at all.
+To that end, having a bespoke GitHub connector would be a great addition to the Decodable platform, which could take care of this completely transparently, as well as taking advantage of GitHub's mechanism for  link:https://docs.github.com/en/webhooks/securing-your-webhooks[signing and validating]  webhook events.
 
-We’ve added this to the backlog, and if you think this would be useful, I’d love to hear from you–just hit me up in any of the channels listed below!
+We've added this to the backlog, and if you think this would be useful, I'd love to hear from you–just hit me up in any of the channels listed below!
 
 
 

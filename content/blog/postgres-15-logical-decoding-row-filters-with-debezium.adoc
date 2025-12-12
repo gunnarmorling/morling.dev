@@ -23,7 +23,7 @@ This means, in relational terminology, projections and filters are now natively 
 Reasons for specifically configuring which columns and rows should be contained in a change data stream are manifold:
 
 * Excluding large columns (say, a binary column with image data) can significantly reduce the size of change events and thus the required network bandwidth
-* Excluding columns or rows with sensitive data can be necessary in order to satisfy privacy requirements, when for instance Personally Identifiable Information (PII) shouldn’t be exposed to external systems
+* Excluding columns or rows with sensitive data can be necessary in order to satisfy privacy requirements, when for instance Personally Identifiable Information (PII) shouldn't be exposed to external systems
 * Filtering published rows by tenant id can be useful for setting up tenant-specific change streams in a multi-tenant architecture
 
 Before the advent of Postgres-native column lists and row filters, users of  link:https://debezium.io/[Debezium]  – a popular open-source platform for change data capture (CDC), which also is used by several Decodable CDC connectors – would typically have implemented these kinds of use cases via a combination of configuration options and single message transformations (SMTs).
@@ -35,7 +35,7 @@ within the Debezium connector, which makes them less efficient to server-side co
 Filters are a bit more involved: while there is built-in support for filtering the contents of  link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-property-snapshot-select-statement-overrides[initial]  and ad-hoc  link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-ad-hoc-snapshots[incremental snapshots] , filtering change events emitted from the WAL requires a custom SMT.
 Pushing this logic into the logical replication mechanism of the database itself makes a lot of sense from a usability and efficiency perspective.
 
-So let’s see how Postgres 15 row filters can be used together with Debezium.
+So let's see how Postgres 15 row filters can be used together with Debezium.
 Initially, I meant to demonstrate the usage of column lists, too.
 But in the course of exploring that feature, I  link:https://www.postgresql.org/message-id/flat/CADGJaX9kiRZ-OH0EpWF5Fkyh1ZZYofoNRCrhapBfdk02tj5EKg%40mail.gmail.com[discovered a bug]  in Postgres which causes incorrect events to be emitted for UPDATE and DELETE statements when column lists are present.
 So this will have to wait for another time.
@@ -57,7 +57,7 @@ That Postgres example container image contains a table products with the followi
 
 
 image::/images/2022/12/6717dc0782a396e17c578f57_665de628e01a0041a62ed251_GWlEFHcakmDjwmmtto-ToOnllTsBcK1q2_pdeSTdFs_FtOY2LfkLoCChdSgaJJyg1XQzejpkXSNnpUPjCS-AWz7PNI6E_WQzNtH0n7ZTMFoBpAS_Z9_1WucnbrGhCya0Ri1W69UdmXt90b6JrdsZP2SkKllF9q0efET7nUfT1kLz6twq5_GaqgRYsVPFdg.webp[]
-Let’s set up a change event stream for that table which only contains events if the quantity of the given product item is below 10.
+Let's set up a change event stream for that table which only contains events if the quantity of the given product item is below 10.
 We could then for instance envision a microservice which subscribes to that stream and places backfill orders with our suppliers for those products.
 
 Row filters are configured via Postgres  link:https://www.postgresql.org/docs/current/logical-replication-publication.html[publications] , as used with the  link:https://www.postgresql.org/docs/current/protocol-logicalrep-message-formats.html[pgoutput]  logical decoding plug-in.
@@ -83,11 +83,11 @@ Then create a publication like so:
 As of Postgres 15, the CREATE PUBLICATION statement allows you to narrow down the events to be emitted for a given table via a custom WHERE clause.
 A few conditions apply to that clause (see  link:http://amitkapila16.blogspot.com/2022/11/logical-replication-improvements-in.html[this post]  for more information), most importantly:
 
-* If the publication publishes UPDATE or DELETE events, only columns which are part of the table’s  link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-replica-identity[replica identity]  may be referenced
+* If the publication publishes UPDATE or DELETE events, only columns which are part of the table's  link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-replica-identity[replica identity]  may be referenced
 * Only simple expressions are allowed, for example not referring to user-defined functions or types, system columns etc.
 
-That’s all we need to do on the Postgres side.
-Now let’s take a look at the required Debezium configuration:
+That's all we need to do on the Postgres side.
+Now let's take a look at the required Debezium configuration:
 
 
 [source,json]
@@ -97,7 +97,7 @@ Now let’s take a look at the required Debezium configuration:
 
 
 As the Postgres publication only is used when Debezium retrieves change events via logical decoding from the WAL, you also need to customize the SELECT statement used for the products table when snapshotting the table.
-Otherwise, you’d get snapshot events for _all_ the rows of that table, no matter what their quantity is.
+Otherwise, you'd get snapshot events for _all_ the rows of that table, no matter what their quantity is.
 This can be done via the following configuration:
 
 
@@ -117,7 +117,7 @@ Altogether, the connector configuration looks like this:
 
 
 Now register a connector instance with this configuration.
-If you have  link:https://github.com/kcctl/kcctl[kcctl]  🧸 installed (which I highly recommend), that’s as simple as that:
+If you have  link:https://github.com/kcctl/kcctl[kcctl]  🧸 installed (which I highly recommend), that's as simple as that:
 
 
 [source,json]
@@ -126,7 +126,7 @@ If you have  link:https://github.com/kcctl/kcctl[kcctl]  🧸 installed (which I
 ----
 
 
-Alternatively, use curl to post the configuration directly to Kafka Connect’s REST API:
+Alternatively, use curl to post the configuration directly to Kafka Connect's REST API:
 
 
 [source,json]
@@ -158,7 +158,7 @@ Out of those nine product items, only those with a quantity of less than ten sho
 ----
 
 
-Now let’s do some data changes and observe the resulting change events, as retrieved from the database via logical decoding.
+Now let's do some data changes and observe the resulting change events, as retrieved from the database via logical decoding.
 First, insert a few records into the table:
 
 
@@ -196,7 +196,7 @@ In that light,
 * A create event is emitted for the paint quantity update from 14 to 9, as that row now became a part of the row set
 * A delete event is emitted for the lamp quantity update from 3 to 11, as that row now is not a part of the row set any longer
 
-Finally, let’s delete some product items:
+Finally, let's delete some product items:
 
 
 [source,sql]
@@ -205,10 +205,10 @@ Finally, let’s delete some product items:
 ----
 
 
-In the Kafka topic you can observe that no change event is emitted for the first deletion (as there’s 11 lamps in stock).
+In the Kafka topic you can observe that no change event is emitted for the first deletion (as there's 11 lamps in stock).
 But there is an event for the deletion of the deck chair record with a quantity of six.
 
-As they say, a picture is worth a thousand words (and I’d never pass on an opportunity for using my favorite tool  link:https://excalidraw.com/[Excalidraw] ), so here is an overview of the published events, depending on the specifics of a given data change:
+As they say, a picture is worth a thousand words (and I'd never pass on an opportunity for using my favorite tool  link:https://excalidraw.com/[Excalidraw] ), so here is an overview of the published events, depending on the specifics of a given data change:
 
 
 image::/images/2022/12/6717dc0682a396e17c578f44_665de628e01a0041a62ed257_qOFZTHdBrDH60LB2osltR5E9C1BmYkh658McBIypNXPCexH3J_rDouuhPwW3gi7Bo_Sp9rh9iFjTF-WoCHv11viV0py3yubpU6hpe6Bp4pe-d7VFqtfdEliaRsAWUrRnMGa9MxS7Yd0jZmY2fIdRj70uAEGKGeVOM1heH4X-QeaOhuN6_hvHSAD5aTkIMA.webp[]

@@ -43,7 +43,7 @@ This format has become a de-facto standard for change event data, supported by n
 
 CDC platforms, like Debezium, are frequently used alongside popular data engineering tools such as Apache Kafka for data streaming and  link:https://flink.apache.org/[Apache Flink] , which  link:https://nightlies.apache.org/flink/flink-docs-master/docs/connectors/table/formats/debezium/[natively supports Debezium]  event formats for stateful stream processing, including filtering and joining change event streams from various sources.
 
-In this article, I’ll present an overview of seven common use cases for change data capture—Let’s go!
+In this article, I'll present an overview of seven common use cases for change data capture—Let's go!
 
 
 == Analytics Data Platforms
@@ -96,8 +96,8 @@ However, this approach lacks contextual metadata, such as user information, clie
 To address this limitation, applications can provide metadata—either via a dedicated metadata table or in the form of a logical decoding message emitted at the start of each transaction.
 Stream processing with Apache Flink can then be used to incorporate the missing context into the records.
 
-Flink’s datastream API can be used for enriching all the change events from one transaction with the applicable metadata.
-As all change events emitted by Debezium contain the id of the transaction they originate from, correlating the events of one transaction isn’t complicated.
+Flink's datastream API can be used for enriching all the change events from one transaction with the applicable metadata.
+As all change events emitted by Debezium contain the id of the transaction they originate from, correlating the events of one transaction isn't complicated.
 You can find  link:https://github.com/decodableco/examples/tree/main/postgres-logical-decoding[a basic implementation of this]  in the Decodable examples repository.
 
 
@@ -131,38 +131,38 @@ _Fig._
 _5: Microservices data exchange with the outbox pattern_
 
 CDC is a great fit for responding to new entries in the outbox table and streaming them to a messaging service such as Apache Kafka for propagation to other services.
-By only modifying a single resource—the source microservice’s own database—it avoids any potential inconsistencies of altering multiple resources at the same time which don’t share one common transactional context.
+By only modifying a single resource—the source microservice's own database—it avoids any potential inconsistencies of altering multiple resources at the same time which don't share one common transactional context.
 
-If you are on Postgres, then you don’t even need to have a bespoke outbox table for implementing the outbox pattern.
+If you are on Postgres, then you don't even need to have a bespoke outbox table for implementing the outbox pattern.
 With the  link:https://www.infoq.com/articles/wonders-of-postgres-logical-decoding-messages/[help of logical decoding messages] , you can insert your outbox events exclusively to the transaction log, from where they can be retrieved and propagated with CDC tools such as Debezium.
 
 
 == Monolith-to-Microservices Migration
-Oftentimes, you don’t start building applications from scratch, but there is an existing application landscape which needs to be evolved and expanded.
+Oftentimes, you don't start building applications from scratch, but there is an existing application landscape which needs to be evolved and expanded.
 In this context, it may be necessary to migrate from an existing monolithic architecture to a set of loosely coupled microservices, splitting up the existing monolith.
 In order to avoid the risks of a big bang migration, it is recommended to take a gradual approach, extracting one service at a time.
 This approach is also named the “strangler fig pattern”, as the new services grow around the old application, “strangling” it over time.
 
 When doing so, the old monolith and the new service(s) will co-exist for some time.
 For example, you may start with extracting just a read view of some data (e.g.
-a customer’s order history) to a new microservice, while the monolithic application continues to handle data writes.
+a customer's order history) to a new microservice, while the monolithic application continues to handle data writes.
 You can then use CDC to propagate data changes from the monolith to the service providing the read view.
 I discussed the strangler pattern with CDC in a  link:https://speakerdeck.com/hpgrahsl/dissecting-our-legacy-the-strangler-fig-pattern-with-apache-kafka-debezium-and-mongodb-at-mongodb-dot-live-2021[joint talk with Hans-Peter Grahsl] , where we also explored advanced aspects such as avoiding infinite replication loops when doing bi-directional CDC or using stream processing for establishing an anti-corruption layer between legacy data models and newly created microservices.
 
 
 == Summary
-And that’s it—seven use cases for CDC.
+And that's it—seven use cases for CDC.
 It is a powerful enabler for your data, allowing you to react to any data changes in real time.
-I have worked with CDC for several years now, and I’m still surprised to learn about new use cases regularly.
+I have worked with CDC for several years now, and I'm still surprised to learn about new use cases regularly.
 Case in point: just recently we started to use CDC for capturing changes in our control plane database and materializing corresponding Kubernetes resources.
 
 When ingesting raw change streams is not enough, stateful stream processing—e.g.
 with Apache Flink—allows you to transform, filter, join and aggregate your data.
-Flink’s rich ecosystem of connectors also provides you with connectivity with a wide range of data sinks, allowing you to implement cohesive end-to-end data flows on one unified platform.
+Flink's rich ecosystem of connectors also provides you with connectivity with a wide range of data sinks, allowing you to implement cohesive end-to-end data flows on one unified platform.
 
 Are you using CDC already?
 For any of the use cases discussed above, or maybe others not mentioned here?
-I’d love to hear from you about your experiences with CDC—just reach out to me on  link:https://twitter.com/gunnarmorling[Twitter] ,  link:https://www.linkedin.com/in/gunnar-morling-2b44b7229/[LinkedIn] , or the  link:https://decodablecommunity.slack.com/join/shared_invite/zt-uvow71bk-Uf914umgpoyIbOQSxriJkA#/shared-invite/email[Decodable Slack community] .
+I'd love to hear from you about your experiences with CDC—just reach out to me on  link:https://twitter.com/gunnarmorling[Twitter] ,  link:https://www.linkedin.com/in/gunnar-morling-2b44b7229/[LinkedIn] , or the  link:https://decodablecommunity.slack.com/join/shared_invite/zt-uvow71bk-Uf914umgpoyIbOQSxriJkA#/shared-invite/email[Decodable Slack community] .
 
 _Want to try out CDC for yourself?_
 _Decodable has managed CDC—_ link:https://app.decodable.co/-/accounts/create[try it now] _and get started with processing your change streams today._

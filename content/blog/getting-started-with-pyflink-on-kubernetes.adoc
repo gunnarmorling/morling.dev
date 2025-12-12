@@ -16,17 +16,17 @@ endif::[]
 _This post originally appeared on the link:https://www.decodable.co/blog/getting-started-with-pyflink-on-kubernetes[Decodable blog]._
 
 The other day, I wanted to get my feet wet with PyFlink.
-While there is a fair amount of related information out there, I couldn’t find really up-to-date documentation on using current versions of PyFlink with Flink on Kubernetes.
+While there is a fair amount of related information out there, I couldn't find really up-to-date documentation on using current versions of PyFlink with Flink on Kubernetes.
 
 <!--more-->
 Kubernetes is the common go-to platform for running Flink at scale in production these days, allowing you to deploy and operate Flink jobs efficiently and securely, providing high availability, observability, features such as auto-scaling, and much more.
-All of which are good reasons for running PyFlink jobs on Kubernetes, too, and so I thought I’d provide a quick run-through of the required steps for getting started with PyFlink on Kubernetes as of Apache Flink 1.18.
+All of which are good reasons for running PyFlink jobs on Kubernetes, too, and so I thought I'd provide a quick run-through of the required steps for getting started with PyFlink on Kubernetes as of Apache Flink 1.18.
 
-In the remainder of this blog post, I’m going to explore how to
+In the remainder of this blog post, I'm going to explore how to
 
 * install Flink and its Kubernetes operator on a local Kubernetes cluster,
 * install Kafka on the same cluster, using the Strimzi operator,
-* create a PyFlink job which creates some random data using Flink’s DataGen connector and writes that data to a Kafka topic using Flink SQL, and
+* create a PyFlink job which creates some random data using Flink's DataGen connector and writes that data to a Kafka topic using Flink SQL, and
 * deploy and run that job to Kubernetes.
 
 The overall solution is going to look like this:
@@ -38,26 +38,26 @@ Per the docs, it  link:https://nightlies.apache.org/flink/flink-docs-stable/docs
 
 _“build scalable batch and streaming workloads, such as real-time data processing pipelines, large-scale exploratory data analysis, Machine Learning (ML) pipelines and ETL processes”._
 
-It is particularly useful for development teams who are more familiar with Python than with Java and who still would like to benefit from Flink’s powerful stream processing capabilities.
-Another factor is Python’s rich 3rd party ecosystem: not only does it provide libraries for data engineering (e.g.
+It is particularly useful for development teams who are more familiar with Python than with Java and who still would like to benefit from Flink's powerful stream processing capabilities.
+Another factor is Python's rich 3rd party ecosystem: not only does it provide libraries for data engineering (e.g.
 link:https://pandas.pydata.org/[Pandas] ) and scientific computing (e.g.
 link:https://numpy.org/[NumPy] ), but also for ML and AI (e.g.
 link:https://pytorch.org/[PyTorch]  and  link:https://www.tensorflow.org/[TensorFlow] ), which makes PyFlink the ideal link between these fields and real-time stream processing.
 So if for instance you wanted to train your ML models on real time event data sourced from your production RDBMS, doing some data cleaning, filtering, and aggregation along the way, PyFlink would be a great option.
 
-Similar to Flink’s Java APIs, PyFlink comes with a  link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/datastream_tutorial/[DataStream]  API and a  link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/table_api_tutorial/[Table]  API._
+Similar to Flink's Java APIs, PyFlink comes with a  link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/datastream_tutorial/[DataStream]  API and a  link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/table_api_tutorial/[Table]  API._
 _The former lets you implement operations such as filtering and mapping, joining, grouping and aggregation, and much more on data streams, providing you with a large degree of freedom and control over aspects such as state management, late event handling, or output control._
-_In contrast, the Table API offers a more rigid but also easier-to-use and less verbose relational programming interface, including support for defining stream processing pipelines using SQL, benefitting from automatic optimizations by Flink’s query planner.
+_In contrast, the Table API offers a more rigid but also easier-to-use and less verbose relational programming interface, including support for defining stream processing pipelines using SQL, benefitting from automatic optimizations by Flink's query planner.
 
-Implementation-wise, PyFlink acts as a wrapper around Flink’s Java APIs.
+Implementation-wise, PyFlink acts as a wrapper around Flink's Java APIs.
 Upon start-up, the job graph is retrieved from the Python job using  link:https://www.py4j.org/[Py4J] , a bridge between the Python VM and the JVM.
 It then gets transformed into an equivalent job running on the Flink cluster.
 At runtime, Flink will call back to the Python VM for executing any Python-based user-defined functions (UDFs) with the help of the  link:https://beam.apache.org/roadmap/portability/[Apache Beam portability framework] .
-As of Flink 1.15, there’s also support for a new execution mode called  link:https://flink.apache.org/2022/05/06/exploring-the-thread-mode-in-pyflink/[“thread mode”] , where Python code is executed on the JVM itself (via JNI), avoiding the overhead of cross-process communication.
+As of Flink 1.15, there's also support for a new execution mode called  link:https://flink.apache.org/2022/05/06/exploring-the-thread-mode-in-pyflink/[“thread mode”] , where Python code is executed on the JVM itself (via JNI), avoiding the overhead of cross-process communication.
 
 
 == Prerequisites
-So let’s set up a Kubernetes cluster and install the aforementioned operators onto it.
+So let's set up a Kubernetes cluster and install the aforementioned operators onto it.
 To follow along, make sure to have the following things installed on your machine:
 
 * link:https://www.docker.com/[Docker] , for creating and running containers
@@ -94,7 +94,7 @@ Next, install the  link:https://nightlies.apache.org/flink/flink-kubernetes-oper
 Official part of the Flink project, its task will be to deploy and run Flink jobs on Kubernetes, based on custom resource definitions.
 It is installed using a Helm chart, using the following steps (refer to the  link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/try-flink-kubernetes-operator/quick-start/[upstream documentation]  for more details):
 
-. Deploy the  link:https://github.com/cert-manager/cert-manager[certificate manager]  (required later on when the operator’s webhook is invoked during the creation of custom resources): `kubectl create -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.2/cert-manager.yaml`
+. Deploy the  link:https://github.com/cert-manager/cert-manager[certificate manager]  (required later on when the operator's webhook is invoked during the creation of custom resources): `kubectl create -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.2/cert-manager.yaml`
 . Add the Helm repository for the operator: `helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.7.0/`
 . Install the operator using the provided Helm chart: `helm install flink-kubernetes-operator flink-operator-repo/flink-kubernetes-operator` +
 
@@ -109,10 +109,10 @@ flink-kubernetes-operator-f4bbff6-jtd4x  2/2    Running  0         0h17m
 ----
 
 === Installing Strimzi and Apache Kafka
-With the Flink Kubernetes Operator up and running, it’s time to install  link:https://strimzi.io/[Strimzi] .
+With the Flink Kubernetes Operator up and running, it's time to install  link:https://strimzi.io/[Strimzi] .
 It is another Kubernetes Operator, in this case in charge of deploying and running Kafka clusters.
 Strimzi is a very powerful tool, supporting all kinds of Kafka deployments, Kafka Connect, MirrorMaker2, and much more.
-We are going to use it for installing a simple one node Kafka cluster, following the steps from Strimzi’s  link:https://strimzi.io/quickstarts/[quickstart guide] :
+We are going to use it for installing a simple one node Kafka cluster, following the steps from Strimzi's  link:https://strimzi.io/quickstarts/[quickstart guide] :
 
 . Create a Kubernetes namespace for Strimzi and Kafka: +
 `kubectl create namespace kafka`
@@ -129,13 +129,13 @@ You can use the `wait` command to await the Kafka cluster materialization:
 ----
 kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
 ----
-Once the Kafka broker is up, the command will return and you’re ready to go.
+Once the Kafka broker is up, the command will return and you're ready to go.
 
 
 == A Simple PyFlink Job
-With the operators for Flink and Kafka as well as a single-node Kafka cluster in place, let’s create a simple stream processing job using PyFlink.
+With the operators for Flink and Kafka as well as a single-node Kafka cluster in place, let's create a simple stream processing job using PyFlink.
 Inspired by the  link:https://github.com/apache/flink-kubernetes-operator/tree/main/examples/flink-python-example[Python example job]  coming with the Flink Kubernetes operator, it uses the Flink  link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/connectors/table/datagen/[DataGen SQL connector]  for creating random purchase orders.
-But instead of just printing them to sysout, we’re going to emit the stream of orders to a Kafka topic, using Flink's link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/connectors/table/kafka/[Apache Kafka SQL Connector] .
+But instead of just printing them to sysout, we're going to emit the stream of orders to a Kafka topic, using Flink's link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/connectors/table/kafka/[Apache Kafka SQL Connector] .
 
 In order to get started with setting up a PyFlink development environment on your local machine, check out  link:https://rmoff.net/2023/10/25/learning-apache-flink-s01e05-installing-pyflink-with-some-bumps-along-the-way/[this post]  by Robin Moffatt.
 In particular, make sure to use no Python version newer than 3.10 with PyFlink 1.18.
@@ -210,10 +210,10 @@ Finally, an `INSERT` query is issued, which propagates any changed rows from the
 
 
 == Building a Container Image With Your PyFlink Job
-In order to deploy our PyFlink job onto Kubernetes, you’ll need to create a container image, containing the Python job itself and all its dependencies: PyFlink, any required Python packages, as well as any Flink connectors used by the job.
+In order to deploy our PyFlink job onto Kubernetes, you'll need to create a container image, containing the Python job itself and all its dependencies: PyFlink, any required Python packages, as well as any Flink connectors used by the job.
 
-Unfortunately, the  link:https://github.com/apache/flink-kubernetes-operator/blob/main/examples/flink-python-example/Dockerfile[Dockerfile]  of the aforementioned Python example coming with the Flink Kubernetes operator didn’t quite work for me.
-When trying to build an image from it, I’d get the following error:
+Unfortunately, the  link:https://github.com/apache/flink-kubernetes-operator/blob/main/examples/flink-python-example/Dockerfile[Dockerfile]  of the aforementioned Python example coming with the Flink Kubernetes operator didn't quite work for me.
+When trying to build an image from it, I'd get the following error:
 
 
 [source,shell]
@@ -231,7 +231,7 @@ When trying to build an image from it, I’d get the following error:
 ----
 The problem is that the upstream  link:https://hub.docker.com/_/flink[Flink container image]  which is used as a base image here, itself is derived from a JRE image for Java, i.e._
 _it contains only a subset of all the modules provided by the Java platform._
-_ link:https://github.com/alibaba/pemja[PemJa] , one of PyFlink’s dependencies, requires some header files which only are provided by a complete JDK, though.
+_ link:https://github.com/alibaba/pemja[PemJa] , one of PyFlink's dependencies, requires some header files which only are provided by a complete JDK, though.
 
 I have therefore created a new base image for PyFlink jobs, which removes the JRE and adds back the complete JDK, inspired by the  link:https://hub.docker.com/layers/library/eclipse-temurin/11.0.21_9-jdk-jammy/images/sha256-0b1c4c2bd4bc536c3ee914cd9e7c3ac05e136f891bceb18d355f60d548e84096?context=explore[equivalent step]  in the Dockerfile for creating the  link:https://hub.docker.com/layers/library/eclipse-temurin/11-jdk-jammy/images/sha256-0b1c4c2bd4bc536c3ee914cd9e7c3ac05e136f891bceb18d355f60d548e84096?context=explore[JDK 11 image]  provided by the Eclipse Temurin project._
 _This is not quite ideal in terms of overall image size, and the cleaner approach would be to create a new image derived from the JDK one, but it does the trick for now to get going:
@@ -273,14 +273,14 @@ ADD --chown=flink:flink python_demo.py /opt/flink/usrlib/pyflink_hello_world.py
 ----
 _Listing 3: Dockerfile (_ link:https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile[source] _)_
 
-Let’s also build an image for that:
+Let's also build an image for that:
 
 
 [source,shell]
 ----
 docker build -f Dockerfile . -t decodable-examples/pyflink-hello-world:latest
 ----
-In order to use that image from within Kubernetes, you’ll finally need to load it into the cluster, which can be done with `kind` like this:
+In order to use that image from within Kubernetes, you'll finally need to load it into the cluster, which can be done with `kind` like this:
 
 
 [source,shell]
@@ -291,7 +291,7 @@ kind load docker-image decodable-examples/pyflink-hello-world:latest –name pyf
 == Deploying a PyFlink Job On Kubernetes
 At this point, you have everything in place for deploying your PyFlink job to Kubernetes.
 The operator project comes with an  link:https://github.com/apache/flink-kubernetes-operator/blob/main/examples/flink-python-example/python-example.yaml[example resource]  of type `FlinkDeployment`, which works pretty much as-is for our purposes.
-Only the image name and the Flink version need to be changed to the image you’ve just created:
+Only the image name and the Flink version need to be changed to the image you've just created:
 
 
 [source,yaml]
@@ -359,7 +359,7 @@ You also can take a look at the deployed job in the Flink web UI by forwarding t
 ----
 kubectl port-forward service/python-hello-world-rest 8081:rest
 ----
-This makes the Flink Dashboard accessible at  link:http://localhost:8081[http://localhost:8081] , allowing you to take a look at the job’s health status, metrics, etc.:
+This makes the Flink Dashboard accessible at  link:http://localhost:8081[http://localhost:8081] , allowing you to take a look at the job's health status, metrics, etc.:
 
 _Fig._
 _2: PyFlink job in the Apache Flink Dashboard (click to enlarge)_Finally, to stop your job, simply delete its resource definition:
