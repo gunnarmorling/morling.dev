@@ -238,9 +238,10 @@ First, insert a few records into the table:
 [source,sql,linenums]
 ----
 INSERT INTO products
-VALUES (DEFAULT, 'deck chair', 'A cozy wooden deck chair', 15.7, 7),
-			(DEFAULT, 'paint', 'A bucket of white paint', 5.0, 15),
-			(DEFAULT, 'lamp', 'A green library style lamp', 4.8, 3);
+VALUES
+  (DEFAULT, 'deck chair', 'A cozy wooden deck chair', 15.7, 7),
+  (DEFAULT, 'paint', 'A bucket of white paint', 5.0, 15),
+  (DEFAULT, 'lamp', 'A green library style lamp', 4.8, 3);
 ----
 
 
@@ -342,12 +343,12 @@ Row filters (and column lists) are a great addition to the Postgres logical deco
 Having fine-grained control over which change events should be published and which field they should contain, opens up many interesting opportunities from a perspective of efficiency and data privacy as well as the ability to set up content specific change data streams, as demonstrated in the example above.
 
 Going forward, a good next step usability-wise would be for Debezium to apply any configured row filters and column lists to the Postgres publications it creates, simplifying things for users a bit.
-As far as Flink SQL and Decodable are concerned, row filters and column lists potentially allow for the _push down_ of filter and projection operators of link:https://docs.decodable.co/docs/sqlpipeline-reference[streaming SQL queries] ; Instead of applying these operators within the Flink stream processing engine, SELECT and WHERE clauses of queries could be re-written transparently and these operators executed as part of the logical replication publication within Postgres itself.
+As far as Flink SQL and Decodable are concerned, row filters and column lists potentially allow for the _push down_ of filter and projection operators of link:https://docs.decodable.co/docs/sqlpipeline-reference[streaming SQL queries]; Instead of applying these operators within the Flink stream processing engine, SELECT and WHERE clauses of queries could be re-written transparently and these operators executed as part of the logical replication publication within Postgres itself.
 Flink supports this kind of push down of logic into data sources via the link:https://nightlies.apache.org/flink/flink-docs-release-1.16/api/java/org/apache/flink/table/connector/source/abilities/SupportsFilterPushDown.html[SupportsFilterPushDown] and link:https://nightlies.apache.org/flink/flink-docs-release-1.16/api/java/org/apache/flink/table/connector/source/abilities/SupportsProjectionPushDown.html[SupportsProjectionPushDown] extension points.
 For example, this could be very interesting to customers who don't want specific segments of their data to leave the realm of their database.
 Please reach out to us if you think this would be an interesting capability to have.
 
 If you would like to get started with your own experimentations around 15 Postgres row filters using Debezium, you can find the complete source code of the example shown above in link:https://github.com/gunnarmorling/postgres-publication-filtering[this repository] on GitHub.
-You can find more information about row filters in link:https://www.postgresql.fastware.com/blog/introducing-publication-row-filters[this blog post] ; also refer to link:http://amitkapila16.blogspot.com/2022/11/logical-replication-improvements-in.html[this post] to learn more about this and other new features related to logical replication in Postgres 15.
+You can find more information about row filters in link:https://www.postgresql.fastware.com/blog/introducing-publication-row-filters[this blog post]; also refer to link:http://amitkapila16.blogspot.com/2022/11/logical-replication-improvements-in.html[this post] to learn more about this and other new features related to logical replication in Postgres 15.
 
 _Many thanks to link:https://twitter.com/rmetzger$$_$$[Robert Metzger] for his feedback while writing this post!_
