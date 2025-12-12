@@ -124,7 +124,7 @@ Through its function `pg_logical_emit_message()`, Postgres lets you write arbitr
 This is exactly what you need for the outbox pattern: instead of inserting the outbox messages into a dedicated table, you just store them in the transaction log by means of a simple function call:
 
 
-[source,sql]
+[source,sql,linenums]
 ----
 SELECT * FROM pg_logical_emit_message(
   -- This message is transactional, only emit it
@@ -265,7 +265,7 @@ The key thing here is to find the right abstractions, so as to simplify the proc
 As an example, link:https://debezium.io/documentation/reference/stable/integrations/outbox.html[Debezium's extension] for implementing the outbox pattern within link:https://quarkus.io/[Quarkus] -based microservices allows you to use link:https://www.cdi-spec.org/[CDI] events for doing so:
 
 
-[source,java]
+[source,java,linenums]
 ----
 @Inject AppointmentRepository appointmentRepository;
 

@@ -134,7 +134,7 @@ The following image shows the overall approach, using Flink SQL to establish a p
 *Fig. 2: Stream processing pipeline with Apache Flink (click to enlarge)* link:https://github.com/ververica/flink-cdc-connectors[Flink CDC] is used to ingest the raw CDC feed into a Flink SQL table. The data is transformed and published to a Kafka topic which adheres to a stable data contract (specifically, the topic's schema represents the schema part of the contract). The source and sink connectors are represented as tables in Flink SQL; here's the definition of the source table, `customers`, using the `postgres-cdc` connector, which itself is based on top of the Debezium link:https://debezium.io/documentation/reference/stable/connectors/postgresql[connector for Postgres] (you can find the complete link:https://github.com/decodableco/examples/tree/main/cdc-data-contracts[source code] for this blog post in the link:https://github.com/decodableco/examples/[decodableco/examples] repository on GitHub):
 
 
-[source,sql]
+[source,sql,linenums]
 ----
 CREATE TABLE customers (
   id INT,
@@ -165,7 +165,7 @@ CREATE TABLE customers (
 For publishing the change events into a Kafka topic `customers`, another table, `customers_public`, is created which looks like this:
 
 
-[source,sql]
+[source,sql,linenums]
 ----
 CREATE TABLE customers_public (
   id INT,
@@ -192,7 +192,7 @@ not the `kafka` one), as I've discussed recently in link:https://www.youtube.com
 Finally, the transformation from the source stream into the published format is a simple `INSERT` statements, using just a few lines of Flink SQL:
 
 
-[source,sql]
+[source,sql,linenums]
 ----
 INSERT INTO customers_public
   SELECT
@@ -260,7 +260,7 @@ To make things a bit more interesting, let's emit one of the numbers (the custom
 *Fig. 3: Joining two change event streams (click to enlarge)*A Flink SQL link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/functions/udfs/[user-defined function] (UDF) for aggregating the elements of the “many” side of the join into an array in a type-safe way can come in handy here, something I've recently explored in link:https://www.youtube.com/watch?v=ICJ7-YyaC-4[this video]. Using the `ARRAY_AGGR()` function discussed in that quick tip, the two source tables could be joined like this:
 
 
-[source,sql]
+[source,sql,linenums]
 ----
 INSERT INTO customers_public
   SELECT
@@ -348,7 +348,7 @@ This makes sure the job, after restarting, will continue to process the source c
 . In Flink, create a new version of the job, using the `COALESCE()` function to retrieve the first name either from the old or the new field, depending on which one exists in the incoming event:
 
 
-[source,sql]
+[source,sql,linenums]
 ----
 INSERT INTO customers_public
   SELECT

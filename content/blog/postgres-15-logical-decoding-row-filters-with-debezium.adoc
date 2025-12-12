@@ -47,7 +47,7 @@ To follow along, check out the link:https://github.com/gunnarmorling/postgres-pu
 It contains a Docker Compose file for running Postgres as well as Apache Kafka and Kafka Connect with Debezium::
 
 
-[source,json]
+[source,json,linenums]
 ----
 
 ----
@@ -65,7 +65,7 @@ As Debezium can only create publications with the default settings (at least for
 To do so, launch a Postgres session via pgcli:
 
 
-[source,json]
+[source,json,linenums]
 ----
 
 ----
@@ -74,7 +74,7 @@ To do so, launch a Postgres session via pgcli:
 Then create a publication like so:
 
 
-[source,json]
+[source,json,linenums]
 ----
 
 ----
@@ -90,7 +90,7 @@ That's all we need to do on the Postgres side.
 Now let's take a look at the required Debezium configuration:
 
 
-[source,json]
+[source,json,linenums]
 ----
 
 ----
@@ -101,7 +101,7 @@ Otherwise, you'd get snapshot events for _all_ the rows of that table, no matter
 This can be done via the following configuration:
 
 
-[source,json]
+[source,json,linenums]
 ----
 
 ----
@@ -110,7 +110,7 @@ This can be done via the following configuration:
 Altogether, the connector configuration looks like this:
 
 
-[source,json]
+[source,json,linenums]
 ----
 
 ----
@@ -120,7 +120,7 @@ Now register a connector instance with this configuration.
 If you have link:https://github.com/kcctl/kcctl[kcctl] 🧸 installed (which I highly recommend), that's as simple as that:
 
 
-[source,json]
+[source,json,linenums]
 ----
 
 ----
@@ -129,7 +129,7 @@ If you have link:https://github.com/kcctl/kcctl[kcctl] 🧸 installed (which I h
 Alternatively, use curl to post the configuration directly to Kafka Connect's REST API:
 
 
-[source,json]
+[source,json,linenums]
 ----
 
 ----
@@ -138,7 +138,7 @@ Alternatively, use curl to post the configuration directly to Kafka Connect's RE
 Return to your Postgres session and display the contents of the products table:
 
 
-[source,json]
+[source,json,linenums]
 ----
 
 ----
@@ -147,12 +147,12 @@ Return to your Postgres session and display the contents of the products table:
 Out of those nine product items, only those with a quantity of less than ten show up as snapshot events in the corresponding Kafka topic:
 
 
-[source,json]
+[source,json,linenums]
 ----
 
 ----
 
-[source,json]
+[source,json,linenums]
 ----
 
 ----
@@ -162,7 +162,7 @@ Now let's do some data changes and observe the resulting change events, as retri
 First, insert a few records into the table:
 
 
-[source,sql]
+[source,sql,linenums]
 ----
 
 ----
@@ -172,7 +172,7 @@ Nothing too exciting is happening in the Kafka topic: as you would expect, only 
 Things get a bit more interesting when doing some updates:
 
 
-[source,sql]
+[source,sql,linenums]
 ----
 
 ----
@@ -181,7 +181,7 @@ Things get a bit more interesting when doing some updates:
 The following three events are emitted to Kafka for those:
 
 
-[source,json]
+[source,json,linenums]
 ----
 
 ----
@@ -199,7 +199,7 @@ In that light,
 Finally, let's delete some product items:
 
 
-[source,sql]
+[source,sql,linenums]
 ----
 
 ----

@@ -50,7 +50,7 @@ The OpenSearch sink connector will be used for updating (or removing) the data i
 The denormalized data in the index will look like this:
 
 
-[source,json]
+[source,json,linenums]
 ----
 {
   "order_id": 10009,
@@ -94,7 +94,7 @@ Alright then, let's get started!
 Check out the link:https://github.com/decodableco/examples[Decodable examples] repository from GitHub and start the source and sink systems of the pipeline:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 git clone https://github.com/decodableco/examples.git decodable-examples
 cd decodable-examples/array-agg
@@ -112,7 +112,7 @@ Open up the _ngrok.yml_ file which is in the same folder as the Docker Compose f
 Then start the tunnels like so:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 ngrok start --all --config ngrok.yml
 ...
@@ -183,7 +183,7 @@ In the Decodable web UI, go to “Pipelines” → “New Pipeline”, then sele
 Replace the SQL in the editor which opens up with the following:
 
 
-[source,sql]
+[source,sql,linenums]
 ----
 INSERT INTO ecom__orders_with_lines
   SELECT
@@ -216,7 +216,7 @@ This is because`ARRAY_AGG()`, unlike other aggregation functions, doesn't filter
 If this is not what you want, you can use the link:https://modern-sql.com/feature/listagg#alternative-array-null-filter[FILTER clause] for emitting `NULL` in this case:
 
 
-[source,sql]
+[source,sql,linenums]
 ----
 ...
 ARRAY_AGG(ROW(ol.id, ol.product_id, ol.quantity, ol.price, p.name, p.description, p.weight, p.category)) FILTER (WHERE ol.id IS NOT NULL) AS lines
@@ -235,7 +235,7 @@ Click on “Outbound to 1 stream…” and select the “Schema” tab from the 
 Replace the schema for the `lines` field with the following:
 
 
-[source,sql]
+[source,sql,linenums]
 ----
 ARRAY NOT NULL>
 ----
@@ -277,7 +277,7 @@ As the last step, let's examine the data in OpenSearch and make some good use of
 To check whether the purchase order data has been successfully ingested into OpenSearch, you can take a look at one of the indexed documents via its REST API like so:
 
 
-[source,json]
+[source,json,linenums]
 ----
 curl https://localhost:9200/purchase-orders/_doc/10001 -ku admin:admin
 {
@@ -320,7 +320,7 @@ curl https://localhost:9200/purchase-orders/_doc/10001 -ku admin:admin
 Let's update one of the lines of this purchase order in the source MySQL database:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 docker run --tty --rm -i \
   --network array-agg-network \
@@ -333,7 +333,7 @@ MySQL root@mysql:ecom> UPDATE order_lines SET quantity = 1, price=64.98 WHERE id
 Shortly thereafter, when retrieving the purchase order document from OpenSearch again—using the same curl invocation as before—it will be updated accordingly:
 
 
-[source,json]
+[source,json,linenums]
 ----
 ...
 "_source": {

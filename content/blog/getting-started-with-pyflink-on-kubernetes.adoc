@@ -68,7 +68,7 @@ To follow along, make sure to have the following things installed on your machin
 Begin by creating a new cluster with one control plane and one worker node via kind:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 { cat | kind create cluster --name pyflink-test --config -; } << EOF
 kind: Cluster
@@ -81,7 +81,7 @@ EOF
 After a minute or so, the Kubernetes cluster should be ready, and you can take a look at its nodes with kubectl:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 kubectl get nodes
 NAME                          STATUS ROLES          AGE  VERSION
@@ -101,7 +101,7 @@ It is installed using a Helm chart, using the following steps (refer to the link
 After a short time, a Kubernetes pod with the operator should be running on the cluster:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 kubectl get pods
 NAME                                     READY  STATUS   RESTARTS  AGE
@@ -125,7 +125,7 @@ Again this will take some time to complete.
 You can use the `wait` command to await the Kafka cluster materialization:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
 ----
@@ -146,7 +146,7 @@ At the time of writing, Python 3.11 is not supported yet, it is on the roadmap f
 Here is the complete job:
 
 
-[source,python]
+[source,python,linenums]
 ----
 import logging
 import sys
@@ -216,7 +216,7 @@ Unfortunately, the link:https://github.com/apache/flink-kubernetes-operator/blob
 When trying to build an image from it, I'd get the following error:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 ...
 38.20 Collecting pemja==0.3.0
@@ -237,7 +237,7 @@ I have therefore created a new base image for PyFlink jobs, which removes the JR
 _This is not quite ideal in terms of overall image size, and the cleaner approach would be to create a new image derived from the JDK one, but it does the trick for now to get going:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 FROM flink:1.18.0
 
@@ -257,14 +257,14 @@ _Listing 2: Dockerfile.pyflink-base (_ link:https://github.com/decodableco/examp
 Create an image from that Dockerfile and store it in your local container image registry:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 docker build -f Dockerfile.pyflink-base . -t decodable-examples/pyflink-base:latest
 ----
 As for the actual image with our job, all that remains needed to be done is to extend that base image and add the Python job with all its dependencies (in this case, just the Kafka connector):
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 FROM decodable-examples/pyflink-base:latest
 
@@ -276,14 +276,14 @@ _Listing 3: Dockerfile (_ link:https://github.com/decodableco/examples/blob/main
 Let's also build an image for that:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 docker build -f Dockerfile . -t decodable-examples/pyflink-hello-world:latest
 ----
 In order to use that image from within Kubernetes, you'll finally need to load it into the cluster, which can be done with `kind` like this:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 kind load docker-image decodable-examples/pyflink-hello-world:latest –name pyflink-test
 ----
@@ -294,7 +294,7 @@ The operator project comes with an link:https://github.com/apache/flink-kubernet
 Only the image name and the Flink version need to be changed to the image you've just created:
 
 
-[source,yaml]
+[source,yaml,linenums]
 ----
 apiVersion: flink.apache.org/v1beta1
 kind: FlinkDeployment
@@ -327,7 +327,7 @@ Note how the `PythonDriver` class is used as the entry point for running a PyFli
 Just as any other Kubernetes resource, this Flink job can be deployed using `kubectl`:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 kubectl create -f pyflink-hello-world.yaml
 ----
@@ -335,14 +335,14 @@ The operator will pick up that resource definition and spin up the corresponding
 As before, you can await the creation of the job:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 kubectl wait FlinkDeployment/python-example --for=jsonpath='{.status.jobStatus.state}'=RUNNING --timeout=300s
 ----
 As the last step, you can check out the Kafka topic, confirming that the job propagates all the orders from the datagen source to the Kafka sink as expected:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 kubectl -n kafka run kafka-consumer -ti --rm=true --restart=Never \
   --image=quay.io/strimzi/kafka:0.38.0-kafka-3.6.0 -- \
@@ -355,7 +355,7 @@ kubectl -n kafka run kafka-consumer -ti --rm=true --restart=Never \
 You also can take a look at the deployed job in the Flink web UI by forwarding the REST port from the job manager:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 kubectl port-forward service/python-hello-world-rest 8081:rest
 ----
@@ -365,7 +365,7 @@ _Fig._
 _2: PyFlink job in the Apache Flink Dashboard (click to enlarge)_Finally, to stop your job, simply delete its resource definition:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 kubectl delete -f python-hello-world.yaml
 ----

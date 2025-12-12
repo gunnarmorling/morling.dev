@@ -35,7 +35,7 @@ As an example, let's consider a table `customers` with columns `id`, `first_name
 If a customer record's `first_name` value gets updated, while the other fields don't change, the corresponding change event could look like this, using JSON notation:
 
 
-[source,json]
+[source,json,linenums]
 ----
 {
   "id" : 42,
@@ -49,7 +49,7 @@ It describes the complete state of the record at the point in time when it was a
 Many CDC solutions expose the old and the new state (sometimes referred to as old and new “row image”) of a modified record in their change events, for instance named `before` and `after` in the case of Debezium:
 
 
-[source,json]
+[source,json,linenums]
 ----
 {
   "before": {
@@ -92,7 +92,7 @@ Let's consider the example from the previous section again: the first name of cu
 Using JSON notation again, and just focusing on the new row image, the corresponding change event could look like this:
 
 
-[source,json]
+[source,json,linenums]
 ----
 {
   "id" : 42,
@@ -110,7 +110,7 @@ In case of updates, when the change event format contains the full new value, th
 Formats such as link:https://jsonpatch.com/[JSON Patch] are useful here, as they allow you to describe the changes on a more fine-grained basis:
 
 
-[source,json]
+[source,json,linenums]
 ----
 {
   "id" : 42,
@@ -144,7 +144,7 @@ They merely describe which record in the source database was affected by a chang
 For this purpose, all which the event must contain is the id of the record, for instance, the primary key value of a row in an RDBMS):
 
 
-[source,json]
+[source,json,linenums]
 ----
 {
     "id" : 42
@@ -204,7 +204,7 @@ This typically includes:
 As an example, here's an update event as emitted by the link:https://debezium.io/documentation/reference/stable/connectors/postgresql[Debezium connector for Postgres], with a range of event metadata in the `ts_ms`, `op`, and `source` fields (you'd find similar metadata in the events emitted by other CDC tools such as link:https://maxwells-daemon.io/[Maxwell's Daemon] ):
 
 
-[source,json]
+[source,json,linenums]
 ----
 {
   "before": {

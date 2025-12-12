@@ -32,7 +32,7 @@ The idea for these posts is to give you a fully runnable example so you can try 
 To follow along, grab the complete source code in the Decodable link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/[examples repository] on GitHub:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ git clone
 $ cd flink-on-kubernetes
@@ -52,7 +52,7 @@ _1: Solution overview_
 Start by creating a local Kubernetes cluster using `kind`:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kind create cluster --name my-cluster --config kind-cluster.yml
 ----
@@ -61,7 +61,7 @@ The kind configuration makes the directory _/tmp/kind-worker_ available to the w
 It also maps ports 80 and 443 of the worker node to the host, which will allow you to access the Flink web UI via a Kubernetes ingress later on:
 
 
-[source,yaml]
+[source,yaml,linenums]
 ----
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -84,7 +84,7 @@ _Listing 1:_ link:https://github.com/decodableco/examples/blob/main/flink-on-kub
 Verify the cluster is running:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl get nodes
 NAME                       STATUS   ROLES           AGE     VERSION
@@ -95,14 +95,14 @@ Installing the Flink Kubernetes operator is straight-forward thanks to the provi
 Add the Helm repository for the current version 1.10 (released in October 2024) of the operator like so:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.10.0/
 ----
 Before installing the operator itself, it is required to install the Kubernetes cert-manager (needed for issuing TLS certificates used by the link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/architecture/#admission-control[operator's admission controller] ):
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v1.8.2/cert-manager.yaml
 ----
@@ -115,7 +115,7 @@ We're gonna make the following adjustments:
 The Helm values file with these configuration amendments looks like so:
 
 
-[source,yaml]
+[source,yaml,linenums]
 ----
 defaultConfiguration:
   create: true
@@ -130,14 +130,14 @@ _Listing 2:_ link:https://github.com/decodableco/examples/blob/main/flink-on-kub
 Install the Helm chart, using this values file:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ helm install -f helm-values.yaml flink-kubernetes-operator flink-operator-repo/flink-kubernetes-operator
 ----
 This should yield the following output:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 NAME: flink-kubernetes-operator
 LAST DEPLOYED: Mon Jan 20 17:02:43 2025
@@ -154,14 +154,14 @@ Next, we are going to create a deployment of link:https://min.io/[MinIO] to have
 The MinIO deployment is taken pretty much verbatim from the link:https://github.com/kubernetes/examples/blob/master/staging/storage/minio/README.md[upstream Kubernetes examples], only that the volume for persisting the MinIO data is backed by the aforementioned Kind extra mount:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl apply -f storage/
 ----
 Create a bucket named `flink-data`:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl -n default run minio-client --image=minio/mc:latest --restart=Never --command=true -- sh -c "mc config host add minio http://minio-service.default.svc.cluster.local:9000 minio minio123 && mc mb minio/flink-data"
 ----
@@ -193,7 +193,7 @@ The operator's repository on GitHub contains a number of very useful link:https:
 Slightly adjusted to run with Flink 1.20 on Java 17, the most basic `FlinkDeployment` definition for running one of the example jobs shipping with Flink looks like this:
 
 
-[source,yaml]
+[source,yaml,linenums]
 ----
 apiVersion: flink.apache.org/v1beta1
 kind: FlinkDeployment
@@ -225,14 +225,14 @@ No execution state will be retained between job runs (upgrade mode `stateless`).
 To deploy this job, apply the resource definition using `kubectl`:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl apply -f flink/basic.yaml
 ----
 As the operator exposes Flink deployments just like any other kind of Kubernetes resource, you can examine their status with kubectl, too (output adjusted for readability):
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl describe FlinkDeployment basic-example
 Name:         basic-example
@@ -310,7 +310,7 @@ When deploying a job, the operator also creates a Kubernetes link:https://kubern
 For testing purposes, you can forward its port, allowing you to access the UI on link:http://localhost:8081[http://localhost:8081] :
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl port-forward service/basic-example-rest 8081
 ----
@@ -320,7 +320,7 @@ Currently, the job runs with a parallelism of 2.
 As there are also two slots per task manager, a single task manager pod is running (besides the job manager pod) for the job:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl get pods -l app=basic-example
 NAME                             READY   STATUS    RESTARTS   AGE
@@ -330,7 +330,7 @@ basic-example-taskmanager-1-1    1/1     Running   0          6s
 Patch the resource to change the parallelism to 4:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl patch FlinkDeployment basic-example --patch '{"spec" : { "job" : { "parallelism" : 4 }}}' --type=merge
 ----
@@ -338,7 +338,7 @@ The operator will recognize the change and reconcile the deployment accordingly.
 Shortly thereafter, you'll see another task pod running:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl get pods -l app=basic-example
 NAME                             READY   STATUS    RESTARTS   AGE
@@ -352,7 +352,7 @@ _Fig._
 _3: Updated job in the Flink web UI_Finally, to delete the job, run the following:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl delete FlinkDeployment basic-example
 ----
@@ -376,14 +376,14 @@ The example project of this post contains a link:https://github.com/decodableco/
 You can build a container image for this job via Docker like so:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ docker build -t decodable-examples/hello-world-job:1.0 hello-world-job
 ----
 While you'd normally push this image to an image registry such as ECR, we're simply going to load it directly into Kind in this case:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kind load docker-image decodable-examples/hello-world-job:1.0 --name my-cluster
 ----
@@ -391,7 +391,7 @@ Next, we need to create a `FlinkDeployment` resource for this job.
 This is very similar to the one before, only that now we're referring to our custom image containing the Flink job JAR file:
 
 
-[source,yaml]
+[source,yaml,linenums]
 ----
 apiVersion: flink.apache.org/v1beta1
 kind: FlinkDeployment
@@ -421,14 +421,14 @@ _Listing 4: Resource definition_ link:https://github.com/decodableco/examples/bl
 Apply the descriptor:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl apply -f flink/custom-job.yaml
 ----
 Then verify the job status is running:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl get FlinkDeployment custom-job
 NAME         JOB STATUS   LIFECYCLE STATE
@@ -437,7 +437,7 @@ custom-job   RUNNING      STABLE
 For further analysis, you can also take a look at the logs of the task manager pod like so:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl logs -l app=custom-job,component=taskmanager -f
 ...

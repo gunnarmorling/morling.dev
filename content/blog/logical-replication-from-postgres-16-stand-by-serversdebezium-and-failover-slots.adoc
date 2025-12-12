@@ -44,7 +44,7 @@ If you want to follow along, make sure you have Docker installed and you have a 
 Then clone the link:https://github.com/decodableco/examples[decodable/examples] repository and launch the demo environment like so:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 git clone git@github.com:decodableco/examples.git decodable-examples
 cd decodable-examples/postgres-logical-replication-standby
@@ -58,7 +58,7 @@ Unfortunately, this is not supported when ingesting changes from a stand-by serv
 Debezium doesn't know about the primary, so you'll need to create that publication manually before setting up the connector:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 primary> CREATE PUBLICATION my_publication FOR ALL TABLES;
 CREATE PUBLICATION
@@ -74,7 +74,7 @@ Let's take a look at the connector configuration then.
 This is done via a JSON-based configuration file looking like this:
 
 
-[source,json]
+[source,json,linenums]
 ----
 {
  "name" : "inventory-connector",
@@ -100,7 +100,7 @@ It is  a command line client for Kafka Connect, which makes it very easy to cre
 Following the semantics of _kubectl_, a configuration file is applied like this:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 kcctl apply -f postgres-connector.json
 Created connector inventory-connector
@@ -108,7 +108,7 @@ Created connector inventory-connector
 Let's take a look at the connector and its status:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 kcctl describe connector inventory-connector
 Name:       inventory-connector
@@ -138,7 +138,7 @@ Topics:
 Having confirmed that the connector is running, let's do a quick update in the primary database and examine the corresponding change events in Kafka, ingested from the stand-by instance:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 docker run --tty --rm \
      --network postgres-logical-replication-standby_default \
@@ -147,7 +147,7 @@ docker run --tty --rm \
 ----
 
 
-[source,json]
+[source,json,linenums]
 ----
 {
   "before": null,
@@ -180,14 +180,14 @@ These are the snapshot events emitted by the connector when starting up.
 Let's do an update to one of the records on the primary:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 primary> UPDATE some_data SET short_text='hello' WHERE id = 1;
 ----
 And shortly thereafter, the corresponding change event should show up in the Kafka topic:
 
 
-[source,json]
+[source,json,linenums]
 ----
 ...
   "before": {
@@ -230,7 +230,7 @@ This could for instance be implemented using a cron job, or, when running on AWS
 This job would periodically retrieve the confirmed flush LSN for the slot on the primary via the `pg_replication_slots` view:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 primary> SELECT
   slot_name,
@@ -245,7 +245,7 @@ FROM pg_replication_slots;
 The slot on the stand-by would then be advanced to that LSN:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 standby> SELECT * FROM pg_replication_slot_advance('failover_slot', '5F/C501098');
 +---------------+------------+

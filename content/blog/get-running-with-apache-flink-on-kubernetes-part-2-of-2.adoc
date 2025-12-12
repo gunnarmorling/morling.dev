@@ -47,7 +47,7 @@ Oftentimes, object storage such as an S3 bucket is used for this purpose, thus a
 Based on the upstream HA example resource, the following shows how to configure checkpoints, savepoints, and job manager HA using the bucket created in MinIO we set up before:
 
 
-[source,yaml]
+[source,yaml,linenums]
 ----
 apiVersion: flink.apache.org/v1beta1
 kind: FlinkDeployment
@@ -98,7 +98,7 @@ _Listing 1: Resource definition_ link:https://github.com/decodableco/examples/bl
 Deploy the job by applying the resource:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl apply -f flink/custom-job-ha.yaml
 ----
@@ -122,7 +122,7 @@ You can also suspend a job explicitly, if for instance your use case doesn't req
 To do so, patch the job's target state to suspended:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl patch FlinkDeployment custom-job-ha --patch '{"spec" : { "job" : { "state" : "suspended" }}}' --type=merge
 ----
@@ -130,7 +130,7 @@ Once the operator picks up this change, it will shut down the job, removing the 
 The actual `FlinkDeployment` resource remains present, though, now indicating that it is suspended:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl get FlinkDeployment custom-job-ha
 NAME            JOB STATUS   LIFECYCLE STATE
@@ -141,7 +141,7 @@ The cool thing is that savepoints created that way are represented by Kubernetes
 The operator provides a link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/snapshots/[dedicated resource type] for this, `FlinkStateSnapshot`, which you can query to obtain the list of savepoints:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl get FlinkStateSnapshots
 NAME                                            PATH                                                       RESULT TIMESTAMP              SNAPSHOT STATE
@@ -153,7 +153,7 @@ It is also possible to manually create savepoints and use them when resuming a s
 To do so, create and apply a `FlinkStateSnapshot` resource, referencing the job to snapshot:
 
 
-[source,yaml]
+[source,yaml,linenums]
 ----
 apiVersion: flink.apache.org/v1beta1
 kind: FlinkStateSnapshot
@@ -169,14 +169,14 @@ spec:
 _Listing 2: Resource definition_ link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/savepoint.yaml[savepoint.yaml] _for manually triggering a savepoint_
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl apply -f flink/savepoint.yaml
 ----
 In order to start a job from this savepoint, retrieve its path on S3 via `kubectl describe FlinkStateSnapshot example-savepoint` and specify it under `spec.job.initialSavepointPath` in the `FlinkDeployment` resource of the job:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 ...
 spec:
@@ -191,7 +191,7 @@ Note that if you'd like to restart an existing job from a specific savepoint, yo
 Set it to 1 when it hasn't been set before, otherwise increment its value for each restart:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 ...
 initialSavepointPath: s3://flink-data/savepoints/savepoint-eba39a-1fd698a34a01
@@ -209,7 +209,7 @@ To give you a starting point though, the accompanying repository contains a basi
 Install the Elasticsearch Kubernetes operator, then set up Elasticsearch and Kibana by running the following:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl create -f https://download.elastic.co/downloads/eck/2.16.0/crds.yaml
 $ kubectl apply -f https://download.elastic.co/downloads/eck/2.16.0/operator.yaml
@@ -220,14 +220,14 @@ The link:https://kube-logging.dev/[Kubernetes Logging operator] is used for coll
 You can deploy it with the following Helm command:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ helm upgrade --install --wait --create-namespace --namespace logging logging-operator oci://ghcr.io/kube-logging/helm-charts/logging-operator
 ----
 Next, configure a `Logging` instance:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl -n logging apply -f logging/logging.yaml
 ----
@@ -236,7 +236,7 @@ There they are filtered and transformed as per the current configuration and fin
 By using log4j2's link:https://logging.apache.org/log4j/2.x/manual/json-template-layout.html[JsonTemplateLayout] for Flink log messages (configured link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/logging-job.yaml#L85[here] ), the same are emitted in a structured form, making it very easy to process them:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 ...
 {"@timestamp":"2025-01-17T09:51:55.295Z","ecs.version":"1.2.0","log.level":"INFO","message":"Completed checkpoint 360 for job 2bd169b220ae0d7e26f3edf0869c244f (15960 bytes, checkpointDuration=9 ms, finalizationTime=0 ms).","process.thread.name":"jobmanager-io-thread-1","log.logger":"org.apache.flink.runtime.checkpoint.CheckpointCoordinator","flink-job-id":"2bd169b220ae0d7e26f3edf0869c244f"}
@@ -247,7 +247,7 @@ The first is a `ClusterOutput` resource, describing the destination of the pipel
 the Elasticsearch endpoint, the credentials, etc.:
 
 
-[source,yaml]
+[source,yaml,linenums]
 ----
 apiVersion: logging.banzaicloud.io/v1beta1
 kind: ClusterOutput
@@ -276,14 +276,14 @@ _Listing 3: Resource definition_ link:https://github.com/decodableco/examples/bl
 Create the output:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl -n logging apply -f logging/elastic-output.yaml
 ----
 The second resource is of type `Flow` and describes the set of pods to ingest from (leveraging the component labels set up by the Flink Kubernetes operator), as well as the parsing logic and destination of log pipeline:
 
 
-[source,yaml]
+[source,yaml,linenums]
 ----
 apiVersion: logging.banzaicloud.io/v1beta1
 kind: Flow
@@ -313,7 +313,7 @@ _Listing 4: Resource definition_ link:https://github.com/decodableco/examples/bl
 Create the flow:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl apply -f logging/elastic-flow.yaml
 ----
@@ -322,7 +322,7 @@ The logs will be ingested into an Elasticsearch, which you can inspect and query
 To access Kibana, retrieve the password of the `elastic` user like so:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl -n logging get secret quickstart-es-elastic-user -o=jsonpath='{.data.elastic}' | base64 --decode; echo
 9V9520L2yvgzJla0RIyQo784
@@ -330,7 +330,7 @@ $ kubectl -n logging get secret quickstart-es-elastic-user -o=jsonpath='{.data.e
 Then forward port 5601 of the “quickstart-kb-http” service:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl -n logging port-forward service/quickstart-kb-http 5601
 ----
@@ -349,7 +349,7 @@ For working with the Flink web UI in a production deployment, the operator optio
 To do so, simply add the following section to the job's resource definition:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 ingress:
   template: "localhost/{{name}}(/|$)(.*)"
@@ -360,7 +360,7 @@ ingress:
 You'll also need an ingress controller, which you can install for the local kind cluster like so:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ helm upgrade --install ingress-nginx ingress-nginx \
   --repo https://kubernetes.github.io/ingress-nginx \
@@ -375,7 +375,7 @@ This is where link:https://github.com/sap1ens/heimdall[Heimdall] comes into the 
 You can install it into the cluster by running this:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl apply -f heimdall/heimdall.yaml
 ----
@@ -383,7 +383,7 @@ Once running, the UI provides a list of all the deployed jobs, their status, res
 Forward its port to access it from your host:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 $ kubectl port-forward service/heimdall 8080
 ----

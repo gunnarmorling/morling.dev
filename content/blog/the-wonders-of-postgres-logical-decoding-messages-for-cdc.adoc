@@ -43,7 +43,7 @@ To follow along, make sure to have Docker installed on your machine.
 Start by checking out link:https://github.com/decodableco/examples/tree/main/postgres-logical-decoding[this example project] from GitHub:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 git clone https://github.com/decodableco/examples.git
 cd examples/postgres-logical-decoding
@@ -52,14 +52,14 @@ The project contains a Docker Compose file for running a Postgres database, whic
 Start it like so:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 docker compose up
 ----
 Then, in another terminal window, connect to that Postgres instance using the pgcli command line client:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 docker run --tty --rm -i \
   --network logical-decoding-network \
@@ -74,7 +74,7 @@ Each slot has a name and an assigned decoding plug-in which defines the format o
 Create a slot using the “test_decoding” plug-in, which emits changes in a simple text-based protocol, like this:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 postgresuser@postgres:demodb> SELECT * FROM pg_create_logical_replication_slot('demo_slot', 'test_decoding');
 
@@ -92,7 +92,7 @@ Alternatively, you can use the function `pg_logical_slot_get_changes()`, which l
 This comes in handy for testing purposes:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 postgresuser@postgres:demodb> SELECT * FROM pg_logical_slot_get_changes('demo_slot', NULL, NULL);
 
@@ -105,7 +105,7 @@ No changes should be returned at this point.
 Let's insert a logical decoding message using the `pg_logical_emit_message()` function:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 postgresuser@postgres:demodb> SELECT * FROM pg_logical_emit_message(true, 'context', 'Hello World!');
 
@@ -180,7 +180,7 @@ Specifically, Debezium recommends that your messages have the link:https://debez
 *Figure 1: Routing outbox events from the transaction log to different Kafka topics.*Enough of the theory—let's see how a database transaction could look, which emits a logical decoding message with an outbox event. In the accompanying GitHub repository, you can find a Docker Compose file for spinning up all the required components and link:https://github.com/decodableco/examples/blob/main/postgres-logical-decoding/README.md[detailed instructions] for running the complete example yourself. Emit an outbox message like this:
 
 
-[source,json]
+[source,json,linenums]
 ----
 postgresuser@postgres:demodb> SELECT * FROM pg_logical_emit_message(
   true,
@@ -211,7 +211,7 @@ When using Debezium via Flink CDC, you could implement a similar logic using a c
 A basic implementation of this could look like this (you can find the complete source code, including the usage of this serializer in a Flink job link:https://github.com/decodableco/examples/blob/main/postgres-logical-decoding/src/main/java/co/decodable/examples/logicaldecoding/outbox/OutboxMain.java[here] ):
 
 
-[source,java]
+[source,java,linenums]
 ----
 public class OutboxSerializer implements KafkaRecordSerializationSchema {
 
@@ -259,7 +259,7 @@ public class OutboxSerializer implements KafkaRecordSerializationSchema {
 With that Flink job in place, you'll be able to examine the outbox message on the “shipment” Kafka topic like so:
 
 
-[source,json]
+[source,json,linenums]
 ----
 docker run --tty --rm \
   --network logical-decoding-network \
@@ -290,7 +290,7 @@ For example, let's consider the following situation with two transactions, one o
 *Figure 2: Using non-transactional logical decoding messages for logging purposes.*To follow along, run the following sequence of statements in the pgcli shell:
 
 
-[source,sql]
+[source,sql,linenums]
 ----
 –- Assuming this table: CREATE TABLE data (id INTEGER, value TEXT);
 
@@ -311,7 +311,7 @@ The second transaction applies similar changes but then is rolled back.
 When retrieving the change events from the replication slot (using the “testing” decoding plug-in as shown above), the following events will be returned:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 postgresuser@postgres:demodb> SELECT * FROM pg_logical_slot_peek_changes('demo_slot', NULL, NULL) order by lsn;
 
@@ -356,7 +356,7 @@ The following image shows the general idea:
 *Figure 3: Enriching data change events with transaction-scoped audit metadata*When it comes to implementing this logic with Apache Flink, you can do this using a rather simple mapping function, specifically by implementing the `RichFlatMapFunction` interface, which allows you to combine the enrichment functionality and the removal of the original logical decoding messages in a single operator call:
 
 
-[source,java]
+[source,java,linenums]
 ----
 public void flatMap(String value, Collector out)
     throws Exception {
@@ -405,7 +405,7 @@ See the instructions in the link:https://github.com/decodableco/examples/tree/ma
 As an example, let's consider the following transaction which first emits a logical decoding message with the transaction metadata (user name and client IP address) and then two `INSERT` statements:
 
 
-[source,sql]
+[source,sql,linenums]
 ----
 BEGIN;
 SELECT * FROM pg_logical_emit_message(true, 'audit', '{ "user" : "bob@example.com", "client" : "10.0.0.1" }');
@@ -419,7 +419,7 @@ COMMIT;
 The enriched change events, as emitted by Apache Flink, would look like so:
 
 
-[source,json]
+[source,json,linenums]
 ----
 {
   "op" : "c",
@@ -489,7 +489,7 @@ This means a replication slot set up for a database without any data changes and
 To experience this situation, stop the currently running Docker Compose set-up and launch this alternative Compose file from the example project:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 docker compose -f docker-compose-multi-db.yml up
 ----
@@ -498,7 +498,7 @@ Then launch the AdvanceSlotMain class.
 You can do so via Maven (note this is just for demonstration and development purposes; usually, you'd package up your Flink job as a JAR and deploy it to a running Flink cluster):
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 mvn exec:exec@advanceslot
 ----
@@ -506,7 +506,7 @@ It runs a simple Flink pipeline that retrieves all changes from the DB2 database
 Now, do some changes on the DB1 database:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 docker run --tty --rm -i \
   --network logical-decoding-network \
@@ -519,7 +519,7 @@ postgresuser@order-db:db1> INSERT INTO data SELECT generate_series(1,1000) AS id
 Query the status of the replication slot (“flink”, set up for database “DB2”), and as you keep running more inserts in DB1, you'll see that the retained WAL of that slot continuously grows, as long as there are no changes done over in DB2:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 postgresuser@order-db:db1> SELECT
   slot_name,
@@ -540,7 +540,7 @@ Now, let's use pg_logical_emit_message() to fix this situation._
 _Get another Postgres shell, this time for DB2, and emit a message like so:
 
 
-[source,shell]
+[source,shell,linenums]
 ----
 docker run --tty --rm -i \
   --network logical-decoding-network \
