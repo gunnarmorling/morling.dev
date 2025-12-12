@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>&#34;Change Data Capture Breaks Encapsulation&#34;. Does it, though? - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="canonical" href="https://www.decodable.co/blog/change-data-capture-breaks-encapsulation-does-it-though" /><meta property="og:url" content="https://www.morling.dev/blog/change-data-capture-breaks-encapsulation-does-it-though/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="&#34;Change Data Capture Breaks Encapsulation&#34;. Does it, though?">
+  <meta property="og:description" content=" This post originally appeared on the Decodable blog. All rights reserved.
+Having worked on Debezium—​an open-source platform for Change Data Capture (CDC)--for several years, one concern I’ve heard …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2023-11-21T00:00:00Z">
+    <meta property="article:modified_time" content="2023-11-21T00:00:00Z">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="&#34;Change Data Capture Breaks Encapsulation&#34;. Does it, though?">
+  <meta name="twitter:description" content=" This post originally appeared on the Decodable blog. All rights reserved.
+Having worked on Debezium—​an open-source platform for Change Data Capture (CDC)--for several years, one concern I’ve heard …">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.672476d25c0fad0fd490e21222003c6c89ca45b73df6a5634305e06e889c49ad.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
+	
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.5e2c4cf50d01b5e8795a87894c2d08be87ed25371b30d97df693079b623d9f87.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+	<script src="/js/main.min.9ee619eea7f51473f4284ef86c76bdb1b0089e19781ca97275924edf53be5bd4.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">&#34;Change Data Capture Breaks Encapsulation&#34;. Does it, though?</h1>
+				<div class="post-meta-line">
+					<span class="meta">Posted at Nov 21, 2023</span>
+					
+					<span class="post-tags-inline">
+						
+						<a href="/tags/cdc">cdc</a>
+						
+						<a href="/tags/debezium">debezium</a>
+						
+						<a href="/tags/flink">flink</a>
+						
+						<a href="/tags/streaming">streaming</a>
+						
+					</span>
+					
+				</div>
+			</div>
+
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_cdca_quick_primer">CDC—​A Quick Primer</a></li>
+<li><a href="#_does_cdc_break_encapsulation">Does CDC Break Encapsulation?</a></li>
+<li><a href="#_entering_data_contracts">Entering Data Contracts</a></li>
+<li><a href="#_implementation_approaches_for_data_contracts">Implementation Approaches For Data Contracts</a>
+<ul class="sectlevel2">
+<li><a href="#_the_outbox_pattern">The Outbox Pattern</a></li>
+<li><a href="#_stream_processing">Stream Processing</a></li>
+</ul>
+</li>
+<li><a href="#_streaming_data_contractsbeyond_the_basics">Streaming Data Contracts—​Beyond the Basics</a></li>
+<li><a href="#_handling_schema_changes">Handling Schema Changes</a></li>
+<li><a href="#_summary">Summary</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p><em>This post originally appeared on the <a href="https://www.decodable.co/blog/change-data-capture-breaks-encapsulation-does-it-though">Decodable blog</a>. All rights reserved.</em></p>
+</div>
+<div class="paragraph">
+<p>Having worked on Debezium—​an open-source platform for Change Data Capture (CDC)--for several years, one concern I’ve heard repeatedly is this: aren’t you breaking the encapsulation of your application when you expose change event feeds directly from your database?
+After all, CDC exposes your internal persistent data model to the outside world, which may have unintended consequences, e.g.
+in terms of data exposure but also when it comes to changes to the schema of your data, which may break downstream consumers.</p>
+</div>
+<div class="paragraph">
+<p>In this blog post I am going to dive into this problem space, discuss when—​and when not—​CDC can break encapsulation, whether it matters, and explore strategies for avoiding these problems when it does.</p>
+</div>
+<div class="sect1">
+<h2 id="_cdca_quick_primer">CDC—​A Quick Primer<a class="anchor" href="#_cdca_quick_primer"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With log-based change data capture—​for instance, using <a href="https://debezium.io/">Debezium</a>—​you can expose realtime change event streams for the tables of your database, sourced from the database’s transaction log.
+For each executed <code>INSERT</code>, <code>UPDATE</code>, and <code>DELETE</code>, an event is appended to the log, from where it is captured by the CDC tool and propagated to consumers, usually through data streaming platforms such as Apache Kafka or Amazon Kinesis.</p>
+</div>
+<div class="paragraph">
+<p>These event streams enable a <a href="/blog/seven-ways-to-put-cdc-to-work">large variety of use cases</a>, such as low-latency data feeds for analytical data stores, cache updates, full-text search indexes, and many more.
+While there are different alternatives for implementing CDC systems (for instance based on polling for changed rows, or using database triggers), log-based CDC is generally the <a href="https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/">most powerful and efficient approach</a> and should be preferred whenever possible.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_does_cdc_break_encapsulation">Does CDC Break Encapsulation?<a class="anchor" href="#_does_cdc_break_encapsulation"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In software design, <a href="https://en.wikipedia.org/wiki/Encapsulation_(computer_programming)">encapsulation</a> refers to the practice of hiding the implementation details and inner data structures of a component from the outside world, providing access to the component’s functionality and data only through well-defined interfaces.
+By publishing change event streams for the tables of an application’s database, this encapsulation may be violated.</p>
+</div>
+<div class="paragraph">
+<p>Over time, several people have touched on this aspect, for instance Chris Riccomini in <a href="https://cnr.sh/essays/kafka-change-data-capture-breaks-database-encapsulation">this blog post</a> and Yaroslav Tkachenko <a href="https://streamingdata.substack.com/p/change-data-capture-is-still-an-anti">here</a>.
+The following implications of using using log-based CDC are typically at the center of this discussion:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Your table model becomes your API:</strong> by default, your table’s column names and types correspond to fields in the change events emitted by the CDC tool. This can yield less-than-ideal event schemas, particularly for legacy applications.</p>
+</li>
+<li>
+<p><strong>Fine-grained events:</strong> CDC event streams typically expose one event per affected table row, whereas it can be desirable to publish higher-level events to consumers. An example of this would be wanting one event for one purchase order with all its order lines, even if they are stored within two separate tables in an RDBMS. The loss of transaction semantics in CDC event streams can aggravate that concern, as consumers cannot easily correlate the events originating from one and the same transaction in the source database.</p>
+</li>
+<li>
+<p><strong>Schema changes might break things:</strong> Downstream consumers of the change events will expect the data to adhere to the schema known to them. As there is no abstraction between your internal data model and consumers, any changes to the database schema, such as renaming a column or changing its type, could cause downstream event consumers to break, unless they are updated in lockstep.</p>
+</li>
+<li>
+<p><strong>You may accidentally leak sensitive data:</strong> a change event stream will, by default, contain all the rows of a table with all its columns. This means that sensitive data which shouldn’t leave the security perimeter of your application could be exposed to external consumers.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Now, this perhaps sounds a bit scarier than it actually is!
+In order to understand whether there actually is a problem here or not, it helps to look at how and where your change event streams are consumed.
+Specifically, do change events permeate multiple <a href="https://martinfowler.com/bliki/BoundedContext.html">bounded contexts</a> (in terminology of <a href="https://en.wikipedia.org/wiki/Domain-driven_design">Domain-Driven Design</a>)?
+Are they propagated across system (and team) boundaries, or not?</p>
+</div>
+<div class="paragraph">
+<p>If a change event stream is consumed within the same context as the source database itself—​such as updating an in-memory cache managed by the application or service owning the database—​then I would argue that there actually isn’t much to be concerned about.
+You actually <em>want</em> the data in the cache to match the original data.
+Similarly, if a change event stream is used for feeding a search index owned and managed by the same team also building the source application itself, aspects like schema changes can be coordinated by the team itself and applied to the database and index together.</p>
+</div>
+<div class="paragraph">
+<p>Things look different though when crossing context or organizational boundaries.
+Your change events are consumed by the analytics team sitting at the end of the hallway to whom you only speak once a year?
+You are using CDC to propagate data changes between microservices created by different parts of your organization?
+In situations like these, directly exposing change streams from your internal data model indeed may be problematic.
+Tying these kinds of external consumers to your own data model and its lifecycle can lead to a loss of agility (changes to your model require convoluted and time-consuming change control processes tightly synchronized between different teams) and service disruptions (downstream pipelines and consumers fail due to incompatible schema changes).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_entering_data_contracts">Entering Data Contracts<a class="anchor" href="#_entering_data_contracts"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>So how do you mitigate these risks of using CDC between bounded contexts and/or teams?
+The solution is similar to what you’d do for exposing any other remote API—​such as REST or gRPC—​from your application: you have an API layer which is separate from the internal data model.
+This layer exposes a service’s functionality and data in exactly the way it’s needed, evolving at its own pace and independently from changes you make to your internal model, with a strong notion of not breaking compatibility in mind.</p>
+</div>
+<div class="paragraph">
+<p>In databases, views have historically been a proven means of establishing module and system boundaries, for instance providing an explicit interface to traditional pull-based ETL tools.
+Unfortunately, (non-materialized) database views cannot be exposed via CDC because they don’t operate via the transaction log.
+But as we’ll see below, there are other ways for setting up separate change streams which don’t directly mirror the raw streams corresponding to the tables of your data model.
+These public change event streams adhere to their own well-defined and deliberately crafted <em>data contract</em>.</p>
+</div>
+<div class="paragraph">
+<p><a href="https://www.montecarlodata.com/blog-data-contracts/">Data contracts</a> have been quite the hotness lately, and for good reason.
+They typically comprise the following aspects as a formal agreement between data providers and consumers:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Data schema:</strong> describes the structure and format of the events in a stream, i.e. the fields, their names and types, constraints, etc.</p>
+</li>
+<li>
+<p><strong>Data semantics:</strong> describe the meaning of event attributes, e.g. units of measurement for numeric values</p>
+</li>
+<li>
+<p><strong>Service level agreements (SLAs):</strong> describe qualitative aspects of a data stream, such as mean and maximum latency, event rates, etc.</p>
+</li>
+<li>
+<p><strong>Evolution rules:</strong> describe how and when a data contract can be changed, in particular its schema, so that consumers can prepare for any changes without breaking</p>
+</li>
+<li>
+<p><strong>Metadata and policies:</strong> describes attributes like the owner of a data contract, what the data can (and cannot) be used for, etc.</p>
+</li>
+<li>
+<p><strong>Examples:</strong> show how events adhering to the contract may look like</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This &#34;contract&#34; can be expressed and managed using different formats and tools.
+For instance, data schemas can be defined using <a href="https://json-schema.org/">JSON Schema</a>, <a href="https://avro.apache.org/">Avro</a> schemas, or <a href="https://protobuf.dev/">ProtoBuf</a> definitions.
+Another option would be describing your change event streams with help of the <a href="https://www.asyncapi.com/">AsyncAPI specification</a>.
+Evolution rules can be managed and enforced using schema registries such as <a href="https://github.com/confluentinc/schema-registry">Confluent’s</a> or <a href="https://www.apicur.io/registry/">Apicurio</a>.
+Other contract elements may lend themselves to a textual representation, perhaps on a wiki page or some other kind of document.
+But also a more formal, machine-readable contract definition is possible, such as  in the form of YAML (<em>will this ever</em> <a href="https://twitter.com/search?q=yaml%20(from:brunoborges)%20min_retweets:25&amp;src=typed_query">stop</a> <em>?!</em>), as suggested by the <a href="https://datacontract.com/">Data Contracts specification</a>.</p>
+</div>
+<div class="paragraph">
+<p>Regardless of how it’s implemented, the development team building a service from whose database change event streams are exposed should also own any data contracts for these streams.
+That way, the contracts are part of that team’s product—​developed and maintained by that team, just as they would for any other APIs of the service.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_implementation_approaches_for_data_contracts">Implementation Approaches For Data Contracts<a class="anchor" href="#_implementation_approaches_for_data_contracts"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Having established that explicitly designed data contracts are very useful, how can you go about implementing them—​specifically event schemas and their evolution—​for your CDC events?
+In the following, I’d like to describe two approaches for doing so: the Outbox Pattern, and stream processing using something like Apache Flink.
+I’ll also illustrate exactly how data contracts help you address some of the potential encapsulation risks identified earlier on.</p>
+</div>
+<div class="sect2">
+<h3 id="_the_outbox_pattern">The Outbox Pattern<a class="anchor" href="#_the_outbox_pattern"></a></h3>
+<div class="paragraph">
+<p>The idea of the <a href="https://debezium.io/blog/2019/02/19/reliable-microservices-data-exchange-with-the-outbox-pattern/">Outbox Pattern</a> is that instead of capturing the changes from your internal domain model tables, your application emits bespoke events via a separate table, typically called the <em>outbox table</em>.
+A CDC tool like Debezium will capture only the events inserted into that outbox table and relay them to any downstream consumers.
+Very importantly, any actual data changes (e.g.
+an update to a customer record), and the insertion of the outbox event, must happen in one single database transaction, ensuring atomic all-or-nothing guarantees.</p>
+</div>
+<div class="paragraph">
+<p>The contract of the outbox events is kept separated from the internal data model, allowing you to expose the data in exactly the way you want to expose it.
+For instance you could emit a single event for an entire aggregate root which is persisted in multiple tables in your internal model, as shown below:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/cdc-breaks-encapsulation-does-it-1.png" alt="cdc breaks encapsulation does it 1"/>
+</div>
+<div class="title">Figure 1. The outbox pattern with Debezium</div>
+</div>
+<div class="paragraph">
+<p>But you may also decide to adjust the types of exposed fields, only expose a subset of all your data attributes—​giving you the opportunity to omit any sensitive or implementation-specific attributes—​and much more. Having a separate contract allows you to evolve it independently from your internal model, too. Say, you rename a column in one of your tables; it’s a conscious decision then to also rename it in the schema of your outbox events (potentially requiring a new major version of the same), or keep it as is.</p>
+</div>
+<div class="paragraph">
+<p>Debezium comes with powerful support for implementing the Outbox Pattern.
+This includes a <a href="https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html">routing component</a> for propagating outbox events to specific topics in Kafka, based on configurable event metadata.
+If you are on Postgres, an interesting implementation option is <a href="https://www.decodable.co/blog/the-wonders-of-postgres-logical-decoding-messages-for-cdc">logical decoding messages</a>: instead of having a bespoke outbox table, Postgres lets you write arbitrary events solely to its write-ahead log, from where they can be retrieved using CDC.
+This spares you from implementing your own housekeeping routines (removal of events from the outbox table after they have been captured and sent), as the database itself will discard any obsolete segments of the transaction log automatically.</p>
+</div>
+<div class="paragraph">
+<p>So, the Outbox Pattern is a rather simple option for implementing data contracts (at least the schema portion) in a reliable way.
+<a href="https://twitter.com/QConSF/status/1278315930586677250">It avoids unsafe dual writes</a> (e.g.
+to your service’s database and Apache Kafka), while not exposing your internal data model to external consumers.
+On the downside, it does require you to modify your service so that it emits the outbox events, and you must make sure to consistently do this for all the write operations of your service.
+There is a potential performance impact (as you do another insert call in write transactions) and for high-volume use cases, the additional disk space required for storing outbox events in the database could be an issue.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_stream_processing">Stream Processing<a class="anchor" href="#_stream_processing"></a></h3>
+<div class="paragraph">
+<p>As we saw above, when we implement data contracts using the Outbox Pattern, the application itself is responsible for forming and emitting the change events that adhere to the contract specified.
+But what if we can’t—​or don’t want to, for whatever reason—​change the application to do this?
+The alternative is to use <a href="https://www.decodable.co/blog/stream-processing-an-overview">stream processing</a> to publish change event streams with explicit data contracts after the fact.
+The idea here is to take the unprocessed table-level change events from a CDC source, process and convert them as needed, and re-publish them as separate streams with defined data contracts.</p>
+</div>
+<div class="paragraph">
+<p>While simple event transformations can be implemented with stateless tools like <a href="https://kafka.apache.org/documentation">Single Message Transforms</a> in <a href="https://kafka.apache.org/documentation/#connect">Kafka Connect</a>, stateful stream processing engines like <a href="https://flink.apache.org/">Apache Flink</a> provide much greater flexibility and more possibilities.
+This is particularly relevant when it comes to joining multiple input streams into a single output stream, creating multiple output versions for one input stream, enriching change events with contextual metadata, and more.
+With its <a href="https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/sql/overview/">support for SQL</a>, Flink also has the benefit of using a commonly-understood language to define contracts, making them more accessible and maintainable than the kind of non-portable JSON configuration that other tools might provide for data transformation.</p>
+</div>
+<div class="paragraph">
+<p>The following image shows the overall approach, using Flink SQL to establish a public data contract for a table <code>customers</code> in a Postgres database:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/cdc-breaks-encapsulation-does-it-2.png" alt="cdc breaks encapsulation does it 2"/>
+</div>
+<div class="title">Figure 2. Stream processing pipeline with Apache Flink</div>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/ververica/flink-cdc-connectors">Flink CDC</a> is used to ingest the raw CDC feed into a Flink SQL table. The data is transformed and published to a Kafka topic which adheres to a stable data contract (specifically, the topic’s schema represents the schema part of the contract). The source and sink connectors are represented as tables in Flink SQL; here’s the definition of the source table, <code>customers</code>, using the <code>postgres-cdc</code> connector, which itself is based on top of the Debezium <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql">connector for Postgres</a> (you can find the complete <a href="https://github.com/decodableco/examples/tree/main/cdc-data-contracts">source code</a> for this blog post in the <a href="https://github.com/decodableco/examples/">decodableco/examples</a> repository on GitHub):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+</pre></td><td class="code"><pre><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">customers</span> <span class="p">(</span>
+  <span class="n">id</span> <span class="nb">INT</span><span class="p">,</span>
+  <span class="n">fname</span> <span class="n">STRING</span><span class="p">,</span>
+  <span class="n">lname</span> <span class="n">STRING</span><span class="p">,</span>
+  <span class="n">email</span> <span class="n">STRING</span><span class="p">,</span>
+  <span class="n">street</span> <span class="n">STRING</span><span class="p">,</span>
+  <span class="n">zip</span> <span class="n">STRING</span><span class="p">,</span>
+  <span class="n">city</span> <span class="n">STRING</span><span class="p">,</span>
+  <span class="n">status</span> <span class="nb">INT</span><span class="p">,</span>
+  <span class="n">registered</span> <span class="nb">TIMESTAMP</span><span class="p">,</span>
+  <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="n">id</span><span class="p">)</span> <span class="k">NOT</span> <span class="n">ENFORCED</span>
+<span class="p">)</span> <span class="k">WITH</span> <span class="p">(</span>
+  <span class="s1">&#39;connector&#39;</span> <span class="o">=</span> <span class="s1">&#39;postgres-cdc&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;hostname&#39;</span> <span class="o">=</span> <span class="s1">&#39;postgres&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;port&#39;</span> <span class="o">=</span> <span class="s1">&#39;5432&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;username&#39;</span> <span class="o">=</span> <span class="s1">&#39;postgres&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;password&#39;</span> <span class="o">=</span> <span class="s1">&#39;postgres&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;database-name&#39;</span> <span class="o">=</span> <span class="s1">&#39;postgres&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;schema-name&#39;</span> <span class="o">=</span> <span class="s1">&#39;inventory&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;table-name&#39;</span> <span class="o">=</span> <span class="s1">&#39;customers&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;slot.name&#39;</span> <span class="o">=</span> <span class="s1">&#39;customers_replication_slot&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;decoding.plugin.name&#39;</span> <span class="o">=</span> <span class="s1">&#39;pgoutput&#39;</span>
+<span class="p">);</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Listing 1: Configuration of the Postgres source connector</em></p>
+</div>
+<div class="paragraph">
+<p>For publishing the change events into a Kafka topic <code>customers</code>, another table, <code>customers_public</code>, is created which looks like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+</pre></td><td class="code"><pre><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">customers_public</span> <span class="p">(</span>
+  <span class="n">id</span> <span class="nb">INT</span><span class="p">,</span>
+  <span class="n">first_name</span> <span class="n">STRING</span><span class="p">,</span>
+  <span class="n">last_name</span> <span class="n">STRING</span><span class="p">,</span>
+  <span class="n">email</span> <span class="n">STRING</span><span class="p">,</span>
+  <span class="n">zip</span> <span class="n">STRING</span><span class="p">,</span>
+  <span class="n">status</span> <span class="n">STRING</span><span class="p">,</span>
+  <span class="n">registration_date</span> <span class="n">STRING</span><span class="p">,</span>
+  <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="n">id</span><span class="p">)</span> <span class="k">NOT</span> <span class="n">ENFORCED</span>
+<span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span>
+  <span class="s1">&#39;connector&#39;</span> <span class="o">=</span> <span class="s1">&#39;upsert-kafka&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;topic&#39;</span> <span class="o">=</span> <span class="s1">&#39;customers&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;properties.bootstrap.servers&#39;</span> <span class="o">=</span> <span class="s1">&#39;kafka:9092&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;key.format&#39;</span> <span class="o">=</span> <span class="s1">&#39;json&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;value.format&#39;</span> <span class="o">=</span> <span class="s1">&#39;json&#39;</span>
+<span class="p">);</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Listing 2: Configuration of the Kafka sink connector</em></p>
+</div>
+<div class="paragraph">
+<p>Note that the <code>upsert-kafka</code> connector must be used (i.e.
+not the <code>kafka</code> one), as I’ve discussed recently in <a href="https://www.youtube.com/watch?v=1ezf3OyLz3w">this Data Streaming Quick Tip episode</a>.
+Finally, the transformation from the source stream into the published format is a simple <code>INSERT</code> statements, using just a few lines of Flink SQL:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+</pre></td><td class="code"><pre><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">customers_public</span>
+  <span class="k">SELECT</span>
+    <span class="n">id</span><span class="p">,</span>
+    <span class="n">fname</span><span class="p">,</span>
+    <span class="n">lname</span><span class="p">,</span>
+    <span class="n">email</span><span class="p">,</span>
+    <span class="n">zip</span><span class="p">,</span>
+    <span class="n">phone</span><span class="p">,</span>
+    <span class="k">CASE</span>
+      <span class="k">WHEN</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">THEN</span> <span class="s1">&#39;NEW&#39;</span>
+      <span class="k">WHEN</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">2</span> <span class="k">THEN</span> <span class="s1">&#39;VIP&#39;</span>
+      <span class="k">WHEN</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">3</span> <span class="k">THEN</span> <span class="s1">&#39;BLOCKED&#39;</span>
+      <span class="k">ELSE</span> <span class="s1">&#39;STANDARD&#39;</span>
+    <span class="k">END</span><span class="p">,</span>
+    <span class="n">DATE_FORMAT</span><span class="p">(</span><span class="n">registered</span><span class="p">,</span> <span class="s1">&#39;dd-MM-yyyy&#39;</span><span class="p">)</span>
+  <span class="k">FROM</span> <span class="n">customers</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Listing 3: Flink SQL job for transforming the source table into the sink table</em></p>
+</div>
+<div class="paragraph">
+<p>When submitting this query, a job will be deployed onto your Flink cluster which executes the query in a continuous fashion, propagating any changes from the source to the destination, whenever there is a row inserted, updated, or deleted in the source table.
+The following transformations are applied:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Renamings:</strong> The names of some fields are changed, e.g. from <code>fname</code> to <code>first_name</code> (by means of inserting the selected values into fields with the desired alternative names in the sink table)</p>
+</li>
+<li>
+<p><strong>Omissions:</strong> Some sensitive fields are excluded from the published stream (all address fields besides <code>zip</code>)</p>
+</li>
+<li>
+<p><strong>Type changes:</strong> The <code>registered</code> field is changed from <code>TIMESTAMP</code> to <code>STRING</code></p>
+</li>
+<li>
+<p><strong>Value conversions:</strong> Instead of the original numeric constants, corresponding string labels are emitted for the <code>status</code> field</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>All these transformations are projections generally speaking.
+But depending on your requirements, you could take things much further and for instance:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>apply filters</strong> using a <code>WHERE</code> clause, excluding test accounts or logically deleted customer records from the change event stream,</p>
+</li>
+<li>
+<p><strong>join multiple change event streams</strong> into a single one, which becomes particularly useful when publishing change events for one aggregate which is persisted in multiple tables in a relational database (see further below for an example for that),</p>
+</li>
+<li>
+<p><strong>add derived fields</strong>, e.g. with a customer’s full name, and much more.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Instead of publishing a single data contract for a table like the <code>customers</code> table in the example above, you also may decide to create multiple streams with slightly different contracts, geared towards different consumers and use cases.
+For instance, you may have two public customer change event streams, one with address data (which can only be accessed by a small number of authorized clients) and one without (which would be accessible by a larger number of clients).</p>
+</div>
+<div class="paragraph">
+<p>There is an interesting tension here between defining contracts which are widely applicable vs.
+contracts which are optimized for specific consumers.
+A useful guiding principle for resolving this tension could be &#34;As general as possible, as specific as needed&#34;.
+This means that, for instance, you would include the widest set of fields possible in a change stream’s data contract by default, only keeping sensitive data exclusive to streams for specific privileged consumers.
+Other kinds of filtering on the other hand—​such as filtering out any backfilling events—​would be the responsibility of individual clients, based on their specific requirements.</p>
+</div>
+<div class="paragraph">
+<p>As far as filtering specific rows or columns is concerned, you have different options.
+You could ingest everything into Flink but only publish a subset, as shown in the example above.
+This would be useful when you want to have the option to publish multiple variants of a data contract, as just discussed.
+But you also could decide to omit specific sensitive fields in the Flink source table definition, thus making sure they never can be part of any published data contracts.
+Depending on your database, you may even exclude specific data from the ingested change stream altogether.
+As an example, Postgres supports the definition of column lists and <a href="/blog/postgres-15-logical-decoding-row-filters-with-debezium">row filters</a>, providing fine-grained control over the contents of any logical replication streams, thus helping to reduce network traffic and any potential cost associated with it.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_streaming_data_contractsbeyond_the_basics">Streaming Data Contracts—​Beyond the Basics<a class="anchor" href="#_streaming_data_contractsbeyond_the_basics"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Once you have embarked onto your journey of creating data contracts with stateful stream processing, the sky’s the limit, and you have all kinds of interesting related capabilities at your disposal.</p>
+</div>
+<div class="paragraph">
+<p>So let’s discuss how to expose a complexly structured change event stream, derived from two tables in the source database.
+Imagine that the domain model from the example above is changed so that a customer can have multiple phone numbers, instead of just a single one.
+To model that, instead of having a phone column within the <code>customers</code> table, let’s assume that there’s a separate table <code>phone_numbers</code>, with a 1:n relationship between the two tables.</p>
+</div>
+<div class="paragraph">
+<p>A stream processing job could then be used to join the two tables, emitting the phone numbers as part of the data contract for the customer change event stream.
+That way, instead of having to deal with two table-level streams, consumers would be able to ingest all the data pertaining to a customer from one single stream, independent from how that data is organized in the source database.
+To make things a bit more interesting, let’s emit one of the numbers (the customer’s preferred one) via its own field <code>phone</code>, and all the others via an array-typed field <code>further_phones</code>:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/cdc-breaks-encapsulation-does-it-3.png" alt="cdc breaks encapsulation does it 3"/>
+</div>
+<div class="title">Figure 3. Joining two change event streams</div>
+</div>
+<div class="paragraph">
+<p>A Flink SQL <a href="https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/functions/udfs/">user-defined function</a> (UDF) for aggregating the elements of the &#34;many&#34; side of the join into an array in a type-safe way can come in handy here, something I’ve recently explored in <a href="https://www.youtube.com/watch?v=ICJ7-YyaC-4">this video</a>. Using the <code>ARRAY_AGGR()</code> function discussed in that quick tip, the two source tables could be joined like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+</pre></td><td class="code"><pre><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">customers_public</span>
+  <span class="k">SELECT</span>
+    <span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+    <span class="k">c</span><span class="p">.</span><span class="n">fname</span><span class="p">,</span>
+    <span class="k">c</span><span class="p">.</span><span class="n">lname</span><span class="p">,</span>
+    <span class="k">c</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
+    <span class="k">c</span><span class="p">.</span><span class="n">zip</span><span class="p">,</span>
+    <span class="n">preferred</span><span class="p">.</span><span class="nv">`value`</span><span class="p">,</span>
+    <span class="n">ARRAY_AGGR</span><span class="p">(</span><span class="n">further_phones</span><span class="p">.</span><span class="nv">`value`</span><span class="p">),</span>
+    <span class="k">CASE</span>
+      <span class="k">WHEN</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">THEN</span> <span class="s1">&#39;NEW&#39;</span>
+      <span class="k">WHEN</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">2</span> <span class="k">THEN</span> <span class="s1">&#39;VIP&#39;</span>
+      <span class="k">WHEN</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">3</span> <span class="k">THEN</span> <span class="s1">&#39;BLOCKED&#39;</span>
+      <span class="k">ELSE</span> <span class="s1">&#39;STANDARD&#39;</span>
+    <span class="k">END</span><span class="p">,</span>
+    <span class="n">DATE_FORMAT</span><span class="p">(</span><span class="n">registered</span><span class="p">,</span> <span class="s1">&#39;dd-MM-yyyy&#39;</span><span class="p">)</span>
+  <span class="k">FROM</span>
+    <span class="n">customers</span> <span class="k">c</span>
+    <span class="k">LEFT</span> <span class="k">JOIN</span>
+      <span class="p">(</span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">phone_numbers</span> <span class="k">WHERE</span> <span class="n">preferred</span> <span class="o">=</span> <span class="k">true</span><span class="p">)</span> <span class="n">preferred</span>
+      <span class="k">ON</span> <span class="k">c</span><span class="p">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">preferred</span><span class="p">.</span><span class="n">customer_id</span>
+    <span class="k">LEFT</span> <span class="k">JOIN</span>
+      <span class="p">(</span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">phone_numbers</span> <span class="k">WHERE</span> <span class="n">preferred</span> <span class="o">=</span> <span class="k">false</span><span class="p">)</span> <span class="n">further_phones</span>
+      <span class="k">ON</span> <span class="k">c</span><span class="p">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">further_phones</span><span class="p">.</span><span class="n">customer_id</span>
+  <span class="k">GROUP</span> <span class="k">BY</span>
+    <span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">lname</span><span class="p">,</span> <span class="n">email</span><span class="p">,</span> <span class="n">zip</span><span class="p">,</span> <span class="k">c</span><span class="p">.</span><span class="n">phone</span><span class="p">,</span> <span class="n">registered</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">preferred</span><span class="p">.</span><span class="nv">`value`</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Listing 4: Joining two source change streams into a single public stream.</strong></p>
+</div>
+<div class="paragraph">
+<p>The <code>phone_numbers</code> table is left-joined here twice, once to obtain the preferred phone number and once for all the non-preferred numbers, which then are exposed as an array via the aforementioned <code>ARRAY_AGGR()</code> function.</p>
+</div>
+<div class="paragraph">
+<p>But you also can go beyond the pure needs of data contracts themselves.
+One example is the expansion of partial change events: <code>UPDATE</code> events emitted by the <a href="https://debezium.io/documentation/reference/stable/connectors/cassandra.html">Debezium connector for Cassandra</a> only contain those fields of a record whose values actually changed, whereas any unchanged values are not contained.
+Similarly, the Postgres connector <a href="https://debezium.io/blog/2019/10/08/handling-unchanged-postgres-toast-values/">won’t emit values for unchanged TOAST columns</a> (large column values stored by the database in a specific way).
+If a consumer only supports full record updates, it won’t be easily able to process such partial change events.
+This could be addressed by implementing a job for publishing a data contract with Flink’s <a href="https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/datastream/overview/">DataStream API</a> which leverages a state store for expanding any partial events into full ones, retrieving any missing field values from the store.</p>
+</div>
+<div class="paragraph">
+<p>Another very interesting option would be taking advantage of the metadata emitted by Debezium for <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-transaction-metadata">transaction boundaries</a>; with this information you could <a href="https://www.slideshare.net/FlinkForward/squirreling-away-640-billion-how-stripe-leverages-flink-for-change-data-capture">implement buffering logic</a> for emitting change events originating from one and the same transaction only when all the events from that transaction have been ingested, which is particularly useful when joining multiple raw change event streams into a single one.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_handling_schema_changes">Handling Schema Changes<a class="anchor" href="#_handling_schema_changes"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As the saying goes: Nothing is permanent except change.
+It’s only a question of time until new columns are added to your application’s data schema, existing ones are renamed or removed, or their types get changed.
+With explicitly defined data contracts in place, you have taken the first step for making sure that any changes to your internal data schema do not directly affect the consumers of your change event streams.</p>
+</div>
+<div class="paragraph">
+<p>From a procedural perspective, it’s important that the team owning and publishing a data contract can apply changes to the contract without having to synchronize with any event consumers, who perhaps may not even be known to the upstream team.
+At the same time, any changes to the contract should not break existing consumers—​after a schema change they should be able to continue to process a change event stream based on the previous schema known to them.
+Of course, they will need to be adjusted eventually, so as to take advantage of the capabilities of a new contract version, such as any added fields.
+The guarantees around duration of support for particular versions of a contract is something that would be built into them along with the other metadata previously discussed such as SLAs.</p>
+</div>
+<div class="paragraph">
+<p>This means data contracts for change event streams should be evolved in a <a href="https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#forward-compatibility">forward compatible</a> way, which allows for the addition of new fields and the removal of optional fields, whereas existing non-optional fields may not be removed.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/cdc-breaks-encapsulation-does-it-4.png" alt="cdc breaks encapsulation does it 4"/>
+</div>
+<div class="title">Figure 4. Producer-driven evolution of a schema</div>
+</div>
+<div class="paragraph">
+<p>To learn more about the guidelines for schema evolution, I highly recommend referring to Gwen Shapira’s presentation <a href="https://www.infoq.com/presentations/contracts-streaming-microservices/">&#34;Streaming Microservices: Contracts &amp; Compatibility&#34;</a>, where she discusses this topic around 16:50 min. A schema registry should be used in order to ensure that any changes to a data contract adhere to these requirements. Before rolling out any data contract changes to production, a CI/CD pipeline would validate any schema changes using the compatibility rules configured in the registry, as for instance described in <a href="https://dataproducts.substack.com/p/an-engineers-guide-to-data-contracts">this excellent blog post</a> by Chad Sanderson and Adrian Kreuziger. Any contract changes which would actually break existing consumers, would fail the build process and thus be prevented from being deployed.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Evolving data contracts in a forward-compatible manner means that consumers cannot replay any events from the beginning using only the latest schema version.
+This would fail when, for instance, re-processing an event lacking a non-optional field added in a later schema version.
+Instead, each event should be processed with the schema version valid at the time when the event was originally created.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>Now, how can stream processing help you with managing these kinds of data contract changes?
+As an example, consider the case of renaming a column within a source table.
+The schema of the table’s change stream would change correspondingly, whenever the first change event after the name change is ingested.
+Exposing this schema change as-is to any downstream consumers would be an incompatible change and thus should be avoided.
+Different options for solving the issue exist:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Creating another version of the stream</strong> with the new schema (i.e. new field name); both, old and new stream versions, would co-exist, and clients could migrate from the old to the new one at their own pace</p>
+</li>
+<li>
+<p><strong>Expand the schema of the existing stream</strong>, so that it contains another field with the new name, next to the existing field with the old name</p>
+</li>
+<li>
+<p><strong>Keep the existing stream schema</strong>, i.e. don’t change the field name in the public data contract</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In every case, stream processing can be used to apply the required transformations between the source events (containing either old or new field name, depending on the specific stream position) and the published counterparts(s).
+Let’s see how the last option—​completely shielding consumers from that name change—​can be implemented with Flink SQL.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/cdc-breaks-encapsulation-does-it-5.png" alt="cdc breaks encapsulation does it 5"/>
+</div>
+<div class="title">Figure 5. Renaming a column in the source table</div>
+</div>
+<div class="paragraph">
+<p>The key idea is to use Flink’s <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/savepoints/">savepoint mechanism</a> for pausing the job, while applying the required schema changes to the database and the Flink job, making sure the job maps both old and new incoming field names to the existing name in the public contract. The exact sequence of events would be this:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In Flink, stop the job with a savepoint: <code>STOP JOB &#39;&lt;job id&gt;&#39; WITH SAVEPOINT;</code><br/>
+This makes sure the job, after restarting, will continue to process the source change stream from the exact position where it left off, not missing any changes which happened in between.</p>
+</li>
+<li>
+<p>In the source database, rename the column:<br/>
+<code>ALTER TABLE customers RENAME COLUMN fname TO first_name;</code></p>
+</li>
+<li>
+<p>In Flink, add a column with the new name to the table, keeping the one with the old name too:<br/>
+<code>ALTER TABLE customers ADD first_name STRING;</code></p>
+</li>
+<li>
+<p>In Flink, configure the savepoint path:<br/>
+<code>SET &#39;execution.savepoint.path&#39; = &#39;/path/to/savepoints/savepoint-&lt;job id&gt;&#39;;</code></p>
+</li>
+<li>
+<p>In Flink, create a new version of the job, using the <code>COALESCE()</code> function to retrieve the first name either from the old or the new field, depending on which one exists in the incoming event:</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">customers_public</span>
+  <span class="k">SELECT</span>
+    <span class="n">id</span><span class="p">,</span>
+    <span class="n">COALESCE</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">first_name</span><span class="p">),</span>
+    <span class="p">...</span>
+  <span class="k">FROM</span> <span class="n">customers</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Listing 5: Retrieving the first name from the correct column, depending on which value is present</strong></p>
+</div>
+<div class="paragraph">
+<p>With this procedure, any consumers of the public data contract are fully shielded from the column name change in the database.
+The job will source the first name from the correct incoming field, no matter whether it processes a change event from before or after the schema change was made in the database.</p>
+</div>
+<div class="paragraph">
+<p>Note that the correct order of steps is vital here; in particular, the Flink job must be stopped before applying the schema change in the source database.
+Otherwise, it would not pick up the value from change events emitted after the column has been renamed.
+Therefore, the development team owning the database schema should also be in charge of the CDC pipeline and the Flink job for creating the public change stream with the data contract.</p>
+</div>
+<div class="paragraph">
+<p>Beyond renaming columns, also other schema changes can be handled with a stream processing engine.
+New columns could be added just like above.
+For dropped <code>NOT NULL</code> columns, the streaming job could omit a sentinel value such as &#34;n/a&#34; to ensure compatibility with existing consumers.
+Also cardinality changes—​for instance, going from a single <code>phone</code> column within the <code>customers</code> table to a separate table with multiple phone numbers per customer, as shown above—​are possible by aggregating all the values into a new array-typed field in the public data stream.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary">Summary<a class="anchor" href="#_summary"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now, does CDC break data encapsulation?
+As we’ve seen, the answer to this question is surprisingly nuanced and depends a lot on how and where change event streams are consumed: the key consideration is whether events cross team and/or context boundaries, or not.</p>
+</div>
+<div class="paragraph">
+<p>In cases where encapsulation is a concern, consciously designed data contracts can be a great tool to shield external consumers of a change event stream from the implementation details of an application’s persistent data model and any changes to its schema.
+With the help of stream processing, for instance using Apache Flink, you can establish well-defined APIs for your data, resulting in more robust and reliable data pipelines.
+Flink SQL makes the creation of data contracts a matter of describing the shape of your data with a few lines of SQL, while Flink’s DataStream API can be used for implementing more advanced requirements such as expanding incoming partial change events into full events.</p>
+</div>
+<div class="paragraph">
+<p>With those tools and corresponding processes in place, you don’t need to be concerned about accidentally exposing your internal data model and changes to the schema of the same breaking your change stream consumers.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			
+			
+			
+			<div class="related-posts">
+				<h3>Read Next</h3>
+				<ul>
+					
+					<li><a href="/blog/cdc-use-cases/">CDC Use Cases: 7 Ways to Put CDC to Work</a> <span class="meta">Nov 2, 2023</span></li>
+					
+					<li><a href="/blog/backfilling-postgres-toast-columns-debezium-change-events/">Backfilling Postgres TOAST Columns in Debezium Data Change Events</a> <span class="meta">May 26, 2025</span></li>
+					
+					<li><a href="/blog/ingesting-debezium-events-from-kafka-with-flink-sql/">A Deep Dive Into Ingesting Debezium Events From Kafka With Flink SQL</a> <span class="meta">Apr 16, 2025</span></li>
+					
+				</ul>
+			</div>
+			
+			
+		</div>
+
+		<div class="post-footer">
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<div class="header-image-container" style="flex-shrink: 0;">
+					<img class="footer-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+				</div>
+				<p style="margin: 0;">Gunnar Morling is an open-source software engineer in the Java and data streaming space. He currently works as a Technologist for Confluent. In his past role at Decodable he focused on developer outreach and helped them build their stream processing platform based on Apache Flink. Prior to that, he spent ten years at Red Hat, where he led the Debezium project, a platform for change data capture.</p>
+			</div>
+		</div>
+
+		
+		
+		<div class="post-discussions">
+			<p>Comment below, or join the discussion on
+			<a href="https://hn.algolia.com/?query=morling.dev/blog/change-data-capture-breaks-encapsulation-does-it-though/">Hacker News</a>,
+			<a href="https://lobste.rs/search?q=domain:morling.dev+title:%22%22Change%20Data%20Capture%20Breaks%20Encapsulation%22.%20Does%20it%2c%20though%3f%22&what=stories">Lobsters</a>, and
+			<a href="https://www.reddit.com/search/?q=url:morling.dev/blog/change-data-capture-breaks-encapsulation-does-it-though/">Reddit</a>.
+			</p>
+		</div>
+		<div id="disqus_thread"></div>
+
+<script>
+  
+  window.addEventListener('load', function() {
+    
+    setTimeout(function() {
+      const commentsContainer = document.getElementById('disqus_thread');
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', 'gunnarmorling/discussions.morling.dev');
+      script.setAttribute('data-repo-id', 'R_kgDOGXzqNQ');
+      script.setAttribute('data-category', 'Announcements');
+      script.setAttribute('data-category-id', 'DIC_kwDOGXzqNc4B_2Pq');
+      script.setAttribute('data-mapping', 'title');
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-theme', 'light');
+      script.setAttribute('data-lang', 'en');
+      script.setAttribute('crossorigin', 'anonymous');
+      script.async = true;
+      commentsContainer.appendChild(script);
+    }, 100);
+  });
+</script>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>

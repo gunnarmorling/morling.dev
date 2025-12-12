@@ -265,6 +265,118 @@
 					
 					
 					<div class="post">
+						<div class="meta">Feb 28, 2023</div>
+						<h4 class="summary">Finding Java Thread Leaks With JDK Flight Recorder and a Bit Of SQL</h4>
+						<div>
+							<span class="description"> The other day at work, we had a situation where we suspected a thread leak in one particular service, i.e. code which continuously starts new threads, without taking care of ever stopping them again. Each thread requires a bit of memory for its stack space, so starting an unbounded number of threads can be considered as a form of memory leak, causing your application to run out of memory eventually. In addition, the more threads there are, the more overhead the operating system incurs for scheduling them, until the scheduler itself will consume most of the available CPU resources. Thus it’s vital to detect and fix this kind of problem early on.
+</span>
+						</div>
+						<p>
+							<a href="/blog/finding-java-thread-leaks-with-jdk-flight-recorder-and-bit-of-sql/">Read More...</a>
+						</p>
+					</div>
+					
+					<div class="post">
+						<div class="meta">Jan 15, 2023</div>
+						<h4 class="summary">Getting Started With Java Development in 2023 — An Opinionated Guide</h4>
+						<div>
+							<span class="description"> 27 years of age, and alive and kicking — The Java platform regularly comes out amongst the top contenders in rankings like the TIOBE index. In my opinion, rightly so. The language is very actively maintained and constantly improved; its underlying runtime, the Java Virtual Machine (JVM), is one of, if not the most, advanced runtime environments for managed programming languages.
+There is a massive eco-system of Java libraries which make it a great tool for a large number of use cases, ranging from command-line and desktop applications, over web apps and backend web services, to datastores and stream processing platforms. With upcoming features like support for vectorized computations (SIMD), light-weight virtual threads, improved integration with native code, value objects and user-defined primitives, and others, Java is becoming an excellent tool for solving a larger number of software development tasks than ever before.
+</span>
+						</div>
+						<p>
+							<a href="/blog/getting-started-with-java-development-2023/">Read More...</a>
+						</p>
+					</div>
+					
+					<div class="post">
+						<div class="meta">Jan 5, 2023</div>
+						<h4 class="summary">Oh... This is Prod?!</h4>
+						<div>
+							<span class="description"> I strongly believe that you should avoid connecting to production environments from local developer machines as much as possible. But sometimes, e.g. in order to analyse some specific kinds of failures, doing so can be inevitable.
+Now, if this is the case, I really, really want to be sure that I’m aware of the environment I am working in. I absolutely want to avoid a situation as in the catchy title of this post, when for instance you realize that you just ran some integration test against a production environment. In the context of working with the AWS CLI tool this means I’d like to be aware of the currently active profile by means of coloring my shell accordingly. Here’s how I’ve set this up using iTerm2 and zsh.
+</span>
+						</div>
+						<p>
+							<a href="/blog/oh_this_is_prod/">Read More...</a>
+						</p>
+					</div>
+					
+					<div class="post">
+						<div class="meta">Jan 3, 2023</div>
+						<h4 class="summary">Is your Blocking Queue... Blocking?</h4>
+						<div>
+							<span class="description"> Java’s BlockingQueue hierarchy is widely used for coordinating work between different producer and consumer threads. When set up with a maximum capacity (i.e. a bounded queue), no more elements can be added by producers to the queue once it is full, until a consumer has taken at least one element. For scenarios where new work may arrive more quickly than it can be consumed, this applies means of back-pressure, ensuring the application doesn’t run out of memory eventually, while enqueuing more and more work items.
+</span>
+						</div>
+						<p>
+							<a href="/blog/is-your-blocking-queue-blocking/">Read More...</a>
+						</p>
+					</div>
+					
+					<div class="post">
+						<div class="meta">Dec 18, 2022</div>
+						<h4 class="summary">Maven, What Are You Waiting For?!</h4>
+						<div>
+							<span class="description"> As part of my new job at Decodable, I am also planning to contribute to the Apache Flink project (as Decodable’s fully-managed stream processing platform is based on Flink). Right now, I am in the process of familiarizing myself with the Flink code base, and as such I am of course building the project from source, too.
+</span>
+						</div>
+						<p>
+							<a href="/blog/maven-what-are-you-waiting-for/">Read More...</a>
+						</p>
+					</div>
+					
+					<div class="post">
+						<div class="meta">Dec 15, 2022</div>
+						<h4 class="summary">Postgres 15: Logical Decoding Row Filters With Debezium</h4>
+						<div>
+							<span class="description"> This post originally appeared on the Decodable blog. All rights reserved.
+Since logical decoding was added to Postgres in version 9.4, this powerful feature for capturing changes from the write-ahead log of the database has been continuously improved. Postgres 15, released in October this year, added support for fine-grained control over which columns (by means of column lists) and rows (via row filters) should be exported from captured tables. This means, in relational terminology, projections and filters are now natively supported by Postgres change event publications.
+</span>
+						</div>
+						<p>
+							<a href="/blog/postgres-15-logical-decoding-row-filters-with-debezium/">Read More...</a>
+						</p>
+					</div>
+					
+					<div class="post">
+						<div class="meta">Nov 30, 2022</div>
+						<h4 class="summary">The Insatiable Postgres Replication Slot</h4>
+						<div>
+							<span class="description"> While working on a demo for processing change events from Postgres with Apache Flink, I noticed an interesting phenomenon: A Postgres database which I had set up for that demo on Amazon RDS, ran out of disk space. The machine had a disk size of 200 GiB which was fully used up in the course of less than two weeks.
+Now a common cause for this kind of issue are replication slots which are not advanced: in that case, Postgres will hold on to all WAL segments after the latest log sequence number (LSN) which was confirmed for that slot. Indeed I had set up a replication slot (via the Decodable CDC source connector for Postgres, which is based on Debezium). I then had stopped that connector, causing the slot to become inactive. The problem was though that I was really sure that there was no traffic in that database whatsoever! What could cause a WAL growth of ~18 GB/day then?
+</span>
+						</div>
+						<p>
+							<a href="/blog/insatiable-postgres-replication-slot/">Read More...</a>
+						</p>
+					</div>
+					
+					<div class="post">
+						<div class="meta">Nov 28, 2022</div>
+						<h4 class="summary">Running a Quarkus Native Application on Render</h4>
+						<div>
+							<span class="description"> This is a quick run down of the steps required for running JVM applications, built using Quarkus and GraalVM, on Render.
+Render is a cloud platform for running websites and applications. Like most other comparable services such as fly.io, it offers a decent free tier, which lets you try out the service without any financial commitment. Unlike most other services, with Render, you don’t need to provide a credit card in order to use the free tier. Which means there’s no risk of surprise bills, as often is the case with pay-per-use models, where a malicious actor could DDOS your service and drive up cost for consumed CPU resources or egress bandwidth indefinitely.
+</span>
+						</div>
+						<p>
+							<a href="/blog/running-quarkus-native-app-on-render/">Read More...</a>
+						</p>
+					</div>
+					
+					<div class="post">
+						<div class="meta">Nov 3, 2022</div>
+						<h4 class="summary">Why I Joined Decodable</h4>
+						<div>
+							<span class="description">Table of Contents The Space: Real-Time Stream Processing The Environment: A Start-up The Team: One of a Kind Outlook It’s my first week as a software engineer at Decodable, a start-up building a serverless real-time data platform! When I shared this news on social media yesterday, folks were not only super supportive and excited for me (thank you so much for all the nice words and wishes!), but some also asked about the reasons behind my decision for switching jobs and going to a start-up, after having worked for Red Hat for the last few years.</span>
+						</div>
+						<p>
+							<a href="/blog/why-i-joined-decodable/">Read More...</a>
+						</p>
+					</div>
+					
+					<div class="post">
 						<div class="meta">Sep 6, 2022</div>
 						<h4 class="summary">An Ideation for Kubernetes-native Kafka Connect</h4>
 						<div>
@@ -272,123 +384,6 @@
 						</div>
 						<p>
 							<a href="/blog/ideation-kubernetes-native-kafka-connect/">Read More...</a>
-						</p>
-					</div>
-					
-					<div class="post">
-						<div class="meta">Aug 25, 2022</div>
-						<h4 class="summary">Testing Kafka Connectors</h4>
-						<div>
-							<span class="description"> Kafka Connect is a key factor for the wide-spread adoption of Apache Kafka: a framework and runtime environment for connectors, it makes the task of getting data either into Kafka or out of Kafka solely a matter of configuration, rather than a bespoke programming job. There’s dozens, if not hundreds, of readymade source and sink connectors, allowing you to create no-code data pipelines between all kinds of databases, APIs, and other systems.
-There may be situations though where there is no existing connector matching your requirements, in which case you can implement your own custom connector using the Kafka Connect framework. Naturally, this raises the question of how to test such a Kafka connector, making sure it propagates the data between the connected external system and Kafka correctly and completely. In this blog post I’d like to focus on testing approaches for Kafka Connect source connectors, i.e. connectors like Debezium, which ingest data from an external system into Kafka. Very similar strategies can be employed for testing sink connectors, though.
-</span>
-						</div>
-						<p>
-							<a href="/blog/testing-kafka-connectors/">Read More...</a>
-						</p>
-					</div>
-					
-					<div class="post">
-						<div class="meta">Jun 23, 2022</div>
-						<h4 class="summary">Ten Tips to Make Conference Talks Suck Less</h4>
-						<div>
-							<span class="description">Table of Contents 1. 💦 Rehearse, Rehearse, Rehearse 2. 🎬 Start With a Mission 3. 📖 Tell a Story 4. 👀 Look at the Audience, Not Your Slides 5. 🧹 Put Less Text on Your Slides. Much Less 6. ✂️ Tailor the Talk Towards Your Audience 7. 3️⃣ Rule of Three 8. 🚑 Have a Fallback Plan for Demos 9. 💪 Play to Your Strengths 10. 🔄 Circle Back Every so often, I come across some conference talk which is highly interesting in terms of its actual contents, but which unfortunately is presented in a less than ideal way.</span>
-						</div>
-						<p>
-							<a href="/blog/ten-tips-make-conference-talks-suck-less/">Read More...</a>
-						</p>
-					</div>
-					
-					<div class="post">
-						<div class="meta">May 27, 2022</div>
-						<h4 class="summary">Loom and Thread Fairness</h4>
-						<div>
-							<span class="description"> Project Loom (JEP 425) is probably amongst the most awaited feature additions to Java ever; its implementation of virtual threads (or &amp;#34;green threads&amp;#34;) promises developers the ability to create highly concurrent applications, for instance with hundreds of thousands of open HTTP connections, sticking to the well-known thread-per-request programming model, without having to resort to less familiar and often more complex to use reactive approaches.
-Having been in the workings for several years, Loom got merged into the mainline of OpenJDK just recently and is available as a preview feature in the latest Java 19 early access builds. I.e. it’s the perfect time to get your hands onto virtual threads and explore the new feature. In this post I’m going to share an interesting aspect I learned about thread scheduling fairness for CPU-bound workloads running on Loom.
-</span>
-						</div>
-						<p>
-							<a href="/blog/loom-and-thread-fairness/">Read More...</a>
-						</p>
-					</div>
-					
-					<div class="post">
-						<div class="meta">May 17, 2022</div>
-						<h4 class="summary">Running JDK Mission Control on Apple M1</h4>
-						<div>
-							<span class="description"> JDK Mission Control (JMC) is invaluable for analysing performance data recording using JDK Flight Recorder (JFR). The other day, I ran into a problem when trying to run JMC on my Mac Mini M1. Mostly for my own reference, here’s what I did to overcome it.
-</span>
-						</div>
-						<p>
-							<a href="/blog/running-jmc-on-apple-m1/">Read More...</a>
-						</p>
-					</div>
-					
-					<div class="post">
-						<div class="meta">Mar 10, 2022</div>
-						<h4 class="summary">The Code Review Pyramid</h4>
-						<div>
-							<span class="description">Table of Contents FAQ When it comes to code reviews, it’s a common phenomenon that there is much focus and long-winded discussions around mundane aspects like code formatting and style, whereas important aspects (does the code change do what it is supposed to do, is it performant, is it backwards-compatible for existing clients, and many others) tend to get less attention.
-To raise awareness for the issue and providing some guidance on aspects to focus on, I shared a small visual on Twitter the other day, which I called the &amp;#34;Code Review Pyramid&amp;#34;.</span>
-						</div>
-						<p>
-							<a href="/blog/the-code-review-pyramid/">Read More...</a>
-						</p>
-					</div>
-					
-					<div class="post">
-						<div class="meta">Feb 20, 2022</div>
-						<h4 class="summary">The JDK Flight Recorder File Format</h4>
-						<div>
-							<span class="description"> The JDK Flight Recorder (JFR) is one of Java’s secret weapons; deeply integrated into the Hotspot VM, it’s a high-performance event collection framework, which lets you collect metrics on runtime aspects like object allocation and garbage collection, class loading, file and network I/O, and lock contention, do method profiling, and much more.
-JFR data is persisted in recording files (since Java 14, also &amp;#34;realtime&amp;#34; event streaming is supported), which can be loaded for analysis into tools like JDK Mission Control (JMC), or the jfr utility coming with OpenJDK itself.
-</span>
-						</div>
-						<p>
-							<a href="/blog/jdk-flight-recorder-file-format/">Read More...</a>
-						</p>
-					</div>
-					
-					<div class="post">
-						<div class="meta">Jan 12, 2022</div>
-						<h4 class="summary">What&#39;s in a Good Error Message?</h4>
-						<div>
-							<span class="description"> As software developers, we’ve all come across those annoying, not-so-useful error messages when using some library or framework: &amp;#34;Couldn’t parse config file&amp;#34;, &amp;#34;Lacking permission for this operation&amp;#34;, etc. Ok, ok, so something went wrong apparently; but what exactly? What config file? Which permissions? And what should you do about it? Error messages lacking this kind of information quickly create a feeling of frustration and helplessness.
-So what makes a good error message then? To me, it boils down to three pieces of information which should be conveyed by an error message:
-Context: What led to the error? What was the code trying to do when it failed?
-The error itself: What exactly failed?
-Mitigation: What needs to be done in order to overcome the error?
-</span>
-						</div>
-						<p>
-							<a href="/blog/whats-in-a-good-error-message/">Read More...</a>
-						</p>
-					</div>
-					
-					<div class="post">
-						<div class="meta">Dec 21, 2021</div>
-						<h4 class="summary">Announcing the First Release of kcctl</h4>
-						<div>
-							<span class="description"> 🧸 It’s Casey. Casey Cuddle.
-I am very happy to announce the first stable release of kcctl, a modern and intuitive command line client for Apache Kafka Connect!
-Forget about having to memorize and type the right REST API paths and curl flags; with kcctl, managing your Kafka connectors is done via concise and logically structured commands, modeled after the semantics of the kubectl tool known from Kubernetes.
-</span>
-						</div>
-						<p>
-							<a href="/blog/announcing-first-release-of-kcctl/">Read More...</a>
-						</p>
-					</div>
-					
-					<div class="post">
-						<div class="meta">Dec 2, 2021</div>
-						<h4 class="summary">Introducing the OSS Quickstart Archetype</h4>
-						<div>
-							<span class="description"> I am very happy to announce the availability of the OSS Quickstart Archetype!
-Part of the ModiTect family of open-source projects, this is a Maven archetype which makes it very easy to bootstrap new Maven-based open-source projects, satisfying common requirements such as configuring plug-in versions, and adhering to best practices like auto-formatting the source code. Think Maven Quickstart Archetype and friends, but more modern, complete, and opinionated.
-</span>
-						</div>
-						<p>
-							<a href="/blog/introducing-oss-quickstart-archetype/">Read More...</a>
 						</p>
 					</div>
 					

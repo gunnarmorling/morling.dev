@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Using Stand-by Servers for Postgres Logical Replication - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="canonical" href="https://www.decodable.co/blog/postgres-logical-replication" /><meta property="og:url" content="https://www.morling.dev/blog/stand-by-servers-for-postgres-logical-replication/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Using Stand-by Servers for Postgres Logical Replication">
+  <meta property="og:description" content=" This post originally appeared on the Decodable blog. All rights reserved.
+For users of Change Data Capture (CDC), one of the most exciting features in Postgres version 16 (released in September this …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2023-12-19T00:00:00Z">
+    <meta property="article:modified_time" content="2023-12-19T00:00:00Z">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Using Stand-by Servers for Postgres Logical Replication">
+  <meta name="twitter:description" content=" This post originally appeared on the Decodable blog. All rights reserved.
+For users of Change Data Capture (CDC), one of the most exciting features in Postgres version 16 (released in September this …">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.672476d25c0fad0fd490e21222003c6c89ca45b73df6a5634305e06e889c49ad.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
+	
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.5e2c4cf50d01b5e8795a87894c2d08be87ed25371b30d97df693079b623d9f87.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+	<script src="/js/main.min.9ee619eea7f51473f4284ef86c76bdb1b0089e19781ca97275924edf53be5bd4.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Using Stand-by Servers for Postgres Logical Replication</h1>
+				<div class="post-meta-line">
+					<span class="meta">Posted at Dec 19, 2023</span>
+					
+					<span class="post-tags-inline">
+						
+						<a href="/tags/postgres">postgres</a>
+						
+						<a href="/tags/cdc">cdc</a>
+						
+						<a href="/tags/debezium">debezium</a>
+						
+					</span>
+					
+				</div>
+			</div>
+
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_what_is_postgres_logical_replication">What is Postgres Logical Replication?</a></li>
+<li><a href="#_why_logical_replication_on_stand_by_servers">Why Logical Replication On Stand-By Servers?</a></li>
+<li><a href="#_provisioning_a_testing_environment">Provisioning a Testing Environment</a></li>
+<li><a href="#_testing_things_out">Testing Things Out</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p><em>This post originally appeared on the <a href="https://www.decodable.co/blog/postgres-logical-replication">Decodable blog</a>. All rights reserved.</em></p>
+</div>
+<div class="paragraph">
+<p>For users of Change Data Capture (CDC), one of the most exciting features in Postgres version 16 (released in September this year) is the support for logical replication from stand-by servers.
+Instead of connecting to your primary server, you can now point CDC tools such as Debezium to a replica server, which is very interesting for instance from a load distribution perspective.
+I am going to take a closer look at this new feature in this two-part blog series:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Part I (this part): Explaining what Postgres logical replication is, why to use it on stand-by servers, and how to set it up</p>
+</li>
+<li>
+<p><a href="/blog/logical-replication-from-postgres-stand-by-servers-debezium-and-failover-slots">Part II</a>: Discussing how to use logical replication on Postgres stand-bys with Debezium and how to handle failover scenarios</p>
+</li>
+</ul>
+</div>
+<div class="sect1">
+<h2 id="_what_is_postgres_logical_replication">What is Postgres Logical Replication?<a class="anchor" href="#_what_is_postgres_logical_replication"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let’s start with the fundamentals.
+Replication is the process of synchronizing all the data from one database server to one or more other servers, for the purposes of ensuring high availability (HA)—if the primary server fails, one of the stand-bys can take over—and load distribution, as replicas can serve read requests.
+When it comes to replication in Postgres, it supports two kinds of continuous replication from primary to replicas: streaming and logical replication.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><a href="https://www.postgresql.org/docs/current/warm-standby.html#STREAMING-REPLICATION">Streaming replication</a></strong> (sometimes also called physical replication) propagates all the segments of the Write-Ahead Log (WAL) from a <em>primary server</em> to one or more <em>stand-by servers</em>(or <em>replicas</em>). It includes all the databases and tables and automatically propagates schema changes, resulting in an exact copy of the primary server. This makes it a great choice for ensuring high availability of your data, in particular when used in synchronous mode where writing transactions to the primary server are only committed after successful replication.</p>
+</li>
+<li>
+<p>In contrast, <strong><a href="https://www.postgresql.org/docs/current/logical-replication.html">logical replication</a></strong> works much more selectively, &#34;replicating data objects and their changes, based upon their replication identity (usually a primary key)&#34;. It operates in the context of one single database on a Postgres server, and you can control on a very fine-grained level which schemas or tables should be part of the replication stream.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Logical replication offers a flexible <em>publish/subscribe</em> model, which goes beyond the basic primary/read-replica scheme of physical replication.
+In this model, a <em>publisher</em> node is a Postgres instance which exposes one or more <em>publications</em>, describing which tables should be replicated.
+Publications also allow you to limit which columns, <a href="https://www.decodable.co/blog/postgres-15-logical-decoding-row-filters-with-debezium">rows</a>, and operations (<code>INSERT</code>, <code>UPDATE</code>, or <code>DELETE</code>) should be propagated.
+Once set up, one or more <em>subscriber</em> nodes retrieve the changes from a publication.</p>
+</div>
+<div class="paragraph">
+<p>A subscriber can consume the changes from multiple publishers, and it can also be a publisher itself.
+You can execute local write transactions on subscribers, which means that logical replication can form the foundation for multi-master architectures.
+Unlike streaming replication, you can use logical replication between Postgres instances with different versions, making it a useful tool for <a href="https://knock.app/blog/zero-downtime-postgres-upgrades">zero-downtime version upgrades</a>.</p>
+</div>
+<div class="paragraph">
+<p>On the downside, there are <a href="https://www.postgresql.org/docs/current/logical-replication-restrictions.html">some limitations</a>: most importantly, logical replication does not propagate DDL changes—i.e.
+you must make sure by yourself that the database schemas of source and destination are in sync.
+Also replicating sequences, (materialized) views, and large objects is currently not supported.</p>
+</div>
+<div class="paragraph">
+<p>What makes logical replication so interesting, beyond the purposes of just replicating data from one Postgres instance to another, is the notion of <a href="https://www.postgresql.org/docs/current/logicaldecoding-output-plugin.html">logical decoding</a> plug-ins.
+They control the data format used for the logical replication messages and allow external (i.e.
+non-Postgres) consumers to subscribe to a replication stream.
+This is how tools such as Debezium implement change data capture (CDC) for Postgres, enabling use cases such as the replication of data to data warehouses and data lakes, cache invalidation, low latency synchronization of search indexes, and <a href="https://www.decodable.co/blog/seven-ways-to-put-cdc-to-work">many others</a>.</p>
+</div>
+<div class="paragraph">
+<p>Having established what logical replication is and why it is such an important part of the data engineering toolbox, let’s explore why it is so interesting that Postgres now supports logical replication from stand-by servers and how to set this up.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_why_logical_replication_on_stand_by_servers">Why Logical Replication On Stand-By Servers?<a class="anchor" href="#_why_logical_replication_on_stand_by_servers"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The first and most important reason for using logical replication from stand-by servers is load distribution.
+When you have many logical replication slots and corresponding clients, this potentially can create an unduly heavy load on the primary database server.
+In that case it can be beneficial to set up the replication slots on one or even multiple read replicas of the primary, thus distributing resource consumption (CPU, network bandwidth) across multiple machines.</p>
+</div>
+<div class="paragraph">
+<p>In addition, setting up replication slots on stand-by servers is one step towards enabling failover slots, i.e.
+the ability for logical replication consumers to resume processing after a failure of the primary and subsequent promotion of a stand-by server.
+While Postgres does not (yet) support failover slots, you can implement them yourself with a bit of glue code, as we’ll discuss in the second part of this blog series.</p>
+</div>
+<div class="paragraph">
+<p>Finally, in some cases people just don’t like the idea of logical replication clients, in particular non-Postgres tools like Debezium, directly connecting to their operational database.
+Whether rightfully so or not, setting up logical replication on read replicas just helps with peace of mind.</p>
+</div>
+<div class="paragraph">
+<p>On the flip-side, there are some implications of this to consider.
+One is the slightly increased end-to-end latency: as changes are traveling from the primary server to the stand-by and then to the client, things will take a bit longer than when connecting your replication consumers directly to the primary.
+The other aspect is that read replicas are exactly that—read-only.
+While CDC in general doesn’t require write access to the database, there are some exceptions to that.
+In case of Debezium, you won’t be able to use its incremental snapshotting implementation, as this requires inserting watermarking events into a signaling table (you can learn more about this in my talk <a href="https://www.youtube.com/watch?v=Lp0Rg8_nxUs">&#34;Debezium Snapshots Revisited!&#34;</a>).
+Also you cannot use the <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-property-heartbeat-action-query">heartbeat feature</a>, which lets the connector update its restart offsets also in cases where there are no change events for any table the connector is capturing are coming in.
+If you want to use these features, then you’ll need to create a replication slot on the primary server.</p>
+</div>
+<div class="paragraph">
+<p>Enough with all the theory, let’s have a look at logical replication on stand-bys in practice, starting with setting it up.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_provisioning_a_testing_environment">Provisioning a Testing Environment<a class="anchor" href="#_provisioning_a_testing_environment"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As a testing environment I am going to use <a href="https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/postgresql-versions.html">Postgres 16 on Amazon RDS</a> (engine version &#34;PostgreSQL 16.1-R1&#34; at the time of writing), as this makes setting up a Postgres primary and an associated read replica a matter of just a few clicks.
+A free tier instance type like t4g.micro will do for this experiment.
+Instead of the pre-configured Multi-AZ cluster deployment option (which isn’t available in the free tier anyways), a single DB instance can be used, with a manually created replica.</p>
+</div>
+<div class="paragraph">
+<p>Note that you must have backups enabled for the primary server, as otherwise the option for creating a read replica will be disabled in the RDS console.
+In order to use logical replication, the database’s WAL level must be set to logical.
+To do so, set <code>rds.logical_replication</code> to 1 in the DB parameter groups of primary and stand-by, as I’ve recently discussed in <a href="https://www.youtube.com/watch?v=0NTsUMb_diQ">Data Streaming Quick Tips episode #4</a>.
+Finally, you should set <code>hot_standby_feedback</code> to true on the stand-by server.
+Otherwise, the primary server might prematurely discard tuples for system catalog rows which are still needed on the stand-by for logical decoding.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Enabling hot stand-by feedback may cause a large amount of WAL segments <a href="https://www.morling.dev/blog/insatiable-postgres-replication-slot/">to be pinned</a> on the primary when the stand-by replication slot is not consumed.
+In the worst case this can cause the primary server to run out of disk space, clearly something you’d want to avoid at all costs.
+While this situation generally can be avoided by putting proper monitoring and alerting into place and has further been improved with the addition of the <a href="https://postgresqlco.nf/doc/en/param/wal_keep_size/">max_wal_keep_size</a> setting in Postgres 13 (at the price that a replication consumer may not able to resume its work after a prolonged downtime), it is something to keep in mind when setting up logical replication on read replicas.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>If you would like to work with a local set-up instead, you can follow the steps from <a href="https://www.linuxwave.info/2021/03/postgresql-13-streaming-replication.html">this blog</a> post for setting up two Postgres nodes via Docker, or use <a href="https://blog.palark.com/cloudnativepg-and-other-kubernetes-operators-for-postgresql/">any of the Postgres Kubernetes operators</a> for a Kube-based set-up.
+Set <code>wal_level</code> to logical in the <em>postgresql.conf</em> of the stand-by in this case.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_testing_things_out">Testing Things Out<a class="anchor" href="#_testing_things_out"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With our database cluster up and running, let’s take a look at the existing replication slots on the primary and on the stand-by server:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre></td><td class="code"><pre>primary&gt; WITH node_status AS <span class="o">(</span>
+ SELECT
+   CASE WHEN pg_is_in_recovery<span class="o">()</span> <span class="o">=</span> <span class="s1">&#39;True&#39;</span> Then <span class="s1">&#39;stand-by&#39;</span> ELSE <span class="s1">&#39;primary&#39;</span> END AS role
+<span class="o">)</span>
+SELECT
+  node_status.role as node,
+  slot_name,
+  slot_type,
+  active,
+  plugin,
+  database,
+  confirmed_flush_lsn
+FROM
+  pg_replication_slots, node_status<span class="p">;</span>
+
++---------+------------------------------------------------+-----------+--------+--------+----------+---------------------+
+| node    | slot_name                                      | slot_type | active | plugin | database | confirmed_flush_lsn |
+|---------+------------------------------------------------+-----------+--------+--------+----------+---------------------|
+| primary | rds_eu_central_1_db_eygryp2llpzqewobw57j5mrtum | physical  | True   |  |    |               |
++---------+------------------------------------------------+-----------+--------+--------+----------+---------------------+
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As expected, there is one physical (i.e.
+streaming) replication slot on the primary.
+This slot has been set up automatically when creating a replica on RDS and it propagates all the changes from the primary to the stand-by server.
+On the stand-by server itself, there’s no replication slot at this point.
+So let’s create a logical replication slot on the stand-by using <code>pg_create_logical_replication_slot()</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre>standby&gt; SELECT <span class="k">*</span> FROM pg_create_logical_replication_slot<span class="o">(</span><span class="s1">&#39;demo_slot_standby&#39;</span>, <span class="s1">&#39;test_decoding&#39;</span><span class="o">)</span><span class="p">;</span>
+
++-------------------+-------------+
+| slot_name         | lsn         |
+|-------------------+-------------|
+| demo_slot_standby | 5B/D80000E8 |
++-------------------+-------------+
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <a href="https://www.postgresql.org/docs/current/test-decoding.html">test_decoding</a> plug-in which is used here, comes with Postgres out of the box and emits changes in a simple text-based representation._
+_It allows you to examine the change events using Postgres&#39; <a href="https://www.postgresql.org/docs/current/logicaldecoding-sql.html">logical decoding SQL interface</a>, which comes in handy for testing logical replication without setting up a replication consumer.</p>
+</div>
+<div class="paragraph">
+<p>As Bertrand Drouvot discusses in <a href="https://bdrouvot.github.io/2023/04/19/postgres-16-highlight-logical-decoding-on-standby/">this blog post</a>, the creation of the slot may take a while if there’s no traffic on the primary database: the slot will only be created when the next <code>xl_running_xact</code> record (describing currently active transactions) is received.
+Postgres 16 therefore adds a new function <code>pg_log_standby_snapshot()</code>, which can be invoked on the primary to trigger such a record.
+Unfortunately, it failed with a permission error when I tried to invoke it on RDS:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre>primary&gt; SELECT pg_log_standby_snapshot<span class="o">()</span><span class="p">;</span>
+
+permission denied <span class="k">for function </span>pg_log_standby_snapshot
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>So if you are on RDS, and there are not a lot of transactions on your primary, you may have to wait for a minute or two for the slot to be created.
+Once that’s done, running the query from above again should show the new slot:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>+----------+-------------------+-----------+--------+---------------+-----------+---------------------+
+| node     | slot_name         | slot_type | active | plugin        | database  | confirmed_flush_lsn |
+|----------+-------------------+-----------+--------+---------------+-----------+---------------------|
+| stand-by | demo_slot_standby | logical   | False  | test_decoding | inventory | 5E/700010B8         |
++----------+-------------------+-----------+--------+---------------+-----------+---------------------+
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now it’s time to do some data changes on the primary then.
+Let’s create a simple table on the primary:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>primary&gt; CREATE TABLE some_data <span class="o">(</span>
+  <span class="nb">id </span>SERIAL NOT NULL PRIMARY KEY,
+  short_text VARCHAR<span class="o">(</span>255<span class="o">)</span> NOT NULL,
+  long_text text
+<span class="o">)</span><span class="p">;</span>
+ALTER TABLE some_data REPLICA IDENTITY FULL<span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The table’s <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-replica-identity">replica identity</a> is set to FULL, ensuring that all its columns are part of the replication messages.</p>
+</div>
+<div class="paragraph">
+<p>Insert a few rows with random data using the <code>generate_series()</code> function:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>primary&gt; INSERT INTO some_data<span class="o">(</span>short_text, long_text<span class="o">)</span>
+           SELECT left<span class="o">(</span>md5<span class="o">(</span>i::text<span class="o">)</span>, 5<span class="o">)</span>,
+                  md5<span class="o">(</span>random<span class="o">()</span>::text<span class="o">)</span>
+           FROM generate_series<span class="o">(</span>1, 5<span class="o">)</span> s<span class="o">(</span>i<span class="o">)</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To confirm that streaming replication from the primary to the stand-by server works, query that data on the stand-by:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre>standby&gt; SELECT <span class="k">*</span> FROM some_data<span class="p">;</span>
++----+------------+----------------------------------+
+| <span class="nb">id</span> | short_text | long_text                        |
+|----+------------+----------------------------------|
+| 1  | c4ca4      | 22f3cc8011bb8e2f553f8af1c5db18be |
+| 2  | c81e7      | 205304c828220a5aea30d5a13af4a01f |
+| 3  | eccbc      | c049b5cdd131fbdceb6b3172dfe7399e |
+| 4  | a87ff      | 0aed3b4e9d9e1a50e65597bdec7dfbc6 |
+| 5  | e4da3      | 68db5e5b4a57e7189f48cc89936567c2 |
++----+------------+----------------------------------+
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Still on the replica, we can now retrieve the corresponding change events from the logical replication slot with help of the <code>pg_logical_slot_get_changes()</code> function.
+The function takes the following parameters:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>slot_name</code>: The name of the replication slot to get changes from,</p>
+</li>
+<li>
+<p><code>upto_lsn</code>: The latest LSN (log sequence number, i.e. an offset in the WAL) to fetch,</p>
+</li>
+<li>
+<p><code>upto_nchanges</code>: The maximum number of events to retrieve,</p>
+</li>
+<li>
+<p><code>options</code>: A variadic text parameter for specifying any decoding plug-in specific options</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If neither of <code>upto_lsn</code> or <code>upto_nchanges</code> are specified, the WAL is consumed until the end.
+So let’s retrieve all changes for the slot:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+</pre></td><td class="code"><pre>standby&gt; SELECT <span class="k">*</span> FROM pg_logical_slot_get_changes<span class="o">(</span><span class="s1">&#39;demo_slot_standby&#39;</span>, NULL, NULL<span class="o">)</span><span class="p">;</span>
++-------------+------+----------------------------------------------------------------------------------------------------------------------------------------+
+| lsn         | xid  | data                                                                                                                                   |
+|-------------+------+----------------------------------------------------------------------------------------------------------------------------------------|
+| 5E/90005120 | 6983 | BEGIN 6983                                                                                                                             |
+| 5E/90005188 | 6983 | table public.some_data: INSERT: <span class="nb">id</span><span class="o">[</span>integer]:1 short_text[character varying]:<span class="s1">&#39;c4ca4&#39;</span> long_text[text]:<span class="s1">&#39;3a3c3274941c83e253ebf8d2438ea5a2&#39;</span> |
+| 5E/90005290 | 6983 | table public.some_data: INSERT: <span class="nb">id</span><span class="o">[</span>integer]:2 short_text[character varying]:<span class="s1">&#39;c81e7&#39;</span> long_text[text]:<span class="s1">&#39;9d6d86f986523accd08b372333e77b4f&#39;</span> |
+| 5E/90005338 | 6983 | table public.some_data: INSERT: <span class="nb">id</span><span class="o">[</span>integer]:3 short_text[character varying]:<span class="s1">&#39;eccbc&#39;</span> long_text[text]:<span class="s1">&#39;8848fd2b0bd6fbddbbb72091658c047d&#39;</span> |
+| 5E/900053E0 | 6983 | table public.some_data: INSERT: <span class="nb">id</span><span class="o">[</span>integer]:4 short_text[character varying]:<span class="s1">&#39;a87ff&#39;</span> long_text[text]:<span class="s1">&#39;d7ce7d90eacaee6b8f8390023fa0636f&#39;</span> |
+| 5E/90005488 | 6983 | table public.some_data: INSERT: <span class="nb">id</span><span class="o">[</span>integer]:5 short_text[character varying]:<span class="s1">&#39;e4da3&#39;</span> long_text[text]:<span class="s1">&#39;843ea832ec1f7adc2f23647379435982&#39;</span> |
+| 5E/90005560 | 6983 | COMMIT 6983                                                                                                                            |
++-------------+------+----------------------------------------------------------------------------------------------------------------------------------------+
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Very nice, change events retrieved from a replication slot on a stand-by server—things work as expected!</p>
+</div>
+<div class="paragraph">
+<p>This concludes part one of this blog post series where we have explored what Postgres logical replication is, what you can do with it, and why and how to use it on stand-by servers, as possible since Postgres version 16.
+If you’d like to know how to use logical replication on stand-bys with Debezium and how to manage replication slots in failover scenarios, then check out the <a href="/blog/logical-replication-from-postgres-stand-by-servers-debezium-and-failover-slots">second part</a> of this series!</p>
+</div>
+<div class="paragraph">
+<p><em>Many thanks to Bertrand Drouvot, Robert Metzger, Robin Moffatt, Gwen Shapira, and Sharon Xie for their feedback while writing this post.</em></p>
+</div>
+</div>
+</div>
+			</div>
+
+			
+			
+			
+			<div class="related-posts">
+				<h3>Read Next</h3>
+				<ul>
+					
+					<li><a href="/blog/logical-replication-from-postgres-stand-by-servers-debezium-and-failover-slots/">Logical Replication From Postgres 16 Stand-By Servers—Debezium and Failover Slots</a> <span class="meta">Dec 19, 2023</span></li>
+					
+					<li><a href="/blog/mastering-postgres-replication-slots/">Mastering Postgres Replication Slots: Preventing WAL Bloat and Other Production Issues</a> <span class="meta">Jul 8, 2025</span></li>
+					
+					<li><a href="/blog/backfilling-postgres-toast-columns-debezium-change-events/">Backfilling Postgres TOAST Columns in Debezium Data Change Events</a> <span class="meta">May 26, 2025</span></li>
+					
+				</ul>
+			</div>
+			
+			
+		</div>
+
+		<div class="post-footer">
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<div class="header-image-container" style="flex-shrink: 0;">
+					<img class="footer-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+				</div>
+				<p style="margin: 0;">Gunnar Morling is an open-source software engineer in the Java and data streaming space. He currently works as a Technologist for Confluent. In his past role at Decodable he focused on developer outreach and helped them build their stream processing platform based on Apache Flink. Prior to that, he spent ten years at Red Hat, where he led the Debezium project, a platform for change data capture.</p>
+			</div>
+		</div>
+
+		
+		
+		<div class="post-discussions">
+			<p>Comment below, or join the discussion on
+			<a href="https://hn.algolia.com/?query=morling.dev/blog/stand-by-servers-for-postgres-logical-replication/">Hacker News</a>,
+			<a href="https://lobste.rs/search?q=domain:morling.dev+title:%22Using%20Stand-by%20Servers%20for%20Postgres%20Logical%20Replication%22&what=stories">Lobsters</a>, and
+			<a href="https://www.reddit.com/search/?q=url:morling.dev/blog/stand-by-servers-for-postgres-logical-replication/">Reddit</a>.
+			</p>
+		</div>
+		<div id="disqus_thread"></div>
+
+<script>
+  
+  window.addEventListener('load', function() {
+    
+    setTimeout(function() {
+      const commentsContainer = document.getElementById('disqus_thread');
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', 'gunnarmorling/discussions.morling.dev');
+      script.setAttribute('data-repo-id', 'R_kgDOGXzqNQ');
+      script.setAttribute('data-category', 'Announcements');
+      script.setAttribute('data-category-id', 'DIC_kwDOGXzqNc4B_2Pq');
+      script.setAttribute('data-mapping', 'title');
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-theme', 'light');
+      script.setAttribute('data-lang', 'en');
+      script.setAttribute('crossorigin', 'anonymous');
+      script.async = true;
+      commentsContainer.appendChild(script);
+    }, 100);
+  });
+</script>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>

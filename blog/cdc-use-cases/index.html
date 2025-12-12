@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>CDC Use Cases: 7 Ways to Put CDC to Work - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="canonical" href="https://www.decodable.co/blog/cdc-use-cases" /><meta property="og:url" content="https://www.morling.dev/blog/cdc-use-cases/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="CDC Use Cases: 7 Ways to Put CDC to Work">
+  <meta property="og:description" content=" This post originally appeared on the Decodable blog. All rights reserved.
+Change Data Capture (CDC) is a powerful tool in data engineering and has seen a tremendous uptake in organizations of all …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2023-11-02T00:00:00Z">
+    <meta property="article:modified_time" content="2023-11-02T00:00:00Z">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="CDC Use Cases: 7 Ways to Put CDC to Work">
+  <meta name="twitter:description" content=" This post originally appeared on the Decodable blog. All rights reserved.
+Change Data Capture (CDC) is a powerful tool in data engineering and has seen a tremendous uptake in organizations of all …">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.672476d25c0fad0fd490e21222003c6c89ca45b73df6a5634305e06e889c49ad.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
+	
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.5e2c4cf50d01b5e8795a87894c2d08be87ed25371b30d97df693079b623d9f87.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+	<script src="/js/main.min.9ee619eea7f51473f4284ef86c76bdb1b0089e19781ca97275924edf53be5bd4.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">CDC Use Cases: 7 Ways to Put CDC to Work</h1>
+				<div class="post-meta-line">
+					<span class="meta">Posted at Nov 2, 2023</span>
+					
+					<span class="post-tags-inline">
+						
+						<a href="/tags/cdc">cdc</a>
+						
+						<a href="/tags/debezium">debezium</a>
+						
+						<a href="/tags/streaming">streaming</a>
+						
+						<a href="/tags/flink">flink</a>
+						
+					</span>
+					
+				</div>
+			</div>
+
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_what_is_cdc">What is CDC?</a></li>
+<li><a href="#_cdc_tools">CDC Tools</a></li>
+<li><a href="#_analytics_data_platforms">Analytics Data Platforms</a></li>
+<li><a href="#_application_caches">Application Caches</a></li>
+<li><a href="#_full_text_search">Full-Text Search</a></li>
+<li><a href="#_audit_logs">Audit Logs</a></li>
+<li><a href="#_continuous_queries">Continuous Queries</a></li>
+<li><a href="#_microservices_data_exchange">Microservices Data Exchange</a></li>
+<li><a href="#_monolith_to_microservices_migration">Monolith-to-Microservices Migration</a></li>
+<li><a href="#_summary">Summary</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p><em>This post originally appeared on the <a href="https://www.decodable.co/blog/cdc-use-cases">Decodable blog</a>. All rights reserved.</em></p>
+</div>
+<div class="paragraph">
+<p>Change Data Capture (CDC) is a powerful tool in data engineering and has seen a tremendous uptake in organizations of all kinds over the last few years.
+This is because it enables the tight integration of transactional databases into many other systems in your business at a very low latency.</p>
+</div>
+<div class="sect1">
+<h2 id="_what_is_cdc">What is CDC?<a class="anchor" href="#_what_is_cdc"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>CDC responds to changes—​such as inserts, updates, and deletions—​as they are made in a transactional database and sends those changes in real time to another system for ingesting and processing.
+While there are multiple possible ways for implementing a CDC solution, the most powerful approach is log-based CDC, which retrieves change events from the transaction log of a database.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/cdc-use-cases-fig1.webp" alt="cdc use cases fig1"/>
+</div>
+<div class="title">Figure 1. Log-based change data capture</div>
+</div>
+<div class="paragraph">
+<p>Compared to other styles of CDC, such as periodic polling for changed records, log-based CDC has a number of <a href="https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/">advantages</a>, including:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>very low latency while also being resource-efficient</p>
+</li>
+<li>
+<p>guaranteed to never miss any changes, including deletes</p>
+</li>
+<li>
+<p>no impact on your source data model</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cdc_tools">CDC Tools<a class="anchor" href="#_cdc_tools"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>There are a number of commercial and open-source software (OSS) CDC tools, but the most widely used OSS CDC platform is <a href="https://debezium.io/">Debezium</a>, which provides <a href="https://debezium.io/documentation/reference/stable/connectors/index.html">connectors for many popular databases</a> such as MySQL, Postgres, SQL Server, Oracle, Cassandra, Google Cloud Spanner, and others.
+Several database vendors have implemented their own CDC connectors based on Debezium, for instance <a href="https://docs.yugabyte.com/preview/explore/change-data-capture/debezium-connector-yugabytedb/">Yugabyte</a> and <a href="https://opensource.docs.scylladb.com/stable/using-scylla/integrations/scylla-cdc-source-connector.html">ScyllaDB</a>.</p>
+</div>
+<div class="paragraph">
+<p>Debezium’s record format, used to model change events, describes the old and new states of data records and includes metadata like the source database and table name, as well as the position in the transaction log file.
+This format has become a de-facto standard for change event data, supported by numerous projects and vendors in the data streaming space.</p>
+</div>
+<div class="paragraph">
+<p>CDC platforms, like Debezium, are frequently used alongside popular data engineering tools such as Apache Kafka for data streaming and <a href="https://flink.apache.org/">Apache Flink</a>, which <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/connectors/table/formats/debezium/">natively supports Debezium</a> event formats for stateful stream processing, including filtering and joining change event streams from various sources.</p>
+</div>
+<div class="paragraph">
+<p>In this article, I’ll present an overview of seven common use cases for change data capture—Let’s go!</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_analytics_data_platforms">Analytics Data Platforms<a class="anchor" href="#_analytics_data_platforms"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>One of the most widely adopted uses for CDC is getting data from transactional databases into systems that more efficiently support analytical processing.
+Whereas transactional database systems such as MySQL or Postgres are optimized for efficiently processing transactions on comparatively small numbers of records, <a href="https://en.wikipedia.org/wiki/Online_analytical_processing">OLAP</a> systems are designed to handle queries that read potentially millions of rows of data.
+CDC provides a way to keep OLAP data stores up to date with the freshest data possible from OLTP systems, with end-to-end latencies in the range of mere seconds.</p>
+</div>
+<div class="paragraph">
+<p>CDC is commonly used as a component in data pipelines that propagate data changes into cloud data warehouses (e.g.
+Snowflake, via <a href="https://www.decodable.co/blog/ingest-your-data-faster-and-cheaper-with-decodable-and-snowflake-snowpipe-streaming">Snowpipe</a>, or <a href="https://medium.com/google-cloud/near-real-time-data-replication-using-debezium-4da77cef67ab">Google BigQuery</a>) and <a href="https://towardsdatascience.com/change-data-capture-cdc-for-data-ingestion-ca81ff5934d2">data lakes</a>, enabling data science, general reporting, and ad-hoc querying use cases.
+Low-latency ingestion into real-time analytics stores on the other hand (e.g.
+Apache Pinot, Apache Druid or Clickhouse) allows you to implement use cases like in-app analytics or real-time dashboards.
+For use cases involving frequent updates to existing records, such as mutable data, stores optimized for upsert semantics (e.g., <a href="https://docs.pinot.apache.org/basics/data-import/upsert">Pinot</a> or <a href="https://rockset.com/docs/cdc/">Rockset</a>) often offer tailored support for the Debezium event format.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_application_caches">Application Caches<a class="anchor" href="#_application_caches"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A common pattern used for improving application performance is the introduction of a local cache of read-only data.
+One of the main challenges with this is keeping the cache fresh and ensuring that the application does not read stale data.
+CDC can be an excellent fit here.
+CDC responds to changes to the database in real time and can feed those changes into a cache updater component that ensures that the local caches provide an up-to-date view.</p>
+</div>
+<div class="paragraph">
+<p>Besides dedicated caching solutions such as Redis, <a href="https://github.com/debezium/debezium-examples/tree/main/distributed-caching">Infinispan</a>, or Hazelcast, embedded SQLite databases are an interesting option for implementing application-side caches, as they not only allow for simple key-based look-ups but support full query flexibility via SQL.
+If you would like to learn more about this kind of architecture, take a look at my talk &#34;Keep Your Cache Always Fresh With Debezium&#34;, which explores one implementation of this in depth ( <a href="https://www.youtube.com/watch?v=zOOFMHAjoPI">video recording</a>, <a href="https://speakerdeck.com/gunnarmorling/keep-your-cache-always-fresh-with-debezium-current-22">slides</a>).</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/cdc-use-cases-fig2.webp" alt="cdc use cases fig2"/>
+</div>
+<div class="title">Figure 2. Application-side caches in a distributed service, kept in sync with the primary DB via CDC</div>
+</div>
+<div class="paragraph">
+<p>Instead of caching raw data as-is, it can be useful to create denormalized data views of your data which are then stored in the cache.
+For instance, Apache Flink could be used to join the change event streams from two tables in an RDBMS and create one single nested data structure from that.
+That way, data can be retrieved from the cache very efficiently, without performing any costly read-time joins.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_full_text_search">Full-Text Search<a class="anchor" href="#_full_text_search"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Similar to the way in which transactional database systems are not well suited to directly supporting analytical workloads, full-text search also benefits greatly from data stores that are specifically designed for that purpose, such as Elasticsearch or OpenSearch.
+Leveraging search-specific functionality such as stemming, normalization, stop words, synonyms, and abbreviations ensures rapid delivery of the most relevant results for broad or even &#34;fuzzy&#34; searches.</p>
+</div>
+<div class="paragraph">
+<p>Just like with the cache example above, CDC fits perfectly in your architecture for keeping your full-text search data store up to date.
+CDC responds in real-time to changes made to the database and sends the changed data events to a tool such as Apache Flink which loads them into your search system.</p>
+</div>
+<div class="paragraph">
+<p>Another consideration is the potential need to create nested document structures which are used in document stores like Elasticsearch.
+I recently published an episode of &#34;Data Streaming Quick Tips&#34;,  exploring <a href="https://www.youtube.com/watch?v=ICJ7-YyaC-4">array aggregation</a> and how to join and nest the data of one aggregate instead of trying to force a 1:1 mapping between RDBMS source tables and search indexes.
+If you prefer a text-based version, you can find a transcript of this video <a href="https://www.decodable.co/blog/array-aggregation-with-flink-sql-data-streaming">here</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_audit_logs">Audit Logs<a class="anchor" href="#_audit_logs"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In enterprise applications, retaining an audit log of your data is a common requirement, keeping track of when and how data records changed.
+CDC offers an effective solution since extracting data changes from a database transaction log provides that information: A change event stream, with events for all the inserts, updates, and deletes executed for a table could be considered a simple form of an audit log.</p>
+</div>
+<div class="paragraph">
+<p>However, this approach lacks contextual metadata, such as user information, client details, use case identifiers, etc.
+To address this limitation, applications can provide metadata—either via a dedicated metadata table or in the form of a logical decoding message emitted at the start of each transaction.
+Stream processing with Apache Flink can then be used to incorporate the missing context into the records.</p>
+</div>
+<div class="paragraph">
+<p>Flink’s datastream API can be used for enriching all the change events from one transaction with the applicable metadata.
+As all change events emitted by Debezium contain the id of the transaction they originate from, correlating the events of one transaction isn’t complicated.
+You can find <a href="https://github.com/decodableco/examples/tree/main/postgres-logical-decoding">a basic implementation of this</a> in the Decodable examples repository.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/cdc-use-cases-fig3.webp" alt="cdc use cases fig3"/>
+</div>
+<div class="title">Figure 3. Enriching CDC events with transactional metadata using stream processing</div>
+</div>
+<div class="paragraph">
+<p>Within the same Flink job, you now could add a sink connector and for instance write the enriched events into a Kafka topic.
+Alternatively, depending on your business requirements, the enriched change events could also be written as an audit log to an object store such as S3, or a queryable analytics data store.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_continuous_queries">Continuous Queries<a class="anchor" href="#_continuous_queries"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Not all queries need to be served from static stores like Pinot or <a href="https://www.snowflake.com">Snowflake</a>.
+Apache Flink provides dynamic tables, which is one that is <a href="https://flink.apache.org/2017/03/30/continuous-queries-on-dynamic-tables/#continuous-queries-on-dynamic-tables">&#34;continuously updated and can be queried like a regular, static table&#34;</a>.
+However, in contrast to a static table query, a query on a dynamic table runs continuously and produces a table that is continuously updated based on changes to the input table, with results stored in a new dynamic table.</p>
+</div>
+<div class="paragraph">
+<p>CDC streams can be used as the source that drives a continuous query, representing a form of an incrementally updated materialized view, always yielding the latest results, as the underlying data changes.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/cdc-use-cases-fig4.webp" alt="cdc use cases fig4"/>
+</div>
+<div class="title">Figure 4. Continuous query for incrementally computing a join between two CDC streams</div>
+</div>
+<div class="paragraph">
+<p>This allows you to create a data pipeline that ingests CDC data into Flink, create continuous queries to perform aggregations, filters, or pattern recognition on the CDC data stream, and the results can be used to enable real-time analytics and decision-making.
+For instance, you may consider pushing any updates directly to a dashboard in connected web browsers using technologies such as server-sent events or Web Sockets, completely avoiding the need for any intermediary query layer.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_microservices_data_exchange">Microservices Data Exchange<a class="anchor" href="#_microservices_data_exchange"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As part of their business logic, microservices often not only have to update their own local data store, but also need to notify other services about data changes that have happened.
+The <a href="https://debezium.io/blog/2019/02/19/reliable-microservices-data-exchange-with-the-outbox-pattern/">outbox pattern</a> —which is implemented using CDC—is an approach for letting services execute these two tasks in a safe and consistent manner, avoiding the pitfalls of unsafe dual writes.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/cdc-use-cases-fig5.webp" alt="cdc use cases fig5"/>
+</div>
+<div class="title">Figure 5. Microservices data exchange with the outbox pattern</div>
+</div>
+<div class="paragraph">
+<p>CDC is a great fit for responding to new entries in the outbox table and streaming them to a messaging service such as Apache Kafka for propagation to other services.
+By only modifying a single resource—the source microservice’s own database—it avoids any potential inconsistencies of altering multiple resources at the same time which don’t share one common transactional context.</p>
+</div>
+<div class="paragraph">
+<p>If you are on Postgres, then you don’t even need to have a bespoke outbox table for implementing the outbox pattern.
+With the <a href="https://www.infoq.com/articles/wonders-of-postgres-logical-decoding-messages/">help of logical decoding messages</a>, you can insert your outbox events exclusively to the transaction log, from where they can be retrieved and propagated with CDC tools such as Debezium.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_monolith_to_microservices_migration">Monolith-to-Microservices Migration<a class="anchor" href="#_monolith_to_microservices_migration"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Oftentimes, you don’t start building applications from scratch, but there is an existing application landscape which needs to be evolved and expanded.
+In this context, it may be necessary to migrate from an existing monolithic architecture to a set of loosely coupled microservices, splitting up the existing monolith.
+In order to avoid the risks of a big bang migration, it is recommended to take a gradual approach, extracting one service at a time.
+This approach is also named the &#34;strangler fig pattern&#34;, as the new services grow around the old application, &#34;strangling&#34; it over time.</p>
+</div>
+<div class="paragraph">
+<p>When doing so, the old monolith and the new service(s) will co-exist for some time.
+For example, you may start with extracting just a read view of some data (e.g.
+a customer’s order history) to a new microservice, while the monolithic application continues to handle data writes.
+You can then use CDC to propagate data changes from the monolith to the service providing the read view.
+I discussed the strangler pattern with CDC in a <a href="https://speakerdeck.com/hpgrahsl/dissecting-our-legacy-the-strangler-fig-pattern-with-apache-kafka-debezium-and-mongodb-at-mongodb-dot-live-2021">joint talk with Hans-Peter Grahsl</a>, where we also explored advanced aspects such as avoiding infinite replication loops when doing bi-directional CDC or using stream processing for establishing an anti-corruption layer between legacy data models and newly created microservices.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary">Summary<a class="anchor" href="#_summary"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>And that’s it—seven use cases for CDC.
+It is a powerful enabler for your data, allowing you to react to any data changes in real time.
+I have worked with CDC for several years now, and I’m still surprised to learn about new use cases regularly.
+Case in point: just recently we started to use CDC for capturing changes in our control plane database and materializing corresponding Kubernetes resources.</p>
+</div>
+<div class="paragraph">
+<p>When ingesting raw change streams is not enough, stateful stream processing—e.g.
+with Apache Flink—allows you to transform, filter, join and aggregate your data.
+Flink’s rich ecosystem of connectors also provides you with connectivity with a wide range of data sinks, allowing you to implement cohesive end-to-end data flows on one unified platform.</p>
+</div>
+<div class="paragraph">
+<p>Are you using CDC already?
+For any of the use cases discussed above, or maybe others not mentioned here?
+I’d love to hear from you about your experiences with CDC—just reach out to me on <a href="https://twitter.com/gunnarmorling">Twitter</a>, <a href="https://www.linkedin.com/in/gunnar-morling-2b44b7229/">LinkedIn</a>, or the <a href="https://decodablecommunity.slack.com/join/shared_invite/zt-uvow71bk-Uf914umgpoyIbOQSxriJkA#/shared-invite/email">Decodable Slack community</a>.</p>
+</div>
+<div class="paragraph">
+<p><em>Want to try out CDC for yourself?</em>
+<em>Decodable has managed CDC—</em> <a href="https://app.decodable.co/-/accounts/create">try it now</a> <em>and get started with processing your change streams today.</em></p>
+</div>
+</div>
+</div>
+			</div>
+
+			
+			
+			
+			<div class="related-posts">
+				<h3>Read Next</h3>
+				<ul>
+					
+					<li><a href="/blog/change-data-capture-breaks-encapsulation-does-it-though/">&#34;Change Data Capture Breaks Encapsulation&#34;. Does it, though?</a> <span class="meta">Nov 21, 2023</span></li>
+					
+					<li><a href="/blog/backfilling-postgres-toast-columns-debezium-change-events/">Backfilling Postgres TOAST Columns in Debezium Data Change Events</a> <span class="meta">May 26, 2025</span></li>
+					
+					<li><a href="/blog/ingesting-debezium-events-from-kafka-with-flink-sql/">A Deep Dive Into Ingesting Debezium Events From Kafka With Flink SQL</a> <span class="meta">Apr 16, 2025</span></li>
+					
+				</ul>
+			</div>
+			
+			
+		</div>
+
+		<div class="post-footer">
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<div class="header-image-container" style="flex-shrink: 0;">
+					<img class="footer-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+				</div>
+				<p style="margin: 0;">Gunnar Morling is an open-source software engineer in the Java and data streaming space. He currently works as a Technologist for Confluent. In his past role at Decodable he focused on developer outreach and helped them build their stream processing platform based on Apache Flink. Prior to that, he spent ten years at Red Hat, where he led the Debezium project, a platform for change data capture.</p>
+			</div>
+		</div>
+
+		
+		
+		<div class="post-discussions">
+			<p>Comment below, or join the discussion on
+			<a href="https://hn.algolia.com/?query=morling.dev/blog/cdc-use-cases/">Hacker News</a>,
+			<a href="https://lobste.rs/search?q=domain:morling.dev+title:%22CDC%20Use%20Cases%3a%207%20Ways%20to%20Put%20CDC%20to%20Work%22&what=stories">Lobsters</a>, and
+			<a href="https://www.reddit.com/search/?q=url:morling.dev/blog/cdc-use-cases/">Reddit</a>.
+			</p>
+		</div>
+		<div id="disqus_thread"></div>
+
+<script>
+  
+  window.addEventListener('load', function() {
+    
+    setTimeout(function() {
+      const commentsContainer = document.getElementById('disqus_thread');
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', 'gunnarmorling/discussions.morling.dev');
+      script.setAttribute('data-repo-id', 'R_kgDOGXzqNQ');
+      script.setAttribute('data-category', 'Announcements');
+      script.setAttribute('data-category-id', 'DIC_kwDOGXzqNc4B_2Pq');
+      script.setAttribute('data-mapping', 'title');
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-theme', 'light');
+      script.setAttribute('data-lang', 'en');
+      script.setAttribute('crossorigin', 'anonymous');
+      script.async = true;
+      commentsContainer.appendChild(script);
+    }, 100);
+  });
+</script>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>

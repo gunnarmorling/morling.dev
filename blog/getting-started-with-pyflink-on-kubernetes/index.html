@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Getting Started With PyFlink on Kubernetes - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="canonical" href="https://www.decodable.co/blog/getting-started-with-pyflink-on-kubernetes" /><meta property="og:url" content="https://www.morling.dev/blog/getting-started-with-pyflink-on-kubernetes/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Getting Started With PyFlink on Kubernetes">
+  <meta property="og:description" content=" This post originally appeared on the Decodable blog. All rights reserved.
+The other day, I wanted to get my feet wet with PyFlink. While there is a fair amount of related information out there, I …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2023-12-07T00:00:00Z">
+    <meta property="article:modified_time" content="2023-12-07T00:00:00Z">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Getting Started With PyFlink on Kubernetes">
+  <meta name="twitter:description" content=" This post originally appeared on the Decodable blog. All rights reserved.
+The other day, I wanted to get my feet wet with PyFlink. While there is a fair amount of related information out there, I …">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.672476d25c0fad0fd490e21222003c6c89ca45b73df6a5634305e06e889c49ad.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
+	
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.5e2c4cf50d01b5e8795a87894c2d08be87ed25371b30d97df693079b623d9f87.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+	<script src="/js/main.min.9ee619eea7f51473f4284ef86c76bdb1b0089e19781ca97275924edf53be5bd4.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Getting Started With PyFlink on Kubernetes</h1>
+				<div class="post-meta-line">
+					<span class="meta">Posted at Dec 7, 2023</span>
+					
+					<span class="post-tags-inline">
+						
+						<a href="/tags/flink">flink</a>
+						
+						<a href="/tags/kubernetes">kubernetes</a>
+						
+						<a href="/tags/streaming">streaming</a>
+						
+					</span>
+					
+				</div>
+			</div>
+
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_what_is_pyflink_and_why_should_you_care">What Is PyFlink and Why Should You Care?</a></li>
+<li><a href="#_prerequisites">Prerequisites</a>
+<ul class="sectlevel2">
+<li><a href="#_installing_the_flink_kubernetes_operator">Installing the Flink Kubernetes Operator</a></li>
+<li><a href="#_installing_strimzi_and_apache_kafka">Installing Strimzi and Apache Kafka</a></li>
+</ul>
+</li>
+<li><a href="#_a_simple_pyflink_job">A Simple PyFlink Job</a></li>
+<li><a href="#_building_a_container_image_with_your_pyflink_job">Building a Container Image With Your PyFlink Job</a></li>
+<li><a href="#_deploying_a_pyflink_job_on_kubernetes">Deploying a PyFlink Job On Kubernetes</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p><em>This post originally appeared on the <a href="https://www.decodable.co/blog/getting-started-with-pyflink-on-kubernetes">Decodable blog</a>. All rights reserved.</em></p>
+</div>
+<div class="paragraph">
+<p>The other day, I wanted to get my feet wet with PyFlink.
+While there is a fair amount of related information out there, I couldn’t find really up-to-date documentation on using current versions of PyFlink with Flink on Kubernetes.</p>
+</div>
+<div class="paragraph">
+<p>Kubernetes is the common go-to platform for running Flink at scale in production these days, allowing you to deploy and operate Flink jobs efficiently and securely, providing high availability, observability, features such as auto-scaling, and much more.
+All of which are good reasons for running PyFlink jobs on Kubernetes, too, and so I thought I’d provide a quick run-through of the required steps for getting started with PyFlink on Kubernetes as of Apache Flink 1.18.</p>
+</div>
+<div class="paragraph">
+<p>In the remainder of this blog post, I’m going to explore how to</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>install Flink and its Kubernetes operator on a local Kubernetes cluster,</p>
+</li>
+<li>
+<p>install Kafka on the same cluster, using the Strimzi operator,</p>
+</li>
+<li>
+<p>create a PyFlink job which creates some random data using Flink’s DataGen connector and writes that data to a Kafka topic using Flink SQL, and</p>
+</li>
+<li>
+<p>deploy and run that job to Kubernetes.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The overall solution is going to look like this:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/pyflink-on-kubernetes-1.png" alt="pyflink on kubernetes 1"/>
+</div>
+<div class="title">Figure 1. Solution Overview</div>
+</div>
+<div class="sect1">
+<h2 id="_what_is_pyflink_and_why_should_you_care">What Is PyFlink and Why Should You Care?<a class="anchor" href="#_what_is_pyflink_and_why_should_you_care"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In a nutshell, PyFlink is the Python-based API to <a href="https://flink.apache.org/">Apache Flink</a>.
+Per the docs, it <a href="https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/python/overview/">enables you</a> to:</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>Build scalable batch and streaming workloads, such as real-time data processing pipelines, large-scale exploratory data analysis, Machine Learning (ML) pipelines and ETL processes.</p>
+</div>
+</blockquote>
+</div>
+<div class="paragraph">
+<p>It is particularly useful for development teams who are more familiar with Python than with Java and who still would like to benefit from Flink’s powerful stream processing capabilities.
+Another factor is Python’s rich 3rd party ecosystem: not only does it provide libraries for data engineering (e.g.
+<a href="https://pandas.pydata.org/">Pandas</a>) and scientific computing (e.g.
+<a href="https://numpy.org/">NumPy</a>), but also for ML and AI (e.g.
+<a href="https://pytorch.org/">PyTorch</a> and <a href="https://www.tensorflow.org/">TensorFlow</a>), which makes PyFlink the ideal link between these fields and real-time stream processing.
+So if for instance you wanted to train your ML models on real time event data sourced from your production RDBMS, doing some data cleaning, filtering, and aggregation along the way, PyFlink would be a great option.</p>
+</div>
+<div class="paragraph">
+<p>Similar to Flink’s Java APIs, PyFlink comes with a <a href="https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/datastream_tutorial/">DataStream</a> API and a <a href="https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/python/table_api_tutorial/">Table</a> API.
+The former lets you implement operations such as filtering and mapping, joining, grouping and aggregation, and much more on data streams, providing you with a large degree of freedom and control over aspects such as state management, late event handling, or output control.
+In contrast, the Table API offers a more rigid but also easier-to-use and less verbose relational programming interface, including support for defining stream processing pipelines using SQL, benefitting from automatic optimizations by Flink’s query planner.</p>
+</div>
+<div class="paragraph">
+<p>Implementation-wise, PyFlink acts as a wrapper around Flink’s Java APIs.
+Upon start-up, the job graph is retrieved from the Python job using <a href="https://www.py4j.org/">Py4J</a>, a bridge between the Python VM and the JVM.
+It then gets transformed into an equivalent job running on the Flink cluster.
+At runtime, Flink will call back to the Python VM for executing any Python-based user-defined functions (UDFs) with the help of the <a href="https://beam.apache.org/roadmap/portability/">Apache Beam portability framework</a>.
+As of Flink 1.15, there’s also support for a new execution mode called <a href="https://flink.apache.org/2022/05/06/exploring-the-thread-mode-in-pyflink/">&#34;thread mode&#34;</a>, where Python code is executed on the JVM itself (via JNI), avoiding the overhead of cross-process communication.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites">Prerequisites<a class="anchor" href="#_prerequisites"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>So let’s set up a Kubernetes cluster and install the aforementioned operators onto it.
+To follow along, make sure to have the following things installed on your machine:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.docker.com/">Docker</a>, for creating and running containers</p>
+</li>
+<li>
+<p><a href="https://kind.sigs.k8s.io/">kind</a>, for setting up a local Kubernetes cluster (of course you could also use alternatives such as MiniKube or a managed cluster on EKS or GKE, etc.)</p>
+</li>
+<li>
+<p><a href="https://helm.sh/">helm</a>, for installing software into the cluster</p>
+</li>
+<li>
+<p><a href="https://kubernetes.io/docs/reference/kubectl/">kubectl</a>, for interacting with Kubernetes</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Begin by creating a new cluster with one control plane and one worker node via kind:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre><span class="o">{</span> <span class="nb">cat</span> | kind create cluster <span class="nt">--name</span> pyflink-test <span class="nt">--config</span> -<span class="p">;</span> <span class="o">}</span> <span class="o">&lt;&lt;</span> <span class="no">EOF</span><span class="sh">
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+  - role: worker
+EOF</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After a minute or so, the Kubernetes cluster should be ready, and you can take a look at its nodes with kubectl:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre>kubectl get nodes
+NAME                          STATUS ROLES          AGE  VERSION
+pyflink-test-2-control-plane  Ready  control-plane  67s  v1.27.3
+pyflink-test-2-worker         Ready           48s  v1.27.3
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_installing_the_flink_kubernetes_operator">Installing the Flink Kubernetes Operator<a class="anchor" href="#_installing_the_flink_kubernetes_operator"></a></h3>
+<div class="paragraph">
+<p>Next, install the <a href="https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/">Flink Kubernetes Operator</a>.
+Official part of the Flink project, its task will be to deploy and run Flink jobs on Kubernetes, based on custom resource definitions.
+It is installed using a Helm chart, using the following steps (refer to the <a href="https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/try-flink-kubernetes-operator/quick-start/">upstream documentation</a> for more details):</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Deploy the <a href="https://github.com/cert-manager/cert-manager">certificate manager</a> (required later on when the operator’s webhook is invoked during the creation of custom resources):</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>kubectl create <span class="nt">-f</span> https://github.com/cert-manager/cert-manager/releases/download/v1.8.2/cert-manager.yaml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add the Helm repository for the operator:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.7.0/
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the operator using the provided Helm chart:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>helm <span class="nb">install </span>flink-kubernetes-operator flink-operator-repo/flink-kubernetes-operator
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>After a short time, a Kubernetes pod with the operator should be running on the cluster:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre>kubectl get pods
+NAME                                     READY  STATUS   RESTARTS  AGE
+flink-kubernetes-operator-f4bbff6-jtd4x  2/2    Running  0         0h17m
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_installing_strimzi_and_apache_kafka">Installing Strimzi and Apache Kafka<a class="anchor" href="#_installing_strimzi_and_apache_kafka"></a></h3>
+<div class="paragraph">
+<p>With the Flink Kubernetes Operator up and running, it’s time to install <a href="https://strimzi.io/">Strimzi</a>.
+It is another Kubernetes Operator, in this case in charge of deploying and running Kafka clusters.
+Strimzi is a very powerful tool, supporting all kinds of Kafka deployments, Kafka Connect, MirrorMaker2, and much more.
+We are going to use it for installing a simple one node Kafka cluster, following the steps from Strimzi’s <a href="https://strimzi.io/quickstarts/">quickstart guide</a>:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a Kubernetes namespace for Strimzi and Kafka:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>kubectl create namespace kafka
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install Strimzi into that namespace:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>kubectl create <span class="nt">-f</span> <span class="s1">&#39;https://strimzi.io/install/latest?namespace=kafka&#39;</span> <span class="nt">-n</span> kafka
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a Kafka cluster:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>kubectl apply <span class="nt">-f</span> https://strimzi.io/examples/latest/kafka/kafka-persistent-single.yaml <span class="nt">-n</span> kafka
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Again this will take some time to complete.
+You can use the <code>wait</code> command to await the Kafka cluster materialization:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>kubectl <span class="nb">wait </span>kafka/my-cluster <span class="nt">--for</span><span class="o">=</span><span class="nv">condition</span><span class="o">=</span>Ready <span class="nt">--timeout</span><span class="o">=</span>300s <span class="nt">-n</span> kafka
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the Kafka broker is up, the command will return and you’re ready to go.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_a_simple_pyflink_job">A Simple PyFlink Job<a class="anchor" href="#_a_simple_pyflink_job"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With the operators for Flink and Kafka as well as a single-node Kafka cluster in place, let’s create a simple stream processing job using PyFlink.
+Inspired by the <a href="https://github.com/apache/flink-kubernetes-operator/tree/main/examples/flink-python-example">Python example job</a> coming with the Flink Kubernetes operator, it uses the Flink <a href="https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/connectors/table/datagen/">DataGen SQL connector</a> for creating random purchase orders.
+But instead of just printing them to sysout, we’re going to emit the stream of orders to a Kafka topic, using Flink’s <a href="https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/connectors/table/kafka/">Apache Kafka SQL Connector</a>.</p>
+</div>
+<div class="paragraph">
+<p>In order to get started with setting up a PyFlink development environment on your local machine, check out <a href="https://rmoff.net/2023/10/25/learning-apache-flink-s01e05-installing-pyflink-with-some-bumps-along-the-way/">this post</a> by Robin Moffatt.
+In particular, make sure to use no Python version newer than 3.10 with PyFlink 1.18.
+At the time of writing, Python 3.11 is not supported yet, it is on the roadmap for PyFlink 1.19 ( <a href="https://issues.apache.org/jira/browse/FLINK-33030">FLINK-33030</a>).</p>
+</div>
+<div class="paragraph">
+<p>Here is the complete job:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="python"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+</pre></td><td class="code"><pre><span class="kn">import</span> <span class="n">logging</span>
+<span class="kn">import</span> <span class="n">sys</span>
+<span class="kn">import</span> <span class="n">os</span>
+
+<span class="kn">from</span> <span class="n">pyflink.datastream</span> <span class="kn">import</span> <span class="n">StreamExecutionEnvironment</span>
+<span class="kn">from</span> <span class="n">pyflink.table</span> <span class="kn">import</span> <span class="n">StreamTableEnvironment</span>
+
+<span class="k">def</span> <span class="nf">pyflink_hello_world</span><span class="p">():</span>
+   <span class="n">env</span> <span class="o">=</span> <span class="n">StreamExecutionEnvironment</span><span class="p">.</span><span class="nf">get_execution_environment</span><span class="p">()</span>
+   <span class="n">env</span><span class="p">.</span><span class="nf">set_parallelism</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+   <span class="n">t_env</span> <span class="o">=</span> <span class="n">StreamTableEnvironment</span><span class="p">.</span><span class="nf">create</span><span class="p">(</span><span class="n">stream_execution_environment</span><span class="o">=</span><span class="n">env</span><span class="p">)</span>
+
+   <span class="n">kafka_jar</span> <span class="o">=</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">abspath</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">)),</span>
+                           <span class="sh">&#39;</span><span class="s">flink-sql-connector-kafka-3.0.2-1.18.jar</span><span class="sh">&#39;</span><span class="p">)</span>
+
+   <span class="n">t_env</span><span class="p">.</span><span class="nf">get_config</span><span class="p">()</span>\
+           <span class="p">.</span><span class="nf">get_configuration</span><span class="p">()</span>\
+           <span class="p">.</span><span class="nf">set_string</span><span class="p">(</span><span class="sh">&#34;</span><span class="s">pipeline.jars</span><span class="sh">&#34;</span><span class="p">,</span> <span class="sh">&#34;</span><span class="s">file://{}</span><span class="sh">&#34;</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">kafka_jar</span><span class="p">))</span>
+
+   <span class="n">t_env</span><span class="p">.</span><span class="nf">execute_sql</span><span class="p">(</span><span class="sh">&#34;&#34;&#34;</span><span class="s">
+   CREATE TABLE orders (
+     order_number BIGINT,
+     price        DECIMAL(32,2),
+     buyer        ROW,
+     order_time   TIMESTAMP(3)
+   ) WITH (
+     </span><span class="sh">&#39;</span><span class="s">connector</span><span class="sh">&#39;</span><span class="s"> = </span><span class="sh">&#39;</span><span class="s">datagen</span><span class="sh">&#39;</span><span class="s">,
+     </span><span class="sh">&#39;</span><span class="s">rows-per-second</span><span class="sh">&#39;</span><span class="s"> = </span><span class="sh">&#39;</span><span class="s">4</span><span class="sh">&#39;</span><span class="s">
+   )</span><span class="sh">&#34;&#34;&#34;</span><span class="p">)</span>
+
+   <span class="n">t_env</span><span class="p">.</span><span class="nf">execute_sql</span><span class="p">(</span><span class="sh">&#34;&#34;&#34;</span><span class="s">
+   CREATE TABLE orders_sink (
+     order_number BIGINT,
+     price        DECIMAL(32,2),
+     buyer        ROW,
+     order_time   TIMESTAMP(3)
+   ) WITH (
+     </span><span class="sh">&#39;</span><span class="s">connector</span><span class="sh">&#39;</span><span class="s"> = </span><span class="sh">&#39;</span><span class="s">kafka</span><span class="sh">&#39;</span><span class="s">,
+     </span><span class="sh">&#39;</span><span class="s">topic</span><span class="sh">&#39;</span><span class="s"> = </span><span class="sh">&#39;</span><span class="s">orders</span><span class="sh">&#39;</span><span class="s">,
+     </span><span class="sh">&#39;</span><span class="s">properties.bootstrap.servers</span><span class="sh">&#39;</span><span class="s"> = </span><span class="sh">&#39;</span><span class="s">my-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092</span><span class="sh">&#39;</span><span class="s">,
+     </span><span class="sh">&#39;</span><span class="s">properties.group.id</span><span class="sh">&#39;</span><span class="s"> = </span><span class="sh">&#39;</span><span class="s">orders-sink</span><span class="sh">&#39;</span><span class="s">,
+     </span><span class="sh">&#39;</span><span class="s">format</span><span class="sh">&#39;</span><span class="s"> = </span><span class="sh">&#39;</span><span class="s">json</span><span class="sh">&#39;</span><span class="s">
+   )</span><span class="sh">&#34;&#34;&#34;</span><span class="p">)</span>
+
+   <span class="n">t_env</span><span class="p">.</span><span class="nf">execute_sql</span><span class="p">(</span><span class="sh">&#34;&#34;&#34;</span><span class="s">
+       INSERT INTO orders_sink SELECT * FROM orders</span><span class="sh">&#34;&#34;&#34;</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="sh">&#39;</span><span class="s">__main__</span><span class="sh">&#39;</span><span class="p">:</span>
+   <span class="n">logging</span><span class="p">.</span><span class="nf">basicConfig</span><span class="p">(</span><span class="n">stream</span><span class="o">=</span><span class="n">sys</span><span class="p">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="p">.</span><span class="n">INFO</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="sh">&#34;</span><span class="s">%(message)s</span><span class="sh">&#34;</span><span class="p">)</span>
+   <span class="nf">pyflink_hello_world</span><span class="p">()</span>
+<span class="n">pyflink_hello_world</span><span class="p">.</span><span class="nf">py </span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Listing 1: pyflink_hello_world.py (<a href="https://github.com/decodableco/examples/blob/main/pyflink/pyflink_hello_world.py">source</a>)</em></p>
+</div>
+<div class="paragraph">
+<p>The logic is fairly straightforward: A <code>StreamTableEnvironment</code> is created and the Flink SQL Kafka connector JAR is registered with it.
+Then two tables are created: a source table <code>orders</code>, based on the datagen connector, and a sink table <code>orders_sink</code>, based on the Kafka sink connector.
+Finally, an <code>INSERT</code> query is issued, which propagates any changed rows from the source to the sink table.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_building_a_container_image_with_your_pyflink_job">Building a Container Image With Your PyFlink Job<a class="anchor" href="#_building_a_container_image_with_your_pyflink_job"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In order to deploy our PyFlink job onto Kubernetes, you’ll need to create a container image, containing the Python job itself and all its dependencies: PyFlink, any required Python packages, as well as any Flink connectors used by the job.</p>
+</div>
+<div class="paragraph">
+<p>Unfortunately, the <a href="https://github.com/apache/flink-kubernetes-operator/blob/main/examples/flink-python-example/Dockerfile">Dockerfile</a> of the aforementioned Python example coming with the Flink Kubernetes operator didn’t quite work for me.
+When trying to build an image from it, I’d get the following error:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre>...
+38.20 Collecting <span class="nv">pemja</span><span class="o">==</span>0.3.0
+38.22   Downloading pemja-0.3.0.tar.gz <span class="o">(</span>48 kB<span class="o">)</span>
+...
+42.47   × Getting requirements to build wheel did not run successfully.
+42.47   | <span class="nb">exit </span>code: 255
+42.47   ╰─&gt; <span class="o">[</span>1 lines of output]
+42.47       Include folder should be at <span class="s1">&#39;/opt/java/openjdk/include&#39;</span> but doesn<span class="s1">&#39;t exist. Please check you&#39;</span>ve installed the JDK properly.
+42.47       <span class="o">[</span>end of output]
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The problem is that the upstream <a href="https://hub.docker.com/_/flink">Flink container image</a> which is used as a base image here, itself is derived from a JRE image for Java, i.e.
+it contains only a subset of all the modules provided by the Java platform.
+<a href="https://github.com/alibaba/pemja">PemJa</a>, one of PyFlink’s dependencies, requires some header files which only are provided by a complete JDK, though.</p>
+</div>
+<div class="paragraph">
+<p>I have therefore created a new base image for PyFlink jobs, which removes the JRE and adds back the complete JDK, inspired by the <a href="https://hub.docker.com/layers/library/eclipse-temurin/11.0.21_9-jdk-jammy/images/sha256-0b1c4c2bd4bc536c3ee914cd9e7c3ac05e136f891bceb18d355f60d548e84096?context=explore">equivalent step</a> in the Dockerfile for creating the <a href="https://hub.docker.com/layers/library/eclipse-temurin/11-jdk-jammy/images/sha256-0b1c4c2bd4bc536c3ee914cd9e7c3ac05e136f891bceb18d355f60d548e84096?context=explore">JDK 11 image</a> provided by the Eclipse Temurin project.
+This is not quite ideal in terms of overall image size, and the cleaner approach would be to create a new image derived from the JDK one, but it does the trick for now to get going:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+</pre></td><td class="code"><pre>FROM flink:1.18.0
+
+RUN <span class="nb">rm</span> <span class="nt">-rf</span> <span class="nv">$JAVA_HOME</span>
+RUN /bin/sh <span class="nt">-c</span> <span class="nb">set</span> <span class="nt">-eux</span><span class="p">;</span> <span class="nv">ARCH</span><span class="o">=</span><span class="s2">&#34;</span><span class="si">$(</span>dpkg <span class="nt">--print-architecture</span><span class="si">)</span><span class="s2">&#34;</span><span class="p">;</span> <span class="k">case</span> <span class="s2">&#34;</span><span class="k">${</span><span class="nv">ARCH</span><span class="k">}</span><span class="s2">&#34;</span> <span class="k">in </span>aarch64|arm64<span class="p">)</span> <span class="nv">ESUM</span><span class="o">=</span><span class="s1">&#39;8c3146035b99c55ab26a2982f4b9abd2bf600582361cf9c732539f713d271faf&#39;</span><span class="p">;</span> <span class="nv">BINARY_URL</span><span class="o">=</span><span class="s1">&#39;https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.21%2B9/OpenJDK11U-jdk_aarch64_linux_hotspot_11.0.21_9.tar.gz&#39;</span><span class="p">;</span> <span class="p">;;</span> amd64|i386:x86-64<span class="p">)</span> <span class="nv">ESUM</span><span class="o">=</span><span class="s1">&#39;60ea98daa09834fdd3162ca91ddc8d92a155ab3121204f6f643176ee0c2d0d5e&#39;</span><span class="p">;</span> <span class="nv">BINARY_URL</span><span class="o">=</span><span class="s1">&#39;https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.21%2B9/OpenJDK11U-jdk_x64_linux_hotspot_11.0.21_9.tar.gz&#39;</span><span class="p">;</span> <span class="p">;;</span> armhf|arm<span class="p">)</span> <span class="nv">ESUM</span><span class="o">=</span><span class="s1">&#39;a64b005b84b173e294078fec34660ed3429d8c60726a5fb5c140e13b9e0c79fa&#39;</span><span class="p">;</span> <span class="nv">BINARY_URL</span><span class="o">=</span><span class="s1">&#39;https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.21%2B9/OpenJDK11U-jdk_arm_linux_hotspot_11.0.21_9.tar.gz&#39;</span><span class="p">;</span> <span class="p">;;</span> ppc64el|powerpc:common64<span class="p">)</span> <span class="nv">ESUM</span><span class="o">=</span><span class="s1">&#39;262ff98d6d88a7c7cc522cb4ec4129491a0eb04f5b17dcca0da57cfcdcf3830d&#39;</span><span class="p">;</span> <span class="nv">BINARY_URL</span><span class="o">=</span><span class="s1">&#39;https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.21%2B9/OpenJDK11U-jdk_ppc64le_linux_hotspot_11.0.21_9.tar.gz&#39;</span><span class="p">;</span> <span class="p">;;</span> s390x|s390:64-bit<span class="p">)</span> <span class="nv">ESUM</span><span class="o">=</span><span class="s1">&#39;bc67f79fb82c4131d9dcea32649c540a16aa380a9726306b9a67c5ec9690c492&#39;</span><span class="p">;</span> <span class="nv">BINARY_URL</span><span class="o">=</span><span class="s1">&#39;https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.21%2B9/OpenJDK11U-jdk_s390x_linux_hotspot_11.0.21_9.tar.gz&#39;</span><span class="p">;</span> <span class="p">;;</span> <span class="k">*</span><span class="p">)</span> <span class="nb">echo</span> <span class="s2">&#34;Unsupported arch: </span><span class="k">${</span><span class="nv">ARCH</span><span class="k">}</span><span class="s2">&#34;</span><span class="p">;</span> <span class="nb">exit </span>1<span class="p">;</span> <span class="p">;;</span> <span class="k">esac</span><span class="p">;</span> wget <span class="nt">--progress</span><span class="o">=</span>dot:giga <span class="nt">-O</span> /tmp/openjdk.tar.gz <span class="k">${</span><span class="nv">BINARY_URL</span><span class="k">}</span><span class="p">;</span> <span class="nb">echo</span> <span class="s2">&#34;</span><span class="k">${</span><span class="nv">ESUM</span><span class="k">}</span><span class="s2"> */tmp/openjdk.tar.gz&#34;</span> | <span class="nb">sha256sum</span> <span class="nt">-c</span> -<span class="p">;</span> <span class="nb">mkdir</span> <span class="nt">-p</span> <span class="s2">&#34;</span><span class="nv">$JAVA_HOME</span><span class="s2">&#34;</span><span class="p">;</span> <span class="nb">tar</span> <span class="nt">--extract</span> <span class="nt">--file</span> /tmp/openjdk.tar.gz <span class="nt">--directory</span> <span class="s2">&#34;</span><span class="nv">$JAVA_HOME</span><span class="s2">&#34;</span> <span class="nt">--strip-components</span> 1 <span class="nt">--no-same-owner</span> <span class="p">;</span> <span class="nb">rm</span> <span class="nt">-f</span> /tmp/openjdk.tar.gz <span class="k">${</span><span class="nv">JAVA_HOME</span><span class="k">}</span>/lib/src.zip<span class="p">;</span> find <span class="s2">&#34;</span><span class="nv">$JAVA_HOME</span><span class="s2">/lib&#34;</span> <span class="nt">-name</span> <span class="s1">&#39;*.so&#39;</span> <span class="nt">-exec</span> <span class="nb">dirname</span> <span class="s1">&#39;{}&#39;</span> <span class="s1">&#39;;&#39;</span> | <span class="nb">sort</span> <span class="nt">-u</span> <span class="o">&gt;</span> /etc/ld.so.conf.d/docker-openjdk.conf<span class="p">;</span> ldconfig<span class="p">;</span> java <span class="nt">-Xshare</span>:dump<span class="p">;</span>
+
+<span class="c"># install python3 and pip3</span>
+RUN apt-get update <span class="nt">-y</span> <span class="o">&amp;&amp;</span> <span class="se">\</span>
+ apt-get <span class="nb">install</span> <span class="nt">-y</span> python3 python3-pip python3-dev <span class="o">&amp;&amp;</span> <span class="se">\</span>
+ <span class="nb">rm</span> <span class="nt">-rf</span> /var/lib/apt/lists/<span class="k">*</span>
+
+<span class="c"># install PyFlink</span>
+RUN pip3 <span class="nb">install </span>apache-flink<span class="o">==</span>1.18.0
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Listing 2: Dockerfile.pyflink-base (<a href="https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile.pyflink-base">source</a>)</em></p>
+</div>
+<div class="paragraph">
+<p>Create an image from that Dockerfile and store it in your local container image registry:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>docker build <span class="nt">-f</span> Dockerfile.pyflink-base <span class="nb">.</span> <span class="nt">-t</span> decodable-examples/pyflink-base:latest
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As for the actual image with our job, all that remains needed to be done is to extend that base image and add the Python job with all its dependencies (in this case, just the Kafka connector):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre>FROM decodable-examples/pyflink-base:latest
+
+RUN wget <span class="nt">-P</span> /opt/flink/usrlib https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.0.2-1.18/flink-sql-connector-kafka-3.0.2-1.18.jar
+ADD <span class="nt">--chown</span><span class="o">=</span>flink:flink python_demo.py /opt/flink/usrlib/pyflink_hello_world.py
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Listing 3: Dockerfile (<a href="https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile">source</a>)</em></p>
+</div>
+<div class="paragraph">
+<p>Let’s also build an image for that:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>docker build <span class="nt">-f</span> Dockerfile <span class="nb">.</span> <span class="nt">-t</span> decodable-examples/pyflink-hello-world:latest
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In order to use that image from within Kubernetes, you’ll finally need to load it into the cluster, which can be done with <code>kind</code> like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>kind load docker-image decodable-examples/pyflink-hello-world:latest <span class="nt">--name</span> pyflink-test
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_deploying_a_pyflink_job_on_kubernetes">Deploying a PyFlink Job On Kubernetes<a class="anchor" href="#_deploying_a_pyflink_job_on_kubernetes"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>At this point, you have everything in place for deploying your PyFlink job to Kubernetes.
+The operator project comes with an <a href="https://github.com/apache/flink-kubernetes-operator/blob/main/examples/flink-python-example/python-example.yaml">example resource</a> of type <code>FlinkDeployment</code>, which works pretty much as-is for our purposes.
+Only the image name and the Flink version need to be changed to the image you’ve just created:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+</pre></td><td class="code"><pre><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">flink.apache.org/v1beta1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">FlinkDeployment</span>
+<span class="na">metadata</span><span class="pi">:</span>
+ <span class="na">name</span><span class="pi">:</span> <span class="s">pyflink-hello-world</span>
+<span class="na">spec</span><span class="pi">:</span>
+ <span class="na">image</span><span class="pi">:</span> <span class="s">decodable-examples/pyflink-hello-world:latest</span>
+ <span class="na">flinkVersion</span><span class="pi">:</span> <span class="s">v1_18</span>
+ <span class="na">flinkConfiguration</span><span class="pi">:</span>
+   <span class="na">taskmanager.numberOfTaskSlots</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">1&#34;</span>
+ <span class="na">serviceAccount</span><span class="pi">:</span> <span class="s">flink</span>
+ <span class="na">jobManager</span><span class="pi">:</span>
+   <span class="na">resource</span><span class="pi">:</span>
+     <span class="na">memory</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">2048m&#34;</span>
+     <span class="na">cpu</span><span class="pi">:</span> <span class="m">1</span>
+ <span class="na">taskManager</span><span class="pi">:</span>
+   <span class="na">resource</span><span class="pi">:</span>
+     <span class="na">memory</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">2048m&#34;</span>
+     <span class="na">cpu</span><span class="pi">:</span> <span class="m">1</span>
+ <span class="na">job</span><span class="pi">:</span>
+   <span class="na">jarURI</span><span class="pi">:</span> <span class="s">local:///opt/flink/opt/flink-python-1.18.0.jar</span>
+   <span class="na">entryClass</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">org.apache.flink.client.python.PythonDriver&#34;</span>
+   <span class="na">args</span><span class="pi">:</span> <span class="pi">[</span><span class="s2">&#34;</span><span class="s">-pyclientexec&#34;</span><span class="pi">,</span> <span class="s2">&#34;</span><span class="s">/usr/bin/python3&#34;</span><span class="pi">,</span> <span class="s2">&#34;</span><span class="s">-py&#34;</span><span class="pi">,</span> <span class="s2">&#34;</span><span class="s">/opt/flink/usrlib/pyflink_hello_world.py&#34;</span><span class="pi">]</span>
+   <span class="na">parallelism</span><span class="pi">:</span> <span class="m">1</span>
+   <span class="na">upgradeMode</span><span class="pi">:</span> <span class="s">stateless</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Listing 4: pyflink-hello-world.yaml (<a href="https://github.com/decodableco/examples/blob/main/pyflink/pyflink-hello-world.yaml">source</a>)</em></p>
+</div>
+<div class="paragraph">
+<p>Note how the <code>PythonDriver</code> class is used as the entry point for running a PyFlink job and the job to run is passed in via the <code>-py</code> argument.
+Just as any other Kubernetes resource, this Flink job can be deployed using <code>kubectl</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>kubectl create <span class="nt">-f</span> pyflink-hello-world.yaml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The operator will pick up that resource definition and spin up the corresponding pods with the Flink job and task manager for running this job.
+As before, you can await the creation of the job:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>kubectl <span class="nb">wait </span>FlinkDeployment/python-example <span class="nt">--for</span><span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.jobStatus.state}&#39;</span><span class="o">=</span>RUNNING <span class="nt">--timeout</span><span class="o">=</span>300s
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As the last step, you can check out the Kafka topic, confirming that the job propagates all the orders from the datagen source to the Kafka sink as expected:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre>kubectl <span class="nt">-n</span> kafka run kafka-consumer <span class="nt">-ti</span> <span class="nt">--rm</span><span class="o">=</span><span class="nb">true</span> <span class="nt">--restart</span><span class="o">=</span>Never <span class="se">\</span>
+  <span class="nt">--image</span><span class="o">=</span>quay.io/strimzi/kafka:0.38.0-kafka-3.6.0 <span class="nt">--</span> <span class="se">\</span>
+  bin/kafka-console-consumer.sh <span class="nt">--bootstrap-server</span> <span class="se">\</span>
+  my-cluster-kafka-bootstrap.kafka:9092 <span class="nt">--topic</span> orders
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre><span class="p">{</span><span class="nl">&#34;order_number&#34;</span><span class="p">:</span><span class="mi">1574206908793601022</span><span class="p">,</span><span class="nl">&#34;price&#34;</span><span class="p">:</span><span class="mi">824651156650254403841457913856</span><span class="p">,</span><span class="nl">&#34;buyer&#34;</span><span class="p">:{</span><span class="nl">&#34;first_name&#34;</span><span class="p">:</span><span class="s2">&#34;3ffbd66e114b1d26e08181bd8c248aac514b812bce11ebaf11b3f2ee8941d0df3feea556bced4c07bd040bac4da53af1774b&#34;</span><span class="p">,</span><span class="nl">&#34;last_name&#34;</span><span class="p">:</span><span class="s2">&#34;24eb04e10e90a4e1717dd5afa574eb964775466e22f725a6d603d1723f27d2616d095792cfaf5f83815c728b6eb0a961c673&#34;</span><span class="p">},</span><span class="nl">&#34;order_time&#34;</span><span class="p">:</span><span class="s2">&#34;2023-12-06 09:11:10.397&#34;</span><span class="p">}</span><span class="w">
+</span><span class="p">{</span><span class="nl">&#34;order_number&#34;</span><span class="p">:</span><span class="mi">4306245129932523235</span><span class="p">,</span><span class="nl">&#34;price&#34;</span><span class="p">:</span><span class="mi">966772426991501079169688666112</span><span class="p">,</span><span class="nl">&#34;buyer&#34;</span><span class="p">:{</span><span class="nl">&#34;first_name&#34;</span><span class="p">:</span><span class="s2">&#34;c7d08f3d15b2e993b6e12be76a891b1e367a5a841850375142ee4b2b62dc2a1541a94b16267f568f0ada8c3e97963f346745&#34;</span><span class="p">,</span><span class="nl">&#34;last_name&#34;</span><span class="p">:</span><span class="s2">&#34;2d80bb118ca512c1a7aa5a9bfcf651b62521de8489ea7a80554723625674e000153e3a37f652ce1137df4dc154e573fd09ce&#34;</span><span class="p">},</span><span class="nl">&#34;order_time&#34;</span><span class="p">:</span><span class="s2">&#34;2023-12-06 09:11:10.397&#34;</span><span class="p">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You also can take a look at the deployed job in the Flink web UI by forwarding the REST port from the job manager:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>kubectl port-forward service/python-hello-world-rest 8081:rest
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This makes the Flink Dashboard accessible at <a href="http://localhost:8081">http://localhost:8081</a>, allowing you to take a look at the job’s health status, metrics, etc.:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/pyflink-on-kubernetes-2.png" alt="pyflink on kubernetes 2"/>
+</div>
+<div class="title">Figure 2. PyFlink job in the Apache Flink Dashboard</div>
+</div>
+<div class="paragraph">
+<p>Finally, to stop your job, simply delete its resource definition:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>kubectl delete <span class="nt">-f</span> python-hello-world.yaml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>And there you have it—Your first PyFlink job running on Kubernetes 🎉.
+To try everything out yourself, you can find the <a href="https://github.com/decodableco/examples/tree/main/pyflink">complete source code</a> in our examples repository on GitHub.
+Happy PyFlink-ing!</p>
+</div>
+<div class="paragraph">
+<p><em>Many thanks to Robert Metzger and Robin Moffatt for their feedback while writing this post.</em></p>
+</div>
+</div>
+</div>
+			</div>
+
+			
+			
+			
+			<div class="related-posts">
+				<h3>Read Next</h3>
+				<ul>
+					
+					<li><a href="/blog/get-running-with-apache-flink-on-kubernetes-2/">Get Running with Apache Flink on Kubernetes, part 2 of 2</a> <span class="meta">Jan 28, 2025</span></li>
+					
+					<li><a href="/blog/get-running-with-apache-flink-on-kubernetes-1/">Get Running with Apache Flink on Kubernetes, part 1 of 2</a> <span class="meta">Jan 21, 2025</span></li>
+					
+					<li><a href="/blog/change-data-capture-breaks-encapsulation-does-it-though/">&#34;Change Data Capture Breaks Encapsulation&#34;. Does it, though?</a> <span class="meta">Nov 21, 2023</span></li>
+					
+				</ul>
+			</div>
+			
+			
+		</div>
+
+		<div class="post-footer">
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<div class="header-image-container" style="flex-shrink: 0;">
+					<img class="footer-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+				</div>
+				<p style="margin: 0;">Gunnar Morling is an open-source software engineer in the Java and data streaming space. He currently works as a Technologist for Confluent. In his past role at Decodable he focused on developer outreach and helped them build their stream processing platform based on Apache Flink. Prior to that, he spent ten years at Red Hat, where he led the Debezium project, a platform for change data capture.</p>
+			</div>
+		</div>
+
+		
+		
+		<div class="post-discussions">
+			<p>Comment below, or join the discussion on
+			<a href="https://hn.algolia.com/?query=morling.dev/blog/getting-started-with-pyflink-on-kubernetes/">Hacker News</a>,
+			<a href="https://lobste.rs/search?q=domain:morling.dev+title:%22Getting%20Started%20With%20PyFlink%20on%20Kubernetes%22&what=stories">Lobsters</a>, and
+			<a href="https://www.reddit.com/search/?q=url:morling.dev/blog/getting-started-with-pyflink-on-kubernetes/">Reddit</a>.
+			</p>
+		</div>
+		<div id="disqus_thread"></div>
+
+<script>
+  
+  window.addEventListener('load', function() {
+    
+    setTimeout(function() {
+      const commentsContainer = document.getElementById('disqus_thread');
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', 'gunnarmorling/discussions.morling.dev');
+      script.setAttribute('data-repo-id', 'R_kgDOGXzqNQ');
+      script.setAttribute('data-category', 'Announcements');
+      script.setAttribute('data-category-id', 'DIC_kwDOGXzqNc4B_2Pq');
+      script.setAttribute('data-mapping', 'title');
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-theme', 'light');
+      script.setAttribute('data-lang', 'en');
+      script.setAttribute('crossorigin', 'anonymous');
+      script.async = true;
+      commentsContainer.appendChild(script);
+    }, 100);
+  });
+</script>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>

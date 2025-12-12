@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Logical Replication From Postgres 16 Stand-By Servers—Debezium and Failover Slots - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="canonical" href="https://www.decodable.co/blog/logical-replication-from-postgres-16-stand-by-servers-part-2-of-2" /><meta property="og:url" content="https://www.morling.dev/blog/logical-replication-from-postgres-stand-by-servers-debezium-and-failover-slots/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Logical Replication From Postgres 16 Stand-By Servers—Debezium and Failover Slots">
+  <meta property="og:description" content=" This post originally appeared on the Decodable blog. All rights reserved.
+Welcome back to this series about logical replication from Postgres 16 stand-by servers, in which we’ll discuss how to use …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2023-12-19T00:00:00Z">
+    <meta property="article:modified_time" content="2023-12-19T00:00:00Z">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Logical Replication From Postgres 16 Stand-By Servers—Debezium and Failover Slots">
+  <meta name="twitter:description" content=" This post originally appeared on the Decodable blog. All rights reserved.
+Welcome back to this series about logical replication from Postgres 16 stand-by servers, in which we’ll discuss how to use …">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.672476d25c0fad0fd490e21222003c6c89ca45b73df6a5634305e06e889c49ad.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
+	
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.5e2c4cf50d01b5e8795a87894c2d08be87ed25371b30d97df693079b623d9f87.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+	<script src="/js/main.min.9ee619eea7f51473f4284ef86c76bdb1b0089e19781ca97275924edf53be5bd4.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Logical Replication From Postgres 16 Stand-By Servers—Debezium and Failover Slots</h1>
+				<div class="post-meta-line">
+					<span class="meta">Posted at Dec 19, 2023</span>
+					
+					<span class="post-tags-inline">
+						
+						<a href="/tags/postgres">postgres</a>
+						
+						<a href="/tags/debezium">debezium</a>
+						
+						<a href="/tags/cdc">cdc</a>
+						
+					</span>
+					
+				</div>
+			</div>
+
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_stand_by_logical_replication_with_debezium">Stand-By Logical Replication With Debezium</a></li>
+<li><a href="#_towards_fail_over_slots">Towards Fail-Over Slots</a></li>
+<li><a href="#_wrap_up">Wrap-Up</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p><em>This post originally appeared on the <a href="https://www.decodable.co/blog/logical-replication-from-postgres-16-stand-by-servers-part-2-of-2">Decodable blog</a>. All rights reserved.</em></p>
+</div>
+<div class="paragraph">
+<p>Welcome back to this series about logical replication from Postgres 16 stand-by servers, in which we’ll discuss how to use this feature with Debezium—a popular open-source platform for Change Data Capture (CDC) for a wide range of databases—as well as how to manage logical replication in case of failover scenarios, i.e.
+a situation where your primary Postgres server becomes unavailable and a stand-by server needs to take over.</p>
+</div>
+<div class="paragraph">
+<p>If you want to learn more about logical replication in general, and why and how to use it with stand-by servers in Postgres 16, then I suggest heading over to <a href="/blog/stand-by-servers-for-postgres-logical-replication/">part one</a> of this blog series before continuing here.</p>
+</div>
+<div class="sect1">
+<h2 id="_stand_by_logical_replication_with_debezium">Stand-By Logical Replication With Debezium<a class="anchor" href="#_stand_by_logical_replication_with_debezium"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The beauty of Postgres logical replication is that not only other Postgres instances can serve as the consumer of a replication stream, but that also other clients can subscribe to a replication slot for ingesting realtime change event feeds from Postgres.
+<a href="https://debezium.io/">Debezium</a>, offering CDC support for many databases, including Postgres, makes use of that for exposing change event streams via Apache Kafka, but also—via its <a href="https://debezium.io/documentation/reference/stable/operations/debezium-server.html">Debezium Server</a> component—to other kinds of messaging and streaming platforms such as AWS Kinesis, Apache Pulsar, NATS, and others.
+So let’s quickly test how to stream changes from a Postgres stand-by with Debezium.</p>
+</div>
+<div class="paragraph">
+<p>Note that we’ll need to use the latest Debezium release—2.5.0.Beta 1, <a href="https://debezium.io/blog/2023/12/04/debezium-2-5-beta1-released/">released last week</a> —in order to stream changes from a stand-by server.
+When I first had tested this, things wouldn’t quite work, as the connector made use of the function <code>pg_current_wal_lsn()</code> in order to obtain the current WAL position.
+This is only available on primary servers, though.
+So I took the opportunity to make my first little <a href="https://github.com/debezium/debezium/pull/5033/files">Debezium contribution</a> for quite a while, changing it to invoke <code>pg_last_wal_receive_lsn()</code> instead when connecting against a stand-by.
+<em>Thanks a lot to the team for the quick merge and inclusion in the Beta1 release!</em></p>
+</div>
+<div class="paragraph">
+<p>As a playground for this experiment, I’ve created a simple <a href="https://github.com/decodableco/examples/tree/main/postgres-logical-replication-standby">Docker Compose file</a> which launches Kafka, and Kafka Connect as the runtime environment for Debezium.
+Here’s an overview of all the involved components:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/logical_replication_standby-1.png" alt="logical replication standby 1"/>
+</div>
+<div class="title">Figure 1. Solution Overview</div>
+</div>
+<div class="paragraph">
+<p>Fun fact: this uses Kafka in KRaft mode, i.e. no ZooKeeper process is needed.
+Good times!
+If you want to follow along, make sure you have Docker installed and you have a Postgres primary and stand-by node set up on Amazon RDS as described in part one.
+Then clone the <a href="https://github.com/decodableco/examples">decodable/examples</a> repository and launch the demo environment like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre>git clone git@github.com:decodableco/examples.git decodable-examples
+<span class="nb">cd </span>decodable-examples/postgres-logical-replication-standby
+docker compose up
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In order to use Debezium with Postgres on RDS, it is recommended to use the <code>pgoutput</code> logical decoding plug-in.
+It is the <a href="https://www.postgresql.org/docs/current/logical-replication-architecture.html">standard decoding plug-in</a>, also used for logical replication to other Postgres instances.
+This plug-in requires a <a href="https://www.postgresql.org/docs/current/logical-replication-publication.html">publication</a> to be set up, which configures which kinds of changes should be published for which tables.
+Usually, Debezium will set up the publication—similar to the logical replication slot—automatically.
+Unfortunately, this is not supported when ingesting changes from a stand-by server, as publications (unlike replication slots) can only be created on a primary server.
+Debezium doesn’t know about the primary, so you’ll need to create that publication manually before setting up the connector:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre>primary&gt; CREATE PUBLICATION my_publication FOR ALL TABLES<span class="p">;</span>
+CREATE PUBLICATION
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Having to create publications for stand-by replication slots on the primary seems somewhat inconsistent and it’s also not ideal in terms of operations, but there may be a good reason for that requirement.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Instead of the <code>ALL TABLES</code> publication, you could also narrow this further down and only expose the changes for specific tables, omit certain columns (e.g.
+with PII data) or rows (e.g.
+logically deleted rows), and more.
+See the docs for the <code>CREATE PUBLICATION</code> command for more details.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>Let’s take a look at the connector configuration then.
+This is done via a JSON-based configuration file looking like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+</pre></td><td class="code"><pre><span class="p">{</span><span class="w">
+ </span><span class="nl">&#34;name&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;inventory-connector&#34;</span><span class="p">,</span><span class="w">
+ </span><span class="nl">&#34;config&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+   </span><span class="nl">&#34;connector.class&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;io.debezium.connector.postgresql.PostgresConnector&#34;</span><span class="p">,</span><span class="w">
+   </span><span class="nl">&#34;tasks.max&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;1&#34;</span><span class="p">,</span><span class="w">
+   </span><span class="nl">&#34;database.hostname&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="p">,</span><span class="w">
+   </span><span class="nl">&#34;database.port&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;5432&#34;</span><span class="p">,</span><span class="w">
+   </span><span class="nl">&#34;database.user&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="p">,</span><span class="w">
+   </span><span class="nl">&#34;database.password&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="p">,</span><span class="w">
+   </span><span class="nl">&#34;database.dbname&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="p">,</span><span class="w">
+   </span><span class="nl">&#34;topic.prefix&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;dbserver1&#34;</span><span class="p">,</span><span class="w">
+   </span><span class="nl">&#34;plugin.name&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;pgoutput&#34;</span><span class="p">,</span><span class="w">
+   </span><span class="nl">&#34;publication.name&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;my_publication&#34;</span><span class="p">,</span><span class="w">
+   </span><span class="nl">&#34;poll.interval.ms&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;100&#34;</span><span class="w">
+ </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Adjust database host, user name, password, and database name as needed when applying this to your own environment.
+To apply this configuration, the REST API of Kafka Connect can be invoked.
+But if you’re like me and tend to forget all the exact endpoint URLs, then take a look at <a href="https://github.com/kcctl/kcctl">kcctl</a> 🧸 (yes, the teddy bear emoji is part of the name), which I am going to use in the following.
+It is  a command line client for Kafka Connect, which makes it very easy to create connectors, restart and stop them, etc.
+Following the semantics of <em>kubectl</em>, a configuration file is applied like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre>kcctl apply <span class="nt">-f</span> postgres-connector.json
+Created connector inventory-connector
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Let’s take a look at the connector and its status:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+</pre></td><td class="code"><pre>kcctl describe connector inventory-connector
+Name:       inventory-connector
+Type:       <span class="nb">source
+</span>State:      RUNNING
+Worker ID:  172.21.0.3:8083
+Config:
+  connector.class:    io.debezium.connector.postgresql.PostgresConnector
+  database.dbname:
+  database.hostname:
+  database.password:
+  database.port:      5432
+  database.user:
+  name:               inventory-connector
+  plugin.name:        pgoutput
+  poll.interval.ms:   100
+  publication.name:   my_publication
+  tasks.max:          1
+  topic.prefix:       dbserver1
+Tasks:
+  0:
+    State:      RUNNING
+    Worker ID:  172.21.0.3:8083
+Topics:
+  dbserver1.public.some_data
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Having confirmed that the connector is running, let’s do a quick update in the primary database and examine the corresponding change events in Kafka, ingested from the stand-by instance:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre>docker run <span class="nt">--tty</span> <span class="nt">--rm</span> <span class="se">\</span>
+     <span class="nt">--network</span> postgres-logical-replication-standby_default <span class="se">\</span>
+     quay.io/debezium/tooling:1.2 <span class="se">\</span>
+     kcat <span class="nt">-b</span> kafka:9092 <span class="nt">-C</span> <span class="nt">-o</span> beginning <span class="nt">-q</span> <span class="nt">-t</span> dbserver1.public.some_data | jq .payload
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+</pre></td><td class="code"><pre><span class="p">{</span><span class="w">
+  </span><span class="nl">&#34;before&#34;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="nl">&#34;after&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">&#34;id&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;short_text&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;c4ca4&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;long_text&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;3a3c3274941c83e253ebf8d2438ea5a2&#34;</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">&#34;source&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">&#34;version&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;2.5.0.Beta1&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;connector&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;postgresql&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;name&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;dbserver1&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;ts_ms&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">1702469846436</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;snapshot&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;first_in_data_collection&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;db&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;inventory&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;sequence&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;[null,</span><span class="se">\&#34;</span><span class="s2">406746824704</span><span class="se">\&#34;</span><span class="s2">]&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;schema&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;public&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;table&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;some_data&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;txId&#34;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;lsn&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">406746824704</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;xmin&#34;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">&#34;op&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;r&#34;</span><span class="p">,</span><span class="w">
+  </span><span class="nl">&#34;ts_ms&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">1702469849341</span><span class="p">,</span><span class="w">
+  </span><span class="nl">&#34;transaction&#34;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span><span class="err">...</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>These are the snapshot events emitted by the connector when starting up.
+Let’s do an update to one of the records on the primary:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>primary&gt; UPDATE some_data SET <span class="nv">short_text</span><span class="o">=</span><span class="s1">&#39;hello&#39;</span> WHERE <span class="nb">id</span> <span class="o">=</span> 1<span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>And shortly thereafter, the corresponding change event should show up in the Kafka topic:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+</pre></td><td class="code"><pre><span class="err">...</span><span class="w">
+  </span><span class="nl">&#34;before&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">&#34;id&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;short_text&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;c4ca4&#34;</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;long_text&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;3a3c3274941c83e253ebf8d2438ea5a2&#34;</span><span class="w">
+  </span><span class="p">}</span><span class="err">,</span><span class="w">
+  </span><span class="nl">&#34;after&#34;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">&#34;id&#34;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+    </span><span class="nl">&#34;short_text&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;hello&#34;</span><span class="p">,</span><span class="err">I</span><span class="w">
+    </span><span class="nl">&#34;long_text&#34;</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;3a3c3274941c83e253ebf8d2438ea5a2&#34;</span><span class="w">
+  </span><span class="p">}</span><span class="err">,</span><span class="w">
+</span><span class="err">...</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>At this point, you could hook up that change event stream with <a href="https://flink.apache.org/">Apache Flink</a>, or the <a href="https://docs.decodable.co/docs/kafka">Decodable Kafka source connector</a> for feeding it into a real-time stream processing pipeline, but I’ll leave that for another day 🙂.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_towards_fail_over_slots">Towards Fail-Over Slots<a class="anchor" href="#_towards_fail_over_slots"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Postgres&#39; support for logical replication has been <a href="https://amitkapila16.blogspot.com/2023/09/evolution-of-logical-replication.html">built out significantly</a> over the last few years.
+One thing still is missing, though: failover slots.
+Logical replication slots on the primary are not propagated to stand-bys.
+This means that when the primary unexpectedly goes down, any slots must be recreated on the new primary after promotion.
+Unfortunately, this can cause gaps in the change event stream, as any data change occurring before the new slot has been created would be missed.
+Clients would be forced to backfill the entire data set (i.e.
+take a snapshot in Debezium terminology) to be sure that no data is missing.</p>
+</div>
+<div class="paragraph">
+<p>Discussions around adding support for fail-over slots go back to Postgres versions as <a href="https://wiki.postgresql.org/wiki/Failover_slots">old as 9.6</a>.
+More recently, Patroni added their own <a href="https://www.postgresql.eu/events/pgconfde2022/sessions/session/3745/slides/306/Implementing%20failover%20of%20logical%20replication%20slots%20in%20Patroni.pdf">solution to the problem</a>, and EnterpriseDB released <a href="https://github.com/EnterpriseDB/pg_failover_slots">pg_failover_slots</a>, a Postgres extension for slot failover.
+It remains to be seen when Postgres itself adds this feature (as hinted at in <a href="https://www.pgcon.org/events/pgcon_2023/sessions/session/369/slides/83/PostgreSQL%2016%20and%20beyond.pdf">this presentation</a>, it may happen with Postgres 17).
+Until then, in cases where the pg_failover_slots extension isn’t available—such as on Amazon RDS—logical replication slots on stand-bys let you build your own version of failover slots.
+The idea is to create two corresponding slots on primary and stand-by, and use the <code>pg_replication_slot_advance()</code> function (added in Postgres 11) to keep the two in sync.
+The replication consumer would connect to the slot on the primary at first.
+After a fail-over, when the stand-by server has been promoted to primary, it would reconnect to that slot.</p>
+</div>
+<div class="paragraph">
+<p>For this to work, it is critical to periodically move the stand-by slot forward by calling <code>pg_replication_slot_advance()</code> with the confirmed flush LSN from the primary, i.e.
+the latest position in the WAL which has been processed and acknowledged by the consumer of the primary slot.
+Otherwise, the stand-by slot would retain larger and larger amounts of WAL, also the consumer would receive lots of duplicated events after a fail-over.</p>
+</div>
+<div class="paragraph">
+<p>This could for instance be implemented using a cron job, or, when running on AWS, with a <a href="https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-tutorial.html">scheduled Lambda function</a>.
+This job would periodically retrieve the confirmed flush LSN for the slot on the primary via the <code>pg_replication_slots</code> view:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre>primary&gt; SELECT
+  slot_name,
+  confirmed_flush_lsn
+FROM pg_replication_slots<span class="p">;</span>
++--------------+---------------------+
+| slot_name    | confirmed_flush_lsn |
+|--------------+---------------------|
+| primary_slot | 5F/C501098          |
++--------------+---------------------+
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The slot on the stand-by would then be advanced to that LSN:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>standby&gt; SELECT <span class="k">*</span> FROM pg_replication_slot_advance<span class="o">(</span><span class="s1">&#39;failover_slot&#39;</span>, <span class="s1">&#39;5F/C501098&#39;</span><span class="o">)</span><span class="p">;</span>
++---------------+------------+
+| slot_name     | end_lsn    |
+|---------------+------------|
+| failover_slot | 5F/C501098 |
++---------------+------------+
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>How often you should advance the stand-by slot depends on the amount of duplication you are willing to accept after a failover: the closer the stand-by slot follows the primary slot, the fewer duplicates there will be when switching from one slot to the other.
+Note that the stand-by slot must never be advanced beyond the confirmed LSN of the primary slot.
+Otherwise, events would be lost when reading from the stand-by slot after a failover.
+Specifically, when setting up the stand-by slot, it will in all likelihood be on a newer LSN than what has been confirmed by the primary and it is vital to synchronize the two slots at first.
+To do so, wait for the next LSN to be confirmed by the primary slot, make sure this LSN has been replicated to the stand-by, and then advance the stand-by slot to that LSN.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_wrap_up">Wrap-Up<a class="anchor" href="#_wrap_up"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Logical replication from Postgres stand-by servers has been a long awaited functionality, and it finally shipped with Postgres 16.
+Not only does it allow you to build chains of Postgres replicas (one stand-by server subscribing to another), but also non-Postgres clients, such as Debezium are not limited any longer to solely being able to connect to primary Postgres instances.
+This can be very useful for the purposes of load distribution or in situations where you prefer a CDC tool not to connect directly to your primary database.</p>
+</div>
+<div class="paragraph">
+<p>The last missing piece in the puzzle here is full support for fail-over slots, for which you still need either a separate extension ( <a href="https://github.com/EnterpriseDB/pg_failover_slots">pg_failover_slots</a>) or implement your own approach by manually keeping two slots on primary and stand-by in sync.
+It would be great to see official support for this in a future Postgres release.</p>
+</div>
+<div class="paragraph">
+<p>Finally, if you’d like learn more about logical replication from stand-bys, check out these posts from some fine folks in the Postgres community:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://bdrouvot.github.io/2023/04/19/postgres-16-highlight-logical-decoding-on-standby/">Postgres 16 highlight: Logical decoding on standby</a>, by Bertrand Drouvot</p>
+</li>
+<li>
+<p><a href="https://www.crunchydata.com/blog/logical-replication-on-standbys-in-postgres-16">Logical Replication on Standbys in Postgres 16</a>, by Roberto Mello</p>
+</li>
+<li>
+<p><a href="https://tembo.io/blog/postgres-16">Postgres 16: The exciting and the unnoticed</a>, by Samay Sharma</p>
+</li>
+<li>
+<p><a href="https://www.enterprisedb.com/blog/postgres-logical-replication-advantages">PostgreSQL Logical Replication: Advantages, EDB’s Contributions and PG 16 Enhancements</a>, by Shaun Thomas</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><em>Many thanks to Bertrand Drouvot, Robert Metzger, Robin Moffatt, Gwen Shapira, and Sharon Xie for their feedback while writing this post.</em></p>
+</div>
+</div>
+</div>
+			</div>
+
+			
+			
+			
+			<div class="related-posts">
+				<h3>Read Next</h3>
+				<ul>
+					
+					<li><a href="/blog/stand-by-servers-for-postgres-logical-replication/">Using Stand-by Servers for Postgres Logical Replication</a> <span class="meta">Dec 19, 2023</span></li>
+					
+					<li><a href="/blog/mastering-postgres-replication-slots/">Mastering Postgres Replication Slots: Preventing WAL Bloat and Other Production Issues</a> <span class="meta">Jul 8, 2025</span></li>
+					
+					<li><a href="/blog/backfilling-postgres-toast-columns-debezium-change-events/">Backfilling Postgres TOAST Columns in Debezium Data Change Events</a> <span class="meta">May 26, 2025</span></li>
+					
+				</ul>
+			</div>
+			
+			
+		</div>
+
+		<div class="post-footer">
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<div class="header-image-container" style="flex-shrink: 0;">
+					<img class="footer-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+				</div>
+				<p style="margin: 0;">Gunnar Morling is an open-source software engineer in the Java and data streaming space. He currently works as a Technologist for Confluent. In his past role at Decodable he focused on developer outreach and helped them build their stream processing platform based on Apache Flink. Prior to that, he spent ten years at Red Hat, where he led the Debezium project, a platform for change data capture.</p>
+			</div>
+		</div>
+
+		
+		
+		<div class="post-discussions">
+			<p>Comment below, or join the discussion on
+			<a href="https://hn.algolia.com/?query=morling.dev/blog/logical-replication-from-postgres-stand-by-servers-debezium-and-failover-slots/">Hacker News</a>,
+			<a href="https://lobste.rs/search?q=domain:morling.dev+title:%22Logical%20Replication%20From%20Postgres%2016%20Stand-By%20Servers%e2%80%94Debezium%20and%20Failover%20Slots%22&what=stories">Lobsters</a>, and
+			<a href="https://www.reddit.com/search/?q=url:morling.dev/blog/logical-replication-from-postgres-stand-by-servers-debezium-and-failover-slots/">Reddit</a>.
+			</p>
+		</div>
+		<div id="disqus_thread"></div>
+
+<script>
+  
+  window.addEventListener('load', function() {
+    
+    setTimeout(function() {
+      const commentsContainer = document.getElementById('disqus_thread');
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', 'gunnarmorling/discussions.morling.dev');
+      script.setAttribute('data-repo-id', 'R_kgDOGXzqNQ');
+      script.setAttribute('data-category', 'Announcements');
+      script.setAttribute('data-category-id', 'DIC_kwDOGXzqNc4B_2Pq');
+      script.setAttribute('data-mapping', 'title');
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-theme', 'light');
+      script.setAttribute('data-lang', 'en');
+      script.setAttribute('crossorigin', 'anonymous');
+      script.async = true;
+      commentsContainer.appendChild(script);
+    }, 100);
+  });
+</script>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>

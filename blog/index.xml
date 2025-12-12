@@ -400,7 +400,7 @@ as much as possible, a service should minimize the number of synchronous request
 &lt;/ul&gt;
 &lt;/div&gt;
 &lt;div class=&#34;paragraph&#34;&gt;
-&lt;p&gt;&lt;em&gt;This post originally appeared on the &lt;a href=&#34;https://www.decodable.co/blog/get-running-with-apache-flink-on-kubernetes-2&#34;&gt;Decodable blog&lt;/a&gt;.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;This post originally appeared on the &lt;a href=&#34;https://www.decodable.co/blog/get-running-with-apache-flink-on-kubernetes-2&#34;&gt;Decodable blog&lt;/a&gt;. All rights reserved.&lt;/em&gt;&lt;/p&gt;
 &lt;/div&gt;
 &lt;div class=&#34;paragraph&#34;&gt;
 &lt;p&gt;Welcome back to this two-part blog post series about running Apache Flink on Kubernetes, using the Flink Kubernetes operator.
@@ -426,13 +426,36 @@ You can find the complete source code for all the examples shown in this series 
 &lt;/ul&gt;
 &lt;/div&gt;
 &lt;div class=&#34;paragraph&#34;&gt;
-&lt;p&gt;&lt;em&gt;This post originally appeared on the &lt;a href=&#34;https://www.decodable.co/blog/get-running-with-apache-flink-on-kubernetes-1&#34;&gt;Decodable blog&lt;/a&gt;.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;This post originally appeared on the &lt;a href=&#34;https://www.decodable.co/blog/get-running-with-apache-flink-on-kubernetes-1&#34;&gt;Decodable blog&lt;/a&gt;. All rights reserved.&lt;/em&gt;&lt;/p&gt;
 &lt;/div&gt;
 &lt;div class=&#34;paragraph&#34;&gt;
 &lt;p&gt;Kubernetes is a widely used deployment platform for Apache Flink.
 While Flink has had native support for Kubernetes for quite a while, it is in particular the operator pattern which makes deploying Flink jobs onto Kubernetes clusters a compelling option: you define jobs in a declarative resource, and a control loop running in a component called a Kubernetes operator takes care of provisioning and maintaining (e.g.
 scaling, updating) all the required resources.
 Automation is the keyword here, significantly reducing the manual effort required for running Flink jobs in production.&lt;/p&gt;
+&lt;/div&gt;</description>
+    </item>
+    
+    <item>
+      <title>Failover Replication Slots with Postgres 17</title>
+      <link>https://www.morling.dev/blog/failover-replication-slots-with-postgres-17/</link>
+      <pubDate>Tue, 03 Dec 2024 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.morling.dev/blog/failover-replication-slots-with-postgres-17/</guid>
+      <description>&lt;div id=&#34;toc&#34; class=&#34;toc&#34;&gt;
+&lt;div id=&#34;toctitle&#34;&gt;Table of Contents&lt;/div&gt;
+&lt;ul class=&#34;sectlevel1&#34;&gt;
+&lt;li&gt;&lt;a href=&#34;#_hello_failover_slots&#34;&gt;Hello, Failover Slots!&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_failover_slots_in_decodable&#34;&gt;Failover Slots in Decodable&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_wrapping_up&#34;&gt;Wrapping Up&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;&lt;em&gt;This post originally appeared on the &lt;a href=&#34;https://www.decodable.co/blog/failover-replication-slots-with-postgres-17&#34;&gt;Decodable blog&lt;/a&gt;. All rights reserved.&lt;/em&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;Postgres read replicas are commonly used not only to distribute query load amongst multiple nodes, but also to ensure high availability (HA) of the database.
+If the primary node of a Postgres cluster fails, a read replica can be promoted to be the new primary, processing write (and read) requests from thereon.&lt;/p&gt;
 &lt;/div&gt;</description>
     </item>
     
@@ -460,6 +483,57 @@ For some reason I always thought that building OpenJDK is a very complex process
 requiring the installation of arcane tool chains etc.
 But as it turns out, this actually not true:
 the project does a great job of documenting what’s needed and only a few steps are necessary to build your very own JDK.&lt;/p&gt;
+&lt;/div&gt;</description>
+    </item>
+    
+    <item>
+      <title>Revisiting the Outbox Pattern</title>
+      <link>https://www.morling.dev/blog/revisiting-the-outbox-pattern/</link>
+      <pubDate>Thu, 31 Oct 2024 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.morling.dev/blog/revisiting-the-outbox-pattern/</guid>
+      <description>&lt;div id=&#34;toc&#34; class=&#34;toc&#34;&gt;
+&lt;div id=&#34;toctitle&#34;&gt;Table of Contents&lt;/div&gt;
+&lt;ul class=&#34;sectlevel1&#34;&gt;
+&lt;li&gt;&lt;a href=&#34;#_recap_whats_the_outbox_pattern&#34;&gt;Recap: What’s The Outbox Pattern?&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_implementation_considerations&#34;&gt;Implementation Considerations&lt;/a&gt;
+&lt;ul class=&#34;sectlevel2&#34;&gt;
+&lt;li&gt;&lt;a href=&#34;#_polling_vs_log_based_cdc&#34;&gt;Polling vs. Log-Based CDC&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_the_outbox_table&#34;&gt;The Outbox Table&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_pg_logical_emit_message&#34;&gt;pg_logical_emit_message()&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_format_considerations&#34;&gt;Format Considerations&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_backfills&#34;&gt;Backfills&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_idempotency_for_consumers&#34;&gt;Idempotency for Consumers&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_criticisms_of_the_outbox_pattern&#34;&gt;Criticisms of the Outbox pattern&lt;/a&gt;
+&lt;ul class=&#34;sectlevel2&#34;&gt;
+&lt;li&gt;&lt;a href=&#34;#_database_overhead&#34;&gt;Database Overhead&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_complexity&#34;&gt;Complexity&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_latency&#34;&gt;Latency&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_discussion&#34;&gt;Discussion&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_alternatives_to_the_outbox_pattern&#34;&gt;Alternatives to the Outbox Pattern&lt;/a&gt;
+&lt;ul class=&#34;sectlevel2&#34;&gt;
+&lt;li&gt;&lt;a href=&#34;#_dapr&#34;&gt;Dapr&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_read_yourself&#34;&gt;Read-yourself&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_stream_processing_on_raw_change_event_streams&#34;&gt;Stream Processing on &amp;#34;Raw&amp;#34; Change Event Streams&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_2pc&#34;&gt;2PC&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_durable_execution&#34;&gt;Durable Execution&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_summary&#34;&gt;Summary&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;&lt;em&gt;This post originally appeared on the &lt;a href=&#34;https://www.decodable.co/blog/revisiting-the-outbox-pattern&#34;&gt;Decodable blog&lt;/a&gt;. All rights reserved.&lt;/em&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;Over the last few years, the outbox pattern has become a common solution for implementing data exchange flows between microservices.
+It allows services to safely and reliably update their own local datastore and at the same time send out notifications to other services via data streaming platforms such as Apache Kafka.
+But time isn’t standing still: people ask about disadvantages of the pattern (&lt;em&gt;is the database becoming a bottleneck?&lt;/em&gt;), alternative solutions such as &amp;#34;listen-to-yourself&amp;#34; have been proposed, Kafka is about to get support for participating in 2-phase commit (2PC) transactions, and more.
+It’s time to take another look at the outbox pattern, what it is and how to implement it, whether it’s still relevant in 2024, and which alternatives exist!&lt;/p&gt;
 &lt;/div&gt;</description>
     </item>
     
@@ -568,6 +642,31 @@ the method was removed before the API went GA with Java 8 and you have to resort
     </item>
     
     <item>
+      <title>A Taxonomy Of Data Change Events</title>
+      <link>https://www.morling.dev/blog/taxonomy-of-data-change-events/</link>
+      <pubDate>Wed, 13 Mar 2024 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.morling.dev/blog/taxonomy-of-data-change-events/</guid>
+      <description>&lt;div id=&#34;toc&#34; class=&#34;toc&#34;&gt;
+&lt;div id=&#34;toctitle&#34;&gt;Table of Contents&lt;/div&gt;
+&lt;ul class=&#34;sectlevel1&#34;&gt;
+&lt;li&gt;&lt;a href=&#34;#_full_events&#34;&gt;Full Events&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_delta_events&#34;&gt;Delta Events&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_id_only_events&#34;&gt;Id-only Events&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_change_event_metadata&#34;&gt;Change Event Metadata&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_comparison&#34;&gt;Comparison&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;&lt;em&gt;This post originally appeared on the &lt;a href=&#34;https://www.decodable.co/blog/taxonomy-of-data-change-events&#34;&gt;Decodable blog&lt;/a&gt;. All rights reserved.&lt;/em&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;Data change events are at the core of Change Data Capture (CDC) solutions such as &lt;a href=&#34;https://debezium.io/&#34;&gt;Debezium&lt;/a&gt;.
+They describe the changes made to a specific record in a database and allow event consumers to take action based on this information, enabling a wide range of &lt;a href=&#34;https://www.morling.dev/blog/seven-ways-to-put-cdc-to-work&#34;&gt;use cases&lt;/a&gt;, such as real-time ETL (by propagating the updated data into downstream data stores such as data warehouses, analytics databases, or fulltext search indexes), microservices data exchange, or audit logging.&lt;/p&gt;
+&lt;/div&gt;</description>
+    </item>
+    
+    <item>
       <title>Last Updated Columns With Postgres</title>
       <link>https://www.morling.dev/blog/last-updated-columns-with-postgres/</link>
       <pubDate>Tue, 20 Feb 2024 09:15:00 +0100</pubDate>
@@ -658,6 +757,54 @@ There’s just one caveat: the file has &lt;strong&gt;1,000,000,000 rows&lt;/str
     </item>
     
     <item>
+      <title>Logical Replication From Postgres 16 Stand-By Servers—Debezium and Failover Slots</title>
+      <link>https://www.morling.dev/blog/logical-replication-from-postgres-stand-by-servers-debezium-and-failover-slots/</link>
+      <pubDate>Tue, 19 Dec 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.morling.dev/blog/logical-replication-from-postgres-stand-by-servers-debezium-and-failover-slots/</guid>
+      <description>&lt;div id=&#34;toc&#34; class=&#34;toc&#34;&gt;
+&lt;div id=&#34;toctitle&#34;&gt;Table of Contents&lt;/div&gt;
+&lt;ul class=&#34;sectlevel1&#34;&gt;
+&lt;li&gt;&lt;a href=&#34;#_stand_by_logical_replication_with_debezium&#34;&gt;Stand-By Logical Replication With Debezium&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_towards_fail_over_slots&#34;&gt;Towards Fail-Over Slots&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_wrap_up&#34;&gt;Wrap-Up&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;&lt;em&gt;This post originally appeared on the &lt;a href=&#34;https://www.decodable.co/blog/logical-replication-from-postgres-16-stand-by-servers-part-2-of-2&#34;&gt;Decodable blog&lt;/a&gt;. All rights reserved.&lt;/em&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;Welcome back to this series about logical replication from Postgres 16 stand-by servers, in which we’ll discuss how to use this feature with Debezium—a popular open-source platform for Change Data Capture (CDC) for a wide range of databases—as well as how to manage logical replication in case of failover scenarios, i.e.
+a situation where your primary Postgres server becomes unavailable and a stand-by server needs to take over.&lt;/p&gt;
+&lt;/div&gt;</description>
+    </item>
+    
+    <item>
+      <title>Using Stand-by Servers for Postgres Logical Replication</title>
+      <link>https://www.morling.dev/blog/stand-by-servers-for-postgres-logical-replication/</link>
+      <pubDate>Tue, 19 Dec 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.morling.dev/blog/stand-by-servers-for-postgres-logical-replication/</guid>
+      <description>&lt;div id=&#34;toc&#34; class=&#34;toc&#34;&gt;
+&lt;div id=&#34;toctitle&#34;&gt;Table of Contents&lt;/div&gt;
+&lt;ul class=&#34;sectlevel1&#34;&gt;
+&lt;li&gt;&lt;a href=&#34;#_what_is_postgres_logical_replication&#34;&gt;What is Postgres Logical Replication?&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_why_logical_replication_on_stand_by_servers&#34;&gt;Why Logical Replication On Stand-By Servers?&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_provisioning_a_testing_environment&#34;&gt;Provisioning a Testing Environment&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_testing_things_out&#34;&gt;Testing Things Out&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;&lt;em&gt;This post originally appeared on the &lt;a href=&#34;https://www.decodable.co/blog/postgres-logical-replication&#34;&gt;Decodable blog&lt;/a&gt;. All rights reserved.&lt;/em&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;For users of Change Data Capture (CDC), one of the most exciting features in Postgres version 16 (released in September this year) is the support for logical replication from stand-by servers.
+Instead of connecting to your primary server, you can now point CDC tools such as Debezium to a replica server, which is very interesting for instance from a load distribution perspective.
+I am going to take a closer look at this new feature in this two-part blog series:&lt;/p&gt;
+&lt;/div&gt;</description>
+    </item>
+    
+    <item>
       <title>Tracking Java Native Memory With JDK Flight Recorder</title>
       <link>https://www.morling.dev/blog/tracking-java-native-memory-with-jdk-flight-recorder/</link>
       <pubDate>Sun, 17 Dec 2023 19:29:00 +0100</pubDate>
@@ -679,6 +826,69 @@ with one recent addition being support for native memory tracking (NMT).&lt;/p&g
     </item>
     
     <item>
+      <title>Getting Started With PyFlink on Kubernetes</title>
+      <link>https://www.morling.dev/blog/getting-started-with-pyflink-on-kubernetes/</link>
+      <pubDate>Thu, 07 Dec 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.morling.dev/blog/getting-started-with-pyflink-on-kubernetes/</guid>
+      <description>&lt;div id=&#34;toc&#34; class=&#34;toc&#34;&gt;
+&lt;div id=&#34;toctitle&#34;&gt;Table of Contents&lt;/div&gt;
+&lt;ul class=&#34;sectlevel1&#34;&gt;
+&lt;li&gt;&lt;a href=&#34;#_what_is_pyflink_and_why_should_you_care&#34;&gt;What Is PyFlink and Why Should You Care?&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_prerequisites&#34;&gt;Prerequisites&lt;/a&gt;
+&lt;ul class=&#34;sectlevel2&#34;&gt;
+&lt;li&gt;&lt;a href=&#34;#_installing_the_flink_kubernetes_operator&#34;&gt;Installing the Flink Kubernetes Operator&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_installing_strimzi_and_apache_kafka&#34;&gt;Installing Strimzi and Apache Kafka&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_a_simple_pyflink_job&#34;&gt;A Simple PyFlink Job&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_building_a_container_image_with_your_pyflink_job&#34;&gt;Building a Container Image With Your PyFlink Job&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_deploying_a_pyflink_job_on_kubernetes&#34;&gt;Deploying a PyFlink Job On Kubernetes&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;&lt;em&gt;This post originally appeared on the &lt;a href=&#34;https://www.decodable.co/blog/getting-started-with-pyflink-on-kubernetes&#34;&gt;Decodable blog&lt;/a&gt;. All rights reserved.&lt;/em&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;The other day, I wanted to get my feet wet with PyFlink.
+While there is a fair amount of related information out there, I couldn’t find really up-to-date documentation on using current versions of PyFlink with Flink on Kubernetes.&lt;/p&gt;
+&lt;/div&gt;</description>
+    </item>
+    
+    <item>
+      <title>&#34;Change Data Capture Breaks Encapsulation&#34;. Does it, though?</title>
+      <link>https://www.morling.dev/blog/change-data-capture-breaks-encapsulation-does-it-though/</link>
+      <pubDate>Tue, 21 Nov 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.morling.dev/blog/change-data-capture-breaks-encapsulation-does-it-though/</guid>
+      <description>&lt;div id=&#34;toc&#34; class=&#34;toc&#34;&gt;
+&lt;div id=&#34;toctitle&#34;&gt;Table of Contents&lt;/div&gt;
+&lt;ul class=&#34;sectlevel1&#34;&gt;
+&lt;li&gt;&lt;a href=&#34;#_cdca_quick_primer&#34;&gt;CDC—​A Quick Primer&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_does_cdc_break_encapsulation&#34;&gt;Does CDC Break Encapsulation?&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_entering_data_contracts&#34;&gt;Entering Data Contracts&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_implementation_approaches_for_data_contracts&#34;&gt;Implementation Approaches For Data Contracts&lt;/a&gt;
+&lt;ul class=&#34;sectlevel2&#34;&gt;
+&lt;li&gt;&lt;a href=&#34;#_the_outbox_pattern&#34;&gt;The Outbox Pattern&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_stream_processing&#34;&gt;Stream Processing&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_streaming_data_contractsbeyond_the_basics&#34;&gt;Streaming Data Contracts—​Beyond the Basics&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_handling_schema_changes&#34;&gt;Handling Schema Changes&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_summary&#34;&gt;Summary&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;&lt;em&gt;This post originally appeared on the &lt;a href=&#34;https://www.decodable.co/blog/change-data-capture-breaks-encapsulation-does-it-though&#34;&gt;Decodable blog&lt;/a&gt;. All rights reserved.&lt;/em&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;Having worked on Debezium—​an open-source platform for Change Data Capture (CDC)--for several years, one concern I’ve heard repeatedly is this: aren’t you breaking the encapsulation of your application when you expose change event feeds directly from your database?
+After all, CDC exposes your internal persistent data model to the outside world, which may have unintended consequences, e.g.
+in terms of data exposure but also when it comes to changes to the schema of your data, which may break downstream consumers.&lt;/p&gt;
+&lt;/div&gt;</description>
+    </item>
+    
+    <item>
       <title>Can Debezium Lose Events?</title>
       <link>https://www.morling.dev/blog/can-debezium-lose-events/</link>
       <pubDate>Tue, 14 Nov 2023 15:00:00 +0100</pubDate>
@@ -688,6 +898,36 @@ with one recent addition being support for native memory tracking (NMT).&lt;/p&g
 &lt;p&gt;This question came up on the Data Engineering sub-reddit the other day:
 &lt;a href=&#34;https://old.reddit.com/r/dataengineering/comments/17ttw5e/can_debezium_loose_updates/&#34;&gt;Can Debezium lose any events&lt;/a&gt;?
 I.e. can there be a situation where a record in a database get inserted, updated, or deleted, but Debezium fails to capture that event from the transaction log and propagate it to downstream consumers?&lt;/p&gt;
+&lt;/div&gt;</description>
+    </item>
+    
+    <item>
+      <title>CDC Use Cases: 7 Ways to Put CDC to Work</title>
+      <link>https://www.morling.dev/blog/cdc-use-cases/</link>
+      <pubDate>Thu, 02 Nov 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.morling.dev/blog/cdc-use-cases/</guid>
+      <description>&lt;div id=&#34;toc&#34; class=&#34;toc&#34;&gt;
+&lt;div id=&#34;toctitle&#34;&gt;Table of Contents&lt;/div&gt;
+&lt;ul class=&#34;sectlevel1&#34;&gt;
+&lt;li&gt;&lt;a href=&#34;#_what_is_cdc&#34;&gt;What is CDC?&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_cdc_tools&#34;&gt;CDC Tools&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_analytics_data_platforms&#34;&gt;Analytics Data Platforms&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_application_caches&#34;&gt;Application Caches&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_full_text_search&#34;&gt;Full-Text Search&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_audit_logs&#34;&gt;Audit Logs&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_continuous_queries&#34;&gt;Continuous Queries&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_microservices_data_exchange&#34;&gt;Microservices Data Exchange&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_monolith_to_microservices_migration&#34;&gt;Monolith-to-Microservices Migration&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_summary&#34;&gt;Summary&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;&lt;em&gt;This post originally appeared on the &lt;a href=&#34;https://www.decodable.co/blog/cdc-use-cases&#34;&gt;Decodable blog&lt;/a&gt;. All rights reserved.&lt;/em&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;Change Data Capture (CDC) is a powerful tool in data engineering and has seen a tremendous uptake in organizations of all kinds over the last few years.
+This is because it enables the tight integration of transactional databases into many other systems in your business at a very low latency.&lt;/p&gt;
 &lt;/div&gt;</description>
     </item>
     
@@ -801,6 +1041,30 @@ I am also planning to contribute to the &lt;a href=&#34;https://flink.apache.org
 (as Decodable’s fully-managed &lt;a href=&#34;https://www.decodable.co/product&#34;&gt;stream processing platform&lt;/a&gt; is based on Flink).
 Right now, I am in the process of familiarizing myself with the Flink code base,
 and as such I am of course building the project from source, too.&lt;/p&gt;
+&lt;/div&gt;</description>
+    </item>
+    
+    <item>
+      <title>Postgres 15: Logical Decoding Row Filters With Debezium</title>
+      <link>https://www.morling.dev/blog/postgres-15-logical-decoding-row-filters-with-debezium/</link>
+      <pubDate>Thu, 15 Dec 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://www.morling.dev/blog/postgres-15-logical-decoding-row-filters-with-debezium/</guid>
+      <description>&lt;div id=&#34;toc&#34; class=&#34;toc&#34;&gt;
+&lt;div id=&#34;toctitle&#34;&gt;Table of Contents&lt;/div&gt;
+&lt;ul class=&#34;sectlevel1&#34;&gt;
+&lt;li&gt;&lt;a href=&#34;#_using_logical_decoding_row_filters_with_debezium&#34;&gt;Using Logical Decoding Row Filters With Debezium&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_observing_filtered_change_events&#34;&gt;Observing Filtered Change Events&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_wrap_up&#34;&gt;Wrap-Up&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;&lt;em&gt;This post originally appeared on the &lt;a href=&#34;https://www.decodable.co/blog/postgres-15-logical-decoding-row-filters-with-debezium&#34;&gt;Decodable blog&lt;/a&gt;. All rights reserved.&lt;/em&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;Since &lt;a href=&#34;https://www.postgresql.org/docs/current/logicaldecoding-explanation.html&#34;&gt;logical decoding&lt;/a&gt; was added to Postgres in version 9.4, this powerful feature for capturing changes from the write-ahead log of the database has been continuously improved.
+&lt;a href=&#34;https://www.postgresql.org/about/news/postgresql-15-released-2526/&#34;&gt;Postgres 15&lt;/a&gt;, released in October this year, added support for fine-grained control over which columns (by means of &lt;em&gt;column lists&lt;/em&gt;) and rows (via &lt;em&gt;row filters&lt;/em&gt;) should be exported from captured tables.
+This means, in relational terminology, projections and filters are now natively supported by Postgres change event publications.&lt;/p&gt;
 &lt;/div&gt;</description>
     </item>
     

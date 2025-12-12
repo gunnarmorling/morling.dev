@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Failover Replication Slots with Postgres 17 - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="canonical" href="https://www.decodable.co/blog/failover-replication-slots-with-postgres-17" /><meta property="og:url" content="https://www.morling.dev/blog/failover-replication-slots-with-postgres-17/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Failover Replication Slots with Postgres 17">
+  <meta property="og:description" content=" This post originally appeared on the Decodable blog. All rights reserved.
+Postgres read replicas are commonly used not only to distribute query load amongst multiple nodes, but also to ensure high …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2024-12-03T00:00:00Z">
+    <meta property="article:modified_time" content="2024-12-03T00:00:00Z">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Failover Replication Slots with Postgres 17">
+  <meta name="twitter:description" content=" This post originally appeared on the Decodable blog. All rights reserved.
+Postgres read replicas are commonly used not only to distribute query load amongst multiple nodes, but also to ensure high …">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.672476d25c0fad0fd490e21222003c6c89ca45b73df6a5634305e06e889c49ad.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
+	
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.5e2c4cf50d01b5e8795a87894c2d08be87ed25371b30d97df693079b623d9f87.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+	<script src="/js/main.min.9ee619eea7f51473f4284ef86c76bdb1b0089e19781ca97275924edf53be5bd4.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Failover Replication Slots with Postgres 17</h1>
+				<div class="post-meta-line">
+					<span class="meta">Posted at Dec 3, 2024</span>
+					
+					<span class="post-tags-inline">
+						
+						<a href="/tags/postgres">postgres</a>
+						
+						<a href="/tags/cdc">cdc</a>
+						
+						<a href="/tags/debezium">debezium</a>
+						
+					</span>
+					
+				</div>
+			</div>
+
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_hello_failover_slots">Hello, Failover Slots!</a></li>
+<li><a href="#_failover_slots_in_decodable">Failover Slots in Decodable</a></li>
+<li><a href="#_wrapping_up">Wrapping Up</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p><em>This post originally appeared on the <a href="https://www.decodable.co/blog/failover-replication-slots-with-postgres-17">Decodable blog</a>. All rights reserved.</em></p>
+</div>
+<div class="paragraph">
+<p>Postgres read replicas are commonly used not only to distribute query load amongst multiple nodes, but also to ensure high availability (HA) of the database.
+If the primary node of a Postgres cluster fails, a read replica can be promoted to be the new primary, processing write (and read) requests from thereon.</p>
+</div>
+<div class="paragraph">
+<p>Prior to Postgres version 16, read replicas (or stand-by servers) couldn’t be used at all for logical replication.
+Logical replication is a method for replicating data from a Postgres publisher to subscribers.
+These subscribers can be other Postgres instances, as well as non-Postgres tools, such as Debezium, which use logical replication for <a href="https://www.decodable.co/blog/why-do-i-need-cdc">change data capture (CDC)</a>.
+Logical replication slots—which keep track of how far a specific subscriber has consumed the database’s change event stream—could only be created on the primary node of a Postgres cluster.
+This meant that after a failover from primary to replica you’d have to create a new replication slot and typically also start with a new initial snapshot of the data.
+Otherwise you might have missed change events occurring after reading from the slot on the old primary and before creating the slot on the new primary.</p>
+</div>
+<div class="paragraph">
+<p>Whilst external tools such as <a href="https://github.com/EnterpriseDB/pg_failover_slots">pg_failover_slots</a> were added over time, a built-in solution for failing over replication slots from one Postgres node to another was sorely missed by many users.
+This situation substantially improved with the release of Postgres 16, which brought support for setting up replication slots on read replicas.
+I’ve discussed this feature in great detail in <a href="https://www.decodable.co/blog/logical-replication-from-postgres-16-stand-by-servers-part-1-of-2">this post</a>.
+Back then, <a href="https://www.decodable.co/blog/logical-replication-from-postgres-16-stand-by-servers-part-2-of-2">I also explored</a> how to use replication slots on replicas for manually implementing replication slot failover.
+But the good news is, as of Postgres version 17, all this is not needed any longer, as it finally supports failover slots out of the box!</p>
+</div>
+<div class="paragraph">
+<p><a href="https://www.postgresql.org/docs/current/logical-replication-failover.html">Failover slots</a> are replication slots which are created on the primary node and which are propagated automatically to read replicas.
+Their state on the replica is kept in sync with the upstream slot on the primary, which means that after a failover, when promoting a replica to primary, you can continue to consume the slot on the new primary without the risk of missing any change events.
+This is really great news for using tools like Debezium (and by extension, data platforms such as Decodable, which provides a fully-managed <a href="https://docs.decodable.co/connect/source/postgres-cdc.html">Postgres CDC connector</a> based on Debezium) in HA scenarios, so let’s take a closer look at how this works.</p>
+</div>
+<div class="sect1">
+<h2 id="_hello_failover_slots">Hello, Failover Slots!<a class="anchor" href="#_hello_failover_slots"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let’s start by exploring failover slots solely from the perspective of using Postgres&#39; SQL interface to logical replication.
+If you want to follow along, check out <a href="https://github.com/decodableco/examples/tree/main/failover-slots">this project</a> from the Decodable examples repository.
+It contains a <a href="https://github.com/decodableco/examples/blob/main/failover-slots/docker-compose.yaml">Docker Compose file</a> which brings up a Postgres primary and a read replica (based on <a href="https://medium.com/@eremeykin/how-to-setup-single-primary-postgresql-replication-with-docker-compose-98c48f233bbf">this set-up</a> by Peter Eremeykin, which makes it really easy to spin up an ephemeral Postgres cluster for testing purposes), as well as a few other components which we’ll use later on.
+Start everything by running:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>docker compose up
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Primary and replica are synchronized via a physical replication slot (i.e.
+unlike with logical replication, all the WAL segments are replicated), ensuring that all data changes done on the primary are replicated to the replica immediately.
+Get a session on the primary (I’m going to use <a href="https://github.com/dbcli/pgcli">pgcli</a> which is my favorite Postgres CLI client, but <em>psql</em> will do the trick as well):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>pgcli <span class="nt">--prompt</span> <span class="s2">&#34;</span><span class="se">\u</span><span class="s2">@primary:</span><span class="se">\d</span><span class="s2">&gt; &#34;</span> <span class="s2">&#34;postgresql://user:top-secret@localhost:5432/inventorydb&#34;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The prompt has been adjusted to show the current instance.
+To verify you are on the primary and not the replica run the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>user@primary:inventorydb&gt; SELECT <span class="k">*</span> from pg_is_in_recovery<span class="o">()</span><span class="p">;</span>
++-------------------+
+| pg_is_in_recovery |
+|-------------------|
+| False             |
++-------------------+
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Both primary and replica are already configured with <a href="https://postgresqlco.nf/doc/en/param/wal_level/">WAL level</a> <code>logical</code>, as required for logical replication:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>user@primary:inventorydb&gt; SHOW wal_level<span class="p">;</span>
++-----------+
+| wal_level |
+|-----------|
+| logical   |
++-----------+
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that if you are running Postgres on Amazon RDS (where version 17 <a href="https://aws.amazon.com/about-aws/whats-new/2024/09/postgresql-170-amazon-rds-database-preview-environment/">is available</a> in the preview environment right now), you’ll need to set the parameter <code>rds.logical_replication</code> to <code>on</code> for this.</p>
+</div>
+<div class="paragraph">
+<p>There’s a physical replication slot for synchronizing changes from the primary to the replica server:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+</pre></td><td class="code"><pre>user@primary:inventorydb&gt; WITH node_status AS <span class="o">(</span>
+       SELECT
+         CASE WHEN pg_is_in_recovery<span class="o">()</span> <span class="o">=</span> <span class="s1">&#39;True&#39;</span> Then <span class="s1">&#39;stand-by&#39;</span> ELSE <span class="s1">&#39;primary&#39;</span> END AS role
+      <span class="o">)</span>
+      SELECT
+        node_status.role AS node,
+        slot_name,
+        slot_type,
+        active,
+        plugin,
+        database, failover, synced,
+        confirmed_flush_lsn
+      FROM
+        pg_replication_slots, node_status<span class="p">;</span>
++---------+------------------+-----------+--------+--------+----------+----------+--------+---------------------+
+| node    | slot_name        | slot_type | active | plugin | database | failover | synced | confirmed_flush_lsn |
+|---------+------------------+-----------+--------+--------+----------+----------+--------+---------------------|
+| primary | replication_slot | physical  | True   |  |    | False    | False  |               |
++---------+------------------+-----------+--------+--------+----------+----------+--------+---------------------+
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This slot must be added to the set of synchronized stand-by slots using the <code>synchronized_standby_slots</code> configuration option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre>user@primary:inventorydb&gt; ALTER SYSTEM SET <span class="nv">synchronized_standby_slots</span><span class="o">=</span><span class="s1">&#39;replication_slot&#39;</span><span class="p">;</span>
+user@primary:inventorydb&gt; SELECT pg_reload_conf<span class="o">()</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This setting, new in Postgres 17, makes sure that any logical replication slots we are going to set up in the following cannot advance beyond the confirmed log sequence number (LSN) of this physical slot.
+Without that setting, logical replication consumers such as Debezium may receive changes which never got propagated to the replica in case of a failure of the primary, resulting in an inconsistent state.</p>
+</div>
+<div class="paragraph">
+<p>Next, get a database session on the replica:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>pgcli <span class="nt">--prompt</span> <span class="s2">&#34;</span><span class="se">\u</span><span class="s2">@replica:</span><span class="se">\d</span><span class="s2">&gt; &#34;</span> <span class="s2">&#34;postgresql://user:top-secret@localhost:5433/inventorydb&#34;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As above, verify that you are on the right node indeed:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>user@primary:inventorydb&gt; SELECT <span class="k">*</span> from pg_is_in_recovery<span class="o">()</span><span class="p">;</span>
++-------------------+
+| pg_is_in_recovery |
+|-------------------|
+| True              |
++-------------------+
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It is already configured with <code>hot_standby_feedback=ON</code> which is a requirement for failover slots to work.
+In addition, the database name must be added to <code>primary_conninfo</code> on the replica (its connection string for connecting to the primary).
+I couldn’t find a way for just adding a single attribute, so I retrieved the current value and added the database name, so that the complete string can be written back (on RDS, that setting can’t be changed, instead set the <code>rds.logical_slot_sync_dbname</code> parameter to the name of the database):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre>user@replica:inventorydb&gt; ALTER SYSTEM SET primary_conninfo <span class="o">=</span> <span class="s1">&#39;user=replicator password=&#39;&#39;zufsob-kuvtum-bImxa6&#39;&#39; channel_binding=prefer host=postgres_primary port=5432 sslmode=prefer sslnegotiation=postgres sslcompression=0 sslcertmode=allow sslsni=1 ssl_min_protocol_version=TLSv1.2 gssencmode=prefer krbsrvname=postgres gssdelegation=0 target_session_attrs=any load_balance_hosts=disable dbname=inventorydb&#39;</span><span class="p">;</span>
+
+user@replica:inventorydb&gt; SELECT pg_reload_conf<span class="o">()</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>At this point, primary and replica are set up for failover slots to work.
+So let’s create a logical replication slot on the primary next:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>user@primary:inventorydb&gt; SELECT <span class="k">*</span> FROM pg_create_logical_replication_slot<span class="o">(</span><span class="s1">&#39;test_slot&#39;</span>, <span class="s1">&#39;test_decoding&#39;</span>, <span class="nb">false</span>, <span class="nb">false</span>, <span class="nb">true</span><span class="o">)</span><span class="p">;</span>
++-----------+-----------+
+| slot_name | lsn       |
+|-----------+-----------|
+| test_slot | 0/304DCA0 |
++-----------+-----------+
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As of Postgres 17, there’s a new optional parameter of the <code>pg_create_logical_replication_slot()</code> function for specifying that a failover slot should be created (<code>failover=true</code>).
+On the replica, call <code>pg_sync_replication_slots()</code> for synchronizing all failover slots from the primary:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>user@replica:inventorydb&gt; SELECT pg_sync_replication_slots<span class="o">()</span><span class="p">;</span>
++---------------------------+
+| pg_sync_replication_slots |
+|---------------------------|
+|                           |
++---------------------------+
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will make sure that the slots on both primary and replica are at exactly the same LSN.
+To verify that this is the case, query the status of the slot on both nodes, using the same query as above:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+</pre></td><td class="code"><pre><span class="k">WITH</span> <span class="n">node_status</span> <span class="k">AS</span> <span class="p">(</span>
+  <span class="k">SELECT</span>
+    <span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">pg_is_in_recovery</span><span class="p">()</span> <span class="o">=</span> <span class="s1">&#39;True&#39;</span> <span class="k">Then</span> <span class="s1">&#39;stand-by&#39;</span> <span class="k">ELSE</span> <span class="s1">&#39;primary&#39;</span> <span class="k">END</span> <span class="k">AS</span> <span class="k">role</span>
+<span class="p">)</span>
+<span class="k">SELECT</span>
+  <span class="n">node_status</span><span class="p">.</span><span class="k">role</span> <span class="k">AS</span> <span class="n">node</span><span class="p">,</span>
+  <span class="n">slot_name</span><span class="p">,</span>
+  <span class="n">slot_type</span><span class="p">,</span>
+  <span class="n">active</span><span class="p">,</span>
+  <span class="n">plugin</span><span class="p">,</span>
+  <span class="k">database</span><span class="p">,</span> <span class="n">failover</span><span class="p">,</span> <span class="n">synced</span><span class="p">,</span>
+  <span class="n">confirmed_flush_lsn</span>
+<span class="k">FROM</span>
+  <span class="n">pg_replication_slots</span><span class="p">,</span> <span class="n">node_status</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Right now, the <code>confirmed_flush_lsn</code> of the slot on the replica matches that of the slot on the primary, i.e.
+the two slots are in sync.
+But once a client consumes changes from the primary slot, the slot on the replica will not be updated accordingly.
+You could manually call <code>pg_sync_replication_slots()</code> repeatedly to synchronize the slot on the replica, but luckily, there’s an easier way.
+By setting <code>sync_replication_slots</code> to <code>on</code> on the replica, a synchronization worker will be started, which will propagate the replication state automatically:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre>user@replica:inventorydb&gt; ALTER SYSTEM SET sync_replication_slots <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+user@replica:inventorydb&gt; SELECT pg_reload_conf<span class="o">()</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now do some data changes in the primary and consume them from the replication slot:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre>user@primary:inventorydb&gt; UPDATE inventory.customers SET <span class="nv">first_name</span><span class="o">=</span><span class="s1">&#39;Sarah&#39;</span> where <span class="nb">id</span> <span class="o">=</span> 1001<span class="p">;</span>
+
+user@primary:inventorydb&gt; UPDATE inventory.customers SET <span class="nv">first_name</span><span class="o">=</span><span class="s1">&#39;Sam&#39;</span> where <span class="nb">id</span> <span class="o">=</span> 1001<span class="p">;</span>
+
+user@primary:inventorydb&gt; SELECT <span class="k">*</span> FROM pg_logical_slot_get_changes<span class="o">(</span><span class="s1">&#39;test_slot&#39;</span>, NULL, NULL<span class="o">)</span><span class="p">;</span>
++-----------+-----+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| lsn       | xid | data                                                                                                                                                                                                                                                                                                                                                                                                             |
+|-----------+-----+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0/304DCD8 | 752 | BEGIN 752                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 0/304DCD8 | 752 | table inventory.customers: UPDATE: old-key: <span class="nb">id</span><span class="o">[</span>integer]:1001 first_name[character varying]:<span class="s1">&#39;Sally&#39;</span> last_name[character varying]:<span class="s1">&#39;Thomas&#39;</span> email[character varying]:<span class="s1">&#39;sally.thomas@acme.com&#39;</span> is_test_account[boolean]:false new-tuple: <span class="nb">id</span><span class="o">[</span>integer]:1001 first_name[character varying]:<span class="s1">&#39;Sarah&#39;</span> last_name[character varying]:<span class="s1">&#39;Thomas&#39;</span> email[character varying]:<span class="s1">&#39;sally.thomas@acme.com&#39;</span> is_test_account[boolean]:false |
+| 0/304DFE8 | 752 | COMMIT 752                                                                                                                                                                                                                                                                                                                                                                                                       |
+| 0/304E038 | 753 | BEGIN 753                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 0/304E038 | 753 | table inventory.customers: UPDATE: old-key: <span class="nb">id</span><span class="o">[</span>integer]:1001 first_name[character varying]:<span class="s1">&#39;Sarah&#39;</span> last_name[character varying]:<span class="s1">&#39;Thomas&#39;</span> email[character varying]:<span class="s1">&#39;sally.thomas@acme.com&#39;</span> is_test_account[boolean]:false new-tuple: <span class="nb">id</span><span class="o">[</span>integer]:1001 first_name[character varying]:<span class="s1">&#39;Sam&#39;</span> last_name[character varying]:<span class="s1">&#39;Thomas&#39;</span> email[character varying]:<span class="s1">&#39;sally.thomas@acme.com&#39;</span> is_test_account[boolean]:false   |
+| 0/304E100 | 753 | COMMIT 753                                                                                                                                                                                                                                                                                                                                                                                                       |
++-----------+-----+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you query <code>pg_replication_slots</code> once more, you’ll see that the confirmed flush LSN of the slot on the replica matches still that of the primary.
+To conclude our basic experiments, let’s see what happens when we try to consume the replication slot on the replica server:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre>user@replica:inventorydb&gt; SELECT <span class="k">*</span> FROM pg_logical_slot_get_changes<span class="o">(</span><span class="s1">&#39;test_slot&#39;</span>, NULL, NULL<span class="o">)</span><span class="p">;</span>
+cannot use replication slot <span class="s2">&#34;test_slot&#34;</span> <span class="k">for </span>logical decoding
+DETAIL:  This replication slot is being synchronized from the primary server.
+HINT:  Specify another replication slot.
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Somewhat to be expected, this triggers an error: as the state of failover slots on a replica is driven by the corresponding slot on the primary, they cannot be consumed.
+Only after promoting a replica to the primary, clients can connect to that slot and read change events from it.
+Let’s give this a try by setting up an instance of the Decodable Postgres CDC connector next!</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_failover_slots_in_decodable">Failover Slots in Decodable<a class="anchor" href="#_failover_slots_in_decodable"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Decodable is a fully managed realtime data platform based on Apache Flink.
+It offers <a href="https://docs.decodable.co/connections.html">managed connectors</a> for a wide range of source and sink systems, allowing you to build robust and efficient ETL pipelines with ease.
+Its Postgres CDC connector is using Debezium under the hood, which in turn uses logical replication for ingesting data change events from Postgres.
+Thanks to failover slots, it’s possible to continue streaming changes from a Postgres read replica which got promoted to primary into Decodable, without missing any events.</p>
+</div>
+<div class="paragraph">
+<p>For this kind of use case it makes sense to put a Postgres proxy in front of the database cluster, exposing one stable endpoint for it.
+This will enable us later on to fail over from primary to replica without having to reconfigure the Decodable Postgres connector.
+In a production scenario, this approach will make the fail-over an implementation detail managed by the team owning the database, not requiring coordination with the team running the data platform.
+The Docker Compose set-up from above contains the <a href="https://www.pgbouncer.org/">pgbouncer</a> proxy for this purpose.</p>
+</div>
+<div class="paragraph">
+<p>In order to access the database on your machine from Decodable which is running in the cloud, we are going to use <a href="https://ngrok.com/">ngrok</a>, an API gateway service.
+Amongst other things, ngrok lets you expose non-public resources to the cloud, i.e.
+exactly what we need for this example.
+You may consider this approach also for connecting to an on-prem database in a production use case.</p>
+</div>
+<div class="paragraph">
+<p>The overall architecture looks like this:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/failover-slots-1.png" alt="failover slots 1"/>
+</div>
+<div class="title">Figure 1. Solution overview</div>
+</div>
+<div class="paragraph">
+<p>For the following steps, you’ll need to have these things:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A free Decodable account</p>
+</li>
+<li>
+<p>The Decodable CLI installed on your machine</p>
+</li>
+<li>
+<p>A free ngrok account</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The pgbouncer proxy is configured to connect to the primary Postgres host, and ngrok exposes a publicly accessible tunnel for connecting to pgbouncer.</p>
+</div>
+<div class="paragraph">
+<p>Decodable provides support for declaring your resources—connectors, SQL pipelines, etc.—in a declarative way.
+You describe the resources you’d like to have in a YAML file, and the Decodable platform will take care of materializing them in your account.
+The example project contains definitions for a Postgres CDC source connector, a Decodable secret with the database password to be used by the connector, and a stream, to which the connector will write its data:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+</pre></td><td class="code"><pre><span class="nn">---</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">secret</span>
+<span class="na">metadata</span><span class="pi">:</span>
+   <span class="na">name</span><span class="pi">:</span> <span class="s">inventorydb-password</span>
+   <span class="na">tags</span><span class="pi">:</span>
+       <span class="na">context</span><span class="pi">:</span> <span class="s">failover-slots-demo</span>
+<span class="na">spec_version</span><span class="pi">:</span> <span class="s">v1</span>
+<span class="na">spec</span><span class="pi">:</span>
+   <span class="na">value_literal</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">top-secret&#34;</span>
+<span class="nn">---</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">connection</span>
+<span class="na">metadata</span><span class="pi">:</span>
+   <span class="na">name</span><span class="pi">:</span> <span class="s">inventorydb-source</span>
+   <span class="na">tags</span><span class="pi">:</span>
+       <span class="na">context</span><span class="pi">:</span> <span class="s">failover-slots-demo</span>
+<span class="na">spec_version</span><span class="pi">:</span> <span class="s">v2</span>
+<span class="na">spec</span><span class="pi">:</span>
+   <span class="na">connector</span><span class="pi">:</span> <span class="s">postgres-cdc</span>
+   <span class="na">type</span><span class="pi">:</span> <span class="s">source</span>
+   <span class="na">stream_mappings</span><span class="pi">:</span>
+       <span class="pi">-</span> <span class="na">stream_name</span><span class="pi">:</span> <span class="s">inventorydb__inventory__customers</span>
+         <span class="na">external_resource_specifier</span><span class="pi">:</span>
+           <span class="na">database-name</span><span class="pi">:</span> <span class="s">inventorydb</span>
+           <span class="na">schema-name</span><span class="pi">:</span> <span class="s">inventory</span>
+           <span class="na">table-name</span><span class="pi">:</span> <span class="s">customers</span>
+   <span class="na">properties</span><span class="pi">:</span>
+       <span class="na">hostname</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">%DB_HOST%&#34;</span>
+       <span class="na">password</span><span class="pi">:</span> <span class="s">inventorydb-password</span>
+       <span class="na">port</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">%DB_PORT%&#34;</span>
+       <span class="na">database-name</span><span class="pi">:</span> <span class="s">inventorydb</span>
+       <span class="na">decoding.plugin.name</span><span class="pi">:</span> <span class="s">pgoutput</span>
+       <span class="na">username</span><span class="pi">:</span> <span class="s">user</span>
+<span class="nn">---</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">stream</span>
+<span class="na">metadata</span><span class="pi">:</span>
+   <span class="na">name</span><span class="pi">:</span> <span class="s">inventorydb__inventory__customers</span>
+   <span class="na">description</span><span class="pi">:</span> <span class="s">Automatically created stream for inventorydb.inventory.customers</span>
+   <span class="na">tags</span><span class="pi">:</span>
+       <span class="na">context</span><span class="pi">:</span> <span class="s">failover-slots-demo</span>
+<span class="na">spec_version</span><span class="pi">:</span> <span class="s">v1</span>
+<span class="na">spec</span><span class="pi">:</span>
+   <span class="na">schema_v2</span><span class="pi">:</span>
+       <span class="na">fields</span><span class="pi">:</span>
+           <span class="pi">-</span> <span class="na">kind</span><span class="pi">:</span> <span class="s">physical</span>
+             <span class="na">name</span><span class="pi">:</span> <span class="s">id</span>
+             <span class="na">type</span><span class="pi">:</span> <span class="s">INT NOT NULL</span>
+           <span class="pi">-</span> <span class="na">kind</span><span class="pi">:</span> <span class="s">physical</span>
+             <span class="na">name</span><span class="pi">:</span> <span class="s">first_name</span>
+             <span class="na">type</span><span class="pi">:</span> <span class="s">VARCHAR(255)</span>
+           <span class="pi">-</span> <span class="na">kind</span><span class="pi">:</span> <span class="s">physical</span>
+             <span class="na">name</span><span class="pi">:</span> <span class="s">last_name</span>
+             <span class="na">type</span><span class="pi">:</span> <span class="s">VARCHAR(255)</span>
+           <span class="pi">-</span> <span class="na">kind</span><span class="pi">:</span> <span class="s">physical</span>
+             <span class="na">name</span><span class="pi">:</span> <span class="s">email</span>
+             <span class="na">type</span><span class="pi">:</span> <span class="s">VARCHAR(255)</span>
+           <span class="pi">-</span> <span class="na">kind</span><span class="pi">:</span> <span class="s">physical</span>
+             <span class="na">name</span><span class="pi">:</span> <span class="s">is_test_account</span>
+             <span class="na">type</span><span class="pi">:</span> <span class="s">BOOLEAN</span>
+       <span class="na">constraints</span><span class="pi">:</span>
+           <span class="na">primary_key</span><span class="pi">:</span>
+               <span class="pi">-</span> <span class="s">id</span>
+   <span class="na">type</span><span class="pi">:</span> <span class="s">CHANGE</span>
+   <span class="na">properties</span><span class="pi">:</span>
+       <span class="na">partition.count</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">2&#34;</span>
+       <span class="na">compaction.enable</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">false&#34;</span>
+       <span class="na">properties.compression.type</span><span class="pi">:</span> <span class="s">zstd</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>ngrok creates a tunnel for publicly exposing the local Postgres instance using a random host name and port.
+With the help of <em>httpie</em> and <em>jq</em>, we can retrieve the public endpoint of the tunnel from the local ngrok REST API (alternatively, there’s also a UI running on <a href="http://localhost:4040/">http://localhost:4040/</a>), allowing us to propagate these values to the resource definition via sed before applying the same using the Decodable CLI ( the special file name - indicates to read from stdin rather from a given file):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+</pre></td><td class="code"><pre><span class="nv">$ </span><span class="nb">sed</span> <span class="nt">-e</span> s/%DB_HOST%/<span class="si">$(</span>http localhost:4040/api/tunnels | jq <span class="nt">-r</span> <span class="s1">&#39;.tunnels[] | select(.name==&#34;pgbouncer&#34;) | .public_url | sub(&#34;tcp://&#34;; &#34;&#34;) | sub(&#34;:.*&#34;; &#34;&#34;) &#39;</span><span class="si">)</span>/g <span class="se">\</span>
+<span class="nt">-e</span> s/%DB_PORT%/<span class="sb">`</span>http localhost:4040/api/tunnels | jq <span class="nt">-r</span> <span class="s1">&#39;.tunnels[] | select(.name==&#34;pgbouncer&#34;) | .public_url | sub(&#34;tcp://&#34;; &#34;&#34;) | sub(&#34;.*:&#34;; &#34;&#34;) &#39;</span><span class="sb">`</span>/g <span class="se">\</span>
+decodable-resources.yaml | <span class="se">\</span>
+decodable apply -
+
+<span class="nt">---</span>
+kind: secret
+name: inventorydb-password
+<span class="nb">id</span>: 8fc44565
+result: created
+<span class="nt">---</span>
+kind: connection
+name: inventorydb-source
+<span class="nb">id</span>: <span class="s2">&#34;62943949&#34;</span>
+result: created
+<span class="nt">---</span>
+kind: stream
+name: inventorydb__inventory__customers
+<span class="nb">id</span>: <span class="s2">&#34;92523911&#34;</span>
+result: created
+• Wrote plaintext values <span class="k">for </span>secret IDs: <span class="o">[</span>8fc44565]
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>At this point, all the resources have been created in your Decodable account, but the Postgres source connector is not running yet.
+Before we can start it (&#34;activate&#34; in Decodable terminology), we need to create the replication slot in the database, configuring it as a failover slot.
+For the Decodable Postgres CDC connector to pick up the slot, it must have the name <code>decodable_&lt;connection-id&gt;</code>.
+To obtain the connection id, refer to the output of the <code>decodable apply</code> command above, or retrieve it using <code>decodable query</code> like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="nv">$ </span>decodable query <span class="nt">--name</span> <span class="s2">&#34;inventorydb-source&#34;</span> <span class="nt">--kind</span> connection <span class="nt">--keep-ids</span> | yq .metadata.id
+
+62943949
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the primary Postgres instance, create the replication slot, configuring it as a failover slot:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>user@primary:inventorydb&gt; SELECT <span class="k">*</span> FROM pg_create_logical_replication_slot<span class="o">(</span><span class="s1">&#39;decodable_&#39;</span>, <span class="s1">&#39;pgoutput&#39;</span>, <span class="nb">false</span>, <span class="nb">false</span>, <span class="nb">true</span><span class="o">)</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Next, activate the connector:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre><span class="nv">$ </span>decodable connection activate <span class="si">$(</span>decodable query <span class="nt">--name</span> <span class="s2">&#34;inventorydb-source&#34;</span> <span class="nt">--kind</span> connection <span class="nt">--keep-ids</span> | yq .metadata.id<span class="si">)</span>
+
+inventorydb-source
+  <span class="nb">id                       </span>62943949
+  description              -
+  connector                postgres-cdc
+  <span class="nb">type                     source</span>
+  ...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Upon its first activation, the connector will create an initial snapshot of the data in the customers table and then read any subsequent data changes incrementally via the replication slot we’ve created.
+To take a look at the data head over to the Decodable web UI in your browser and go to the &#34;Streams&#34; view.
+Select the <code>inventorydb<em>inventory</em>customers</code> stream and go to the &#34;Preview&#34; tab where you should see the data from the snapshot.
+Do a few data changes in the Postgres session on the primary node:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre>user@primary:inventorydb&gt; UPDATE inventory.customers SET <span class="nv">first_name</span><span class="o">=</span><span class="s1">&#39;Saundra&#39;</span> where <span class="nb">id</span> <span class="o">=</span> 1001<span class="p">;</span>
+user@primary:inventorydb&gt; UPDATE inventory.customers SET <span class="nv">first_name</span><span class="o">=</span><span class="s1">&#39;Samantha&#39;</span> where <span class="nb">id</span> <span class="o">=</span> 1001<span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Shortly thereafter, these updates will be reflected in the stream preview as well:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/failover-slots-2.png" alt="failover slots 2"/>
+</div>
+<div class="title">Figure 2. Postgres data change events in the Decodable stream preview</div>
+</div>
+<div class="paragraph">
+<p>Now let’s simulate a failover from primary to replica server and see how the failover of the replication slot is handled.
+Stop the primary Postgres node:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>docker compose stop postgres_primary
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Go to the database session on the replica and promote it to the primary:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>user@replica:inventorydb&gt; <span class="k">select </span>pg_promote<span class="o">()</span><span class="p">;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>At this point, pgbouncer still points to the previous, now defunct primary server.
+Change its configuration in the Docker Compose file so it forwards to the new primary:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre>   pgbouncer:
+     image: edoburu/pgbouncer:latest
+     environment:
+-      - <span class="nv">DB_HOST</span><span class="o">=</span>postgres_primary
++      - <span class="nv">DB_HOST</span><span class="o">=</span>postgres_replica
+       - <span class="nv">DB_PORT</span><span class="o">=</span>5432
+       - <span class="nv">DB_USER</span><span class="o">=</span>user
+       - <span class="nv">DB_PASSWORD</span><span class="o">=</span>top-secret
+       - <span class="nv">ADMIN_USERS</span><span class="o">=</span>postgres,admin
+       - <span class="nv">AUTH_TYPE</span><span class="o">=</span>scram-sha-256
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Stop and restart pgbouncer (other proxies such as <a href="https://github.com/postgresml/pgcat">pgcat</a> are also be able to reload updated configuration on the fly):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre><span class="nv">$ </span>docker compose stop pgbouncer
+<span class="nv">$ </span>docker compose up <span class="nt">-d</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you go back to the Decodable web UI and take a look at the <code>inventorydb_source</code> connection, it should be in the &#34;Retrying&#34; state at this point, as it lost the connection to the previous primary (via the proxy).
+After a little while, it will be in &#34;Running&#34; state again, as the proxy now routes to the new primary server.
+The connector now consumes from the replication slot on that new primary server, as you can confirm by doing a few more data changes on that node and examining the data in the Decodable stream preview also by verifying that the replication slot now is in Active state:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre>user@replica:inventorydb&gt; INSERT INTO inventory.customers VALUES <span class="o">(</span>default, <span class="s1">&#39;Rudy&#39;</span>, <span class="s1">&#39;Replica&#39;</span>, <span class="s1">&#39;rudy@example.com&#39;</span>, FALSE<span class="o">)</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you retrieve the state of the replication state again, using the same query as above, you’ll also see that it is marked as <code>active</code> now:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>+----------+--------------------+-----------+--------+----------+-------------+----------+--------+---------------------+
+| node     | slot_name          | slot_type | active | plugin   | database    | failover | synced | confirmed_flush_lsn |
+|----------+--------------------+-----------+--------+----------+-------------+----------+--------+---------------------|
+| stand-by | decodable_62943949 | logical   | False  | pgoutput | inventorydb | True     | True   | 0/304E2E0           |
++----------+--------------------+-----------+--------+----------+-------------+----------+--------+---------------------+
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_wrapping_up">Wrapping Up<a class="anchor" href="#_wrapping_up"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Failover slots are an essential part to using Postgres and logical replication in HA scenarios.
+Added in Postgres 17, they allow logical replication clients such as Debezium to seamlessly continue streaming change events after a database fail-over, ensuring no events are lost in the process.
+This renders previous solutions such as manually synchronizing slots on a standby server (as supported since Postgres 16) or external tools such as <a href="https://github.com/EnterpriseDB/pg_failover_slots">pg_failover_slots</a> obsolete (although the latter still comes in handy if you are on an older Postgres version and can’t upgrade to 17 just yet).</p>
+</div>
+<div class="paragraph">
+<p>To create a failover slot, the new failover parameter must be set to true when calling <code>pg_create_logical_replication_slot()</code>.
+Debezium does not do this yet at the moment, but I am planning to implement the required change in the next few weeks.
+Keep an eye on <a href="https://issues.redhat.com/browse/DBZ-8412">DBZ-8412</a> to track the progress there.
+In the meantime, you can create the replication slot manually, as described above.
+To learn more about Postgres failover slots, check out the blog posts by <a href="https://bdrouvot.github.io/2024/03/16/postgres-17-highlight-logical-replication-slots-synchronization/">Bertrand Drouvot</a> and <a href="http://amitkapila16.blogspot.com/2024/10/failover-slots-in-postgresql-17.html">Amit Kapila</a>.
+RDS users should refer to the <a href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Appendix.PostgreSQL.CommonDBATasks.pglogical.slot.synchronization.html">AWS documentation</a> on managing failover slots.</p>
+</div>
+<div class="paragraph">
+<p>If you’d like to give it a try yourself, including the managed Postgres CDC connector on Decodable, you can find the <a href="https://github.com/decodableco/examples/tree/main/failover-slots">complete source code</a> for this blog post in the Decodable examples repository on GitHub.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			
+			
+			
+			<div class="related-posts">
+				<h3>Read Next</h3>
+				<ul>
+					
+					<li><a href="/blog/revisiting-the-outbox-pattern/">Revisiting the Outbox Pattern</a> <span class="meta">Oct 31, 2024</span></li>
+					
+					<li><a href="/blog/mastering-postgres-replication-slots/">Mastering Postgres Replication Slots: Preventing WAL Bloat and Other Production Issues</a> <span class="meta">Jul 8, 2025</span></li>
+					
+					<li><a href="/blog/backfilling-postgres-toast-columns-debezium-change-events/">Backfilling Postgres TOAST Columns in Debezium Data Change Events</a> <span class="meta">May 26, 2025</span></li>
+					
+				</ul>
+			</div>
+			
+			
+		</div>
+
+		<div class="post-footer">
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<div class="header-image-container" style="flex-shrink: 0;">
+					<img class="footer-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+				</div>
+				<p style="margin: 0;">Gunnar Morling is an open-source software engineer in the Java and data streaming space. He currently works as a Technologist for Confluent. In his past role at Decodable he focused on developer outreach and helped them build their stream processing platform based on Apache Flink. Prior to that, he spent ten years at Red Hat, where he led the Debezium project, a platform for change data capture.</p>
+			</div>
+		</div>
+
+		
+		
+		<div class="post-discussions">
+			<p>Comment below, or join the discussion on
+			<a href="https://hn.algolia.com/?query=morling.dev/blog/failover-replication-slots-with-postgres-17/">Hacker News</a>,
+			<a href="https://lobste.rs/search?q=domain:morling.dev+title:%22Failover%20Replication%20Slots%20with%20Postgres%2017%22&what=stories">Lobsters</a>, and
+			<a href="https://www.reddit.com/search/?q=url:morling.dev/blog/failover-replication-slots-with-postgres-17/">Reddit</a>.
+			</p>
+		</div>
+		<div id="disqus_thread"></div>
+
+<script>
+  
+  window.addEventListener('load', function() {
+    
+    setTimeout(function() {
+      const commentsContainer = document.getElementById('disqus_thread');
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', 'gunnarmorling/discussions.morling.dev');
+      script.setAttribute('data-repo-id', 'R_kgDOGXzqNQ');
+      script.setAttribute('data-category', 'Announcements');
+      script.setAttribute('data-category-id', 'DIC_kwDOGXzqNc4B_2Pq');
+      script.setAttribute('data-mapping', 'title');
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-theme', 'light');
+      script.setAttribute('data-lang', 'en');
+      script.setAttribute('crossorigin', 'anonymous');
+      script.async = true;
+      commentsContainer.appendChild(script);
+    }, 100);
+  });
+</script>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
