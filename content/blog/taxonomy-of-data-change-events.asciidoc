@@ -20,7 +20,7 @@ endif::[]
 _This post originally appeared on the link:https://www.decodable.co/blog/taxonomy-of-data-change-events[Decodable blog]._
 
 Data change events are at the core of Change Data Capture (CDC) solutions such as link:https://debezium.io/[Debezium].
-They describe the changes made to a specific record in a database and allow event consumers to take action based on this information, enabling a wide range of link:https://www.decodable.co/blog/seven-ways-to-put-cdc-to-work[use cases], such as real-time ETL (by propagating the updated data into downstream data stores such as data warehouses, analytics databases, or fulltext search indexes), microservices data exchange, or audit logging.
+They describe the changes made to a specific record in a database and allow event consumers to take action based on this information, enabling a wide range of link:/blog/seven-ways-to-put-cdc-to-work[use cases], such as real-time ETL (by propagating the updated data into downstream data stores such as data warehouses, analytics databases, or fulltext search indexes), microservices data exchange, or audit logging.
 
 <!--more-->
 What is contained within a change event, really?
@@ -80,8 +80,10 @@ Whether the old row image actually is present in insert and update events also d
 Typically, the retention of old row images must be explicitly enabled, as it comes at the cost of additional disk space consumption by the database system.
 As an example, in order to emit the old row version in change events with Postgres, the table's link:https://www.postgresql.org/docs/current/sql-altertable.html#SQL-ALTERTABLE-REPLICA-IDENTITY[replica identity] must be set to `FULL`.
 
+[NOTE]
+====
 *Data Change Events and Apache Kafka:* When transferring data change events via partitioned systems such as Apache Kafka, you also need to define a key for your messages. It defines which partition of a change event topic a record will be sent to, ensuring correct ordering of all the records with the same key. For data change events, the key should be derived from the primary key of the represented record in the source data store. That way, all change events for one record will go into one and the same partition of the corresponding change event topic, and consumers will receive them in the exact same order as they occurred in the source database.
-
+====
 
 == Delta Events
 Let's look at delta events, or partial change events, next.
@@ -134,6 +136,8 @@ You'd put this stream processor between your event source and sink, and it would
 To do so, it would utilize an internal state store (such as link:https://rocksdb.org/[RocksDB], in case of Flink).
 When processing an insert change event for a record, this event would be put into the state store, before emitting it downstream.
 
+image::taxonomy-of-data-change-events-1.png[]
+
 Later on, when processing update events, the stream processor can obtain any attribute values absent from incoming partial events from the state store, thus exposing only ever full events to the downstream event consumers.
 While a similar read-before-write approach could also be implemented within sink data stores, doing it in a stream processing pipeline allows to build the re-hydration logic once and then let multiple sinks benefit from it.
 
@@ -172,6 +176,8 @@ The query will return the _current_ state of the row, not the one which was vali
 If there are multiple changes to the row in close timely proximity, you may not be able to extract all the intermediary versions of that record.
 The following visual illustrates this situation:
 
+image::taxonomy-of-data-change-events-2.png[]
+
 At time `t1`, the record with id 4 is inserted into the `customers` table, and the corresponding id-only change event is emitted.
 Shortly thereafter, the record gets updated at time `t2`, changing the first name of the customer from "Jazmine" to "Melissa".
 At time `t3`, the change event for the original insert operation gets processed, issuing a re-select of the record from the database.
@@ -179,8 +185,11 @@ As the update already has been committed at this point, the stream processor wil
 
 It may even be possible that the record has been deleted since then, which means that its state cannot be reconstructed by querying for it.
 
+[NOTE]
+====
 An exception are databases which allow for point-in-time queries, provided the change event contains an unambiguous timestamp or log position describing when the event occurred.
 In that case, you could use that information to retrieve the right version, for instance using an `AS OF SCN` query in Oracle.
+====
 
 Events re-hydrated that way can still be very useful, for instance for propagating data changes into a full-text search engine; in general, you'll be fine there with just having the latest version of a record in the index, and you don't need to apply all intermediary updates occurring in a short period of time.
 On the other hand, if you're using CDC for tracking the state transitions of a purchase order and triggering corresponding downstream actions, or for maintaining an audit log, then it is vital to keep track of each and every data change and this technique would not be useful.
@@ -273,9 +282,11 @@ As a consequence, when there is a high volume of updates, a topic with partial e
 
 The following table provides an overview of the three change event types and their specific properties:
 
+image::taxonomy-of-data-change-events-3.png[]
+
 As the comparison shows, each of the different event types has its individual characteristics.
 Which one to use depends not only on the capabilities of the systems you're working with, but also—as always—on the specific use case and its requirements.
 
 Real-time stream processing with solutions such as Apache Flink, is a powerful companion to CDC tools like Debezium, allowing you to transform and amend change event streams if and when needed.
 Examples include the expansion of id-only change events—by selecting the entire row state from the source database—as well as the hydration of full events from delta change events by using a state store.
-But you also can employ stream processing to great effect for other CDC-related tasks, for instance for establishing stable data contracts for your change events streams, as I've discussed in link:https://www.decodable.co/blog/change-data-capture-breaks-encapsulation-does-it-though[another blog post] not too long ago.
+But you also can employ stream processing to great effect for other CDC-related tasks, for instance for establishing stable data contracts for your change events streams, as I've discussed in link:/blog/change-data-capture-breaks-encapsulation-does-it-though[another blog post] not too long ago.

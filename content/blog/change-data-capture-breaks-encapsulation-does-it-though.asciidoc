@@ -20,19 +20,19 @@ endif::[]
 
 _This post originally appeared on the link:https://www.decodable.co/blog/change-data-capture-breaks-encapsulation-does-it-though[Decodable blog]._
 
-Having worked on Debezium—an open-source platform for Change Data Capture (CDC)—for several years, one concern I've heard repeatedly is this: aren't you breaking the encapsulation of your application when you expose change event feeds directly from your database?
+Having worked on Debezium--an open-source platform for Change Data Capture (CDC)--for several years, one concern I've heard repeatedly is this: aren't you breaking the encapsulation of your application when you expose change event feeds directly from your database?
 After all, CDC exposes your internal persistent data model to the outside world, which may have unintended consequences, e.g.
 in terms of data exposure but also when it comes to changes to the schema of your data, which may break downstream consumers.
 
 <!--more-->
-In this blog post I am going to dive into this problem space, discuss when—and when not—CDC can break encapsulation, whether it matters, and explore strategies for avoiding these problems when it does.
+In this blog post I am going to dive into this problem space, discuss when--and when not--CDC can break encapsulation, whether it matters, and explore strategies for avoiding these problems when it does.
 
 
-== CDC—A Quick Primer
-With log-based change data capture—for instance, using link:https://debezium.io/[Debezium] —you can expose realtime change event streams for the tables of your database, sourced from the database's transaction log.
+== CDC--A Quick Primer
+With log-based change data capture--for instance, using link:https://debezium.io/[Debezium]--you can expose realtime change event streams for the tables of your database, sourced from the database's transaction log.
 For each executed `INSERT`, `UPDATE`, and `DELETE`, an event is appended to the log, from where it is captured by the CDC tool and propagated to consumers, usually through data streaming platforms such as Apache Kafka or Amazon Kinesis.
 
-These event streams enable a link:https://www.decodable.co/blog/seven-ways-to-put-cdc-to-work[large variety of use cases], such as low-latency data feeds for analytical data stores, cache updates, full-text search indexes, and many more.
+These event streams enable a link:/blog/seven-ways-to-put-cdc-to-work[large variety of use cases], such as low-latency data feeds for analytical data stores, cache updates, full-text search indexes, and many more.
 While there are different alternatives for implementing CDC systems (for instance based on polling for changed rows, or using database triggers), log-based CDC is generally the link:https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/[most powerful and efficient approach] and should be preferred whenever possible.
 
 
@@ -50,10 +50,10 @@ The following implications of using using log-based CDC are typically at the cen
 
 Now, this perhaps sounds a bit scarier than it actually is!
 In order to understand whether there actually is a problem here or not, it helps to look at how and where your change event streams are consumed.
-Specifically, do change events permeate multiple link:https://martinfowler.com/bliki/BoundedContext.html[bounded contexts] (in terminology of link:https://en.wikipedia.org/wiki/Domain-driven_design[Domain-Driven Design])?_
-_Are they propagated across system (and team) boundaries, or not?
+Specifically, do change events permeate multiple link:https://martinfowler.com/bliki/BoundedContext.html[bounded contexts] (in terminology of link:https://en.wikipedia.org/wiki/Domain-driven_design[Domain-Driven Design])?
+Are they propagated across system (and team) boundaries, or not?
 
-If a change event stream is consumed within the same context as the source database itself—such as updating an in-memory cache managed by the application or service owning the database—then I would argue that there actually isn't much to be concerned about.
+If a change event stream is consumed within the same context as the source database itself--such as updating an in-memory cache managed by the application or service owning the database--then I would argue that there actually isn't much to be concerned about.
 You actually _want_ the data in the cache to match the original data.
 Similarly, if a change event stream is used for feeding a search index owned and managed by the same team also building the source application itself, aspects like schema changes can be coordinated by the team itself and applied to the database and index together.
 
@@ -66,7 +66,7 @@ Tying these kinds of external consumers to your own data model and its lifecycle
 
 == Entering Data Contracts
 So how do you mitigate these risks of using CDC between bounded contexts and/or teams?
-The solution is similar to what you'd do for exposing any other remote API—such as REST or gRPC—from your application: you have an API layer which is separate from the internal data model.
+The solution is similar to what you'd do for exposing any other remote API--such as REST or gRPC--from your application: you have an API layer which is separate from the internal data model.
 This layer exposes a service's functionality and data in exactly the way it's needed, evolving at its own pace and independently from changes you make to your internal model, with a strong notion of not breaking compatibility in mind.
 
 In databases, views have historically been a proven means of establishing module and system boundaries, for instance providing an explicit interface to traditional pull-based ETL tools.
@@ -92,11 +92,11 @@ Other contract elements may lend themselves to a textual representation, perhaps
 But also a more formal, machine-readable contract definition is possible, such as  in the form of YAML (_will this ever_ link:https://twitter.com/search?q=yaml%20(from:brunoborges)%20min_retweets:25&src=typed_query[stop] _?!_), as suggested by the link:https://datacontract.com/[Data Contracts specification].
 
 Regardless of how it's implemented, the development team building a service from whose database change event streams are exposed should also own any data contracts for these streams.
-That way, the contracts are part of that team's product—developed and maintained by that team, just as they would for any other APIs of the service.
+That way, the contracts are part of that team's product--developed and maintained by that team, just as they would for any other APIs of the service.
 
 
 == Implementation Approaches For Data Contracts
-Having established that explicitly designed data contracts are very useful, how can you go about implementing them—specifically event schemas and their evolution—for your CDC events?
+Having established that explicitly designed data contracts are very useful, how can you go about implementing them--specifically event schemas and their evolution--for your CDC events?
 In the following, I'd like to describe two approaches for doing so: the Outbox Pattern, and stream processing using something like Apache Flink.
 I'll also illustrate exactly how data contracts help you address some of the potential encapsulation risks identified earlier on.
 
@@ -110,7 +110,10 @@ an update to a customer record), and the insertion of the outbox event, must hap
 The contract of the outbox events is kept separated from the internal data model, allowing you to expose the data in exactly the way you want to expose it.
 For instance you could emit a single event for an entire aggregate root which is persisted in multiple tables in your internal model, as shown below:
 
-*Fig. 1: The outbox pattern with Debezium (click to enlarge)*But you may also decide to adjust the types of exposed fields, only expose a subset of all your data attributes—giving you the opportunity to omit any sensitive or implementation-specific attributes—and much more. Having a separate contract allows you to evolve it independently from your internal model, too. Say, you rename a column in one of your tables; it's a conscious decision then to also rename it in the schema of your outbox events (potentially requiring a new major version of the same), or keep it as is.
+.The outbox pattern with Debezium
+image::cdc-breaks-encapsulation-does-it-1.png[]
+
+But you may also decide to adjust the types of exposed fields, only expose a subset of all your data attributes--giving you the opportunity to omit any sensitive or implementation-specific attributes--and much more. Having a separate contract allows you to evolve it independently from your internal model, too. Say, you rename a column in one of your tables; it's a conscious decision then to also rename it in the schema of your outbox events (potentially requiring a new major version of the same), or keep it as is.
 
 Debezium comes with powerful support for implementing the Outbox Pattern.
 This includes a link:https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html[routing component] for propagating outbox events to specific topics in Kafka, based on configurable event metadata.
@@ -126,7 +129,7 @@ There is a potential performance impact (as you do another insert call in write 
 
 === Stream Processing
 As we saw above, when we implement data contracts using the Outbox Pattern, the application itself is responsible for forming and emitting the change events that adhere to the contract specified.
-But what if we can't—or don't want to, for whatever reason—change the application to do this?
+But what if we can't--or don't want to, for whatever reason--change the application to do this?
 The alternative is to use link:https://www.decodable.co/blog/stream-processing-an-overview[stream processing] to publish change event streams with explicit data contracts after the fact.
 The idea here is to take the unprocessed table-level change events from a CDC source, process and convert them as needed, and re-publish them as separate streams with defined data contracts.
 
@@ -136,7 +139,10 @@ With its link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/de
 
 The following image shows the overall approach, using Flink SQL to establish a public data contract for a table `customers` in a Postgres database:
 
-*Fig. 2: Stream processing pipeline with Apache Flink (click to enlarge)* link:https://github.com/ververica/flink-cdc-connectors[Flink CDC] is used to ingest the raw CDC feed into a Flink SQL table. The data is transformed and published to a Kafka topic which adheres to a stable data contract (specifically, the topic's schema represents the schema part of the contract). The source and sink connectors are represented as tables in Flink SQL; here's the definition of the source table, `customers`, using the `postgres-cdc` connector, which itself is based on top of the Debezium link:https://debezium.io/documentation/reference/stable/connectors/postgresql[connector for Postgres] (you can find the complete link:https://github.com/decodableco/examples/tree/main/cdc-data-contracts[source code] for this blog post in the link:https://github.com/decodableco/examples/[decodableco/examples] repository on GitHub):
+.Stream processing pipeline with Apache Flink
+image::cdc-breaks-encapsulation-does-it-2.png[]
+
+link:https://github.com/ververica/flink-cdc-connectors[Flink CDC] is used to ingest the raw CDC feed into a Flink SQL table. The data is transformed and published to a Kafka topic which adheres to a stable data contract (specifically, the topic's schema represents the schema part of the contract). The source and sink connectors are represented as tables in Flink SQL; here's the definition of the source table, `customers`, using the `postgres-cdc` connector, which itself is based on top of the Debezium link:https://debezium.io/documentation/reference/stable/connectors/postgresql[connector for Postgres] (you can find the complete link:https://github.com/decodableco/examples/tree/main/cdc-data-contracts[source code] for this blog post in the link:https://github.com/decodableco/examples/[decodableco/examples] repository on GitHub):
 
 
 [source,sql,linenums]
@@ -165,7 +171,7 @@ CREATE TABLE customers (
   'decoding.plugin.name' = 'pgoutput'
 );
 ----
-*Listing 1: Configuration of the Postgres source connector.*
+_Listing 1: Configuration of the Postgres source connector_
 
 For publishing the change events into a Kafka topic `customers`, another table, `customers_public`, is created which looks like this:
 
@@ -190,7 +196,7 @@ WITH (
   'value.format' = 'json'
 );
 ----
-*Listing 2: Configuration of the Kafka sink connector.*
+_Listing 2: Configuration of the Kafka sink connector_
 
 Note that the `upsert-kafka` connector must be used (i.e.
 not the `kafka` one), as I've discussed recently in link:https://www.youtube.com/watch?v=1ezf3OyLz3w[this Data Streaming Quick Tip episode].
@@ -216,7 +222,7 @@ INSERT INTO customers_public
     DATE_FORMAT(registered, 'dd-MM-yyyy')
   FROM customers;
 ----
-*Listing 3: Flink SQL job for transforming the source table into the sink table.*
+_Listing 3: Flink SQL job for transforming the source table into the sink table_
 
 When submitting this query, a job will be deployed onto your Flink cluster which executes the query in a continuous fashion, propagating any changes from the source to the destination, whenever there is a row inserted, updated, or deleted in the source table.
 The following transformations are applied:
@@ -241,17 +247,17 @@ There is an interesting tension here between defining contracts which are widely
 contracts which are optimized for specific consumers.
 A useful guiding principle for resolving this tension could be "As general as possible, as specific as needed".
 This means that, for instance, you would include the widest set of fields possible in a change stream's data contract by default, only keeping sensitive data exclusive to streams for specific privileged consumers.
-Other kinds of filtering on the other hand—such as filtering out any backfilling events—would be the responsibility of individual clients, based on their specific requirements.
+Other kinds of filtering on the other hand--such as filtering out any backfilling events--would be the responsibility of individual clients, based on their specific requirements.
 
 As far as filtering specific rows or columns is concerned, you have different options.
 You could ingest everything into Flink but only publish a subset, as shown in the example above.
 This would be useful when you want to have the option to publish multiple variants of a data contract, as just discussed.
 But you also could decide to omit specific sensitive fields in the Flink source table definition, thus making sure they never can be part of any published data contracts.
 Depending on your database, you may even exclude specific data from the ingested change stream altogether.
-As an example, Postgres supports the definition of column lists and link:https://www.decodable.co/blog/postgres-15-logical-decoding-row-filters-with-debezium[row filters], providing fine-grained control over the contents of any logical replication streams, thus helping to reduce network traffic and any potential cost associated with it.
+As an example, Postgres supports the definition of column lists and link:/blog/postgres-15-logical-decoding-row-filters-with-debezium[row filters], providing fine-grained control over the contents of any logical replication streams, thus helping to reduce network traffic and any potential cost associated with it.
 
 
-== Streaming Data Contracts—Beyond the Basics
+== Streaming Data Contracts--Beyond the Basics
 Once you have embarked onto your journey of creating data contracts with stateful stream processing, the sky's the limit, and you have all kinds of interesting related capabilities at your disposal.
 
 So let's discuss how to expose a complexly structured change event stream, derived from two tables in the source database.
@@ -262,7 +268,10 @@ A stream processing job could then be used to join the two tables, emitting the 
 That way, instead of having to deal with two table-level streams, consumers would be able to ingest all the data pertaining to a customer from one single stream, independent from how that data is organized in the source database.
 To make things a bit more interesting, let's emit one of the numbers (the customer's preferred one) via its own field `phone`, and all the others via an array-typed field `further_phones`:
 
-*Fig. 3: Joining two change event streams (click to enlarge)*A Flink SQL link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/functions/udfs/[user-defined function] (UDF) for aggregating the elements of the "many" side of the join into an array in a type-safe way can come in handy here, something I've recently explored in link:https://www.youtube.com/watch?v=ICJ7-YyaC-4[this video]. Using the `ARRAY_AGGR()` function discussed in that quick tip, the two source tables could be joined like this:
+.Joining two change event streams
+image::cdc-breaks-encapsulation-does-it-3.png[]
+
+A Flink SQL link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/functions/udfs/[user-defined function] (UDF) for aggregating the elements of the "many" side of the join into an array in a type-safe way can come in handy here, something I've recently explored in link:https://www.youtube.com/watch?v=ICJ7-YyaC-4[this video]. Using the `ARRAY_AGGR()` function discussed in that quick tip, the two source tables could be joined like this:
 
 
 [source,sql,linenums]
@@ -313,19 +322,23 @@ It's only a question of time until new columns are added to your application's d
 With explicitly defined data contracts in place, you have taken the first step for making sure that any changes to your internal data schema do not directly affect the consumers of your change event streams.
 
 From a procedural perspective, it's important that the team owning and publishing a data contract can apply changes to the contract without having to synchronize with any event consumers, who perhaps may not even be known to the upstream team.
-At the same time, any changes to the contract should not break existing consumers—after a schema change they should be able to continue to process a change event stream based on the previous schema known to them.
+At the same time, any changes to the contract should not break existing consumers--after a schema change they should be able to continue to process a change event stream based on the previous schema known to them.
 Of course, they will need to be adjusted eventually, so as to take advantage of the capabilities of a new contract version, such as any added fields.
 The guarantees around duration of support for particular versions of a contract is something that would be built into them along with the other metadata previously discussed such as SLAs.
 
 This means data contracts for change event streams should be evolved in a link:https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#forward-compatibility[forward compatible] way, which allows for the addition of new fields and the removal of optional fields, whereas existing non-optional fields may not be removed.
 
-*Fig. 4: Producer-driven evolution of a schema (click to enlarge)*To learn more about the guidelines for schema evolution, I highly recommend referring to Gwen Shapira's presentation link:https://www.infoq.com/presentations/contracts-streaming-microservices/["Streaming Microservices: Contracts & Compatibility"], where she discusses this topic around 16:50 min. A schema registry should be used in order to ensure that any changes to a data contract adhere to these requirements. Before rolling out any data contract changes to production, a CI/CD pipeline would validate any schema changes using the compatibility rules configured in the registry, as for instance described in link:https://dataproducts.substack.com/p/an-engineers-guide-to-data-contracts[this excellent blog post] by Chad Sanderson and Adrian Kreuziger. Any contract changes which would actually break existing consumers, would fail the build process and thus be prevented from being deployed.
+.Producer-driven evolution of a schema
+image::cdc-breaks-encapsulation-does-it-4.png[]
 
-Note that evolving data contracts in a forward-compatible manner means that consumers cannot replay any events from the beginning using only the latest schema version.
+To learn more about the guidelines for schema evolution, I highly recommend referring to Gwen Shapira's presentation link:https://www.infoq.com/presentations/contracts-streaming-microservices/["Streaming Microservices: Contracts & Compatibility"], where she discusses this topic around 16:50 min. A schema registry should be used in order to ensure that any changes to a data contract adhere to these requirements. Before rolling out any data contract changes to production, a CI/CD pipeline would validate any schema changes using the compatibility rules configured in the registry, as for instance described in link:https://dataproducts.substack.com/p/an-engineers-guide-to-data-contracts[this excellent blog post] by Chad Sanderson and Adrian Kreuziger. Any contract changes which would actually break existing consumers, would fail the build process and thus be prevented from being deployed.
+
+[NOTE]
+====
+Evolving data contracts in a forward-compatible manner means that consumers cannot replay any events from the beginning using only the latest schema version.
 This would fail when, for instance, re-processing an event lacking a non-optional field added in a later schema version.
 Instead, each event should be processed with the schema version valid at the time when the event was originally created.
-
-
+====
 
 Now, how can stream processing help you with managing these kinds of data contract changes?
 As an example, consider the case of renaming a column within a source table.
@@ -338,9 +351,12 @@ Different options for solving the issue exist:
 * *Keep the existing stream schema*, i.e. don't change the field name in the public data contract
 
 In every case, stream processing can be used to apply the required transformations between the source events (containing either old or new field name, depending on the specific stream position) and the published counterparts(s).
-Let's see how the last option—completely shielding consumers from that name change—can be implemented with Flink SQL.
+Let's see how the last option--completely shielding consumers from that name change--can be implemented with Flink SQL.
 
-*Fig. 5: Renaming a column in the source table (click to enlarge)*The key idea is to use Flink's link:https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/savepoints/[savepoint mechanism] for pausing the job, while applying the required schema changes to the database and the Flink job, making sure the job maps both old and new incoming field names to the existing name in the public contract. The exact sequence of events would be this:
+.Renaming a column in the source table
+image::cdc-breaks-encapsulation-does-it-5.png[]
+
+The key idea is to use Flink's link:https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/savepoints/[savepoint mechanism] for pausing the job, while applying the required schema changes to the database and the Flink job, making sure the job maps both old and new incoming field names to the existing name in the public contract. The exact sequence of events would be this:
 
 . In Flink, stop the job with a savepoint: `STOP JOB '<job id>' WITH SAVEPOINT;` +
 This makes sure the job, after restarting, will continue to process the source change stream from the exact position where it left off, not missing any changes which happened in between.
@@ -374,7 +390,7 @@ Therefore, the development team owning the database schema should also be in cha
 Beyond renaming columns, also other schema changes can be handled with a stream processing engine.
 New columns could be added just like above.
 For dropped `NOT NULL` columns, the streaming job could omit a sentinel value such as "n/a" to ensure compatibility with existing consumers.
-Also cardinality changes—for instance, going from a single `phone` column within the `customers` table to a separate table with multiple phone numbers per customer, as shown above—are possible by aggregating all the values into a new array-typed field in the public data stream.
+Also cardinality changes--for instance, going from a single `phone` column within the `customers` table to a separate table with multiple phone numbers per customer, as shown above--are possible by aggregating all the values into a new array-typed field in the public data stream.
 
 
 == Summary
