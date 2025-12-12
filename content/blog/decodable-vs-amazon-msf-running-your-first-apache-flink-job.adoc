@@ -18,7 +18,7 @@ endif::[]
 
 _This post originally appeared on the link:https://www.decodable.co/blog/your-first-apache-flink-job[Decodable blog]._
 
-A question often brought up by potential Decodable customers as they are exploring the product is how our service for building real-time ETL applications–which is based on Apache Flink–differs from other offerings in the space, and in particular link:https://aws.amazon.com/managed-service-apache-flink/[Amazon's Managed Service for Apache Flink] (MSF).
+A question often brought up by potential Decodable customers as they are exploring the product is how our service for building real-time ETL applications--which is based on Apache Flink--differs from other offerings in the space, and in particular link:https://aws.amazon.com/managed-service-apache-flink/[Amazon's Managed Service for Apache Flink] (MSF).
 There are similarities, but also key differences, so this is more than a fair question.
 In this blog post, my intention isn't to judge or provide a conclusion.
 I'll provide some guidance on this topic, helping folks make an informed decision about which of the offerings best suits their specific needs.
@@ -89,7 +89,7 @@ Then again, of course, my perception may be biased—Decodable is the platform I
 == Connectors, SQL, and Beyond
 Taking a step back, the fundamental difference between the two services lies in their underlying design philosophy, and to which extent users typically make direct use of the Flink APis to begin with.
 As such, the two platforms actually are hard to compare, as they are positioned at very different abstraction levels.
-With MSF–apart from its notebook-based experience which primarily is geared towards interactive and exploratory use cases–what you get is essentially a provisioned Flink cluster onto which you can deploy your hand-written Flink jobs, whereas Decodable provides a complete platform for stream processing as a service, depicted below:
+With MSF--apart from its notebook-based experience which primarily is geared towards interactive and exploratory use cases--what you get is essentially a provisioned Flink cluster onto which you can deploy your hand-written Flink jobs, whereas Decodable provides a complete platform for stream processing as a service, depicted below:
 
 
 
@@ -97,13 +97,13 @@ With MSF–apart from its notebook-based experience which primarily is geared to
 image::decodable-vs-msf-4.webp[]
 _Fig.4: The Decodable Platform_Users have two fundamental ways of working with the Decodable platform: not only can they run their own Flink jobs, but they can also set up data pipelines using link:https://docs.decodable.co/connections.html[fully-managed connectors] and processing jobs link:https://docs.decodable.co/pipelines/create-a-pipeline.html[written in SQL] _._ Connectors exist for a variety of data sources and sinks, such as databases (using change data capture based on link:https://debezium.io/[Debezium] ), Apache Kafka, Apache Pulsar, Kinesis, Apache Pinot, Snowflake, S3, Elasticsearch, and link:https://docs.decodable.co/connections.html[many others].
 
-For data processing–such as filtering, mapping, link:https://docs.decodable.co/pipelines/joins.html[joining], aggregating, link:https://docs.decodable.co/pipelines/windowing.html[windowing], etc.–SQL is a first-class citizen of the Decodable pipeline, coming with rich editing capabilities, live results preview, reprocessing of earlier data, and much more.
+For data processing--such as filtering, mapping, link:https://docs.decodable.co/pipelines/joins.html[joining], aggregating, link:https://docs.decodable.co/pipelines/windowing.html[windowing], etc.--SQL is a first-class citizen of the Decodable pipeline, coming with rich editing capabilities, live results preview, reprocessing of earlier data, and much more.
 
 This means that for all these use cases you don't need to bother with running connectors or SQL queries with Flink's table API, building JARs, and uploading them as Flink jobs.
-Just edit and save the SQL–and that's it.
+Just edit and save the SQL--and that's it.
 While the web UI comes in handy for developing new streaming jobs in an interactive way, the Decodable CLI and API, together with link:https://docs.decodable.co/declarative/overview.html[declarative resources], can be used when moving jobs to production, typically by managing pipelines as code within git and deploying them fully automated via a CI/CD process.
 
-So while you absolutely can bring any existing Flink job and run it on Decodable, many users will opt for implementing custom Flink jobs only where it's actually needed, for instance in cases where SQL isn't flexible enough–say you want to enrich your data through invocations of an external REST API–or if you'd like to use a connector which isn't available as a fully-managed connector on the platform just yet.
+So while you absolutely can bring any existing Flink job and run it on Decodable, many users will opt for implementing custom Flink jobs only where it's actually needed, for instance in cases where SQL isn't flexible enough--say you want to enrich your data through invocations of an external REST API--or if you'd like to use a connector which isn't available as a fully-managed connector on the platform just yet.
 The advantage here is, even in these cases you don't have to go all in and completely recreate _everything_ in your own Flink job.
 Thanks to the link:https://docs.decodable.co/api/pipeline-sdk.html[Decodable Pipeline SDK], it's easy to integrate managed connectors and SQL pipelines with your own custom jobs, allowing you to plug in bespoke Flink jobs exactly for those parts of a data flow where they prove to be the best option.
 Here is an example of how this could look in practice:
@@ -138,4 +138,4 @@ A fantastic getting started experience is one of our key design goals, and we ar
 
 Needless to say, in the end it is you who has to decide which stream processing platform to adopt, based on your specific context and requirements.
 We'd very much like to invite you to get your feet wet and experience how simple it can be with Decodable.
-link:https://app.decodable.co/-/accounts/create[Sign up] –it's free–and get your first jobs running within minutes, today!
+link:https://app.decodable.co/-/accounts/create[Sign up] --it's free--and get your first jobs running within minutes, today!
