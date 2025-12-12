@@ -12,8 +12,7 @@
 	</script>
 
 	<meta charset="utf-8" />
-	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Mastering Postgres Replication Slots: Preventing WAL Bloat and Other Production Issues - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta property="og:url" content="https://www.morling.dev/blog/mastering-postgres-replication-slots/">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Mastering Postgres Replication Slots: Preventing WAL Bloat and Other Production Issues - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1"><meta property="og:url" content="https://www.morling.dev/blog/mastering-postgres-replication-slots/">
   <meta property="og:site_name" content="Gunnar Morling">
   <meta property="og:title" content="Mastering Postgres Replication Slots: Preventing WAL Bloat and Other Production Issues">
   <meta property="og:description" content=" Over the last couple of years, I’ve helped dozens of users and organizations to build Change Data Capture (CDC) pipelines for their Postgres databases. A key concern in that process is setting up and …">
@@ -485,7 +484,7 @@ A consumer subscribing to this slot will receive change events starting from thi
 <p>A situation which is particularly prone to accidental WAL growth is the combination of multiple logical databases with different traffic patterns on one Postgres host. This is because there is one shared WAL for the entire instance, whereas replication slots are scoped to individual databases. Now, imagine a situation where there are many transactions run against one database—​thus adding many entries to the WAL—​while there’s another database which is idle. A replication slot for that second database can’t make any progress, as it never receives any change events, and therefore will cause more and more WAL segments to be retained.</p>
 </div>
 <div class="paragraph">
-<p>A solution to this is to produce some “fake” traffic in that second database, allowing its replication slot to progress. Historically, a dedicated heartbeat table was often used for this purpose. However, Postgres 14+ offers an elegant table-less alternative: via the function <a href="https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-REPLICATION"><code>pg_logical_emit_message()</code></a>, arbitrary contents can be written to the WAL, without them manifesting in any table. There’s a number of <a href="https://www.infoq.com/articles/wonders-of-postgres-logical-decoding-messages/">interesting applications</a> for these logical decoding messages, including advancing replication slots in low traffic databases. To enable heartbeat messages with Debezium, add the following to your connector configuration:</p>
+<p>A solution to this is to produce some &#34;fake&#34; traffic in that second database, allowing its replication slot to progress. Historically, a dedicated heartbeat table was often used for this purpose. However, Postgres 14+ offers an elegant table-less alternative: via the function <a href="https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-REPLICATION"><code>pg_logical_emit_message()</code></a>, arbitrary contents can be written to the WAL, without them manifesting in any table. There’s a number of <a href="https://www.infoq.com/articles/wonders-of-postgres-logical-decoding-messages/">interesting applications</a> for these logical decoding messages, including advancing replication slots in low traffic databases. To enable heartbeat messages with Debezium, add the following to your connector configuration:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -551,7 +550,7 @@ A consumer subscribing to this slot will receive change events starting from thi
 <p>Alternatively, you can have Debezium create table-level publications by setting the <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-publication-autocreate-mode"><code>publication.autocreate.mode</code></a> connector option to <code>filtered</code>. Debezium will then create a publication reflecting the set of captured tables as defined via the connector’s table and schema include/exclude filters. Note that this requires ownership permissions to all affected tables for the connector user.</p>
 </div>
 <div class="paragraph">
-<p>To follow the principle of least privilege, you should therefore consider creating a publication for the connector by yourself, thus minimizing the set of permissions you need to grant to the connector user. By default, the publication is expected to be named “dbz_publication”, but you can override the name via the <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-property-publication-name"><code>publication.name</code></a> connector property. When setting up multiple connectors for capturing distinct sets of tables in the same database, a dedicated publication needs to be created for each connector.</p>
+<p>To follow the principle of least privilege, you should therefore consider creating a publication for the connector by yourself, thus minimizing the set of permissions you need to grant to the connector user. By default, the publication is expected to be named &#34;dbz_publication&#34;, but you can override the name via the <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html#postgresql-property-publication-name"><code>publication.name</code></a> connector property. When setting up multiple connectors for capturing distinct sets of tables in the same database, a dedicated publication needs to be created for each connector.</p>
 </div>
 </div>
 </div>
@@ -888,7 +887,7 @@ While concerns about potential WAL growth sometimes lead to uncertainty and anxi
 					
 					<li><a href="/blog/backfilling-postgres-toast-columns-debezium-change-events/">Backfilling Postgres TOAST Columns in Debezium Data Change Events</a> <span class="meta">May 26, 2025</span></li>
 					
-					<li><a href="/blog/postgres-15-logical-decoding-row-filters-with-debezium/">Postgres 15: Logical Decoding Row Filters With Debezium</a> <span class="meta">Dec 15, 2022</span></li>
+					<li><a href="/blog/ingesting-debezium-events-from-kafka-with-flink-sql/">A Deep Dive Into Ingesting Debezium Events From Kafka With Flink SQL</a> <span class="meta">Apr 16, 2025</span></li>
 					
 				</ul>
 			</div>
