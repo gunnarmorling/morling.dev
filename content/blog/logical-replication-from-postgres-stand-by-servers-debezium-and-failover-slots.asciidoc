@@ -23,7 +23,8 @@ Welcome back to this series about logical replication from Postgres 16 stand-by 
 a situation where your primary Postgres server becomes unavailable and a stand-by server needs to take over.
 
 <!--more-->
-If you want to learn more about logical replication in general, and why and how to use it with stand-by servers in Postgres 16, then I suggest heading over to link:/blog/logical-replication-from-postgres-16-stand-by-servers-part-1-of-2[part one] of this blog series before continuing here.
+
+If you want to learn more about logical replication in general, and why and how to use it with stand-by servers in Postgres 16, then I suggest heading over to link:/blog/stand-by-servers-for-postgres-logical-replication/[part one] of this blog series before continuing here.
 
 
 == Stand-By Logical Replication With Debezium
@@ -40,9 +41,10 @@ _Thanks a lot to the team for the quick merge and inclusion in the Beta1 release
 As a playground for this experiment, I've created a simple link:https://github.com/decodableco/examples/tree/main/postgres-logical-replication-standby[Docker Compose file] which launches Kafka, and Kafka Connect as the runtime environment for Debezium.
 Here's an overview of all the involved components:
 
-_Fig._
-_1: Solution Overview (click to enlarge)_Fun fact: this uses Kafka in KRaft mode, i.e.
-no ZooKeeper process is needed.
+.Solution Overview
+image::logical_replication_standby-1.png[]
+
+Fun fact: this uses Kafka in KRaft mode, i.e. no ZooKeeper process is needed.
 Good times!
 If you want to follow along, make sure you have Docker installed and you have a Postgres primary and stand-by node set up on Amazon RDS as described in part one.
 Then clone the link:https://github.com/decodableco/examples[decodable/examples] repository and launch the demo environment like so:
@@ -69,10 +71,13 @@ CREATE PUBLICATION
 ----
 Having to create publications for stand-by replication slots on the primary seems somewhat inconsistent and it's also not ideal in terms of operations, but there may be a good reason for that requirement.
 
-Note that instead of the `ALL TABLES` publication, you could also narrow this further down and only expose the changes for specific tables, omit certain columns (e.g.
+[NOTE]
+====
+Instead of the `ALL TABLES` publication, you could also narrow this further down and only expose the changes for specific tables, omit certain columns (e.g.
 with PII data) or rows (e.g.
 logically deleted rows), and more.
 See the docs for the `CREATE PUBLICATION` command for more details.
+====
 
 Let's take a look at the connector configuration then.
 This is done via a JSON-based configuration file looking like this:
@@ -218,9 +223,9 @@ Unfortunately, this can cause gaps in the change event stream, as any data chang
 Clients would be forced to backfill the entire data set (i.e.
 take a snapshot in Debezium terminology) to be sure that no data is missing.
 
-Discussions around adding support for fail-over slots go back to Postgres versions as link:https://wiki.postgresql.org/wiki/Failover_slots[old as 9.6]._
-_More recently, Patroni added their own link:https://www.postgresql.eu/events/pgconfde2022/sessions/session/3745/slides/306/Implementing%20failover%20of%20logical%20replication%20slots%20in%20Patroni.pdf[solution to the problem], and EnterpriseDB released link:https://github.com/EnterpriseDB/pg_failover_slots[pg_failover_slots], a Postgres extension for slot failover._
-_It remains to be seen when Postgres itself adds this feature (as hinted at in link:https://www.pgcon.org/events/pgcon_2023/sessions/session/369/slides/83/PostgreSQL%2016%20and%20beyond.pdf[this presentation], it may happen with Postgres 17).
+Discussions around adding support for fail-over slots go back to Postgres versions as link:https://wiki.postgresql.org/wiki/Failover_slots[old as 9.6].
+More recently, Patroni added their own link:https://www.postgresql.eu/events/pgconfde2022/sessions/session/3745/slides/306/Implementing%20failover%20of%20logical%20replication%20slots%20in%20Patroni.pdf[solution to the problem], and EnterpriseDB released link:https://github.com/EnterpriseDB/pg_failover_slots[pg_failover_slots], a Postgres extension for slot failover.
+It remains to be seen when Postgres itself adds this feature (as hinted at in link:https://www.pgcon.org/events/pgcon_2023/sessions/session/369/slides/83/PostgreSQL%2016%20and%20beyond.pdf[this presentation], it may happen with Postgres 17).
 Until then, in cases where the pg_failover_slots extension isn't available—such as on Amazon RDS—logical replication slots on stand-bys let you build your own version of failover slots.
 The idea is to create two corresponding slots on primary and stand-by, and use the `pg_replication_slot_advance()` function (added in Postgres 11) to keep the two in sync.
 The replication consumer would connect to the slot on the primary at first.

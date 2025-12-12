@@ -24,8 +24,9 @@ Instead of connecting to your primary server, you can now point CDC tools such a
 I am going to take a closer look at this new feature in this two-part blog series:
 
 <!--more-->
+
 * Part I (this part): Explaining what Postgres logical replication is, why to use it on stand-by servers, and how to set it up
-* link:/blog/logical-replication-from-postgres-16-stand-by-servers-part-2-of-2[Part II]: Discussing how to use logical replication on Postgres stand-bys with Debezium and how to handle failover scenarios
+* link:/blog/logical-replication-from-postgres-stand-by-servers-debezium-and-failover-slots[Part II]: Discussing how to use logical replication on Postgres stand-bys with Debezium and how to handle failover scenarios
 
 
 == What is Postgres Logical Replication?
@@ -33,9 +34,9 @@ Let's start with the fundamentals.
 Replication is the process of synchronizing all the data from one database server to one or more other servers, for the purposes of ensuring high availability (HA)—if the primary server fails, one of the stand-bys can take over—and load distribution, as replicas can serve read requests.
 When it comes to replication in Postgres, it supports two kinds of continuous replication from primary to replicas: streaming and logical replication.
 
-* link:https://www.postgresql.org/docs/current/warm-standby.html#STREAMING-REPLICATION[Streaming replication] (sometimes also called physical replication) propagates all the segments of the Write-Ahead Log (WAL) from a _primary server_ to one or more _stand-by servers_(or _replicas_). It includes all the databases and tables and automatically propagates schema changes, resulting in an exact copy of the primary server. This makes it a great choice for ensuring high availability of your data, in particular when used in synchronous mode where writing transactions to the primary server are only committed after successful replication.
+* *link:https://www.postgresql.org/docs/current/warm-standby.html#STREAMING-REPLICATION[Streaming replication]* (sometimes also called physical replication) propagates all the segments of the Write-Ahead Log (WAL) from a _primary server_ to one or more _stand-by servers_(or _replicas_). It includes all the databases and tables and automatically propagates schema changes, resulting in an exact copy of the primary server. This makes it a great choice for ensuring high availability of your data, in particular when used in synchronous mode where writing transactions to the primary server are only committed after successful replication.
 
-* In contrast, link:https://www.postgresql.org/docs/current/logical-replication.html[logical replication] works much more selectively, "replicating data objects and their changes, based upon their replication identity (usually a primary key)". It operates in the context of one single database on a Postgres server, and you can control on a very fine-grained level which schemas or tables should be part of the replication stream.
+* In contrast, *link:https://www.postgresql.org/docs/current/logical-replication.html[logical replication]* works much more selectively, "replicating data objects and their changes, based upon their replication identity (usually a primary key)". It operates in the context of one single database on a Postgres server, and you can control on a very fine-grained level which schemas or tables should be part of the replication stream.
 
 Logical replication offers a flexible _publish/subscribe_ model, which goes beyond the basic primary/read-replica scheme of physical replication.
 In this model, a _publisher_ node is a Postgres instance which exposes one or more _publications_, describing which tables should be replicated.
@@ -57,8 +58,8 @@ This is how tools such as Debezium implement change data capture (CDC) for Postg
 
 Having established what logical replication is and why it is such an important part of the data engineering toolbox, let's explore why it is so interesting that Postgres now supports logical replication from stand-by servers and how to set this up.
 
+== Why Logical Replication On Stand-By Servers?
 
-== Why Use Logical Replication On Stand-By Servers?
 The first and most important reason for using logical replication from stand-by servers is load distribution.
 When you have many logical replication slots and corresponding clients, this potentially can create an unduly heavy load on the primary database server.
 In that case it can be beneficial to set up the replication slots on one or even multiple read replicas of the primary, thus distributing resource consumption (CPU, network bandwidth) across multiple machines.
@@ -88,14 +89,16 @@ Instead of the pre-configured Multi-AZ cluster deployment option (which isn't av
 
 Note that you must have backups enabled for the primary server, as otherwise the option for creating a read replica will be disabled in the RDS console.
 In order to use logical replication, the database's WAL level must be set to logical.
-To do so, set `rds.logical_replication` to 1 in the DB parameter groups of primary and stand-by, as I've recently discussed in link:https://www.youtube.com/watch?v=0NTsUMb_diQ[Data Streaming Quick Tips episode #4]._
-_Finally, you should set `hot_standby_feedback` to true on the stand-by server._
-_Otherwise, the primary server might prematurely discard tuples for system catalog rows which are still needed on the stand-by for logical decoding._
-_+
+To do so, set `rds.logical_replication` to 1 in the DB parameter groups of primary and stand-by, as I've recently discussed in link:https://www.youtube.com/watch?v=0NTsUMb_diQ[Data Streaming Quick Tips episode #4].
+Finally, you should set `hot_standby_feedback` to true on the stand-by server.
+Otherwise, the primary server might prematurely discard tuples for system catalog rows which are still needed on the stand-by for logical decoding.
 
+[NOTE]
+====
 Enabling hot stand-by feedback may cause a large amount of WAL segments link:https://www.morling.dev/blog/insatiable-postgres-replication-slot/[to be pinned] on the primary when the stand-by replication slot is not consumed.
 In the worst case this can cause the primary server to run out of disk space, clearly something you'd want to avoid at all costs.
 While this situation generally can be avoided by putting proper monitoring and alerting into place and has further been improved with the addition of the link:https://postgresqlco.nf/doc/en/param/wal_keep_size/[max_wal_keep_size] setting in Postgres 13 (at the price that a replication consumer may not able to resume its work after a prolonged downtime), it is something to keep in mind when setting up logical replication on read replicas.
+====
 
 If you would like to work with a local set-up instead, you can follow the steps from link:https://www.linuxwave.info/2021/03/postgresql-13-streaming-replication.html[this blog] post for setting up two Postgres nodes via Docker, or use link:https://blog.palark.com/cloudnativepg-and-other-kubernetes-operators-for-postgresql/[any of the Postgres Kubernetes operators] for a Kube-based set-up.
 Set `wal_level` to logical in the _postgresql.conf_ of the stand-by in this case.
@@ -243,6 +246,6 @@ standby> SELECT * FROM pg_logical_slot_get_changes('demo_slot_standby', NULL, NU
 Very nice, change events retrieved from a replication slot on a stand-by server—things work as expected!
 
 This concludes part one of this blog post series where we have explored what Postgres logical replication is, what you can do with it, and why and how to use it on stand-by servers, as possible since Postgres version 16.
-If you'd like to know how to use logical replication on stand-bys with Debezium and how to manage replication slots in failover scenarios, then check out the link:/blog/logical-replication-from-postgres-16-stand-by-servers-part-2-of-2[second part] of this series!
+If you'd like to know how to use logical replication on stand-bys with Debezium and how to manage replication slots in failover scenarios, then check out the link:/blog/logical-replication-from-postgres-stand-by-servers-debezium-and-failover-slots[second part] of this series!
 
 _Many thanks to Bertrand Drouvot, Robert Metzger, Robin Moffatt, Gwen Shapira, and Sharon Xie for their feedback while writing this post._
