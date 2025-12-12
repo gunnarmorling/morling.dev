@@ -25,6 +25,7 @@ scaling, updating) all the required resources.
 Automation is the keyword here, significantly reducing the manual effort required for running Flink jobs in production.
 
 <!--more-->
+
 There are multiple Kubernetes operators for Flink, including Lyft's link:https://github.com/lyft/flinkk8soperator[flinkk8soperator], link:https://github.com/spotify/flink-on-k8s-operator[flink-on-k8s-operator] by Spotify (a fork of a now unmaintained operator initially developed by Google), and link:https://github.com/nextbreakpoint/flink-controller[flink-controller] by Andrea Medeghini.
 The most widely used operator these days though is the upstream link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/[Flink Kubernetes Operator], developed under the umbrella of the Apache Flink project itself, which is also the focus of this two-part blog post series.
 It gives you an overview on what it takes to install the operator and run your first jobs on Kubernetes, and discuss what's missing to create a complete Flink-based data platform for an organization.
@@ -50,8 +51,9 @@ You'll need the following prerequisites:
 Fig.
 1 gives an overview of the solution we are going to build in this blog series, with all the key resources and most relevant interactions:
 
-_Fig._
-_1: Solution overview_
+.Solution overview
+image::flink-on-kubernetes-1.png[]
+
 == Installation and Setup
 Start by creating a local Kubernetes cluster using `kind`:
 
@@ -318,8 +320,11 @@ For testing purposes, you can forward its port, allowing you to access the UI on
 ----
 $ kubectl port-forward service/basic-example-rest 8081
 ----
-_Fig._
-_2: The Flink web UI_Next, let's make some changes to the job definition.
+
+.The Flink web UI
+image::flink-on-kubernetes-2.png[]
+
+Next, let's make some changes to the job definition.
 Currently, the job runs with a parallelism of 2.
 As there are also two slots per task manager, a single task manager pod is running (besides the job manager pod) for the job:
 
@@ -352,9 +357,10 @@ basic-example-taskmanager-1-2    1/1     Running   0          68s
 ----
 If you go back to the Flink web UI (recreate the port forwarding, if needed), you'll also see that there are two task managers now, with four task slots overall:
 
-_Fig._
-_3: Updated job in the Flink web UI_Finally, to delete the job, run the following:
+.Updated job in the Flink web UI
+image::flink-on-kubernetes-3.png[]
 
+Finally, to delete the job, run the following:
 
 [source,shell,linenums]
 ----

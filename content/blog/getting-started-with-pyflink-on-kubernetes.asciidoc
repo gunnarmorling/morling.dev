@@ -35,7 +35,9 @@ In the remainder of this blog post, I'm going to explore how to
 
 The overall solution is going to look like this:
 
-_Fig.1: Solution Overview (click to enlarge)_
+.Solution Overview
+image::pyflink-on-kubernetes-1.png[]
+
 == What Is PyFlink and Why Should You Care?
 In a nutshell, PyFlink is the Python-based API to link:https://flink.apache.org/[Apache Flink].
 Per the docs, it link:https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/python/overview/[enables you] to
@@ -352,10 +354,14 @@ kubectl -n kafka run kafka-consumer -ti --rm=true --restart=Never \
   --image=quay.io/strimzi/kafka:0.38.0-kafka-3.6.0 -- \
   bin/kafka-console-consumer.sh --bootstrap-server \
   my-cluster-kafka-bootstrap.kafka:9092 --topic orders
-  
+----
+
+[source,json,linenums]
+----
 {"order_number":1574206908793601022,"price":824651156650254403841457913856,"buyer":{"first_name":"3ffbd66e114b1d26e08181bd8c248aac514b812bce11ebaf11b3f2ee8941d0df3feea556bced4c07bd040bac4da53af1774b","last_name":"24eb04e10e90a4e1717dd5afa574eb964775466e22f725a6d603d1723f27d2616d095792cfaf5f83815c728b6eb0a961c673"},"order_time":"2023-12-06 09:11:10.397"}
 {"order_number":4306245129932523235,"price":966772426991501079169688666112,"buyer":{"first_name":"c7d08f3d15b2e993b6e12be76a891b1e367a5a841850375142ee4b2b62dc2a1541a94b16267f568f0ada8c3e97963f346745","last_name":"2d80bb118ca512c1a7aa5a9bfcf651b62521de8489ea7a80554723625674e000153e3a37f652ce1137df4dc154e573fd09ce"},"order_time":"2023-12-06 09:11:10.397"}
 ----
+
 You also can take a look at the deployed job in the Flink web UI by forwarding the REST port from the job manager:
 
 
@@ -365,8 +371,10 @@ kubectl port-forward service/python-hello-world-rest 8081:rest
 ----
 This makes the Flink Dashboard accessible at link:http://localhost:8081[http://localhost:8081], allowing you to take a look at the job's health status, metrics, etc.:
 
-_Fig._
-_2: PyFlink job in the Apache Flink Dashboard (click to enlarge)_Finally, to stop your job, simply delete its resource definition:
+.PyFlink job in the Apache Flink Dashboard (click to enlarge)_
+image::pyflink-on-kubernetes-2.png[]
+
+Finally, to stop your job, simply delete its resource definition:
 
 
 [source,shell,linenums]
