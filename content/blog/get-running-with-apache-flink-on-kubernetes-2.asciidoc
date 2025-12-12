@@ -37,14 +37,16 @@ To ensure that no state is lost in case of failures or (intentional) restarts, t
 * link:https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/ha/overview/[Enabling job manager HA], allowing to gracefully handle job manager failures
 * link:https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/savepoints/[Savepoints], allowing to take a consistent snapshot of a job and to resume from that snapshot later on
 
+[NOTE]
+====
 It also is possible to ensure HA for the Flink Kubernetes operator itself.
 To do so, enable leader election for the operator, as link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/operations/configuration/#leader-election-and-high-availability[described in the documentation].
 You then can run multiple replicas of the operator, with one of them being the leader and others in a stand-by capacity, ready to take over should the current leader fail.
-+
-+
+
 Whether this is necessary or not, depends on the requirements of the specific use case.
 Even without operator HA, existing job deployments are not affected by an operator failure and will continue to run.
 It thus may be acceptable to have short downtimes of the operator, provided the right monitoring is in place to detect the situation swiftly and resolve it manually.
+====
 
 As Kubernetes pods are ephemeral, the corresponding state needs to be persisted externally.
 Oftentimes, object storage such as an S3 bucket is used for this purpose, thus avoiding the need to mount any persistent volumes to the Flink pods.
@@ -97,7 +99,7 @@ spec:
     upgradeMode: savepoint
     state: running
 ----
-_Listing 1: Resource definition_ link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/custom-job-ha.yaml[custom-job-ha.yaml] _for a custom Flink job with fault tolerance and high availability_
+_Listing 1: Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/custom-job-ha.yaml[custom-job-ha.yaml] for a custom Flink job with fault tolerance and high availability_
 
 Deploy the job by applying the resource:
 
@@ -106,14 +108,15 @@ Deploy the job by applying the resource:
 ----
 $ kubectl apply -f flink/custom-job-ha.yaml
 ----
+
 Quite a few things are going on here, so let's digest them one by one.
 First, the directories for storing checkpoints and savepoints are configured using the `state.checkpoints.dir` and `state.savepoints.dir` options, respectively.
-We are using link:https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/state_backends/#rocksdb-state-backend-details[RocksDB as a Flink state backend], enabling incremental checkpointing, thus avoiding the need to transfer the complete state upon each checkpoint, which can substantially reduce checkpoint durations._
-_While not that relevant for a small-scale example like the one at hand, it can make sense to make use of link:https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/filesystems/s3/#entropy-injection-for-s3-file-systems[S3 entropy injection]: by adding a random part at the beginning of checkpoint paths, the data will be distributed across multiple shards of the S3 bucket.
+We are using link:https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/state_backends/#rocksdb-state-backend-details[RocksDB as a Flink state backend], enabling incremental checkpointing, thus avoiding the need to transfer the complete state upon each checkpoint, which can substantially reduce checkpoint durations.
+While not that relevant for a small-scale example like the one at hand, it can make sense to make use of link:https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/filesystems/s3/#entropy-injection-for-s3-file-systems[S3 entropy injection]: by adding a random part at the beginning of checkpoint paths, the data will be distributed across multiple shards of the S3 bucket.
 
-To enable Flink's link:https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/ha/kubernetes_ha/[job manager HA services], `high-availability.type` must be set to `kubernetes` and a directory for storing job manager metadata must be given via `high-availability.storageDir`._
-_In order for Flink to access data on S3, an S3 file system plug-in is enabled via the `ENABLE_BUILT_IN_PLUGINS` environment variable set for the Flink containers in the pod template of the resource descriptor._
-_Flink provides link:https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/filesystems/s3/[two plug-ins for S3]; we are using the Presto one as this is the recommended option for storing checkpoint data.
+To enable Flink's link:https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/ha/kubernetes_ha/[job manager HA services], `high-availability.type` must be set to `kubernetes` and a directory for storing job manager metadata must be given via `high-availability.storageDir`.
+In order for Flink to access data on S3, an S3 file system plug-in is enabled via the `ENABLE_BUILT_IN_PLUGINS` environment variable set for the Flink containers in the pod template of the resource descriptor.
+Flink provides link:https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/filesystems/s3/[two plug-ins for S3]; we are using the Presto one as this is the recommended option for storing checkpoint data.
 
 For accessing the S3 API provided by MinIO in this example, we are providing the access key and secret key right within the resource definition itself.
 In a production use case, storing data in an S3 bucket on AWS, this should be avoided, instead authentication should happen via IAM, granting access to S3 via an IAM role for the Flink pods.
@@ -170,7 +173,7 @@ spec:
     name: custom-job-ha
   savepoint: {}
 ----
-_Listing 2: Resource definition_ link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/savepoint.yaml[savepoint.yaml] _for manually triggering a savepoint_
+_Listing 2: Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/savepoint.yaml[savepoint.yaml] for manually triggering a savepoint_
 
 
 [source,shell,linenums]
@@ -240,12 +243,13 @@ There they are filtered and transformed as per the current configuration and fin
 By using log4j2's link:https://logging.apache.org/log4j/2.x/manual/json-template-layout.html[JsonTemplateLayout] for Flink log messages (configured link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/logging-job.yaml#L85[here] ), the same are emitted in a structured form, making it very easy to process them:
 
 
-[source,shell,linenums]
+[source,json,linenums]
 ----
 ...
 {"@timestamp":"2025-01-17T09:51:55.295Z","ecs.version":"1.2.0","log.level":"INFO","message":"Completed checkpoint 360 for job 2bd169b220ae0d7e26f3edf0869c244f (15960 bytes, checkpointDuration=9 ms, finalizationTime=0 ms).","process.thread.name":"jobmanager-io-thread-1","log.logger":"org.apache.flink.runtime.checkpoint.CheckpointCoordinator","flink-job-id":"2bd169b220ae0d7e26f3edf0869c244f"}
 ...
 ----
+
 The ingestion pipeline into Elasticsearch is set up via two resources processed by the Kubernetes Logging operator.
 The first is a `ClusterOutput` resource, describing the destination of the pipeline, i.e.
 the Elasticsearch endpoint, the credentials, etc.:
@@ -275,7 +279,7 @@ spec:
       timekey_wait: 30s
       timekey_use_utc: true
 ----
-_Listing 3: Resource definition_ link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/logging/elastic-output.yaml[elastic-output.yaml] _, describing the output of the logging pipeline_
+_Listing 3: Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/logging/elastic-output.yaml[elastic-output.yaml], describing the output of the logging pipeline_
 
 Create the output:
 
@@ -312,7 +316,7 @@ spec:
   globalOutputRefs:
     - es-output
 ----
-_Listing 4: Resource definition_ link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/logging/elastic-flow.yaml[elastic-flow.yaml] _, describing the logic of the logging pipeline_
+_Listing 4: Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/logging/elastic-flow.yaml[elastic-flow.yaml], describing the logic of the logging pipeline_
 
 Create the flow:
 
@@ -340,11 +344,12 @@ $ kubectl -n logging port-forward service/quickstart-kb-http 5601
 ----
 Navigate to link:https://localhost:5601/[https://localhost:5601/] (accept the warning because of the unknown certificate issue) and log in, then go to "Analytics" → "Discover" and create a data view for the index named `fluentd`:
 
-_Fig._
-_1: Flink job logs ingested into Elasticsearch_As mentioned before, this is just scratching the surface when it comes to setting up observability infrastructure for Flink.
+.Flink job logs ingested into Elasticsearch
+image::flink-on-kubernetes-3.png[]
+
+As mentioned before, this is just scratching the surface when it comes to setting up observability infrastructure for Flink.
 There's a wide range of tools and platforms in that space, and you should choose what matches your requirements, integrating with the solutions and infrastructure already in use with your organization.
-Besides logging, your observability strategy will typically also cover metrics (which are supported by Flink via a link:https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/metric_reporters/[range of metrics exporters], for instance for Prometheus, InfluxDB, and DataDog) and traces (e.g._
-_supported via the link:https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/trace_reporters/[OpenTelemetry trace exporter] ).
+Besides logging, your observability strategy will typically also cover metrics (which are supported by Flink via a link:https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/metric_reporters/[range of metrics exporters], for instance for Prometheus, InfluxDB, and DataDog) and traces (e.g. supported via the link:https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/trace_reporters/[OpenTelemetry trace exporter]).
 But also Java-specific tools such as link:https://openjdk.org/jeps/328[JDK Flight Recorder] can be invaluable to gain insight into the performance characteristics and other runtime behaviors of your Flink jobs.
 
 
@@ -353,7 +358,7 @@ For working with the Flink web UI in a production deployment, the operator optio
 To do so, simply add the following section to the job's resource definition:
 
 
-[source,shell,linenums]
+[source,yaml,linenums]
 ----
 ingress:
   template: "localhost/{{name}}(/|$)(.*)"
@@ -391,9 +396,11 @@ Forward its port to access it from your host:
 ----
 $ kubectl port-forward service/heimdall 8080
 ----
-_Fig._
-_2: Heimdall, a UI for managing multiple Flink jobs on one Kubernetes cluster_The endpoint URLs in the Heimdall UI are customizable, so that you can easily link to the right locations of Flink UI, API, metrics, and logs of your specific environment.
 
+.Heimdall, a UI for managing multiple Flink jobs on one Kubernetes cluster
+image::flink-on-kubernetes-4.png[]
+
+The endpoint URLs in the Heimdall UI are customizable, so that you can easily link to the right locations of Flink UI, API, metrics, and logs of your specific environment.
 
 == Summary and Discussion
 The Apache Flink Kubernetes Operator is becoming increasingly popular for running Flink jobs on Kubernetes.
@@ -405,8 +412,12 @@ There's quite a few features of the operator which we couldn't discuss in this p
 scaling jobs automatically up and down in order to minimize back pressure while also satisfying given utilization targets) and link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/autotuning/[auto-tuning] Flink jobs (automatically adjusting the memory consumed by a job).
 Both are very promising, warranting their own article.
 
+[NOTE]
+====
 The Flink Kubernetes operator is a versatile solution for deploying and managing Flink jobs.
-When it comes to building a full-fledged Flink-based stream processing platform for an organization, there's a non-trivial amount of additional aspects to keep in mind, including the following:* The management and evolution of data schemas
+When it comes to building a full-fledged Flink-based stream processing platform for an organization, there's a non-trivial amount of additional aspects to keep in mind, including the following:
+
+* The management and evolution of data schemas
 * Developer experience, for instance the ability to deploy SQL jobs and preview their results
 * Higher-level resources such as source and sink connectors or declarative end-to-end data pipelines
 * Cost attribution and quota management between the teams and departments of a larger organization
@@ -415,6 +426,7 @@ When it comes to building a full-fledged Flink-based stream processing platform 
 
 If all this sounds like it's too much work, a fully-managed platform like Decodable might be interesting to you.
 Sign up for a link:https://app.decodable.co/-/accounts/create[free trial today] and give it a try.
+====
 
 Another interesting feature of the operator is the ability to link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/operations/plugins/[customize its behavior via plug-ins].
 This can be useful if for instance you want to make sure all deployed jobs adhere to specific standards (by implementing a custom resource validator) or you want to amend their configuration upon deployment, e.g.

@@ -40,9 +40,9 @@ image::pyflink-on-kubernetes-1.png[]
 
 == What Is PyFlink and Why Should You Care?
 In a nutshell, PyFlink is the Python-based API to link:https://flink.apache.org/[Apache Flink].
-Per the docs, it link:https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/python/overview/[enables you] to
+Per the docs, it link:https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/python/overview/[enables you] to:
 
-_"build scalable batch and streaming workloads, such as real-time data processing pipelines, large-scale exploratory data analysis, Machine Learning (ML) pipelines and ETL processes"._
+> Build scalable batch and streaming workloads, such as real-time data processing pipelines, large-scale exploratory data analysis, Machine Learning (ML) pipelines and ETL processes.
 
 It is particularly useful for development teams who are more familiar with Python than with Java and who still would like to benefit from Flink's powerful stream processing capabilities.
 Another factor is Python's rich 3rd party ecosystem: not only does it provide libraries for data engineering (e.g.
@@ -100,9 +100,24 @@ Next, install the link:https://nightlies.apache.org/flink/flink-kubernetes-opera
 Official part of the Flink project, its task will be to deploy and run Flink jobs on Kubernetes, based on custom resource definitions.
 It is installed using a Helm chart, using the following steps (refer to the link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/try-flink-kubernetes-operator/quick-start/[upstream documentation] for more details):
 
-. Deploy the link:https://github.com/cert-manager/cert-manager[certificate manager] (required later on when the operator's webhook is invoked during the creation of custom resources): `kubectl create -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.2/cert-manager.yaml`
-. Add the Helm repository for the operator: `helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.7.0/`
-. Install the operator using the provided Helm chart: `helm install flink-kubernetes-operator flink-operator-repo/flink-kubernetes-operator` +
+. Deploy the link:https://github.com/cert-manager/cert-manager[certificate manager] (required later on when the operator's webhook is invoked during the creation of custom resources):
++
+[source,shell,linenums]
+----
+kubectl create -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.2/cert-manager.yaml
+----
+. Add the Helm repository for the operator:
++
+[source,shell,linenums]
+----
+helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.7.0/
+----
+. Install the operator using the provided Helm chart:
++
+[source,shell,linenums]
+----
+helm install flink-kubernetes-operator flink-operator-repo/flink-kubernetes-operator
+----
 
 After a short time, a Kubernetes pod with the operator should be running on the cluster:
 
@@ -120,12 +135,24 @@ It is another Kubernetes Operator, in this case in charge of deploying and runni
 Strimzi is a very powerful tool, supporting all kinds of Kafka deployments, Kafka Connect, MirrorMaker2, and much more.
 We are going to use it for installing a simple one node Kafka cluster, following the steps from Strimzi's link:https://strimzi.io/quickstarts/[quickstart guide]:
 
-. Create a Kubernetes namespace for Strimzi and Kafka: +
-`kubectl create namespace kafka`
-. Install Strimzi into that namespace: +
-`kubectl create -f 'https://strimzi.io/install/latest?namespace=kafka' -n kafka`
-. Create a Kafka cluster: +
-`kubectl apply -f https://strimzi.io/examples/latest/kafka/kafka-persistent-single.yaml -n kafka` +
+. Create a Kubernetes namespace for Strimzi and Kafka:
++
+[source,shell,linenums]
+----
+kubectl create namespace kafka
+----
+. Install Strimzi into that namespace:
++
+[source,shell,linenums]
+----
+kubectl create -f 'https://strimzi.io/install/latest?namespace=kafka' -n kafka
+----
+. Create a Kafka cluster:
++
+[source,shell,linenums]
+----
+kubectl apply -f https://strimzi.io/examples/latest/kafka/kafka-persistent-single.yaml -n kafka
+----
 
 Again this will take some time to complete.
 You can use the `wait` command to await the Kafka cluster materialization:
@@ -208,7 +235,7 @@ if __name__ == '__main__':
    pyflink_hello_world()
 pyflink_hello_world.py (source)
 ----
-_Listing 1: pyflink_hello_world.py (_ link:https://github.com/decodableco/examples/blob/main/pyflink/pyflink_hello_world.py[source] _)_
+_Listing 1: pyflink_hello_world.py (link:https://github.com/decodableco/examples/blob/main/pyflink/pyflink_hello_world.py[source])_
 
 The logic is fairly straightforward: A `StreamTableEnvironment` is created and the Flink SQL Kafka connector JAR is registered with it.
 Then two tables are created: a source table `orders`, based on the datagen connector, and a sink table `orders_sink`, based on the Kafka sink connector.
@@ -235,12 +262,13 @@ When trying to build an image from it, I'd get the following error:
 42.47       [end of output]
 ...
 ----
-The problem is that the upstream link:https://hub.docker.com/_/flink[Flink container image] which is used as a base image here, itself is derived from a JRE image for Java, i.e._
-_it contains only a subset of all the modules provided by the Java platform._
-_ link:https://github.com/alibaba/pemja[PemJa], one of PyFlink's dependencies, requires some header files which only are provided by a complete JDK, though.
 
-I have therefore created a new base image for PyFlink jobs, which removes the JRE and adds back the complete JDK, inspired by the link:https://hub.docker.com/layers/library/eclipse-temurin/11.0.21_9-jdk-jammy/images/sha256-0b1c4c2bd4bc536c3ee914cd9e7c3ac05e136f891bceb18d355f60d548e84096?context=explore[equivalent step] in the Dockerfile for creating the link:https://hub.docker.com/layers/library/eclipse-temurin/11-jdk-jammy/images/sha256-0b1c4c2bd4bc536c3ee914cd9e7c3ac05e136f891bceb18d355f60d548e84096?context=explore[JDK 11 image] provided by the Eclipse Temurin project._
-_This is not quite ideal in terms of overall image size, and the cleaner approach would be to create a new image derived from the JDK one, but it does the trick for now to get going:
+The problem is that the upstream link:https://hub.docker.com/_/flink[Flink container image] which is used as a base image here, itself is derived from a JRE image for Java, i.e.
+it contains only a subset of all the modules provided by the Java platform.
+link:https://github.com/alibaba/pemja[PemJa], one of PyFlink's dependencies, requires some header files which only are provided by a complete JDK, though.
+
+I have therefore created a new base image for PyFlink jobs, which removes the JRE and adds back the complete JDK, inspired by the link:https://hub.docker.com/layers/library/eclipse-temurin/11.0.21_9-jdk-jammy/images/sha256-0b1c4c2bd4bc536c3ee914cd9e7c3ac05e136f891bceb18d355f60d548e84096?context=explore[equivalent step] in the Dockerfile for creating the link:https://hub.docker.com/layers/library/eclipse-temurin/11-jdk-jammy/images/sha256-0b1c4c2bd4bc536c3ee914cd9e7c3ac05e136f891bceb18d355f60d548e84096?context=explore[JDK 11 image] provided by the Eclipse Temurin project.
+This is not quite ideal in terms of overall image size, and the cleaner approach would be to create a new image derived from the JDK one, but it does the trick for now to get going:
 
 
 [source,shell,linenums]
@@ -258,7 +286,7 @@ RUN apt-get update -y && \
 # install PyFlink
 RUN pip3 install apache-flink==1.18.0
 ----
-_Listing 2: Dockerfile.pyflink-base (_ link:https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile.pyflink-base[source] _)_
+_Listing 2: Dockerfile.pyflink-base (link:https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile.pyflink-base[source])
 
 Create an image from that Dockerfile and store it in your local container image registry:
 
@@ -277,7 +305,7 @@ FROM decodable-examples/pyflink-base:latest
 RUN wget -P /opt/flink/usrlib https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.0.2-1.18/flink-sql-connector-kafka-3.0.2-1.18.jar
 ADD --chown=flink:flink python_demo.py /opt/flink/usrlib/pyflink_hello_world.py
 ----
-_Listing 3: Dockerfile (_ link:https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile[source] _)_
+_Listing 3: Dockerfile (link:https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile[source])
 
 Let's also build an image for that:
 
@@ -327,7 +355,7 @@ spec:
    parallelism: 1
    upgradeMode: stateless
 ----
-_Listing 4: pyflink-hello-world.yaml (_ link:https://github.com/decodableco/examples/blob/main/pyflink/pyflink-hello-world.yaml[source] _)_
+_Listing 4: pyflink-hello-world.yaml (link:https://github.com/decodableco/examples/blob/main/pyflink/pyflink-hello-world.yaml[source])
 
 Note how the `PythonDriver` class is used as the entry point for running a PyFlink job and the job to run is passed in via the `-py` argument.
 Just as any other Kubernetes resource, this Flink job can be deployed using `kubectl`:
