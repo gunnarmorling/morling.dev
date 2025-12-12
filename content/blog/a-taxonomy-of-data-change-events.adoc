@@ -1,0 +1,277 @@
+---
+title: 'A Taxonomy Of Data Change Events'
+date: "2024-03-13T00:00:00+00:00"
+draft: true
+markup: adoc
+canonical_url: https://www.decodable.co/blog/taxonomy-of-data-change-events
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+_This post originally appeared on the link:https://www.decodable.co/blog/taxonomy-of-data-change-events[Decodable blog]._
+
+Data change events are at the core of Change Data Capture (CDC) solutions such as  link:https://debezium.io/[Debezium] .
+They describe the changes made to a specific record in a database and allow event consumers to take action based on this information, enabling a wide range of  link:https://www.decodable.co/blog/seven-ways-to-put-cdc-to-work[use cases] , such as real-time ETL (by propagating the updated data into downstream data stores such as data warehouses, analytics databases, or fulltext search indexes), microservices data exchange, or audit logging.
+
+<!--more-->
+What is contained within a change event, really?
+What kinds of change events exist, and when should you use which?
+These are some of the questions I’d like to answer in this post by developing a taxonomy of data change events, discussing three kinds of events:
+
+* *Full events,* which contain the complete state of a changed record,
+* *Delta events,* which contain the mutated fields of a record, and
+* *Id-only events,* which contain only the id (primary key) of a changed record.
+
+
+=== Full Events
+Let’s start with the type of event which most users of CDC probably will be familiar with: full, or complete, data change events.
+Whenever something changes to a record in a source datastore, such a change event will contain the complete state of that record.
+As an example, let’s consider a table `customers` with columns `id`, `first_name`, and `last_name`, as well as an array-typed column `emails`.
+If a customer record’s `first_name` value gets updated, while the other fields don’t change, the corresponding change event could look like this, using JSON notation:
+
+
+[source,json]
+----
+{
+  "id" : 42,
+  "first_name" : "Barry",
+  "last_name" : "Wilson",
+  "emails" : ["barry@example.com", "bwilson@example.com"]
+}
+----
+The change event is fully self-contained.
+It describes the complete state of the record at the point in time when it was altered, specifically, the record’s new state after the modification.
+Many CDC solutions expose the old and the new state (sometimes referred to as old and new “row image”) of a modified record in their change events, for instance named `before` and `after` in the case of Debezium:
+
+
+[source,json]
+----
+{
+  "before": {
+    "id" : 42,
+    "first_name" : "Billy",
+    "last_name" : "Wilson",
+    "emails" : ["barry@example.com", "bwilson@example.com"]
+  },
+  "after": {
+    "id" : 42,
+    "first_name" : "Barry",
+    "last_name" : "Wilson",
+    "emails" : ["barry@example.com", "bwilson@example.com"]
+  },
+}
+----
+Which parts are present in an event, depends on the kind of the data change:
+
+* for an event representing the insertion of a record, only the new row image is present,
+* for an update, both old and new are present, and
+* for a delete event, only the old row image in the after block is present.
+
+Whether the old row image actually is present in insert and update events also depends on the configuration of the source database.
+Typically, the retention of old row images must be explicitly enabled, as it comes at the cost of additional disk space consumption by the database system.
+As an example, in order to emit the old row version in change events with Postgres, the table’s  link:https://www.postgresql.org/docs/current/sql-altertable.html#SQL-ALTERTABLE-REPLICA-IDENTITY[replica identity]  must be set to `FULL`.
+
+*Data Change Events and Apache Kafka:* When transferring data change events via partitioned systems such as Apache Kafka, you also need to define a key for your messages. It defines which partition of a change event topic a record will be sent to, ensuring correct ordering of all the records with the same key. For data change events, the key should be derived from the primary key of the represented record in the source data store. That way, all change events for one record will go into one and the same partition of the corresponding change event topic, and consumers will receive them in the exact same order as they occurred in the source database.
+
+
+=== Delta Events
+Let’s look at delta events, or partial change events, next.
+They don’t contain the full state of the represented record, but only those columns or fields whose value actually changed as well as the record’s id.
+In other words, they describe exactly what has changed compared to the previous version of a record (but nothing more).
+For an event representing an insert operation, these are all the record’s attributes, and for an update operation just the mutated ones.
+For a delete, only the id will be present.
+
+Partial change events can be designed in two different ways.
+The first one is to emit any modified attribute in a change event.
+Let’s consider the example from the previous section again: the first name of customer 42 gets modified, while last name and email addresses remain unchanged.
+Using JSON notation again, and just focusing on the new row image, the corresponding change event could look like this:
+
+
+[source,json]
+----
+{
+  "id" : 42,
+  "first_name" : "Barry"
+}
+----
+Depending on the chosen serialization format, there are some subtleties around the handling of null values.
+In particular, it must allow you to differentiate between an (optional) attribute being set to null and an attribute not being mutated at all.
+In JSON, you could distinguish between these two cases by emitting a null value for the field vs.
+omitting it from the event payload.
+
+A second option for partial data change events is to describe which operations were applied to which attributes specifically.
+This can come in handy in particular when dealing with array-valued attributes.
+In case of updates, when the change event format contains the full new value, then a small change could cause write amplification, when for instance adding or removing one element to/from an array with twenty entries.
+Formats such as  link:https://jsonpatch.com/[JSON Patch]  are useful here, as they allow you to describe the changes on a more fine-grained basis:
+
+
+[source,json]
+----
+{
+  "id" : 42,
+  "patch" : [
+    { "op": "replace", "path": "/first_name", "value": "Barry" }
+         { "op": "add", "path": "/emails/-", "value": { "berry@example.com" } }
+    ]
+}
+----
+Unlike full events, delta data change events are not fully self-contained.
+When receiving a partial update event, an event consumer must be able to access the previous state of that record in order to be able apply that patch event.
+If for instance the consuming system is a SQL database, an `UPDATE` statement could be issued for updating the affected columns.
+
+But what to do when a sink data system does not support partial updates and instead always requires ingesting the complete record when an update has happened?
+For cases like this, stateful stream processing, for instance using  link:https://flink.apache.org/[Apache Flink] , can be a useful option.
+You’d put this stream processor between your event source and sink, and it would “re-hydrate” full events, this means apply all the incoming partial events one after the other.
+To do so, it would utilize an internal state store (such as  link:https://rocksdb.org/[RocksDB] , in case of Flink).
+When processing an insert change event for a record, this event would be put into the state store, before emitting it downstream.
+
+Later on, when processing update events, the stream processor can obtain any attribute values absent from incoming partial events from the state store, thus exposing only ever full events to the downstream event consumers.
+While a similar read-before-write approach could also be implemented within sink data stores, doing it in a stream processing pipeline allows to build the re-hydration logic once and then let multiple sinks benefit from it.
+
+This technique can also come in handy for situations where a CDC system emits full data change events most of the time, but may emit partial events in certain cases.
+One example is Debezium’s connector for Postgres, which  link:https://debezium.io/blog/2019/10/08/handling-unchanged-postgres-toast-values/[doesn’t emit the value for TOAST columns]  if their value hasn’t changed.
+Stateful stream processing as described above can help to shield consumers from this behavior and always expose complete events to event consumers.
+
+
+=== Id-only Events
+The last and most basic form of a data change event are id-only events.
+They merely describe which record in the source database was affected by a change.
+For this purpose, all which the event must contain is the id of the record, for instance, the primary key value of a row in an RDBMS):
+
+
+[source,json]
+----
+{
+    "id" : 42
+}
+----
+Id-only events are used in contexts other than databases and CDC in the strict sense of the word, too.
+One example are  link:https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html[Amazon S3 event notifications] , which you can use for subscribing to changes occurring in an S3 bucket, such as the addition or removal of files.
+The id-only event style is used here as would not be practical to expose the entire file state in the corresponding change events.
+
+By its very nature, such an id-only event doesn’t tell you what exactly has changed about the represented record.
+This makes this event type only useful for quite a narrow range of applications.
+For instance, you could use it to _invalidate_ items in a cache, but you couldn’t use it by itself to _update_ at a cache.
+Examples for systems working with id-only events include the  link:https://learn.microsoft.com/en-us/sql/relational-databases/track-changes/about-change-tracking-sql-server?view=sql-server-ver16[Change Tracking]  feature of Microsoft SQL Server, the  link:https://www.cockroachlabs.com/docs/v23.2/create-changefeed#options[“key only” mode of CockroachDB] , and the  link:https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html#Streams.Enabling[KEYS_ONLY stream view type in DynamoDB] .
+
+If you’d like to obtain the entire row, you don’t have any other choice than re-selecting it from the source store.
+This could be done by change event consumers themselves, but also by a stream processor which then emits full change events to downstream consumers.
+There are a few things to consider when doing this.
+
+Most importantly, CDC tools emit change events asynchronously, which means that by the time you run a query for obtaining the complete row state, that row may already have been mutated again.
+The query will return the _current_ state of the row, not the one which was valid at the point in time when the change event was triggered originally.
+If there are multiple changes to the row in close timely proximity, you may not be able to extract all the intermediary versions of that record.
+The following visual illustrates this situation:
+
+At time `t1`, the record with id 4 is inserted into the `customers` table, and the corresponding id-only change event is emitted.
+Shortly thereafter, the record gets updated at time `t2`, changing the first name of the customer from “Jazmine” to “Melissa”.
+At time `t3`, the change event for the original insert operation gets processed, issuing a re-select of the record from the database.
+As the update already has been committed at this point, the stream processor will propagate the state as of after the update, rather than its original version at insertion time.
+
+It may even be possible that the record has been deleted since then, which means that its state cannot be reconstructed by querying for it.
+
+An exception are databases which allow for point-in-time queries, provided the change event contains an unambiguous timestamp or log position describing when the event occurred.
+In that case, you could use that information to retrieve the right version, for instance using an `AS OF SCN` query in Oracle.
+
+Events re-hydrated that way can still be very useful, for instance for propagating data changes into a full-text search engine; in general, you’ll be fine there with just having the latest version of a record in the index, and you don’t need to apply all intermediary updates occurring in a short period of time.
+On the other hand, if you’re using CDC for tracking the state transitions of a purchase order and triggering corresponding downstream actions, or for maintaining an audit log, then it is vital to keep track of each and every data change and this technique would not be useful.
+
+When implementing a re-select strategy, you should consider retrieving multiple records at once.
+So, for example, when receiving change events for ten customer records, instead of executing ten queries for retrieving them one-by-one, you might batch them into one single query, significantly reducing the load on the source database.
+Another interesting option is to not only retrieve the specific record itself, but instead to retrieve an entire aggregate of data.
+When receiving that id-only event for customer 42, you might for instance run a query which retrieves the customer data as well as their address information and bank account details by joining all the relevant tables.
+
+Before comparing the three types of data change events and discussing their individual pros and cons, there’s another concern which deserves attention, and this is event metadata, i.e.
+data which describes contextual information for an event.
+
+
+=== Change Event Metadata
+Besides the actual change event payload, representing the data change itself, it often is useful to have additional metadata for an event.
+This typically includes:
+
+* The type of a change (insert, update, delete)
+* Timestamp when the event occurred
+* Name of the originating database, schema, and table
+* Transaction id
+* Position of the event in the source database’s transaction log
+* The query triggering a change
+
+As an example, here’s an update event as emitted by the  link:https://debezium.io/documentation/reference/stable/connectors/postgresql[Debezium connector for Postgres] , with a range of event metadata in the `ts_ms`, `op`, and `source` fields (you’d find similar metadata in the events emitted by other CDC tools such as  link:https://maxwells-daemon.io/[Maxwell’s Daemon] ):
+
+
+[source,json]
+----
+{
+  "before": {
+    "id": 1004,
+    "first_name": "Billy",
+    "last_name": "Wilson",
+    "email": "bwilson@example.com"
+  },
+  "after": {
+    "id": 1004,
+    "first_name": "Barray",
+    "last_name": "Wilson",
+    "email": "bwilson@example.com"
+  },
+  "source": {
+    "version": "2.5.0.Final",
+    "connector": "postgresql",
+    "name": "dbserver1",
+    "ts_ms": 1705663711187,
+    "snapshot": "false",
+    "db": "postgres",
+    "sequence": "[\"34471328\",\"34494376\"]",
+    "schema": "inventory",
+    "table": "customers",
+    "txId": 773,
+    "lsn": 34494376,
+    "xmin": null
+  },
+  "op": "u",
+  "ts_ms": 1705663711220
+}
+----
+Change event metadata allows for a number of interesting applications on the consumer side.
+For instance, the information about which transaction an event originated from can be used for propagating the same transactional semantics to the sink of a data pipeline too: instead of ingesting incoming events one by one, you could buffer the events for one transaction and apply them all at once in a transaction to the sink data store.
+That way, queries against the sink data store are subject to the same isolation guarantees as with the source database.
+Another interesting metadata field is the `sequence` attribute emitted by Debezium’s Postgres connector, which can be used by clients for deduplication in data pipelines with at-least once semantics.
+
+
+=== Comparison
+Having explored the three kinds of data change event, which one should you use?
+As so often, there is not an universal answer to that.
+Each of the types has its respective advantages and disadvantages and you’ll need to make an informed decision based on your specific context.
+
+Complete data change events tend to be the easiest to handle for consuming systems.
+The incoming event can be simply written to a sink data store using “upsert” semantics, overwriting whatever version there might have been there before.
+When propagating change events via distributed log systems such as Apache Kafka, a topic with full change events can be compacted.
+As each event is fully self-contained, it is sufficient to keep the latest change event per record in the log and it is still possible to propagate the complete state of the data set to consumers (and if your change events contain new and old row images, you’d even have the last two versions per recorded even in a compacted change event topic).
+It is also easily possible to bootstrap new event consumers solely from the state in the distributed log.
+The downside of full events is their larger size.
+
+Id-only events are much more compact, as they don’t convey any information other than the id of changed records.
+In order to retrieve the actual event state, you’ll need to query the source system again which comes at the risk that you may miss any intermediary updates to a record occurring between the point in time when a change event was triggered and when you process it.
+As such, their use is rather limited, but they can come in handy for some use cases such as cache invalidation.
+
+Delta events can be an interesting middle ground.
+Conveying only the modified fields of a changed record, they consume less space than a full event.
+But in order to propagate them into a sink datastore, it must have the capability to do partial updates, i.e.
+the ability to just update a subset of a record’s fields, rather than having to rewrite the entire record.
+If that is not an option, you can use a stateful stream processing pipeline between the CDC tool and the sink datastore to recreate full events.
+A change event topic with delta events cannot be compacted, as consumers otherwise may miss update events they need to recreate the represented source record.
+As a consequence, when there is a high volume of updates, a topic with partial events may even consume more space than a (compacted) topic with full events.
+
+The following table provides an overview of the three change event types and their specific properties:
+
+As the comparison shows, each of the different event types has its individual characteristics.
+Which one to use depends not only on the capabilities of the systems you’re working with, but also—as always—on the specific use case and its requirements.
+
+Real-time stream processing with solutions such as Apache Flink, is a powerful companion to CDC tools like Debezium, allowing you to transform and amend change event streams if and when needed.
+Examples include the expansion of id-only change events—by selecting the entire row state from the source database—as well as the hydration of full events from delta change events by using a state store.
+But you also can employ stream processing to great effect for other CDC-related tasks, for instance for establishing stable data contracts for your change events streams, as I’ve discussed in  link:https://www.decodable.co/blog/change-data-capture-breaks-encapsulation-does-it-though[another blog post]  not too long ago.

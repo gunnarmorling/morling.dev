@@ -1,0 +1,90 @@
+---
+title: 'Support for Running Your Own Apache Flink Jobs Is Coming To Decodable'
+date: "2023-04-25T00:00:00+00:00"
+draft: true
+markup: adoc
+canonical_url: https://www.decodable.co/blog/support-for-running-your-own-apache-flink-jobs-is-coming-to-decodable
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+_This post originally appeared on the link:https://www.decodable.co/blog/support-for-running-your-own-apache-flink-jobs-is-coming-to-decodable[Decodable blog]._
+
+It’s my great pleasure to announce a major new feature of the Decodable platform: support for running your own custom Apache Flink® jobs, written in any JVM-based programming language such as Java or Scala.
+This takes the Decodable managed service experience to a completely new level, and I couldn’t be more excited about finally seeing this feature out in the wild!
+Firm believers into the _release early, release often_ mantra, we’re making support for JVM-based custom Flink jobs available as a technology preview today, and we’re looking forward very much to the feedback from the Decodable user community.
+
+<!--more-->
+This new capability complements and tightly integrates with Decodable’s existing support for SQL-based data streaming pipelines, allowing you to choose freely between declarative and imperative job implementations, depending on your specific needs and requirements.
+In the remainder of this blog post, I would like to discuss the philosophy behind this new feature, how it integrates with the Decodable managed service experience, and how you can start and give it a try yourself.
+
+
+=== Why Custom Apache Flink Jobs?
+SQL is the industry standard for declarative data processing.
+It is widely supported not only to query _data at rest_ in OLTP and OLAP systems, but it also is a popular choice to run queries against _data in motion_ in real-time stream processing platforms like  link:https://flink.apache.org/[Apache Flink] .
+There are even  link:https://arxiv.org/pdf/1905.12133.pdf[proposals]  for integrating streaming semantics into the official SQL standard.
+
+From its beginning, Decodable has therefore put a strong emphasis on using SQL as the means of defining  link:https://docs.decodable.co/pipelines.html[stream processing pipelines] .
+As there are way more people who are able to read and write SQL than there are, for instance, Java developers, SQL is a catalyst for the democratization of data.
+Its declarative nature makes it easy to define and run data streaming jobs, transparently benefitting from many optimizations in the underlying platform, such as improving the performance of queries via code generation, cost-based query planning and execution, and cost-efficient, dense packing in cloud environments.
+
+As we’ve learned from customers over time, in some cases SQL can be a bit too inflexible for the task at hand, though.
+What if, for instance, you need to invoke an external web service from within your stream processing job?
+Or integrate a custom library with a highly optimized algorithm implementation?
+Or maybe you have already implemented some Flink jobs and now look for an alternative to operating your own Flink cluster?
+
+Custom Decodable pipelines address all these requirements.
+By deploying your JVM-based custom Flink jobs into the Decodable platform, you gain the required flexibility for cases where SQL isn’t versatile enough.
+Existing Flink workloads, e.g., running on a self-managed cluster, can easily be migrated to Decodable with no code changes.
+With support for custom Flink-based pipelines, the Decodable platform is becoming _the_ one-stop shop for all your stream processing needs.
+
+
+=== Integration Into the Decodable Platform
+Now, we didn’t want to build just some platform for deploying Flink jobs, but we wanted to do it the _Decodable Way_.
+No matter whether you are running SQL-based pipelines or custom Flink jobs, you should be able to benefit from all the platform features you’ve come to love, including fully-managed connectors for a wide range of external data sources and sinks, observability and monitoring, role-based access control (RBAC), and much more.
+
+To that end, custom Flink jobs are introduced to the Decodable platform as another kind of _pipeline_ (with SQL-based pipelines being the other, and so far only, alternative).
+This means you can easily integrate with fully-managed connectors, only moving those parts of your logic into a custom job which require a bespoke imperative implementation.
+You also can arbitrarily combine SQL-based and custom pipelines within one and the same end-to-end data flow.
+
+
+image::/images/2023/04/6717dc4282a396e17c57b686_6702c07fe0f6d9da672c8827_665de628e01a0041a62ed25d_image_2.webp[]
+_Fig._
+_1: SQL-based and Flink-based custom pipelines in Decodable._
+
+That way, Decodable allows you to benefit from SQL whenever it’s possible (ease of use, automatic query optimizations, etc.), while giving you the “escape hatch” of implementing and running bespoke Flink jobs when and where it’s needed.
+When migrating existing Flink jobs to Decodable, you can either run them as-is, or gradually extract existing specific parts into “native” Decodable components, for instance the source and sink connectors of a job, or those processing parts of a job which can be expressed using SQL.
+
+To further simplify the integration of custom Flink jobs with the Decodable platform, we are planning to publish an SDK which will allow you to access the Decodable  link:https://docs.decodable.co/docs/streams[streams]  of your account in the form of a simple Flink source and sink.
+The following example code shows how this could look like (subject to change, this SDK has not been released yet):
+
+
+[source,java]
+----
+
+----
+_Listing 1: A Flink job using the upcoming Decodable SDK._
+
+In this example, an instance of DecodableSource (representing the managed Decodable stream “addresses”) and an instance of DecodableSink (representing the “enrichedAddresses” stream) are created.
+For each incoming address object, an external service for geo-coding addresses is invoked, the address is enriched with the coordinates returned by the service, and finally emitted to the sink stream.
+
+Lastly, a word on security, which is a key concern for the team here at Decodable.
+Just as it’s the case for SQL-based pipelines, we’ve taken measures to make sure that custom Flink workloads of different customers cannot interfere with each other.
+Workloads are run in isolated security contexts and no code or data access is possible across account boundaries.
+
+
+=== Trying It Out Yourself
+We are releasing custom pipelines in Decodable, based on bespoke Apache Flink jobs, as a Tech Preview today.
+This means that this is the perfect time for you to get your hands onto this new feature and provide your feedback to us.
+
+In order to do so, please add yourself to our waiting list by  link:https://www.decodable.co/contact[sending us a message] .
+Interested existing Decodable customers should get in touch via the usual communication channels.
+An expert from Decodable will then reach out to you to discuss the next steps.
+
+Over the next few weeks, we’re planning to further build out and improve the support for deploying your own Flink jobs to Decodable.
+Stay tuned for the aforementioned SDK, access to the web console built into Apache Flink, powerful logging and metrics capabilities, and much more.

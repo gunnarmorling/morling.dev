@@ -1,0 +1,92 @@
+---
+title: 'Checkpoint Chronicle - January 2024'
+date: "2024-01-24T00:00:00+00:00"
+draft: true
+markup: adoc
+canonical_url: https://www.decodable.co/blog/checkpoint-chronicle-january-2024
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+_This post originally appeared on the link:https://www.decodable.co/blog/checkpoint-chronicle-january-2024[Decodable blog]._
+
+Welcome to the _Checkpoint Chronicle_, a monthly roundup of interesting stuff in the data and streaming space.
+Your hosts and esteemed curators of said content are  link:https://twitter.com/gunnarmorling?lang=en[Gunnar Morling]  (your editor-in-chief for this edition) and  link:https://twitter.com/rmoff/[Robin Moffatt] .
+Feel free to send our way any choice nuggets that you think we should feature in future editions.
+
+<!--more-->
+
+=== Stream Processing, Streaming SQL, and Streaming Databases
+* link:https://blog.rockthejvm.com/flink-sql-introduction/[Streaming SQL with Apache Flink: A Gentle Introduction]  Flink SQL exposes Flink’s powerful stream processing capabilities to a large audience of SQL-savvy data engineers. This post by Giannis Polyzos is an excellent introduction to Flink SQL, discussing different kinds of query operators, checkpointing, and more.
+* link:https://www.scalevp.com/insights/stream-processing-becomes-mainstream/[Stream processing becomes mainstream]  A high-level overview on the current state of stream processing by Javier Redondo, discussing the differences between stream-to-sink and stream-to-table frameworks as well as between libraries and cluster frameworks.
+* link:https://www.decodable.co/blog/building-a-fully-managed-apache-flink-service-behind-the-scenes[Building a Fully Managed Apache Flink Service, Behind the Scenes]  Decodable software engineer Jared Breeden explores in this post what it takes to build a fully managed platform for stream processing based on Flink, touching on aspects like developer experience, observability, schema management, etc.
+* link:https://www.arroyo.dev/blog/stateful-stream-processing[What is stateful stream processing?]  Insightful post by Arroyo’s Micah Wylde, explaining what the “state” in stateful stream processing is about, how systems like Flink and Arroyo deal with it, and how checkpointing ensures consistency after failures.
+* link:https://materializedview.io/p/change-data-capture-still-breaks-db-encapsulatio[Yes, Change Data Capture Still Breaks Database Encapsulation]  This one is a reaction by Chris Riccomini to  link:https://www.decodable.co/blog/change-data-capture-breaks-encapsulation-does-it-though[my recent article]  which in turn was triggered by Chris’  link:https://cnr.sh/essays/kafka-change-data-capture-breaks-database-encapsulation[original post] , all on the same subject. Overall I feel Chris and I are not really in disagreement that much, it’s more that I described building blocks and implementation techniques, whereas Chris is looking for a ready-made product experience.
+* link:https://ververica.github.io/flink-cdc-connectors/release-3.0/content/overview/cdc-pipeline.html[CDC Streaming ELT Framework]  Flink CDC 3.0, released at the end of last year, introduces a new ELT framework, aiming to simplify the definition of CDC-driven data pipelines. The reference documentation is a great starting point to learn more about this project, which was just  link:https://lists.apache.org/list?dev@flink.apache.org:lte=1M:cdc[adopted into the upstream Apache Flink project]  earlier this month.
+
+
+=== Event Streaming
+* link:https://engineering.grab.com/frequency-capping[Sliding window rate limits in distributed systems]  Naveen Kumar Jakuva Premkumar and Abdullah Al Mamun of Grab discuss in this in-depth post how they rate limit the number of marketing emails and push notifications sent to their users, using two of my favorite data structures: bloom filters and roaring bitmaps.
+* link:https://newrelic.com/blog/how-to-relic/understanding-lag-in-a-streaming-pipeline[Understanding lag in a streaming pipeline]  New Relic is known as a large-scale user of Apache Kafka. So it’s always interesting to learn about their experiences from running data streaming pipelines. Amy Boyle explains how they identify lag in pipelines using different techniques, as well as their strategies for automatically and dynamically adapting to it.
+* link:https://blog.cloudflare.com/an-overview-of-cloudflares-logging-pipeline/[An overview of Cloudflare's logging pipeline]  Cloudflare’s blog is a great source of insightful posts on the technologies they use. In this article, Colin Douch gives an overview on Cloudflare’s logging pipeline, based on Apache Kafka, connecting clusters in multiple data centers using Mirror Maker, and streaming logs to queryable systems such as Clickhouse and Elasticsearch.
+* link:https://engineering.mixpanel.com/how-mixpanel-built-a-fast-lane-for-our-modern-data-stack-680701736f8c[How Mixpanel Built a “Fast Lane” for Our Modern Data Stack]  A slightly longer read, but definitely worth the time: Illirik Smirnov shares experiences from his work at Mixpanel for creating a near-real-time data pipeline based on Google Cloud Pub/Sub for use cases where their existing (reverse) ETL system doesn’t provide the required latency SLAs.
+
+
+=== Change Data Capture
+* link:https://www.decodable.co/blog/logical-replication-from-postgres-16-stand-by-servers-part-1-of-2[Logical Replication From Postgres 16 Stand-By Servers]  As of version 16, Postgres supports logical replication from read replicas. In this two-part blog series, I am taking a deep dive into this new functionality, showing how to make use of it in general, how to connect Debezium to read replicas, and how to handle replication slots in case of fail-over scenarios.
+* link:https://blog.peerdb.io/pg-slot-notify-monitor-postgres-slot-growth-in-slack[PG Slot Notify: Monitor Postgres Slot Growth in Slack]  Making sure that Postgres replication slots don’t consume too much disk space is a key concern for every Postgres DBA. Kaushik Iska presents a neat solution to this problem in the form of PG Slot Notify, a chat bot which sends alerts to designated Slack channels in case a slot grows beyond a configured threshold.
+* link:https://debezium.io/blog/2024/01/11/Debezium-and-TimescaleDB/[Debezium and TimescaleDB]  Support for TimescaleDB—a time series database based on Postgres—has been on the wishlist for many Debezium users for quite some time. This has finally become a reality in Debezium 2.5.0. Debezium’s project lead Jiri Pechanec discusses this new feature in this post, including the capability to capture changes to continuously updated aggregates.
+* link:https://debezium.io/blog/2023/12/20/JDBC-sink-connector-batch-support/[Streamlined Performance: Debezium JDBC connector batch support]  For the longest time, the Debezium project focused on the source side of real-time data pipelines. This has changed with the recent addition of a JDBC sink connector. Fiore Mario Vitale dives into some performance improvements to this connector.
+
+
+=== Data Platforms and Architecture
+* link:https://netflixtechblog.com/our-first-netflix-data-engineering-summit-f326b0589102[Our First Netflix Data Engineering Summit]  Netflix data engineers shared their learnings around building reliable data pipelines in an internal conference last year. The sessions by Holden Karau and others have been published on YouTube now, including gems such as  link:https://www.youtube.com/watch?v=TwcWvwU7B64&list=PLSECvWLlUYeF06QK5FOOELvgKdap3cQf0&index=5[Streaming SQL on Data Mesh using Apache Flink]  and  link:https://www.youtube.com/watch?v=jRckeOedtx0&list=PLSECvWLlUYeF06QK5FOOELvgKdap3cQf0&index=6[Psyberg, An Incremental ETL Framework Using Iceberg] .
+* link:https://gotopia.tech/articles/284/designing-a-data-intensive-future-an-unscripted-journey-with-martin-kleppmann[Designing A Data-Intensive Future: An Unscripted Journey with Martin Kleppmann]  Jesse Anderson interviews data legend Martin Kleppmann, talking about the evolution of data systems since Martin’s book “Designing Data-Intensive Applications” came out in 2017, his current work on local-first collaboration software, and his thoughts about being in academia.
+* link:https://product.hubspot.com/blog/imbalanced-traffic-routing[Handling Imbalanced Traffic with Kafka Swimlanes]  Mixing messages from different sources on one Kafka topic can cause a delay in processing when there are sudden spikes in the messages coming in from one producer. Angus Gibbs of HubSpot discusses how they address that issue, for instance routing backfill traffic and real-time traffic to different topics.
+* link:https://doordash.engineering/2023/12/05/api-first-approach-to-kafka-topic-creation/[API-First Approach to Kafka Topic Creation]  Managing Kafka topics in a consistent, secure, and reliable manner, ideally as self-service for developers, is an evergreen topic for data platform teams. Varun Chakravarthy et al. describe in this post how they've solved this problem at DoorDash by means of infra-structure-as-code using Pulumi.
+* link:https://engineering.grab.com/kafka-on-kubernetes[Kafka on Kubernetes: Reloaded for fault tolerance]  The Strimzi operator is a very popular way for running Apache Kafka on Kubernetes. Fabrice Harbulot and Thang Le of Grab discuss how they have designed their Kafka cluster deployments with a strong focus on fault tolerance, leveraging Strimzi’s rolling deployment mechanism and EBS volumes for persisting the data from their Kafka topics.
+* link:https://www.youtube.com/watch?v=V7vhSHqMxus[Can Event-Driven Architecture make Software Design Easier?]  An episode of Kris Jenkins’  link:https://www.youtube.com/@DeveloperVoices/featured[“Developer Voices”]  podcast, talking about everything events: event systems, Event Sourcing, the CloudEvents specification, and more. And it being a podcast with Kris, of course there was a mention of Clojure too.
+
+
+=== Data Ecosystem
+* link:https://shopify.engineering/server-sent-events-data-streaming[Using Server Sent Events to Simplify Real-time Streaming at Scale]  Every year, Shopify ships their Black Friday Cyber Monday (BFCM) live map, a real-time visualization of Shopify sales. In this article, Bao Nguyen discusses the latest version of this map, built using Server-Sent Events (SSE) and Apache Flink for processing raw merchant sales data coming in via Apache Kafka.
+* link:https://rmoff.net/2024/01/03/1%EF%B8%8F%E2%83%A3%EF%B8%8F-1brc-in-sql-with-duckdb/[1️⃣🐝🏎️🦆 (1BRC in SQL with DuckDB)]  Robin takes a stab at the  link:https://github.com/gunnarmorling/1brc[One Billion Row Challenge]  in this post—and staying true to his SQL personality, he’s using DuckDB for it. Unsurprisingly, everyone’s favorite embeddable analytics database does really well.
+* link:https://read.engineerscodex.com/p/how-apple-built-icloud-to-store-billions[How Apple built iCloud to store billions of databases]  Leonardo Creed takes a look under the hood of CloudKit, Apple’s backend service for iCloud, and how they leverage FoundationDB and Apache Cassandra, managing hundreds of petabytes of data.
+* link:https://dataengineeringcentral.substack.com/p/kubernetes-for-data-engineers[Kubernetes for Data Engineers]  While most data engineers don’t need to work directly with Kubernetes in their jobs (you can decide whether that’s good or bad ;), it can still be interesting to learn about the core ideas and concepts. Daniel Beach provides a nice introduction to Kubernetes in this post.
+* link:https://twitter.com/gunnarmorling/status/1747197582244200913[Are you using Protocol Buffers as serialization format with Kafka?]  I asked this question on Twit…, mh, X, the other day, and I was really surprised by the large number of folks who shared their experiences from using ProtoBuf. It seems it’s way more popular than I had thought, with some advantages over Avro, including better support for languages other than Java, a less verbose format for defining schemas, support for partial deserialization, and others.
+* link:https://www.robinlinacre.com/fast_deduplication/[Super-fast deduplication of large datasets using Splink and DuckDB]  Deduplicating data is a common task for most data engineers. Splink is an open-source Python tool designed for this task, and Robin Linacre puts it into action in this post together with DuckDB, deduplicating a dataset of seven million rows, comparing runtimes on EC2 instances of different sizes.
+
+
+=== Paper of the Month
+📄 *DBLog: A Watermark Based Change-Data-Capture Framework* ( link:https://arxiv.org/abs/2010.12597[arXiv:2010.12597] )
+
+In this paper from 2020, Andreas Andreakis and Ioannis Papapanagiotou, back then working on a CDC solution at Netflix, propose an innovative algorithm for running backfills of existing data (“snapshotting”) concurrently to reading changes from the transaction log, leveraging a windowed de-duplication approach.
+Adopted by Debezium, Flink CDC, and other CDC solutions, this has been a massive improvement for data engineering teams running CDC pipelines.
+
+
+=== Events & Call for Papers (CfP)
+* link:https://2024.geecon.org/cfp/[GeeCON]  (Kraków, Poland) *May 15-17* (CfP closes Jan 31st)
+* link:https://sessionize.com/jnation-2024/[JNation]  (Coimbra, Portugal) *June 4-5* (CfP closes Jan 31st)
+* link:https://jprime.io/cfp[JPrime]  (Sofia, Bulgaria) *May 28-29* (CfP closes Feb 15th)
+* link:https://ndcoslo.com/call-for-papers[NDC Oslo]  (Oslo, Norway) *June 10-14* (CfP closes Feb 18th)
+* link:https://program.berlinbuzzwords.de/bbuzz24/cfp[Berlin Buzzwords]  (Berlin, Germany) *June 9-11* (CfP closes Feb 25th)
+* link:https://sessionize.com/current-2024/[Current '24 | The Next Generation of Kafka Summit]  (Austin, TX) *Sep 17-18* (CfP closes Feb 26th)
+
+
+=== New Releases
+* link:https://flink.apache.org/2024/01/19/apache-flink-1.18.1-release-announcement/[Apache Flink 1.18.1]
+* link:https://twitter.com/gunnarmorling/status/1748362954053914821[kcctl 🐻 1.0.0.CR3]
+* link:https://debezium.io/blog/2023/12/21/debezium-2-5-final-released/[Debezium 2.5.0.Final]
+* link:https://debezium.io/blog/2024/01/22/debezium-2.6-alpha1-released/[Debezium 2.6.0.Alpha1]
+* link:https://github.com/ververica/flink-cdc-connectors/releases/tag/release-3.0.0[Flink CDC 3.0.0]
+
+That’s all for this month!
+We hope you’ve enjoyed the newsletter and would love to hear about any feedback or suggestions you’ve got.
+
+Gunnar ( link:https://de.linkedin.com/in/gunnar-morling-2b44b7229[LinkedIn]  /  link:https://twitter.com/gunnarmorling?lang=en[X]  /  link:https://mastodon.online/@gunnarmorling[Mastodon]  /  link:mailto:gunnar@decodable.co[Email] ) +
+Robin ( link:https://www.linkedin.com/in/robinmoffatt[LinkedIn]  /  link:https://twitter.com/rmoff/[X]  /  link:https://data-folks.masto.host/@rmoff[Mastodon]  /  link:mailto:robin@decodable.co[Email] )

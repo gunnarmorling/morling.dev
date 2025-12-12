@@ -1,0 +1,138 @@
+---
+title: 'Decodable vs. Amazon MSF: Running Your First Apache Flink Job'
+date: "2024-06-27T00:00:00+00:00"
+draft: true
+markup: adoc
+canonical_url: https://www.decodable.co/blog/your-first-apache-flink-job
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+_This post originally appeared on the link:https://www.decodable.co/blog/your-first-apache-flink-job[Decodable blog]._
+
+A question often brought up by potential Decodable customers as they are exploring the product is how our service for building real-time ETL applications–which is based on Apache Flink–differs from other offerings in the space, and in particular  link:https://aws.amazon.com/managed-service-apache-flink/[Amazon’s Managed Service for Apache Flink]  (MSF).
+There are similarities, but also key differences, so this is more than a fair question.
+In this blog post, my intention isn’t to judge or provide a conclusion.
+I’ll provide some guidance on this topic, helping folks make an informed decision about which of the offerings best suits their specific needs.
+
+<!--more-->
+I’ll discuss this question from the perspective of someone looking to deploy an existing Flink job (implemented in Java or Python) onto either platform, for instance someone who’d like to move away from a self-managed Flink cluster to a managed service.
+Let’s take a look at MSF first, followed by Decodable, which supports deploying Flink jobs as  link:https://docs.decodable.co/pipelines/create-pipelines-using-your-own-apache-flink-jobs.html[Custom Pipelines] .
+
+
+=== Deploying an Apache Flink Job on MSF
+The Flink offering on AWS comes in two different flavors: you can choose between deploying “Streaming applications” (to “analyze streaming data with data analytics applications”) and “Studio notebooks” (to “interactively query data streams in real time”).
+
+It’s not quite clear from the outset which option to choose when being new to the service, but there is a  link:https://docs.aws.amazon.com/managed-flink/latest/java/what-is.html[documentation page]  which helps you to make a decision depending on your specific use case.
+Essentially, MSF allows you to run notebook applications (based on  link:https://zeppelin.apache.org/[Apache Zeppelin] ), which is primarily meant for interactive use cases such as data exploration with SQL and Python on the one hand, and long-running stream processing applications based on Apache Flink on the other hand.
+
+The latter is what you’ll need for deploying an existing Flink job.
+Creating a streaming application on MSF is a two-step process: first, you define the application and basic properties such as name, description, and Flink version.
+A new IAM role for the application can either be created or an existing one can be reused.
+The role must have permissions for retrieving the job file from a given S3 bucket as well as for storing and reading log files from  link:https://aws.amazon.com/cloudwatch/[Amazon CloudWatch] .
+You also can choose between two configuration templates, development or production, for controlling aspects such as log granularity, scaling behavior, and level of metrics.
+
+
+image::/images/2024/06/6717dc3782a396e17c57a9fa_6702b0d47775ae30353ad518_66799c9a58571ea3ec12b0a6_AD_4nXdkdIQR6Ln0Cm1oGYcJMv4mQowE1Lx2sQCe0XR8PsfrxRN6wJd3Ajc9w5nQZS2tr5k81wC56C3vo5WjHjcuy-rGAvZGjyhXyf94CZ7WY5UdIQtUOmKDp29xa5keTNlUrQdGwZ2SPzYk5xmAbiiuKnX0r3vr.webp[]
+_Fig.1: Creating a new streaming application in Amazon MSF_What follows is a mandatory second configuration step.
+Here you need to choose or create an S3 bucket which will contain the Flink job file to deploy (for security reasons, make sure to limit access to the bucket as much as possible, in particular you should disable public access).
+Upload the file, for instance using the S3 web console, and then specify the path of the file in the bucket in the MSF configuration step.
+After that’s done, you can optionally fine-tune the logging, monitoring, snapshotting, checkpointing, and scaling behaviors for the application.
+Next, you can launch your application by clicking the “Run” button in the MSF console, and once the application is in “Running” state, you can examine logs and metrics directly from within MSF.
+Alternatively, the standard Flink web dashboard can also be accessed for gaining deeper insight into the runtime behaviors of your job.
+
+
+image::/images/2024/06/6717dc3782a396e17c57aa18_6702b0d47775ae30353ad51c_66799c9a27b386f94194b70b_AD_4nXfEhs67ALPV1jUq5vguahFUwk41Y_AQZMuXOHe3vnecMRzKlwKWEE2YcU3MUhIfOri3hx9ZqUEWisCmiQftnch9jDcixWYwA8w6jk0kpnugUF1T8n7WpfRV6IUvC7x-3IykN1I0Pj3TcU55GD8xyr8B9Kh0.webp[]
+_Fig.2: Configuring streaming application in Amazon MSF after setting it up_
+==== Deploying a PyFlink Job on MSF
+If you’d like to deploy a Python-based job (using the  link:https://nightlies.apache.org/flink/flink-docs-master/docs/dev/python/overview/[PyFlink]  API), the  link:https://docs.aws.amazon.com/managed-flink/latest/java/how-python-creating.html[required steps]  are slightly more involved.
+After uploading the job as a ZIP file (instead of a JAR file as for Java-based jobs), you’ll need to specify the name of your job’s Python script.
+To do so, go to “Runtime properties” and create a new entry with the group id `kinesis.analytics.flink.run.options` and the key `python` (the “kinesis.analytics” part being a reference to the  link:https://aws.amazon.com/blogs/aws/announcing-amazon-managed-service-for-apache-flink-renamed-from-amazon-kinesis-data-analytics/[original name]  of AWS’ Flink offering, “Amazon Kinesis Data Analytics”).
+Specify the name of your script as the property value, for instance, `main.py`.
+
+If your job requires third-party Python libraries, add them in a subdirectory within your ZIP file and create another configuration property, using the same group id `kinesis.analytics.flink.run.options` as before, with `pyFiles` as the key.
+For the value, specify the path of the dependencies within the ZIP file, for instance, `python-libs/`.
+Note the path must be given using a trailing slash, otherwise it won’t be found by the MSF runtime environment.
+
+So those are the minimum steps necessary to get an existing Flink job running in an MSF environment.
+Next, let’s take a look at how to get started with running an existing Flink job on Decodable.
+
+
+=== Deploying an Apache Flink Job on Decodable
+In Decodable,  link:https://docs.decodable.co/pipelines/create-pipelines-using-your-own-apache-flink-jobs.html[Custom Pipelines]  enable you to run your own Flink jobs.
+To create a new pipeline using the web interface (you can use the CLI or API too), switch to the “Pipelines” tab, then select “New Pipeline” → “Upload Flink Job”.
+In the wizard which opens up, you can specify a Flink version and directly upload the job file.
+Optionally, you also can specify the name of the main job class (otherwise, this is retrieved from the manifest file of the JAR), arguments to pass to the job, as well as configuration files and  link:https://docs.decodable.co/administer/manage-secrets.html[managed Decodable secrets]  which should be made available to the job.
+Click “Next”, provide a name for the application, and that’s it.
+You can now launch the job, and once it’s up and running, access metrics and logs from within Decodable as well as fire up the Flink web dashboard if desired.
+
+
+image::/images/2024/06/6717dc3782a396e17c57a9fd_6702b0d47775ae30353ad50e_66799c9a3abfe46674965b2a_AD_4nXdQpSaChOCo3eMnhR9e-VgdaTAPLJvDgsOYe3eSMBUJ2y4VGE1cJDCqMhVICqns4kNDUhqJHw3WehA2WdO6JPhUOu3AD3-ZRG2tQDgj7-ibcdOQuNmviAvq7B3Ypf1XozszHBL0uSmMjeWOD9worbwtdBA.webp[]
+_Fig.3: Uploading a Flink job JAR as a Custom Pipeline to Decodable_
+==== Deploying a PyFlink Job on Decodable
+If you want to implement your stream processing job in Python rather than Java, the experience on Decodable is exactly the same; the only difference being that instead of a JAR file you are going to upload a ZIP file which contains your Python-based job as well as any 3rd party dependencies (Java or Python libraries) you may require.
+In comparison to MSF, Decodable is somewhat more opinionated here, for instance the main script is assumed to be named `main.py` and dependencies are to be  link:https://docs.decodable.co/pipelines/create-pipelines-using-your-own-apache-flink-jobs.html#_create_a_custom_pipeline_python[provided in a directory]  `python-libs`, without requiring any further configuration when deploying the job.
+
+Looking at the steps required for running your Flink job on AWS MSF and Decodable, the latter feels easier and less involved to me.
+You don’t have to first upload your job file to S3 and then reference it from within your job configuration, there’s no need for PyFlink-specific configuration settings, etc.
+Then again, of course, my perception may be biased—Decodable is the platform I am helping to build and thus am more familiar with.
+
+
+=== Connectors, SQL, and Beyond
+Taking a step back, the fundamental difference between the two services lies in their underlying design philosophy, and to which extent users typically make direct use of the Flink APis to begin with.
+As such, the two platforms actually are hard to compare, as they are positioned at very different abstraction levels.
+With MSF–apart from its notebook-based experience which primarily is geared towards interactive and exploratory use cases–what you get is essentially a provisioned Flink cluster onto which you can deploy your hand-written Flink jobs, whereas Decodable provides a complete platform for stream processing as a service, depicted below:
+
+
+
+
+image::/images/2024/06/6717dc3782a396e17c57aa15_6702b0d47775ae30353ad51f_66799c9a5d8cf920bf83c426_AD_4nXd73EgRlq-I1FnGkfqWqCyPcIZQiM8ITZsGgG1wrUGD8z4rhvF09pOFqa8weHuQW6jjtvfQWNcGz8Vx7sN6rO5D7XclSv217Dt_bL11-PXGryHQhZ6QnGHt9Z5DwwR5il8VSTtIKLOGH8Y9a7YlyjNwKmYQ.webp[]
+_Fig.4: The Decodable Platform_Users have two fundamental ways of working with the Decodable platform: not only can they run their own Flink jobs, but they can also set up data pipelines using  link:https://docs.decodable.co/connections.html[fully-managed connectors]  and processing jobs  link:https://docs.decodable.co/pipelines/create-a-pipeline.html[written in SQL] _._ Connectors exist for a variety of data sources and sinks, such as databases (using change data capture based on  link:https://debezium.io/[Debezium] ), Apache Kafka, Apache Pulsar, Kinesis, Apache Pinot, Snowflake, S3, Elasticsearch, and  link:https://docs.decodable.co/connections.html[many others] .
+
+For data processing–such as filtering, mapping,  link:https://docs.decodable.co/pipelines/joins.html[joining] , aggregating,  link:https://docs.decodable.co/pipelines/windowing.html[windowing] , etc.–SQL is a first-class citizen of the Decodable pipeline, coming with rich editing capabilities, live results preview, reprocessing of earlier data, and much more.
+
+This means that for all these use cases you don’t need to bother with running connectors or SQL queries with Flink’s table API, building JARs, and uploading them as Flink jobs.
+Just edit and save the SQL–and that’s it.
+While the web UI comes in handy for developing new streaming jobs in an interactive way, the Decodable CLI and API, together with  link:https://docs.decodable.co/declarative/overview.html[declarative resources] , can be used when moving jobs to production, typically by managing pipelines as code within git and deploying them fully automated via a CI/CD process.
+
+So while you absolutely can bring any existing Flink job and run it on Decodable, many users will opt for implementing custom Flink jobs only where it’s actually needed, for instance in cases where SQL isn’t flexible enough–say you want to enrich your data through invocations of an external REST API–or if you’d like to use a connector which isn’t available as a fully-managed connector on the platform just yet.
+The advantage here is, even in these cases you don’t have to go all in and completely recreate _everything_ in your own Flink job.
+Thanks to the  link:https://docs.decodable.co/api/pipeline-sdk.html[Decodable Pipeline SDK] , it’s easy to integrate managed connectors and SQL pipelines with your own custom jobs, allowing you to plug in bespoke Flink jobs exactly for those parts of a data flow where they prove to be the best option.
+Here is an example of how this could look in practice:
+
+
+image::/images/2024/06/6717dc3782a396e17c57aa12_6702b0d47775ae30353ad522_66799c9b23f072bc36539c62_AD_4nXc7AMN96ZZpm4-y-I_PIL3cegjwLv0Dehy3fQy1k_KOOH3tzw_Xug7WHiJnzuHSHO1xexZcL23xzdF5SPEygDBdMqTx9503I1OAdMWbhIGDYAtRvwmz82vwXmqRGKdV0YEjItdSj8sxQODwy8bJnddqhp5I.webp[]
+_Fig.5: Using a Custom Pipeline to customize logic within an end-to-end data flow_In this scenario, change events from a Postgres database are transferred in real time to a Kafka topic as well as a fulltext search index in Elasticsearch.
+The source and sink connectors for all the external systems are fully managed Decodable connectors (based on Debezium in the case of the Postgres change data capture source connector).
+All the change events are subject to a SQL-based filtering step, which could for example remove any logically deleted records from the change event stream.
+Before sending the events to Elasticsearch, they are enriched with reference data obtained from a remote REST API.
+Just for this specific part of the end-to-end data flow a Flink-based Custom Pipeline is used, as SQL doesn’t allow for this sort of processing.
+Finally, the enriched events are emitted via a managed sink connector to Elasticsearch.
+
+When authoring Flink jobs for the Decodable platform, you get to benefit from its built-in  link:https://docs.decodable.co/administer/manage-schemas.html[schema management capabilities] , which means no guessing about the shape and structure of your data streams.
+Within an end-to-end dataflow, your jobs are connected via managed  link:https://docs.decodable.co/streams.html[Decodable streams] , allowing you to replay and reprocess data, which you may want to do after changing your business logic, for instance.
+When accessing external systems, you can integrate the required credentials into your Flink job via  link:https://docs.decodable.co/administer/manage-secrets.html[Decodable secrets] , which means you don’t need to hardcode them within your job.
+Instead, you can manage and access them in an easy-to-use and secure way.
+
+
+=== Which Option to Use?
+Both Amazon MSF and Decodable are popular choices for running stream processing applications based on Apache Flink.
+While there are similarities in terms of general feature set and getting-started experience, the two offerings are positioned in fundamentally different ways.
+Decodable’s primary focus is on providing a fully managed experience for connectors and SQL-based processing jobs, while also allowing you to deploy existing Flink jobs if and when it’s needed.
+MSF on the other hand primarily provides managed Flink clusters, with an optional notebook-based developer experience.
+The following table shows a comparison of the two offerings:
+
+
+image::/images/2024/06/66b3c3be753b36b7b37d21f9_667dd2fce5b94ddb29aff1f9_table.png[]
+_Fig.6: Comparison of Decodable and Amazon MSF_Our mission at Decodable is to build a cohesive stream processing platform, going way beyond just providing managed Flink clusters.
+This platform offers developers with everything they need for building and running real-time data streaming applications, from efficient-to-use developer tools, to fully managed connectors for a large number of data sources and sinks, to a feature-rich execution environment with all the required functionality for managing and scaling state, observability, security, and much more.
+A fantastic getting started experience is one of our key design goals, and we are aiming at making the integration between bespoke Flink jobs which you deploy onto the platform and fully managed connectors and SQL-based pipelines as smooth as possible.
+
+Needless to say, in the end it is you who has to decide which stream processing platform to adopt, based on your specific context and requirements.
+We’d very much like to invite you to get your feet wet and experience how simple it can be with Decodable.
+link:https://app.decodable.co/-/accounts/create[Sign up] –it’s free–and get your first jobs running within minutes, today!

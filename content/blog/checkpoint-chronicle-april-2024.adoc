@@ -1,0 +1,88 @@
+---
+title: 'Checkpoint Chronicle - April 2024'
+date: "2024-04-26T00:00:00+00:00"
+draft: true
+markup: adoc
+canonical_url: https://www.decodable.co/blog/checkpoint-chronicle-april-2024
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+_This post originally appeared on the link:https://www.decodable.co/blog/checkpoint-chronicle-april-2024[Decodable blog]._
+
+Welcome to the _Checkpoint Chronicle_, a monthly roundup of interesting stuff in the data and streaming space.
+Your hosts and esteemed curators of said content are  link:https://twitter.com/gunnarmorling?lang=en[Gunnar Morling]  (your editor-in-chief for this edition) and  link:https://twitter.com/rmoff/[Robin Moffatt] .
+Feel free to send our way any choice nuggets that you think we should feature in future editions.
+
+<!--more-->
+
+=== Stream Processing, Streaming SQL, and Streaming Databases
+* In  link:https://blogit.michelin.io/dkafka-streams/[Designing Kafka Streams Applications] , Valérie Servaire, Paul Amar, Damien Fayet, and Sébastien Viale take us through their process of designing Kafka Streams topologies at Michelin.
+* Robin continues his quest of learning everything about Flink SQL; in his latest post, aptly named  link:https://www.decodable.co/blog/flink-sql-misconfiguration-misunderstanding-and-mishaps[Flink SQL—Misconfiguration, Misunderstanding, and Mishaps] , he explores commonly encountered failures when starting with Flink SQL, such as version mismatches, incomplete classpaths, bad catalog configurations, and more.
+* On the heels of the Big Three cloud providers, Cloudflare are continuously building out their portfolio of managed services, including object storage, serverless workers, and more. Amongst the latest additions, there are services for  link:https://blog.cloudflare.com/data-anywhere-events-pipelines-durable-execution-workflows[durable execution and stream processing] , with a Beta release planned for later this year. The post provides a preview of how future API may look like.
+
+
+=== Event Streaming
+* Loving, loving, loving the post  link:https://towardsdatascience.com/real-time-twitch-chat-sentiment-analysis-with-apache-flink-e165ac1a8dcf[Real-Time Twitch Chat Sentiment Analysis with Apache Flink]  by Volker Janz: it describes how to implement a streaming pipeline for sentiment analysis from the ground up, implementing a custom source function to ingest Twitch chat messages into Flink and using the  link:https://stanfordnlp.github.io/CoreNLP/[Stanford CoreNLP library]  for processing the same. Excellent write-up!
+* “Debezium and Kafka are a solid tandem for replication needs.” I always enjoy reading posts where data engineers describe the problems they’ve encountered and how they’ve overcome them, as there is so much to learn from them. In  link:https://www.revenuecat.com/blog/engineering/data-ingestion-snowflake/[How we solved RevenueCat’s biggest challenges on data ingestion into Snowflake] , Jesús Sánchez provides a deep insight into their data ingestion pipeline and explains why the team decided to build it that way.
+* Head-of-line blocking is a well-known issue most Kafka users will encounter sooner or later (here’s a  link:https://twitter.com/gunnarmorling/status/1541809606384652295[Twitter thread]  I did a while ago on this topic). One way for dealing with this problem is to use parallel Kafka consumers, as nicely illustrated in  link:https://blogs.halodoc.io/maximizing-kafka-efficiency-exploring-parallel-consumers/[this post]  by the engineering team of Halodoc.
+* Is the Kafka wire protocol the more important thing than the Apache Kafka project itself? Chris Riccomini makes the case for this way of looking at things in  link:https://materializedview.io/p/ce-nest-pas-un-kafka[Ce n'est pas un Kafka: Kafka is a Protocol] , drawing parallels to similar cases like the protocols of S3, Redis, or Postgres.
+* In  link:https://www.freshworks.com/saas/eng-blogs/modernizing-analytics-data-ingestion-pipeline-distributed-processing-engine/[Modernizing analytics data ingestion pipeline from legacy engine to distributed processing engine]  Dineshkumar Shanmugam describes how Freshworks moved a data pipeline processing up to 800,000 events per minute from a bespoke Python-based implementation to Apache Spark.
+* Apache Hudi is another popular contender in the data lake space and as such often is used together with Debezium for enabling real-time analytics use cases. Shi Kai Ng and Shuguang Xiang discuss  link:https://engineering.grab.com/enabling-near-realtime-data-analytics[how these tools are used at Grab] , tightly integrated via Apache Flink.
+* Hakampreet Singh Pandher from the Yelp engineering team describes in  link:https://engineeringblog.yelp.com/2024/03/building-data-abstractions-with-streaming-at-yelp.html[Building data abstractions with streaming at Yelp]  how they improved their developer experience by providing a unified data abstraction for online (i.e. REST) and streaming data consumers, based on Apache Flink, Apache Beam, and their in-house tool  link:https://engineeringblog.yelp.com/2018/12/joinery-a-tale-of-unwindowed-joins.html[Joinery] .
+* Apache Iceberg is becoming more and more popular as an open table format for data lakes. In  link:https://www.infoq.com/presentations/apache-iceberg-streaming/[this session]  (transcript included), Steven Wu of Apple shares his learnings from building a streaming pipeline from Iceberg, using Apache Flink.
+
+
+=== Change Data Capture
+* Looking for a hands-on example for integrating CDC with Debezium into a stream processing pipeline based on Apache Spark? Then check out  link:https://towardsdev.com/change-data-capture-cdc-with-docker-apache-kafka-debezium-and-apache-spark-streaming-0922fa901c21[this tutorial]  by Abdelbarre Chafik, running you step by step through setting up a CDC-driven data pipeline, using Docker, Apache Kafka, Debezium, and Apache Spark Streaming.
+* Taking data from OLTP to OLAP is one of the data engineering evergreens. In his Data Council session  link:https://www.youtube.com/watch?v=qlRCmH0XC5k[Streaming CDC data from PostgreSQL to Snowflake, challenges and solutions] , Alexandru Cristu presents a solution to this problem based on Debezium and Apache Flink.
+
+
+=== Data Ecosystem
+* The  link:https://www.highgo.ca/blog/[High Go blog]  is a great place for learning more about everyone’s favourite RDBMS, aka Postgres.  link:https://www.highgo.ca/2024/01/26/a-comprehensive-overview-of-postgresql-query-processing-stages/[This post]  by Cary Huang is no exception, providing a nice overview of the stages a query goes through when being executed.
+* The Kafka community is bidding farewell to ZooKeeper, not only reducing the operational complexity of running Kafka clusters but also allowing for way more partitions on individual nodes than before. In his latest post, Paolo Patierno of the Strimzi team describes the differences between using Kafka with ZooKeeper and without (“KRaft mode”) and how to  link:https://strimzi.io/blog/2024/03/21/kraft-migration/[migrate existing clusters to the new mode] .
+* When running a Kafka (or as in this case, Redpanda) cluster in a single region isn’t enough to address your availability requirements, a multi-region set-up is the way to go. In  link:https://www.infoq.com/presentations/redpanda-raft/[this talk from QCon London] , Michał Maślanka discusses the fundamentals of multi-region clusters and dives into details such as leader election, reads from follower replicas, and tiered storage.
+* Not only Apache Flink has data catalogs (as Robin discussed in  link:https://www.decodable.co/blog/catalogs-in-flink-sql-a-primer[these]   link:https://www.decodable.co/blog/catalogs-in-flink-sql-hands-on[two posts]  a few weeks ago), but also other data systems such as Apache Iceberg. In  link:https://medium.com/data-engineering-with-dremio/a-deep-dive-into-the-concept-and-world-of-apache-iceberg-catalogs-0697e8d18a8b[A Deep Dive into the Concept and World of Apache Iceberg Catalogs] , Dremio’s Alex Merced explores different catalog implementations for the popular open-source table format, including AWS Glue, Hive, Nessie, and others.
+* DuckDB is an in-process analytics database, which has seen tremendous interest over the last few years. Initially solely an in-memory engine, it supports spilling over to disk when processing queries against large datasets since version 0.9. If you are curious about how this works under the hood, I highly recommend to check out this post about  link:https://duckdb.org/2024/03/29/external-aggregation.html[external aggregation in DuckDB] , by Laurens Kuiper.
+
+
+=== FLIP Foyer
+* link:https://cwiki.apache.org/confluence/display/FLINK/FLIP-435%3A+Introduce+a+New+Materialized+Table+for+Simplifying+Data+Pipelines[FLIP-435: Introduce a New Materialized Table for Simplifying Data Pipelines] , proposing to introduce “a new table type [...], called Materialized Table, to simplify streaming and batch ETL pipeline cost-effectively”.
+* link:https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=293046855[FLIP-423: Disaggregated State Storage and Management (Umbrella FLIP)] , proposing to support remote (object) storage for state management purposes in Flink
+
+
+=== Paper of the Month
+* link:https://arxiv.org/pdf/2403.13629v1.pdf[CheckMate: Evaluating Checkpointing Protocols for Streaming Dataflows]
+
+
+=== Events & Call for Papers (CfP)
+* link:https://www.kafka-summit.org/events/kafka-summit-bangalore-2024/about[Kafka Summit Bengaluru]  (Bengaluru, India) *May 2* (CfP closed)
+* link:https://strimzi.io/blog/2024/04/09/strimzicon2024-schedule/[StrimziCon]  (virtual event) *May 22* (CfP closed)
+* link:https://program.berlinbuzzwords.de/bbuzz24/cfp[Berlin Buzzwords]  (Berlin, Germany) *June 9-11* (CfP closed)
+* link:https://current.confluent.io[Current '24 | The Next Generation of Kafka Summit]  (Austin, TX) *September 17-18* (CfP closed)
+* link:https://www.flink-forward.org/berlin-2024[Flink Forward]  (Berlin, Germany) *October 23-24* ( link:https://sessionize.com/flink-forward-2024-berlin[CfP]  closes on May 17)
+
+
+=== New Releases
+A few new releases this month:
+
+* link:https://flink.apache.org/2024/03/21/apache-flink-kubernetes-operator-1.8.0-release-announcement/[Apache Flink Kubernetes Operator 1.8.0]
+* link:https://downloads.apache.org/kafka/3.6.2/RELEASE_NOTES.html[Apache Kafka 3.6.2]
+* Debezium  link:https://debezium.io/blog/2024/04/02/debezium-2-6-final-released/[2.6.0.Final]  /  link:https://debezium.io/blog/2024/04/12/debezium-2-6-1-final-released/[2.6.1.Final]  /  link:https://debezium.io/blog/2024/04/25/debezium-2-7-alpha1-released/[2.7.0.Alpha1]
+* link:https://kroxylicious.io/releases/kroxylicious/record-encryption/2024/04/09/release-0_5_1.html[Kroxylicious 0.5.1]
+
+
+
+That’s all for this month!
+We hope you’ve enjoyed the newsletter and would love to hear about any feedback or suggestions you’ve got.
+
+
+
+Gunnar ( link:https://de.linkedin.com/in/gunnar-morling-2b44b7229[LinkedIn]  /  link:https://twitter.com/gunnarmorling?lang=en[X]  /  link:https://mastodon.online/@gunnarmorling[Mastodon]  /  link:mailto:gunnar@decodable.co[Email] )
+
+Robin ( link:https://www.linkedin.com/in/robinmoffatt[LinkedIn]  /  link:https://twitter.com/rmoff/[X]  /  link:https://data-folks.masto.host/@rmoff[Mastodon]  /  link:mailto:robin@decodable.co[Email] )

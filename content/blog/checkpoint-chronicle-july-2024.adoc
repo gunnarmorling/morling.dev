@@ -1,0 +1,97 @@
+---
+title: 'Checkpoint Chronicle - July 2024'
+date: "2024-07-25T00:00:00+00:00"
+draft: true
+markup: adoc
+canonical_url: https://www.decodable.co/blog/checkpoint-chronicle-july-2024
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+_This post originally appeared on the link:https://www.decodable.co/blog/checkpoint-chronicle-july-2024[Decodable blog]._
+
+Welcome to the _Checkpoint Chronicle_, a monthly roundup of interesting stuff in the data and streaming space.
+Your hosts and esteemed curators of said content are  link:https://twitter.com/gunnarmorling?lang=en[Gunnar Morling]  (your editor-in-chief for this edition) and  link:https://twitter.com/rmoff/[Robin Moffatt] .
+Feel free to send our way any choice nuggets that you think we should feature in future editions.
+
+<!--more-->
+
+=== Stream Processing, Streaming SQL, and Streaming Databases
+* link:https://medium.com/@RashidAljohani/automate-delivering-apache-flink-applications-a70a142a0d90[Automate Delivering Apache Flink Applications.]  When it comes to deploying stream processing jobs to production, fully automated pipelines are key to ensure fast delivery, robustness, auditability, and more. Rashid Aljohani describes a GitOps approach for deploying Flink jobs onto OpenShift clusters, using ArgoCD for continuous delivery and the Flink Kubernetes operator.
+* link:https://www.responsive.dev/blog/why-kafka-streams[So You Want to Write a Stream Processor? Beware of the Duck Syndrome.]  It can be a tempting task to implement a stream processing engine from scratch. But as so often, the devil is in the details (Correctness! Scalability!! Observability!!!), and Almog Gavra of Responsive makes the case why you should trust established engines such as Kafka Streams.
+* link:https://medium.com/confluent/windowing-for-event-streams-80c38cc43b4d[Mastering Stream Processing: A Guide to Windowing in Kafka Streams and Flink SQL.]  Bill Bejeck, author of the popular Kafka Streams in Action book, compares windowing in Kafka Streams and Flink SQL, diving into the support of polymorphic table-valued functions (as standardised in SQL 2016) provided by the latter.
+* link:https://towardsdatascience.com/aggregating-real-time-sensor-data-with-python-and-redpanda-30a139d59702[Aggregating Real-time Sensor Data with Python and Redpanda.]  With its strong footprint in the data engineering space, it’s not a surprise that Python also is becoming more and more popular as a tool for stream processing. In this in-depth post, Tomáš Neubauer of Quix shows how to build a Python application for aggregating sensor data from scratch.
+* link:https://yokota.blog/2024/07/11/in-memory-analytics-for-kafka-using-duckdb/[In-Memory Analytics for Kafka using DuckDB.]  Ingesting data from Kafka into DuckDB for querying it? Not a problem with  link:https://github.com/rayokota/kwack[kwack] , a tool built for this very purpose by Robert Yokota, among other things making it easy to export data from Kafka into Parquet files.
+
+
+=== Event Streaming
+* link:https://www.canva.dev/blog/engineering/product-analytics-event-collection/[How Canva collects 25 billion events per day.]  I don’t hear  much about Kinesis Data Streams these days, Amazon’s fully managed data stream service. But it’s very much alive, as demonstrated by this post by Canva’s Long Nguyen. They decided to use KDS over Amazon’s managed Kafka service (MSK), because it was significantly cheaper, while being only marginally slower. Great write-up sourced from practical experience.
+* link:https://medium.com/exness-blog/streaming-data-platform-at-exness-flink-sql-and-pyflink-25e3d765c3c1[Streaming Data Platform at Exness: Flink SQL and PyFlink.]  Part of an entire series of blog posts on the Streaming Data Platform at Exness, this post by Aleksei Perminov describes how they run SQL jobs using the Flink Kubernetes operator, including support for UDFs and statement sets, as well as their approach for running PyFlink jobs.
+* link:https://www.decodable.co/blog/kafka-to-iceberg-with-flink[Sending Data to Apache Iceberg from Apache Kafka with Apache Flink.]  Apache Iceberg is all the rage these days, and it’s definitely one of Robin’s favourite technologies. No wonder that he continues his exploration of this open table format, after discussing  link:https://www.decodable.co/blog/kafka-to-iceberg-with-decodable[ingestion into Iceberg from Decodable]  a few weeks ago.
+* link:https://developers.redhat.com/articles/2023/12/01/how-avoid-rebalances-and-disconnections-kafka-consumers[How to avoid rebalances and disconnections in Kafka consumers.]  Frequent rebalancing can be disruptive to Kafka consumers; in this post, Red Hat’s Abel Luque and Hugo Melendez Imaz describe strategies for avoiding this, such as asynchronous processing and the pause/resume pattern.
+
+
+=== Data Ecosystem
+* link:https://developers.redhat.com/articles/2024/06/05/encryption-rest-apache-kafka[Encryption at rest for Apache Kafka.]  Kroxylicious, a wire protocol proxy for Apache Kafka, was the last project I helped get off the ground during my time at Red Hat. Besides multi-tenancy, policy enforcement, auditing, and schema validation, encryption is a key proxy use case. Red Hat’s Tom Bentley and Chris Giblin, and Sean Rooney of IBM discuss how Kroxylicious provides secure encryption and what’s next for the project. Also check out this  link:https://www.confluent.io/events/kafka-summit-bangalore-2024/hiding-your-data-from-prying-eyes/[Kroxylicious recording]  from Kafka Summit Bengaluru.
+* link:https://medium.com/google-cloud/bigquery-table-partitioning-a-comprehensive-guide-dc66f093764c[BigQuery Table Partitioning—A Comprehensive Guide.]  Partitioning is a proven strategy for ensuring high performance when handling large data sets, allowing query engines to prune large chunks of data during query execution depending on the given WHERE clause. Matt Dixon explains how to make use of this technique with Google BigQuery.
+* link:https://themoah.medium.com/breaking-the-bank-the-most-expensive-mistakes-in-data-pipelines-825150609a5a[Breaking the bank: the most expensive mistakes in data pipelines.]  Entertaining post about dos and don’ts when building data pipelines.
+* link:https://github.blog/2024-06-13-unlocking-the-power-of-unstructured-data-with-rag/[Unlocking the power of unstructured data with RAG.]  Nice introduction to gaining insight from unstructured data in the context of software development, such as source code, README files, commit messages, and issue descriptions, using large language models and retrieval-augmented generation (RAG), by Nicole Choi.
+* link:https://www.thenile.dev/blog/all-about-ai[Everything a developer needs to know about Generative AI for SaaS.]  Staying in the AI department, if you are looking for an introduction to what RAG, GPT, and vector search are all about, I highly recommend taking a look at this fantastic post by Nile’s Gwen Shapira, which provides a really good introduction to these concepts.
+
+
+=== Data Platforms and Architecture
+* link:https://www.uber.com/en-GB/blog/kafka-tiered-storage/[Introduction to Kafka Tiered Storage at Uber.]  Tiered storage, as introduced by  link:https://cwiki.apache.org/confluence/display/KAFKA/KIP-405%3A+Kafka+Tiered+Storage?uclick_id=e4d3c5d9-7f42-433b-88d4-2c674ea9af9f[KIP-405] , promises to reduce cost by storing less frequently used data on slower (but cheaper) storage layers—for instance object stores such as S3—and paging it in transparently on demand. This post by Satish Duggana, Kamal Chandraprakash, and Abhijeet Kumar provides an introduction and high-level overview of the architecture of this feature which was pioneered by Uber.
+* link:https://jack-vanlightly.com/analyses/2024/7/3/understanding-apache-paimon-consistency-model-part-1[Understanding Apache Paimon's Consistency Model Part 1] *.* Following on the heels of Apache Iceberg, Delta Lake and Apache Hudi, Apache Paimon is yet another open table format, originally developed as part of the Flink project. In this excellent three part series ( link:https://jack-vanlightly.com/analyses/2024/7/3/understanding-apache-paimon-consistency-model-part-2[part 2] ,  link:https://jack-vanlightly.com/analyses/2024/7/3/understanding-apache-paimon-consistency-model-part-3[part 3] ), Jack Vanlightly discusses Paimon in depth, touching on its basic mechanics, consistency model, and even a formal verification.
+* link:https://medium.com/walmartglobaltech/reliably-processing-trillions-of-kafka-messages-per-day-23494f553ef9[Reliably Processing Trillions of Kafka Messages Per Day.]  Walmart deploys Apache Kafka, with a whopping 25,000 consumers. Ravinder Matte et al. discuss in this post how they overcame issues with rebalancing and head-of-line blocking at that scale by putting consuming applications behind a REST proxy.
+* link:https://www.warpstream.com/blog/the-kafka-metric-youre-not-using-stop-counting-messages-start-measuring-time[The Kafka Metric You're Not Using: Stop Counting Messages, Start Measuring Time.]  Imagine you are paged to an alert “Kafka consumer XYZ lags behind by 1M messages”. What does that mean though? In this post, Aratz Manterola Lasa argues that Kafka consumer lag should better be described in terms of time rather than offsets, making it much easier to understand and interpret.
+
+
+=== RDBMS and Change Data Capture
+* link:https://dzone.com/articles/logical-replication-features-in-pg-17[Logical Replication Features in PG-17.]  Postgres practitioners rejoice: Postgres 17—scheduled to be released later this year—is going to deliver failover replication slots, allowing you to point your CDC clients to a stand-by server, after it has been promoted to primary in case of a fail-over. Ahsan Hadi takes an early look at this long-awaited feature in this post. In the meantime, you can implement this functionality yourself on Postgres 16, as I’ve discussed in  link:https://www.decodable.co/blog/logical-replication-from-postgres-16-stand-by-servers-part-1-of-2[a blog post a few months back] .
+* link:https://xata.io/blog/pgstream-postgres-replication-schema-changes[Introducing pgstream: Postgres replication with DDL changes.]  Amongst the Postgres SaaS providers, Xata is definitely worth keeping an eye on. Not only have they published  link:https://github.com/xataio/pgroll[pgroll] , an innovative solution for schema migrations in a safe and revertible way, but also  link:https://github.com/xataio/pgstream[pgstream] , a command line client for CDC with support for DDL changes.
+* link:https://blog.paradedb.com/pages/iceberg_lakehouse[Putting DuckDB in Postgres to Query Iceberg.]  What happens when you combine everyone’s most favourite OLTP database with everyone’s most favourite in-process OLAP store? Good things of course! That’s probably what the fine folks of ParadeDB must have thought and did exactly that with their  link:https://github.com/paradedb/paradedb/tree/dev/pg_lakehouse[pg_lakehouse]  Postgres extension. You can read all about it in this post by Ming Ying.
+* link:https://neon.tech/blog/fan-out-postgres-changes-using-debezium-and-upstash-redis[Fan-out from Postgres with Change Data Capture using Debezium and Upstash Redis.]  Updating your database and a cache, without resorting to unsafe dual writes? That’s a highly popular CDC use case, discussed in depth in this post by Evan Shortiss, using Neon for Postgres and Upstash for Redis.
+* Speaking of Neon, we recently collaborated with their team for adding an  link:https://neon.tech/docs/guides/logical-replication-decodable[integration guide]  on combining the serverless Postgres with Decodable for processing change event streams.
+* link:https://debezium.io/blog/2024/07/08/async-embedded-engine/[Debezium Asynchronous Engine.]  While Debezium is used as a Kafka Connector most of the time, it also can be used as a library within any Java-based application. Vojtěch Juránek from the Debezium team discusses the use cases and applications of the Debezium embedded engine and the brand-new asynchronous implementation of the same.
+
+
+=== Paper of the Month
+Building processing engines which are equally well suited for streaming and query workloads is an ongoing topic of research in the industry and academia.
+In their paper  link:https://maxmeldrum.com/assets/files/uwheel_debs24.pdf[μWheel: Aggregate Management for Streams and Queries] , Max Meldrum and Paris Carbone introduce a novel approach for computing aggregates over time intervals, allowing to reuse computation results for both push and pull style queries._
+_In this  link:https://maxmeldrum.com/docs/posts/2024-05-14-uwheel-datafusion.html[accompanying blog post] , Max demonstrates their results on top of DataFusion.
+
+
+=== Events & Call for Papers (CfP)
+* link:https://beamsummit.org/[Beam Summit]  (Sunnyvale, CA) *September 4-5*
+* link:http://2024.javazone.no[JavaZone]  (Oslo, Norway) *September 4-5*
+* link:https://current.confluent.io[Current '24 | The Next Generation of Kafka Summit]  (Austin, TX) *September 17-18*
+* link:https://www.bigdataldn.com/[BigDataLDN]  (London, UK) *September 18-19*
+* link:https://www.flink-forward.org/berlin-2024[Flink Forward]  (Berlin, Germany) *October 23-24*
+* link:https://bigdataconference.eu/[Big Data Conference Europe]  (Vilnius, Lithuania & Online) *November 19-22*
+* link:https://ndclondon.com/[NDC London]  (London, UK)*January ‘25 27-31*; CfP closes on September 1
+
+
+=== New Releases
+A few new releases this month:
+
+
+
+* link:https://flink.apache.org/2024/07/02/apache-flink-kubernetes-operator-1.9.0-release-announcement/[Apache Flink Kubernetes Operator 1.9.0]
+* link:https://downloads.apache.org/kafka/3.7.1/RELEASE_NOTES.html[Apache Kafka 3.7.1]
+* Debezium  link:https://debezium.io/blog/2024/07/01/debezium-2-7-final-released/[2.7.0.Final] ,  link:https://debezium.io/blog/2024/07/11/debezium-3.0-alpha1-released/[3.0.0.Alpha1]
+
+
+
+That’s all for this month!
+We hope you’ve enjoyed the newsletter and would love to hear about any feedback or suggestions you’ve got.
+
+
+
+Gunnar ( link:https://de.linkedin.com/in/gunnar-morling-2b44b7229[LinkedIn]  /  link:https://twitter.com/gunnarmorling?lang=en[X]  /  link:https://mastodon.online/@gunnarmorling[Mastodon]  /  link:mailto:gunnar@decodable.co[Email] )
+
+Robin ( link:https://www.linkedin.com/in/robinmoffatt[LinkedIn]  /  link:https://twitter.com/rmoff/[X]  /  link:https://data-folks.masto.host/@rmoff[Mastodon]  /  link:mailto:robin@decodable.co[Email] )
