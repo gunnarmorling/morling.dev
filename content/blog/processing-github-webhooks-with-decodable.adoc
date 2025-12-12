@@ -38,7 +38,7 @@ For processing webhook events in Decodable, we'll need three things:
 
 == Creating a Stream
 Let's dive into each of these elements in more detail, beginning with the stream.
-We can create one by going to the “Streams” view in the Decodable web UI and clicking “New Stream”.
+We can create one by going to the "Streams" view in the Decodable web UI and clicking "New Stream".
 
 Decodable's data model is strongly typed, with schemas describing the exact structure of each data flow.
 GitHub maintains a description of each event structure on their website (e.g., the link:https://docs.github.com/en/webhooks/webhook-events-and-payloads#push[push event] ), and we could use this information to manually create a corresponding schema when creating the stream.
@@ -70,9 +70,9 @@ Note how the *commits* field of the stream schema precisely matches the event st
 == Creating a REST Connection
 With the stream in place, let's create an instance of the Decodable link:https://docs.decodable.co/docs/connector-reference-rest[REST source connector] which we'll use for ingesting the webhook events.
 This connector publishes an HTTP endpoint to which the events can be sent via POST requests.
-In the Decodable web UI, it is available under “Connections” → “New Connection” → “REST”:
+In the Decodable web UI, it is available under "Connections" → "New Connection" → "REST":
 
-The defaults provided by the wizard are fine, so we just need to click “Next”, select the previously created stream as the destination for this connector, and specify a name for the new connection.
+The defaults provided by the wizard are fine, so we just need to click "Next", select the previously created stream as the destination for this connector, and specify a name for the new connection.
 Note that the connection is stopped initially, it still needs to be activated from the connections list view.
 
 At this point, the connection's HTTP endpoint is enabled and ready to receive events.
@@ -120,8 +120,8 @@ Similar to connections, pipelines are in a stopped state  after being created, 
 
 == Creating a GitHub Webhook
 Finally, it's time to create the actual webhook in GitHub itself.
-This can be done under “Settings” → “Webhooks” of the repository.
-After specifying the Cloudflare Worker's URL as the payload URL and selecting “application/json” as the content type, we have everything configured for testing this data pipeline.
+This can be done under "Settings" → "Webhooks" of the repository.
+After specifying the Cloudflare Worker's URL as the payload URL and selecting "application/json" as the content type, we have everything configured for testing this data pipeline.
 
 If a commit gets pushed to the repository on GitHub, the webhook will be triggered, sending a push event to the Cloudflare worker.
 This wraps the request body, adds the authorization header, and sends the request to the Decodable REST connector.

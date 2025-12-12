@@ -331,14 +331,14 @@ To access Kibana, retrieve the password of the `elastic` user like so:
 $ kubectl -n logging get secret quickstart-es-elastic-user -o=jsonpath='{.data.elastic}' | base64 --decode; echo
 9V9520L2yvgzJla0RIyQo784
 ----
-Then forward port 5601 of the “quickstart-kb-http” service:
+Then forward port 5601 of the "quickstart-kb-http" service:
 
 
 [source,shell,linenums]
 ----
 $ kubectl -n logging port-forward service/quickstart-kb-http 5601
 ----
-Navigate to link:https://localhost:5601/[https://localhost:5601/] (accept the warning because of the unknown certificate issue) and log in, then go to “Analytics” → “Discover” and create a data view for the index named `fluentd`:
+Navigate to link:https://localhost:5601/[https://localhost:5601/] (accept the warning because of the unknown certificate issue) and log in, then go to "Analytics" → "Discover" and create a data view for the index named `fluentd`:
 
 _Fig._
 _1: Flink job logs ingested into Elasticsearch_As mentioned before, this is just scratching the surface when it comes to setting up observability infrastructure for Flink.
@@ -398,7 +398,7 @@ _2: Heimdall, a UI for managing multiple Flink jobs on one Kubernetes cluster_Th
 == Summary and Discussion
 The Apache Flink Kubernetes Operator is becoming increasingly popular for running Flink jobs on Kubernetes.
 Following the well-established Kubernetes operator pattern, it allows you to deploy and run your stream processing jobs by creating declarative resources which are processed in a reconciliation loop by the operator.
-This means you get to focus on the “What?” of your job, with a lot of the “How?” being taken care of automatically for you.
+This means you get to focus on the "What?" of your job, with a lot of the "How?" being taken care of automatically for you.
 Rather than having to deal with details such as configuring deployments, services, and ingresses, the operator lets you express your intent in a higher-level resource and derives all the required lower-level resources from that.
 
 There's quite a few features of the operator which we couldn't discuss in this post, most prominently its capabilities for link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/autoscaler/[auto-scaling] (i.e.
@@ -421,4 +421,4 @@ This can be useful if for instance you want to make sure all deployed jobs adher
 to add specific pod labels automatically (by implementing a resource mutator).
 
 The Flink Kubernetes operator is under active development and definitely a project worth keeping an eye on.
-For upcoming versions, the team link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/development/roadmap/[has planned] to work on a better “rollback mechanism and stability conditions” as well several improvements to the autoscaler.
+For upcoming versions, the team link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/development/roadmap/[has planned] to work on a better "rollback mechanism and stability conditions" as well several improvements to the autoscaler.

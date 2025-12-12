@@ -84,7 +84,7 @@ They typically comprise the following aspects as a formal agreement between data
 * *Metadata and policies:* describes attributes like the owner of a data contract, what the data can (and cannot) be used for, etc.
 * *Examples:* show how events adhering to the contract may look like
 
-This “contract” can be expressed and managed using different formats and tools.
+This "contract" can be expressed and managed using different formats and tools.
 For instance, data schemas can be defined using link:https://json-schema.org/[JSON Schema], link:https://avro.apache.org/[Avro] schemas, or link:https://protobuf.dev/[ProtoBuf] definitions.
 Another option would be describing your change event streams with help of the link:https://www.asyncapi.com/[AsyncAPI specification].
 Evolution rules can be managed and enforced using schema registries such as link:https://github.com/confluentinc/schema-registry[Confluent's] or link:https://www.apicur.io/registry/[Apicurio].
@@ -239,7 +239,7 @@ For instance, you may have two public customer change event streams, one with ad
 
 There is an interesting tension here between defining contracts which are widely applicable vs.
 contracts which are optimized for specific consumers.
-A useful guiding principle for resolving this tension could be “As general as possible, as specific as needed”.
+A useful guiding principle for resolving this tension could be "As general as possible, as specific as needed".
 This means that, for instance, you would include the widest set of fields possible in a change stream's data contract by default, only keeping sensitive data exclusive to streams for specific privileged consumers.
 Other kinds of filtering on the other hand—such as filtering out any backfilling events—would be the responsibility of individual clients, based on their specific requirements.
 
@@ -262,7 +262,7 @@ A stream processing job could then be used to join the two tables, emitting the 
 That way, instead of having to deal with two table-level streams, consumers would be able to ingest all the data pertaining to a customer from one single stream, independent from how that data is organized in the source database.
 To make things a bit more interesting, let's emit one of the numbers (the customer's preferred one) via its own field `phone`, and all the others via an array-typed field `further_phones`:
 
-*Fig. 3: Joining two change event streams (click to enlarge)*A Flink SQL link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/functions/udfs/[user-defined function] (UDF) for aggregating the elements of the “many” side of the join into an array in a type-safe way can come in handy here, something I've recently explored in link:https://www.youtube.com/watch?v=ICJ7-YyaC-4[this video]. Using the `ARRAY_AGGR()` function discussed in that quick tip, the two source tables could be joined like this:
+*Fig. 3: Joining two change event streams (click to enlarge)*A Flink SQL link:https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/functions/udfs/[user-defined function] (UDF) for aggregating the elements of the "many" side of the join into an array in a type-safe way can come in handy here, something I've recently explored in link:https://www.youtube.com/watch?v=ICJ7-YyaC-4[this video]. Using the `ARRAY_AGGR()` function discussed in that quick tip, the two source tables could be joined like this:
 
 
 [source,sql,linenums]
@@ -319,7 +319,7 @@ The guarantees around duration of support for particular versions of a contract 
 
 This means data contracts for change event streams should be evolved in a link:https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html#forward-compatibility[forward compatible] way, which allows for the addition of new fields and the removal of optional fields, whereas existing non-optional fields may not be removed.
 
-*Fig. 4: Producer-driven evolution of a schema (click to enlarge)*To learn more about the guidelines for schema evolution, I highly recommend referring to Gwen Shapira's presentation link:https://www.infoq.com/presentations/contracts-streaming-microservices/[“Streaming Microservices: Contracts & Compatibility”], where she discusses this topic around 16:50 min. A schema registry should be used in order to ensure that any changes to a data contract adhere to these requirements. Before rolling out any data contract changes to production, a CI/CD pipeline would validate any schema changes using the compatibility rules configured in the registry, as for instance described in link:https://dataproducts.substack.com/p/an-engineers-guide-to-data-contracts[this excellent blog post] by Chad Sanderson and Adrian Kreuziger. Any contract changes which would actually break existing consumers, would fail the build process and thus be prevented from being deployed.
+*Fig. 4: Producer-driven evolution of a schema (click to enlarge)*To learn more about the guidelines for schema evolution, I highly recommend referring to Gwen Shapira's presentation link:https://www.infoq.com/presentations/contracts-streaming-microservices/["Streaming Microservices: Contracts & Compatibility"], where she discusses this topic around 16:50 min. A schema registry should be used in order to ensure that any changes to a data contract adhere to these requirements. Before rolling out any data contract changes to production, a CI/CD pipeline would validate any schema changes using the compatibility rules configured in the registry, as for instance described in link:https://dataproducts.substack.com/p/an-engineers-guide-to-data-contracts[this excellent blog post] by Chad Sanderson and Adrian Kreuziger. Any contract changes which would actually break existing consumers, would fail the build process and thus be prevented from being deployed.
 
 Note that evolving data contracts in a forward-compatible manner means that consumers cannot replay any events from the beginning using only the latest schema version.
 This would fail when, for instance, re-processing an event lacking a non-optional field added in a later schema version.
@@ -373,7 +373,7 @@ Therefore, the development team owning the database schema should also be in cha
 
 Beyond renaming columns, also other schema changes can be handled with a stream processing engine.
 New columns could be added just like above.
-For dropped `NOT NULL` columns, the streaming job could omit a sentinel value such as “n/a” to ensure compatibility with existing consumers.
+For dropped `NOT NULL` columns, the streaming job could omit a sentinel value such as "n/a" to ensure compatibility with existing consumers.
 Also cardinality changes—for instance, going from a single `phone` column within the `customers` table to a separate table with multiple phone numbers per customer, as shown above—are possible by aggregating all the values into a new array-typed field in the public data stream.
 
 

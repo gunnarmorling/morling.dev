@@ -60,8 +60,8 @@ image::flink-jobs-decodable-1.webp[]
 _Fig._
 _1: SQL-based and Flink-based custom pipelines in Decodable._
 
-That way, Decodable allows you to benefit from SQL whenever it's possible (ease of use, automatic query optimizations, etc.), while giving you the “escape hatch” of implementing and running bespoke Flink jobs when and where it's needed.
-When migrating existing Flink jobs to Decodable, you can either run them as-is, or gradually extract existing specific parts into “native” Decodable components, for instance the source and sink connectors of a job, or those processing parts of a job which can be expressed using SQL.
+That way, Decodable allows you to benefit from SQL whenever it's possible (ease of use, automatic query optimizations, etc.), while giving you the "escape hatch" of implementing and running bespoke Flink jobs when and where it's needed.
+When migrating existing Flink jobs to Decodable, you can either run them as-is, or gradually extract existing specific parts into "native" Decodable components, for instance the source and sink connectors of a job, or those processing parts of a job which can be expressed using SQL.
 
 To further simplify the integration of custom Flink jobs with the Decodable platform, we are planning to publish an SDK which will allow you to access the Decodable link:https://docs.decodable.co/docs/streams[streams] of your account in the form of a simple Flink source and sink.
 The following example code shows how this could look like (subject to change, this SDK has not been released yet):
@@ -73,7 +73,7 @@ The following example code shows how this could look like (subject to change, th
 ----
 _Listing 1: A Flink job using the upcoming Decodable SDK._
 
-In this example, an instance of DecodableSource (representing the managed Decodable stream “addresses”) and an instance of DecodableSink (representing the “enrichedAddresses” stream) are created.
+In this example, an instance of DecodableSource (representing the managed Decodable stream "addresses") and an instance of DecodableSink (representing the "enrichedAddresses" stream) are created.
 For each incoming address object, an external service for geo-coding addresses is invoked, the address is enriched with the coordinates returned by the service, and finally emitted to the sink stream.
 
 Lastly, a word on security, which is a key concern for the team here at Decodable.

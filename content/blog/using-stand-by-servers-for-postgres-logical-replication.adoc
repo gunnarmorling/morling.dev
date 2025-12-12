@@ -35,7 +35,7 @@ When it comes to replication in Postgres, it supports two kinds of continuous re
 
 * link:https://www.postgresql.org/docs/current/warm-standby.html#STREAMING-REPLICATION[Streaming replication] (sometimes also called physical replication) propagates all the segments of the Write-Ahead Log (WAL) from a _primary server_ to one or more _stand-by servers_(or _replicas_). It includes all the databases and tables and automatically propagates schema changes, resulting in an exact copy of the primary server. This makes it a great choice for ensuring high availability of your data, in particular when used in synchronous mode where writing transactions to the primary server are only committed after successful replication.
 
-* In contrast, link:https://www.postgresql.org/docs/current/logical-replication.html[logical replication] works much more selectively, “replicating data objects and their changes, based upon their replication identity (usually a primary key)”. It operates in the context of one single database on a Postgres server, and you can control on a very fine-grained level which schemas or tables should be part of the replication stream.
+* In contrast, link:https://www.postgresql.org/docs/current/logical-replication.html[logical replication] works much more selectively, "replicating data objects and their changes, based upon their replication identity (usually a primary key)". It operates in the context of one single database on a Postgres server, and you can control on a very fine-grained level which schemas or tables should be part of the replication stream.
 
 Logical replication offers a flexible _publish/subscribe_ model, which goes beyond the basic primary/read-replica scheme of physical replication.
 In this model, a _publisher_ node is a Postgres instance which exposes one or more _publications_, describing which tables should be replicated.
@@ -74,7 +74,7 @@ On the flip-side, there are some implications of this to consider.
 One is the slightly increased end-to-end latency: as changes are traveling from the primary server to the stand-by and then to the client, things will take a bit longer than when connecting your replication consumers directly to the primary.
 The other aspect is that read replicas are exactly that—read-only.
 While CDC in general doesn't require write access to the database, there are some exceptions to that.
-In case of Debezium, you won't be able to use its incremental snapshotting implementation, as this requires inserting watermarking events into a signaling table (you can learn more about this in my talk link:https://www.youtube.com/watch?v=Lp0Rg8_nxUs[“Debezium Snapshots Revisited!”] )._
+In case of Debezium, you won't be able to use its incremental snapshotting implementation, as this requires inserting watermarking events into a signaling table (you can learn more about this in my talk link:https://www.youtube.com/watch?v=Lp0Rg8_nxUs["Debezium Snapshots Revisited!"] )._
 _Also you cannot use the link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-property-heartbeat-action-query[heartbeat feature], which lets the connector update its restart offsets also in cases where there are no change events for any table the connector is capturing are coming in._
 _If you want to use these features, then you'll need to create a replication slot on the primary server.
 
@@ -82,7 +82,7 @@ Enough with all the theory, let's have a look at logical replication on stand-by
 
 
 == Provisioning a Testing Environment
-As a testing environment I am going to use link:https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/postgresql-versions.html[Postgres 16 on Amazon RDS] (engine version “PostgreSQL 16.1-R1” at the time of writing), as this makes setting up a Postgres primary and an associated read replica a matter of just a few clicks.
+As a testing environment I am going to use link:https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/postgresql-versions.html[Postgres 16 on Amazon RDS] (engine version "PostgreSQL 16.1-R1" at the time of writing), as this makes setting up a Postgres primary and an associated read replica a matter of just a few clicks.
 A free tier instance type like t4g.micro will do for this experiment.
 Instead of the pre-configured Multi-AZ cluster deployment option (which isn't available in the free tier anyways), a single DB instance can be used, with a manually created replica.
 

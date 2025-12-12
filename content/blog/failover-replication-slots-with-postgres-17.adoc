@@ -382,7 +382,7 @@ result: created
 • Wrote plaintext values for secret IDs: [8fc44565]
 ----
 At this point, all the resources have been created in your Decodable account, but the Postgres source connector is not running yet.
-Before we can start it (“activate” in Decodable terminology), we need to create the replication slot in the database, configuring it as a failover slot.
+Before we can start it ("activate" in Decodable terminology), we need to create the replication slot in the database, configuring it as a failover slot.
 For the Decodable Postgres CDC connector to pick up the slot, it must have the name `decodable_<connection-id>`.
 To obtain the connection id, refer to the output of the `decodable apply` command above, or retrieve it using `decodable query` like so:
 
@@ -415,8 +415,8 @@ inventorydb-source
   ...
 ----
 Upon its first activation, the connector will create an initial snapshot of the data in the customers table and then read any subsequent data changes incrementally via the replication slot we've created.
-To take a look at the data head over to the Decodable web UI in your browser and go to the “Streams” view.
-Select the `inventorydb__inventory__customers` stream and go to the “Preview” tab where you should see the data from the snapshot.
+To take a look at the data head over to the Decodable web UI in your browser and go to the "Streams" view.
+Select the `inventorydb__inventory__customers` stream and go to the "Preview" tab where you should see the data from the snapshot.
 Do a few data changes in the Postgres session on the primary node:
 
 
@@ -470,8 +470,8 @@ Stop and restart pgbouncer (other proxies such as link:https://github.com/postgr
 $ docker compose stop pgbouncer
 $ docker compose up -d
 ----
-If you go back to the Decodable web UI and take a look at the `inventorydb_source` connection, it should be in the “Retrying” state at this point, as it lost the connection to the previous primary (via the proxy).
-After a little while, it will be in “Running” state again, as the proxy now routes to the new primary server.
+If you go back to the Decodable web UI and take a look at the `inventorydb_source` connection, it should be in the "Retrying" state at this point, as it lost the connection to the previous primary (via the proxy).
+After a little while, it will be in "Running" state again, as the proxy now routes to the new primary server.
 The connector now consumes from the replication slot on that new primary server, as you can confirm by doing a few more data changes on that node and examining the data in the Decodable stream preview also by verifying that the replication slot now is in Active state:
 
 

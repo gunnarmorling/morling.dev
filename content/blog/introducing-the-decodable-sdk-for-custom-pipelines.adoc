@@ -81,7 +81,7 @@ Here's an example of a typical job implementation:
 ----
 
 
-In this example, purchase order data is ingested from the “purchase-orders” stream.
+In this example, purchase order data is ingested from the "purchase-orders" stream.
 This stream is receiving data from a CDC connector and contains data from the database of an ERP system.
 For ease of use, the data is deserialized into a POJO, _PurchaseOrder_, using Flink's _JsonSerializationSchema_.
 Each incoming purchase order is processed using a custom mapping function, _PurchaseOrderProcessor_, which is where, for example, you could invoke an external service for order validation.
@@ -105,9 +105,9 @@ Here is a test for the stream processing job above:
 
 
 Using Testcontainers, an ephemeral link:https://redpanda.com/[Redpanda] broker is started as a data streaming platform.
-The test inserts a purchase order as a JSON document into the “purchase-orders” stream.
+The test inserts a purchase order as a JSON document into the "purchase-orders" stream.
 Next, the job under test is executed.
-Finally, one record is retrieved from the “purchase-orders-processed” stream and its content is asserted to match the expected structure.
+Finally, one record is retrieved from the "purchase-orders-processed" stream and its content is asserted to match the expected structure.
 
 This testing framework allows you to implement comprehensive tests, in your own IDE or CI environment, so that you can verify that your jobs work as expected before deploying them to production.
 

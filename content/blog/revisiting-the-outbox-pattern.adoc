@@ -22,7 +22,7 @@ _This post originally appeared on the link:https://www.decodable.co/blog/revisit
 
 Over the last few years, the outbox pattern has become a common solution for implementing data exchange flows between microservices.
 It allows services to safely and reliably update their own local datastore and at the same time send out notifications to other services via data streaming platforms such as Apache Kafka.
-But time isn't standing still: people ask about disadvantages of the pattern (_is the database becoming a bottleneck?_), alternative solutions such as “listen-to-yourself” have been proposed, Kafka is about to get support for participating in 2-phase commit (2PC) transactions, and more.
+But time isn't standing still: people ask about disadvantages of the pattern (_is the database becoming a bottleneck?_), alternative solutions such as "listen-to-yourself" have been proposed, Kafka is about to get support for participating in 2-phase commit (2PC) transactions, and more.
 It's time to take another look at the outbox pattern, what it is and how to implement it, whether it's still relevant in 2024, and which alternatives exist!
 
 <!--more-->
@@ -99,15 +99,15 @@ Existing events are immutable and cannot be altered after the fact.
 In that sense, the outbox table represents an append-only log, not unlike the actual transaction log of the database itself.
 
 Besides the actual event payload (often JSON, but you can use any format of your choosing) an outbox table typically has columns for message id (allowing consumers to identify messages sent more than once, more on that later) and event type, allowing you to route events of different types (e.g.
-“Appointment”) to different topics.
+"Appointment") to different topics.
 When using a partitioned streaming platform such as Kafka, you'll also need a column for the id of the represented entity (for instance, the appointment id), so that all events pertaining to the same record will be written to the same partition, thus ensuring correct ordering of these events.
 
 As an example, here is the default outbox table format when using link:https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html[Debezium as a log-based outbox relay]:
 
 * *id* (`UUID`): unique event identifier
-* *aggregatetype* (`VARCHAR(255)`): the type of domain object described by an event, e.g. “appointment”; used for routing outbox events of different types to different Kafka topics
+* *aggregatetype* (`VARCHAR(255)`): the type of domain object described by an event, e.g. "appointment"; used for routing outbox events of different types to different Kafka topics
 * *aggregateid* (`VARCHAR(255)`): the id of the represented domain object, e.g. the appointment id; used as message key to ensure correct event ordering with partitioned Kafka topics
-* *type* (`VARCHAR(255)`): The type of event, e.g. “appointment created”; can be used by consumers to trigger specific event handlers
+* *type* (`VARCHAR(255)`): The type of event, e.g. "appointment created"; can be used by consumers to trigger specific event handlers
 * *payload* (`JSONB`): The actual event payload
 
 
@@ -194,9 +194,9 @@ The high-level intuition for this algorithm is to incrementally step through the
 Chunks are segmented by marker events which are inserted into the log by the snapshotting mechanism.
 A backfilling job for outbox events could look like this:
 
-. Insert a “chunk start” event into the outbox
+. Insert a "chunk start" event into the outbox
 . Select the next chunk of data to be backfilled, for instance appointments with ids 1-1,000, and insert corresponding backfill events into the outbox
-. Insert a “chunk end” event into the outbox
+. Insert a "chunk end" event into the outbox
 . Repeat at 1.) until all data has been backfilled
 
 When extracting events from the outbox, for each of the windowed chunks, processing happens in a buffered way.
@@ -225,7 +225,7 @@ That way, consumers need to store only the latest value they've seen, just like 
 When they receive an event with a sequence value which is the same as or lower than the current watermark (and transport semantics are not at-most-once, i.e.
 events are guaranteed to not get lost), this must be a duplicate which can be discarded.
 Now, as discussed above, you can't use a standard database sequence for creating that value, as you can't guarantee that it is going to be monotonically increasing for events created in multiple concurrent transactions.
-Instead, the records position (offset) in the source database's transaction log can be used, for instance the link:https://www.postgresql.org/docs/current/wal-internals.html[LSN (log sequence number)] in case of Postgres, a “byte offset into the [transaction log], increasing monotonically with each new record”.
+Instead, the records position (offset) in the source database's transaction log can be used, for instance the link:https://www.postgresql.org/docs/current/wal-internals.html[LSN (log sequence number)] in case of Postgres, a "byte offset into the [transaction log], increasing monotonically with each new record".
 Similar ids exist in other databases too, check their documentation on the exact format and semantics.
 
 
@@ -344,8 +344,8 @@ Also other tasks which are trivial when writing to a database first—such as en
 While some techniques for mitigation exist, it's not an approach I'd recommend due to the inherent complexities.
 
 
-=== Stream Processing on “Raw” Change Event Streams
-Another alternative is to use change data capture not for an outbox table, but for the actual data tables of the service itself, such as the “Appointment” table in the Oh-my-Dawg example.
+=== Stream Processing on "Raw" Change Event Streams
+Another alternative is to use change data capture not for an outbox table, but for the actual data tables of the service itself, such as the "Appointment" table in the Oh-my-Dawg example.
 Exposing these change event streams across service—and team—boundaries can be problematic, as it exposes a service's internal data model and its structure to external consumers.
 In particular when it comes to changes to the data schema, this can cause friction and disruption.
 Stream processing, for instance via Apache Flink or Kafka Streams, can be a way out, establishing consciously crafted link:https://current.confluent.io/2024-sessions/data-contracts-in-practice-with-debezium-and-apache-flink[data contracts] between the providing service and event consumers.
@@ -355,7 +355,7 @@ Flink CDC can be used to run Debezium natively within Flink, essentially letting
 
 image::outbox-pattern-3.webp[]
 _Fig._
-_3: Joining “raw” change event streams (produced by Debezium and Flink CDC) via Flink SQL_The big advantage of this over the outbox pattern is that no code changes to the source application itself are required.
+_3: Joining "raw" change event streams (produced by Debezium and Flink CDC) via Flink SQL_The big advantage of this over the outbox pattern is that no code changes to the source application itself are required.
 Also there is no impact on the source database, as it only contains the actual data tables and nothing more.
 The shaping of published events sent to other services happens completely asynchronously.
 The downside is that you need to add a stream processing solution to the overall architecture (though managed services can help navigate this complexity), and stream processing has a learning curve on its own.
@@ -370,14 +370,14 @@ A spicy take, I like it!
 And indeed, there's something to this.
 If you are using messaging infrastructure like a good ol' JMS broker which supports enlisting in global transactions alongside databases, you'll get the all-or-nothing semantics for writing to a service's database and sending a message to other services which we're after.
 
-So it should be good news then that something similar will be possible with Kafka soon, as the Kafka community currently is working on link:https://cwiki.apache.org/confluence/display/KAFKA/KIP-939:+Support+Participation+in+2PC[KIP-939] (“Support Participation in 2PC”).
+So it should be good news then that something similar will be possible with Kafka soon, as the Kafka community currently is working on link:https://cwiki.apache.org/confluence/display/KAFKA/KIP-939:+Support+Participation+in+2PC[KIP-939] ("Support Participation in 2PC").
 But in my opinion, this KIP won't render the outbox pattern obsolete; the reason being the implications on service availability.
 With the outbox pattern, a service only needs a single resource to be available in order to process an incoming request—its own database.
 Whereas with 2PC, it needs two resources, the database and the Kafka cluster, which means that the service's overall availability actually is lower.
 
 Also, there usually isn't a good reason in the first place to make the process of emitting a notification to external services part of the synchronous call flow.
 This activity isn't relevant for the client making the inbound request and you're just unnecessarily extending request processing time.
-Another way to see this is as eating into your “synchrony budget” (a notion I am planning to discuss in more detail in a future blog post) without any benefit.
+Another way to see this is as eating into your "synchrony budget" (a notion I am planning to discuss in more detail in a future blog post) without any benefit.
 Another, minor, advantage of the outbox pattern is that developers of the writing service only need to know one API (for interacting with the database) rather than two APIs, for database access and for message platform access, respectively.
 
 

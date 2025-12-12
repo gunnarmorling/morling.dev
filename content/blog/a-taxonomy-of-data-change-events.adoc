@@ -50,7 +50,7 @@ If a customer record's `first_name` value gets updated, while the other fields d
 ----
 The change event is fully self-contained.
 It describes the complete state of the record at the point in time when it was altered, specifically, the record's new state after the modification.
-Many CDC solutions expose the old and the new state (sometimes referred to as old and new “row image”) of a modified record in their change events, for instance named `before` and `after` in the case of Debezium:
+Many CDC solutions expose the old and the new state (sometimes referred to as old and new "row image") of a modified record in their change events, for instance named `before` and `after` in the case of Debezium:
 
 
 [source,json,linenums]
@@ -130,7 +130,7 @@ If for instance the consuming system is a SQL database, an `UPDATE` statement co
 
 But what to do when a sink data system does not support partial updates and instead always requires ingesting the complete record when an update has happened?
 For cases like this, stateful stream processing, for instance using link:https://flink.apache.org/[Apache Flink], can be a useful option.
-You'd put this stream processor between your event source and sink, and it would “re-hydrate” full events, this means apply all the incoming partial events one after the other.
+You'd put this stream processor between your event source and sink, and it would "re-hydrate" full events, this means apply all the incoming partial events one after the other.
 To do so, it would utilize an internal state store (such as link:https://rocksdb.org/[RocksDB], in case of Flink).
 When processing an insert change event for a record, this event would be put into the state store, before emitting it downstream.
 
@@ -161,7 +161,7 @@ The id-only event style is used here as would not be practical to expose the ent
 By its very nature, such an id-only event doesn't tell you what exactly has changed about the represented record.
 This makes this event type only useful for quite a narrow range of applications.
 For instance, you could use it to _invalidate_ items in a cache, but you couldn't use it by itself to _update_ at a cache.
-Examples for systems working with id-only events include the link:https://learn.microsoft.com/en-us/sql/relational-databases/track-changes/about-change-tracking-sql-server?view=sql-server-ver16[Change Tracking] feature of Microsoft SQL Server, the link:https://www.cockroachlabs.com/docs/v23.2/create-changefeed#options[“key only” mode of CockroachDB], and the link:https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html#Streams.Enabling[KEYS_ONLY stream view type in DynamoDB].
+Examples for systems working with id-only events include the link:https://learn.microsoft.com/en-us/sql/relational-databases/track-changes/about-change-tracking-sql-server?view=sql-server-ver16[Change Tracking] feature of Microsoft SQL Server, the link:https://www.cockroachlabs.com/docs/v23.2/create-changefeed#options["key only" mode of CockroachDB], and the link:https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html#Streams.Enabling[KEYS_ONLY stream view type in DynamoDB].
 
 If you'd like to obtain the entire row, you don't have any other choice than re-selecting it from the source store.
 This could be done by change event consumers themselves, but also by a stream processor which then emits full change events to downstream consumers.
@@ -173,7 +173,7 @@ If there are multiple changes to the row in close timely proximity, you may not 
 The following visual illustrates this situation:
 
 At time `t1`, the record with id 4 is inserted into the `customers` table, and the corresponding id-only change event is emitted.
-Shortly thereafter, the record gets updated at time `t2`, changing the first name of the customer from “Jazmine” to “Melissa”.
+Shortly thereafter, the record gets updated at time `t2`, changing the first name of the customer from "Jazmine" to "Melissa".
 At time `t3`, the change event for the original insert operation gets processed, issuing a re-select of the record from the database.
 As the update already has been committed at this point, the stream processor will propagate the state as of after the update, rather than its original version at insertion time.
 
@@ -253,7 +253,7 @@ As so often, there is not an universal answer to that.
 Each of the types has its respective advantages and disadvantages and you'll need to make an informed decision based on your specific context.
 
 Complete data change events tend to be the easiest to handle for consuming systems.
-The incoming event can be simply written to a sink data store using “upsert” semantics, overwriting whatever version there might have been there before.
+The incoming event can be simply written to a sink data store using "upsert" semantics, overwriting whatever version there might have been there before.
 When propagating change events via distributed log systems such as Apache Kafka, a topic with full change events can be compacted.
 As each event is fully self-contained, it is sufficient to keep the latest change event per record in the log and it is still possible to propagate the complete state of the data set to consumers (and if your change events contain new and old row images, you'd even have the last two versions per recorded even in a compacted change event topic).
 It is also easily possible to bootstrap new event consumers solely from the state in the distributed log.

@@ -147,8 +147,8 @@ Next, let's set up the source connection for ingesting change events from the th
 Note that while the following describes the required steps when using the Decodable web UI, you could alternatively use the link:https://docs.decodable.co/api/the-decodable-apis.html[REST API] or the link:https://docs.decodable.co/cli.html[command line interface], which for instance comes in handy when configuring data pipelines via CI/CD.
 
 If you haven't done so yet, link:https://app.decodable.co/-/login[log into] your Decodable account.
-Select “Connections” in the pane on the left-hand side and click “New Connection”.
-Choose “MySQL CDC” as the connector type.
+Select "Connections" in the pane on the left-hand side and click "New Connection".
+Choose "MySQL CDC" as the connector type.
 This connector is based on the link:https://debezium.io/[Debezium] and link:https://nightlies.apache.org/flink/flink-cdc-docs-stable/[Flink CDC] open-source projects and retrieves change events from a database's transaction log using link:https://www.decodable.co/blog/seven-ways-to-put-cdc-to-work[Change Data Capture] (CDC).
 Specify the following information in the dialog which opens up: +
 
@@ -156,26 +156,26 @@ Specify the following information in the dialog which opens up: +
 * *Port:* the port which ngrok displays, for instance `31811`
 * *Database:* `ecom`
 * *Username:* `debezium`
-* *Password:* in the drop-down, click “Add a new secret…”, then specify a name of your choosing and `dbz` as the value
+* *Password:* in the drop-down, click "Add a new secret…", then specify a name of your choosing and `dbz` as the value
 * *Scan Startup Mode:* leave this blank to keep the default of taking an initial snapshot of the captured database tables
 
-Click “Next” and the connector will automatically scan the source database for its tables.
+Click "Next" and the connector will automatically scan the source database for its tables.
 After a little while, you should see the tables from the `ecom` database.
-If you like, you can take a look at the schema of the tables by clicking on “View Schema”.
+If you like, you can take a look at the schema of the tables by clicking on "View Schema".
 Each table will be ingested into a corresponding link:https://docs.decodable.co/streams.html[stream] within Decodable.
 As the name suggests, this is a logical stream of messages, essentially like a Kafka topic.
 
-Select “Sync” for the tables`ecom.purchase_orders, ecom.order_lines` and`ecom.products`, then click “Next”.
+Select "Sync" for the tables`ecom.purchase_orders, ecom.order_lines` and`ecom.products`, then click "Next".
 
 _Fig._
-_4: Discovered source tables and corresponding streams in Decodable_Specify a name for the new connection, for instance`ecom_source`, then click “Create Connection”.
+_4: Discovered source tables and corresponding streams in Decodable_Specify a name for the new connection, for instance`ecom_source`, then click "Create Connection".
 This connection will now link:https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/[subscribe to the transaction log] of the source database and ingest any change events from the three tables.
 
-Click “Start” to fire up the connector and “Start” again on the next dialog (the defaults are fine).
-After a few moments you'll see the connector switch to “Running” and the metrics show data is being fetched successfully:
+Click "Start" to fire up the connector and "Start" again on the next dialog (the defaults are fine).
+After a few moments you'll see the connector switch to "Running" and the metrics show data is being fetched successfully:
 
 _Fig._
-_5: Running connector with output metrics_To examine the incoming data, click on “Outbound to 3 streams”, select any one of the streams and click “Run Preview”:
+_5: Running connector with output metrics_To examine the incoming data, click on "Outbound to 3 streams", select any one of the streams and click "Run Preview":
 
 _Fig._
 _6: Preview of data ingested into Decodable_When starting up, the connector automatically took an initial snapshot of the data at this point in time.
@@ -184,7 +184,7 @@ If you now were to do any changes, for instance an update to an existing purchas
 
 == Joining the Change Event Streams
 Let's now create a SQL pipeline for joining the three streams, emitting nested documents for each purchase order and its lines and product details.
-In the Decodable web UI, go to “Pipelines” → “New Pipeline”, then select one of the `ecom*` streams as the input stream.
+In the Decodable web UI, go to "Pipelines" → "New Pipeline", then select one of the `ecom*` streams as the input stream.
 Replace the SQL in the editor which opens up with the following:
 
 
@@ -207,8 +207,8 @@ The left joins mean that if there's a purchase order without any order lines, on
 The results are grouped by the purchase order attributes, so as to emit one result row per order.
 For each order line, a SQL `ROW` is created with the line and product attributes, and all the lines of one purchase order are emitted as an array by calling the `ARRAY_AGG()` function.
 
-You can take a look at the results of this query by clicking on the “Run Preview” button.
-Click on the triangle to the right of the button and choose “Earliest” as the starting position in the drop-down, as otherwise you wouldn't see any results until there are any actual data changes in the source MySQL database.
+You can take a look at the results of this query by clicking on the "Run Preview" button.
+Click on the triangle to the right of the button and choose "Earliest" as the starting position in the drop-down, as otherwise you wouldn't see any results until there are any actual data changes in the source MySQL database.
 
 _Fig._
 _7: SQL editor with preview of the query results_Note that the fields of the array elements still use default names like `EXPR$0`.
@@ -227,16 +227,16 @@ If this is not what you want, you can use the link:https://modern-sql.com/featur
 ARRAY_AGG(ROW(ol.id, ol.product_id, ol.quantity, ol.price, p.name, p.description, p.weight, p.category)) FILTER (WHERE ol.id IS NOT NULL) AS lines
 ...
 ----
-Once you're done with the query, click “Next”.
+Once you're done with the query, click "Next".
 
 Now we need to set up the output stream that we're writing to from the query.
-Choose the `id` field as the primary key for the stream, then click “Create Stream”.
+Choose the `id` field as the primary key for the stream, then click "Create Stream".
 
-Click “Next”, specify a name for the pipeline, for instance `ecom_order_joiner`, and click “Create Pipeline”.
+Click "Next", specify a name for the pipeline, for instance `ecom_order_joiner`, and click "Create Pipeline".
 
 At this point, the SQL pipeline has been created, but it is not running yet.
 Before starting it up, let's adjust the field names in the lines array of our output stream.
-Click on “Outbound to 1 stream…” and select the “Schema” tab from the stream view.
+Click on "Outbound to 1 stream…" and select the "Schema" tab from the stream view.
 Replace the schema for the `lines` field with the following:
 
 
@@ -248,9 +248,9 @@ Note how `ARRAY_AGG()` emits a strongly typed data representation, unlike altern
 _This means that any downstream processors and consumers can operate on the data in a type-safe way._
 _For instance, the schema mapping for the search index in OpenSearch can be created leveraging the full type information.
 
-Click “Save” and go back to your newly created pipeline.
-Make sure to set the start position to “Earliest”, and then click Start.
-After a few moments, the pipeline will be in state “Running” and you'll see the metrics update on the Pipeline:
+Click "Save" and go back to your newly created pipeline.
+Make sure to set the start position to "Earliest", and then click Start.
+After a few moments, the pipeline will be in state "Running" and you'll see the metrics update on the Pipeline:
 
 _Fig._
 _8: Running SQL pipeline with input and output metrics_You can also take a look at the joined records in the `ecom__orders_with_lines` stream.
@@ -258,7 +258,7 @@ _8: Running SQL pipeline with input and output metrics_You can also take a look 
 
 == Creating the Sink Connection
 The last step is to set up a sink connector which takes the data from the new stream of joined records and sends it to OpenSearch.
-To do so, go to “Connections” -> “New Connection” and select the “OpenSearch” tile.
+To do so, go to "Connections" -> "New Connection" and select the "OpenSearch" tile.
 Specify the connection details: +
 
 * *Hosts:* the forwarded URL displayed by ngrok; make sure to add 443 as the port, for instance `https://bb14-2a01-c23-9413-c800-b004-d5f0-d6fb-dcbf.ngrok-free.app:443`
@@ -267,9 +267,9 @@ Specify the connection details: +
 * *Password:* `admin` (as with the source connection password, create a Decodable secret for this)
 
 _Fig._
-_9: Setting up an OpenSearch sink connector_Click “Next” and select the `ecom_orders_with_lines` stream as the source for this connection.
-Click “Next” twice more and on the final screen specify a name for this connection, for instance`ecom_sink`.
-Start the connection, choosing “Earliest” as the starting position.
+_9: Setting up an OpenSearch sink connector_Click "Next" and select the `ecom_orders_with_lines` stream as the source for this connection.
+Click "Next" twice more and on the final screen specify a name for this connection, for instance`ecom_sink`.
+Start the connection, choosing "Earliest" as the starting position.
 Once the connection is running, you'll see HTTP requests being logged by ngrok in the terminal.
 
 
