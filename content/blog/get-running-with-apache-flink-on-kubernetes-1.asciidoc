@@ -105,7 +105,7 @@ Add the Helm repository for the current version 1.10 (released in October 2024) 
 ----
 $ helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.10.0/
 ----
-Before installing the operator itself, it is required to install the Kubernetes cert-manager (needed for issuing TLS certificates used by the link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/architecture/#admission-control[operator's admission controller] ):
+Before installing the operator itself, it is required to install the Kubernetes cert-manager (needed for issuing TLS certificates used by the link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/architecture/#admission-control[operator's admission controller]):
 
 
 [source,shell,linenums]
@@ -115,7 +115,7 @@ $ kubectl create -f https://github.com/jetstack/cert-manager/releases/download/v
 The operator Helm chart can be customized upon installation with a link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/operations/helm/#overriding-configuration-parameters-during-helm-install[wide set of parameters], for instance to control which Kubernetes namespaces the operator should observe, which images should be used by default for deploying Flink jobs, etc.
 We're gonna make the following adjustments:
 
-* Inject the configuration required for running Flink jobs on Java 17; while Flink itself provides support for Java 17 since version 1.18, the operator in version 1.10 doesn't pass the `--add-opens` flags required to run Flink on Java 17 and newer. This has been added recently (see link:https://issues.apache.org/jira/browse/FLINK-36646[FLINK-36646] ), but no release of the operator with those changes is available as of now
+* Inject the configuration required for running Flink jobs on Java 17; while Flink itself provides support for Java 17 since version 1.18, the operator in version 1.10 doesn't pass the `--add-opens` flags required to run Flink on Java 17 and newer. This has been added recently (see link:https://issues.apache.org/jira/browse/FLINK-36646[FLINK-36646]), but no release of the operator with those changes is available as of now
 * Shorten the lifetime of Flink job managers after a job has been suspended; this setting, `kubernetes.operator.jm-deployment.shutdown-ttl`*,*defaults to one day, which means you'll have a superfluous job manager pod in your cluster for quite a while when suspending a job
 
 The Helm values file with these configuration amendments looks like so:
@@ -376,7 +376,7 @@ In practise, you want to run your own Flink job JARs of course.
 Multiple options exist for doing so:
 
 * Adding an link:https://kubernetes.io/docs/concepts/workloads/pods/init-containers/[init container] to the Flink pods which retrieves the JAR at start-up from a remote location such as an S3 bucket, as shown link:https://medium.com/@ravi.nishant2000/deploying-flink-jobs-in-production-using-the-flink-kubernetes-operator-part-2-bd7a9d1b77e2[in this blog post]
-* Retrieving the JAR from an HTTP server—for instance an internal Maven repository—by specifying an HTTP URI for the `jarURI` parameter; when using Flink 1.19 or later, the parameter also accepts S3 URIs, provided an S3 file system plug-in has been configured (see link:https://issues.apache.org/jira/browse/FLINK-28915[FLINK-28915] )
+* Retrieving the JAR from an HTTP server—for instance an internal Maven repository—by specifying an HTTP URI for the `jarURI` parameter; when using Flink 1.19 or later, the parameter also accepts S3 URIs, provided an S3 file system plug-in has been configured (see link:https://issues.apache.org/jira/browse/FLINK-28915[FLINK-28915])
 * Building a custom container image, extending the upstream Flink image and adding your job JAR file at build time
 
 While all these approaches do the trick, my personal preference and recommendation is the last one, building a custom image with your job, rather than fetching the JAR at runtime.

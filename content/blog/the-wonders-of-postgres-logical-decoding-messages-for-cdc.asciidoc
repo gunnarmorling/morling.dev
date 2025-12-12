@@ -73,7 +73,7 @@ docker run --tty --rm -i \
 ----
 Next, you need to create a link:https://www.postgresql.org/docs/current/logicaldecoding-explanation.html[replication slot].
 A replication slot represents one specific stream of changes coming from a Postgres database and keeps track of how far a consumer has processed this stream.
-For this purpose, it stores the latest log sequence number ( link:https://www.postgresql.org/docs/current/wal-internals.html[LSN] ) that the slot's consumer has processed and acknowledged.
+For this purpose, it stores the latest log sequence number ( link:https://www.postgresql.org/docs/current/wal-internals.html[LSN]) that the slot's consumer has processed and acknowledged.
 
 Each slot has a name and an assigned decoding plug-in which defines the format of that stream.
 Create a slot using the "test_decoding" plug-in, which emits changes in a simple text-based protocol, like this:
@@ -213,7 +213,7 @@ When used with link:https://kafka.apache.org/documentation/#connect[Kafka Connec
 However, this SMT doesn't yet support using logical decoding messages as the outbox format.
 
 When using Debezium via Flink CDC, you could implement a similar logic using a custom `KafkaRecordSerializationSchema` which routes outbox events to the right Kafka topic and propagates the aggregate id to the Kafka message key, thus ensuring correct ordering semantics.
-A basic implementation of this could look like this (you can find the complete source code, including the usage of this serializer in a Flink job link:https://github.com/decodableco/examples/blob/main/postgres-logical-decoding/src/main/java/co/decodable/examples/logicaldecoding/outbox/OutboxMain.java[here] ):
+A basic implementation of this could look like this (you can find the complete source code, including the usage of this serializer in a Flink job link:https://github.com/decodableco/examples/blob/main/postgres-logical-decoding/src/main/java/co/decodable/examples/logicaldecoding/outbox/OutboxMain.java[here]):
 
 
 [source,java,linenums]

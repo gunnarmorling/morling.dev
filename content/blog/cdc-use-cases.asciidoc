@@ -57,10 +57,10 @@ Whereas transactional database systems such as MySQL or Postgres are optimized f
 CDC provides a way to keep OLAP data stores up to date with the freshest data possible from OLTP systems, with end-to-end latencies in the range of mere seconds.
 
 CDC is commonly used as a component in data pipelines that propagate data changes into cloud data warehouses (e.g.
-Snowflake, via link:https://www.decodable.co/blog/ingest-your-data-faster-and-cheaper-with-decodable-and-snowflake-snowpipe-streaming[Snowpipe], or link:https://medium.com/google-cloud/near-real-time-data-replication-using-debezium-4da77cef67ab[Google BigQuery] ) and link:https://towardsdatascience.com/change-data-capture-cdc-for-data-ingestion-ca81ff5934d2[data lakes], enabling data science, general reporting, and ad-hoc querying use cases.
+Snowflake, via link:https://www.decodable.co/blog/ingest-your-data-faster-and-cheaper-with-decodable-and-snowflake-snowpipe-streaming[Snowpipe], or link:https://medium.com/google-cloud/near-real-time-data-replication-using-debezium-4da77cef67ab[Google BigQuery]) and link:https://towardsdatascience.com/change-data-capture-cdc-for-data-ingestion-ca81ff5934d2[data lakes], enabling data science, general reporting, and ad-hoc querying use cases.
 Low-latency ingestion into real-time analytics stores on the other hand (e.g.
 Apache Pinot, Apache Druid or Clickhouse) allows you to implement use cases like in-app analytics or real-time dashboards.
-For use cases involving frequent updates to existing records, such as mutable data, stores optimized for upsert semantics (e.g., link:https://docs.pinot.apache.org/basics/data-import/upsert[Pinot] or link:https://rockset.com/docs/cdc/[Rockset] ) often offer tailored support for the Debezium event format.
+For use cases involving frequent updates to existing records, such as mutable data, stores optimized for upsert semantics (e.g., link:https://docs.pinot.apache.org/basics/data-import/upsert[Pinot] or link:https://rockset.com/docs/cdc/[Rockset]) often offer tailored support for the Debezium event format.
 
 
 == Application Caches
@@ -70,7 +70,7 @@ CDC can be an excellent fit here.
 CDC responds to changes to the database in real time and can feed those changes into a cache updater component that ensures that the local caches provide an up-to-date view.
 
 Besides dedicated caching solutions such as Redis, link:https://github.com/debezium/debezium-examples/tree/main/distributed-caching[Infinispan], or Hazelcast, embedded SQLite databases are an interesting option for implementing application-side caches, as they not only allow for simple key-based look-ups but support full query flexibility via SQL.
-If you would like to learn more about this kind of architecture, take a look at my talk "Keep Your Cache Always Fresh With Debezium", which explores one implementation of this in depth ( link:https://www.youtube.com/watch?v=zOOFMHAjoPI[video recording], link:https://speakerdeck.com/gunnarmorling/keep-your-cache-always-fresh-with-debezium-current-22[slides] ).
+If you would like to learn more about this kind of architecture, take a look at my talk "Keep Your Cache Always Fresh With Debezium", which explores one implementation of this in depth ( link:https://www.youtube.com/watch?v=zOOFMHAjoPI[video recording], link:https://speakerdeck.com/gunnarmorling/keep-your-cache-always-fresh-with-debezium-current-22[slides]).
 
 .Application-side caches in a distributed service, kept in sync with the primary DB via CDC
 image::cdc-use-cases-fig2.webp[]

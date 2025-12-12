@@ -74,7 +74,7 @@ On the flip-side, there are some implications of this to consider.
 One is the slightly increased end-to-end latency: as changes are traveling from the primary server to the stand-by and then to the client, things will take a bit longer than when connecting your replication consumers directly to the primary.
 The other aspect is that read replicas are exactly that—read-only.
 While CDC in general doesn't require write access to the database, there are some exceptions to that.
-In case of Debezium, you won't be able to use its incremental snapshotting implementation, as this requires inserting watermarking events into a signaling table (you can learn more about this in my talk link:https://www.youtube.com/watch?v=Lp0Rg8_nxUs["Debezium Snapshots Revisited!"] )._
+In case of Debezium, you won't be able to use its incremental snapshotting implementation, as this requires inserting watermarking events into a signaling table (you can learn more about this in my talk link:https://www.youtube.com/watch?v=Lp0Rg8_nxUs["Debezium Snapshots Revisited!"])._
 _Also you cannot use the link:https://debezium.io/documentation/reference/stable/connectors/postgresql#postgresql-property-heartbeat-action-query[heartbeat feature], which lets the connector update its restart offsets also in cases where there are no change events for any table the connector is capturing are coming in._
 _If you want to use these features, then you'll need to create a replication slot on the primary server.
 
