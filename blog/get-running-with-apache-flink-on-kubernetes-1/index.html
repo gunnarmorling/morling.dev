@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Get Running with Apache Flink on Kubernetes, part 1 of 2 - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="canonical" href="https://www.decodable.co/blog/get-running-with-apache-flink-on-kubernetes-1" /><meta property="og:url" content="https://www.morling.dev/blog/get-running-with-apache-flink-on-kubernetes-1/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Get Running with Apache Flink on Kubernetes, part 1 of 2">
+  <meta property="og:description" content=" This post originally appeared on the Decodable blog.
+Kubernetes is a widely used deployment platform for Apache Flink. While Flink has had native support for Kubernetes for quite a while, it is in …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2025-01-21T00:00:00Z">
+    <meta property="article:modified_time" content="2025-01-21T00:00:00Z">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Get Running with Apache Flink on Kubernetes, part 1 of 2">
+  <meta name="twitter:description" content=" This post originally appeared on the Decodable blog.
+Kubernetes is a widely used deployment platform for Apache Flink. While Flink has had native support for Kubernetes for quite a while, it is in …">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.672476d25c0fad0fd490e21222003c6c89ca45b73df6a5634305e06e889c49ad.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
+	
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.5e2c4cf50d01b5e8795a87894c2d08be87ed25371b30d97df693079b623d9f87.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+	<script src="/js/main.min.9ee619eea7f51473f4284ef86c76bdb1b0089e19781ca97275924edf53be5bd4.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Get Running with Apache Flink on Kubernetes, part 1 of 2</h1>
+				<div class="post-meta-line">
+					<span class="meta">Posted at Jan 21, 2025</span>
+					
+					<span class="post-tags-inline">
+						
+						<a href="/tags/flink">flink</a>
+						
+						<a href="/tags/kubernetes">kubernetes</a>
+						
+						<a href="/tags/streaming">streaming</a>
+						
+					</span>
+					
+				</div>
+			</div>
+
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_installation_and_setup">Installation and Setup</a></li>
+<li><a href="#_deployment_types">Deployment Types</a></li>
+<li><a href="#_deploying_your_first_flink_job_on_kubernetes">Deploying Your First Flink Job on Kubernetes</a></li>
+<li><a href="#_building_custom_job_images">Building Custom Job Images</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p><em>This post originally appeared on the <a href="https://www.decodable.co/blog/get-running-with-apache-flink-on-kubernetes-1">Decodable blog</a>.</em></p>
+</div>
+<div class="paragraph">
+<p>Kubernetes is a widely used deployment platform for Apache Flink.
+While Flink has had native support for Kubernetes for quite a while, it is in particular the operator pattern which makes deploying Flink jobs onto Kubernetes clusters a compelling option: you define jobs in a declarative resource, and a control loop running in a component called a Kubernetes operator takes care of provisioning and maintaining (e.g.
+scaling, updating) all the required resources.
+Automation is the keyword here, significantly reducing the manual effort required for running Flink jobs in production.</p>
+</div>
+<div class="paragraph">
+<p>There are multiple Kubernetes operators for Flink, including Lyft’s <a href="https://github.com/lyft/flinkk8soperator">flinkk8soperator</a>, <a href="https://github.com/spotify/flink-on-k8s-operator">flink-on-k8s-operator</a> by Spotify (a fork of a now unmaintained operator initially developed by Google), and <a href="https://github.com/nextbreakpoint/flink-controller">flink-controller</a> by Andrea Medeghini.
+The most widely used operator these days though is the upstream <a href="https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/">Flink Kubernetes Operator</a>, developed under the umbrella of the Apache Flink project itself, which is also the focus of this two-part blog post series.
+It gives you an overview on what it takes to install the operator and run your first jobs on Kubernetes, and discuss what’s missing to create a complete Flink-based data platform for an organization.</p>
+</div>
+<div class="paragraph">
+<p>In part one, we’ll touch on installation and setup, deploying Flink jobs via custom resources and creating container images for your own Flink jobs.
+<a href="/blog/get-running-with-apache-flink-on-kubernetes-2">Part two</a> covers fault tolerance and high availability, savepoint management, observability, and then UI access.</p>
+</div>
+<div class="paragraph">
+<p>The idea for these posts is to give you a fully runnable example so you can try out everything yourself.
+To follow along, grab the complete source code in the Decodable <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/">examples repository</a> on GitHub:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre><span class="nv">$ </span>git clone
+<span class="nv">$ </span><span class="nb">cd </span>flink-on-kubernetes
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You’ll need the following prerequisites:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.docker.com/">Docker</a>, for running and building container images</p>
+</li>
+<li>
+<p><a href="https://kind.sigs.k8s.io/">kind</a>, for setting up a local Kubernetes cluster, and <a href="https://kubernetes.io/docs/reference/kubectl/">kubectl</a> for interacting with it</p>
+</li>
+<li>
+<p><a href="https://helm.sh/">Helm</a>, for installing the Kubernetes operator</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Fig.
+1 gives an overview of the solution we are going to build in this blog series, with all the key resources and most relevant interactions:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/flink-on-kubernetes-1.png" alt="flink on kubernetes 1"/>
+</div>
+<div class="title">Figure 1. Solution overview</div>
+</div>
+<div class="sect1">
+<h2 id="_installation_and_setup">Installation and Setup<a class="anchor" href="#_installation_and_setup"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Start by creating a local Kubernetes cluster using <code>kind</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kind create cluster <span class="nt">--name</span> my-cluster <span class="nt">--config</span> kind-cluster.yml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The cluster contains a control plane as well as a worker node.
+The kind configuration makes the directory <em>/tmp/kind-worker</em> available to the worker node of the cluster, which will allow you to keep Flink savepoints when rebuilding the kind cluster.
+It also maps ports 80 and 443 of the worker node to the host, which will allow you to access the Flink web UI via a Kubernetes ingress later on:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre><span class="na">kind</span><span class="pi">:</span> <span class="s">Cluster</span>
+<span class="na">apiVersion</span><span class="pi">:</span> <span class="s">kind.x-k8s.io/v1alpha4</span>
+<span class="na">nodes</span><span class="pi">:</span>
+ <span class="pi">-</span> <span class="na">role</span><span class="pi">:</span> <span class="s">control-plane</span>
+ <span class="pi">-</span> <span class="na">role</span><span class="pi">:</span> <span class="s">worker</span>
+   <span class="na">extraMounts</span><span class="pi">:</span>
+   <span class="pi">-</span> <span class="na">hostPath</span><span class="pi">:</span> <span class="s">/tmp/kind-worker</span>
+     <span class="na">containerPath</span><span class="pi">:</span> <span class="s">/files</span>
+   <span class="na">extraPortMappings</span><span class="pi">:</span>
+   <span class="pi">-</span> <span class="na">containerPort</span><span class="pi">:</span> <span class="m">80</span>
+     <span class="na">hostPort</span><span class="pi">:</span> <span class="m">80</span>
+     <span class="na">protocol</span><span class="pi">:</span> <span class="s">TCP</span>
+   <span class="pi">-</span> <span class="na">containerPort</span><span class="pi">:</span> <span class="m">443</span>
+     <span class="na">hostPort</span><span class="pi">:</span> <span class="m">443</span>
+     <span class="na">protocol</span><span class="pi">:</span> <span class="s">TCP</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Listing 1:</em> <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/kind-cluster.yml">kind-cluster.yml</a> <em>for spinning up a local Kubernetes cluster</em></p>
+</div>
+<div class="paragraph">
+<p>Verify the cluster is running:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl get nodes
+NAME                       STATUS   ROLES           AGE     VERSION
+my-cluster-control-plane   Ready    control-plane   2d18h   v1.29.2
+my-cluster-worker          Ready              2d18h   v1.29.2
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Installing the Flink Kubernetes operator is straight-forward thanks to the provided <a href="https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/docs/operations/helm/">Helm chart</a>.
+Add the Helm repository for the current version 1.10 (released in October 2024) of the operator like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>helm repo add flink-operator-repo https://downloads.apache.org/flink/flink-kubernetes-operator-1.10.0/
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Before installing the operator itself, it is required to install the Kubernetes cert-manager (needed for issuing TLS certificates used by the <a href="https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/concepts/architecture/#admission-control">operator’s admission controller</a>):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl create <span class="nt">-f</span> https://github.com/jetstack/cert-manager/releases/download/v1.8.2/cert-manager.yaml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The operator Helm chart can be customized upon installation with a <a href="https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/operations/helm/#overriding-configuration-parameters-during-helm-install">wide set of parameters</a>, for instance to control which Kubernetes namespaces the operator should observe, which images should be used by default for deploying Flink jobs, etc.
+We’re gonna make the following adjustments:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Inject the configuration required for running Flink jobs on Java 17; while Flink itself provides support for Java 17 since version 1.18, the operator in version 1.10 doesn’t pass the <code>--add-opens</code> flags required to run Flink on Java 17 and newer. This has been added recently (see <a href="https://issues.apache.org/jira/browse/FLINK-36646">FLINK-36646</a>), but no release of the operator with those changes is available as of now</p>
+</li>
+<li>
+<p>Shorten the lifetime of Flink job managers after a job has been suspended; this setting, <code>kubernetes.operator.jm-deployment.shutdown-ttl</code>, defaults to one day, which means you’ll have a superfluous job manager pod in your cluster for quite a while when suspending a job</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The Helm values file with these configuration amendments looks like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre><span class="na">defaultConfiguration</span><span class="pi">:</span>
+  <span class="na">create</span><span class="pi">:</span> <span class="kc">true</span>
+  <span class="na">append</span><span class="pi">:</span> <span class="kc">true</span>
+  <span class="na">flink-conf.yaml</span><span class="pi">:</span> <span class="pi">|+</span>
+    <span class="s">kubernetes.operator.default-configuration.flink-version.v1_20.env.java.default-opts.all: --add-exports=java.base/sun.net.util=ALL-UNNAMED --add-exports=java.rmi/sun.rmi.registry=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED</span>
+
+    <span class="s">kubernetes.operator.jm-deployment.shutdown-ttl: 10000</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Listing 2: <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/helm-values.yaml">helm-values.yaml</a> for customizing the operator configuration</em></p>
+</div>
+<div class="paragraph">
+<p>Install the Helm chart, using this values file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>helm <span class="nb">install</span> <span class="nt">-f</span> helm-values.yaml flink-kubernetes-operator flink-operator-repo/flink-kubernetes-operator
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This should yield the following output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>NAME: flink-kubernetes-operator
+LAST DEPLOYED: Mon Jan 20 17:02:43 2025
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The Helm chart creates two Kubernetes roles and associated service accounts: <code>flink-operator</code>, used by the Flink operator for managing Flink deployments, and <code>flink</code>, used by the Flink job manager for spawning task manager pods.
+By default, the former is cluster-scoped, while the latter is namespace-scoped.
+In the following, we are going to deploy Flink jobs in the default namespace; if you want to deploy jobs in other namespaces, refer to the operator’s <a href="https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/operations/rbac/">RBAC documentation</a> to learn how to create the required role and service account.</p>
+</div>
+<div class="paragraph">
+<p>Next, we are going to create a deployment of <a href="https://min.io/">MinIO</a> to have an S3 backend for persisting Flink checkpoints and savepoints as well as Flink high availability data, independent of the lifetime of specific Flink pods.
+The MinIO deployment is taken pretty much verbatim from the <a href="https://github.com/kubernetes/examples/blob/master/staging/storage/minio/README.md">upstream Kubernetes examples</a>, only that the volume for persisting the MinIO data is backed by the aforementioned Kind extra mount:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl apply <span class="nt">-f</span> storage/
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create a bucket named <code>flink-data</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl <span class="nt">-n</span> default run minio-client <span class="nt">--image</span><span class="o">=</span>minio/mc:latest <span class="nt">--restart</span><span class="o">=</span>Never <span class="nt">--command</span><span class="o">=</span><span class="nb">true</span> <span class="nt">--</span> sh <span class="nt">-c</span> <span class="s2">&#34;mc config host add minio http://minio-service.default.svc.cluster.local:9000 minio minio123 &amp;&amp; mc mb minio/flink-data&#34;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This concludes the installation steps and we are ready to run our first Flink job on Kubernetes.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_deployment_types">Deployment Types<a class="anchor" href="#_deployment_types"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Following the Kubernetes <a href="https://kubernetes.io/docs/concepts/extend-kubernetes/operator/">operator pattern</a>, Flink jobs are deployed using custom Kubernetes resource definitions (CRDs).
+This means you define a job and its configuration in a resource descriptor (a YAML file), and the operator will take care of creating and managing all the required Kubernetes resources, such as pods for job and task managers, config maps for job configuration, ingresses for accessing the Flink web UI, etc.
+If you make changes to a job’s definition (or delete it), the operator will perform the steps required to keep the deployed resources in sync with the resource definition.</p>
+</div>
+<div class="paragraph">
+<p>The Flink Kubernetes operator supports running Flink in both application and session mode, with dedicated <a href="https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-release-1.10/docs/custom-resource/overview/">resource definitions for each mode</a>.
+In application mode, each job is executed in its own Flink cluster, i.e.
+with its own job manager.
+When the job is finished, that cluster will be shut down.
+The <code>FlinkDeployment</code> resource type is used for running jobs in application mode.</p>
+</div>
+<div class="paragraph">
+<p>In contrast, Flink’s session mode utilizes a long-running Flink cluster onto which multiple jobs are deployed, using the <code>FlinkSessionJob</code> resource type.
+Session mode can be more resource-efficient due to the shared job manager, at the cost of reduced isolation between jobs.</p>
+</div>
+<div class="paragraph">
+<p>In the following, we are going to use application mode, i.e., a dedicated Flink cluster per job.</p>
+</div>
+<div class="paragraph">
+<p>Sticking to the recommendations from the operator documentation, we’ll deploy Flink using the <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/resource-providers/native_kubernetes/">Native Kubernetes</a> resource provider, which means that Flink will directly talk to the Kubernetes API to orchestrate resources such as task manager pods.
+In particular when deploying jobs of unknown provenience, it can make sense to use the <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/resource-providers/standalone/overview/">Standalone</a> provider instead, in which case Flink jobs don’t have access to the Kubernetes API, but instead the operator is managing all the required resources.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_deploying_your_first_flink_job_on_kubernetes">Deploying Your First Flink Job on Kubernetes<a class="anchor" href="#_deploying_your_first_flink_job_on_kubernetes"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The operator’s repository on GitHub contains a number of very useful <a href="https://github.com/apache/flink-kubernetes-operator/tree/main/examples">example resource definitions</a>.
+Slightly adjusted to run with Flink 1.20 on Java 17, the most basic <code>FlinkDeployment</code> definition for running one of the example jobs shipping with Flink looks like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+</pre></td><td class="code"><pre><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">flink.apache.org/v1beta1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">FlinkDeployment</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">basic-example</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">image</span><span class="pi">:</span> <span class="s">flink:1.20-java17</span>
+  <span class="na">flinkVersion</span><span class="pi">:</span> <span class="s">v1_20</span>
+  <span class="na">flinkConfiguration</span><span class="pi">:</span>
+    <span class="na">taskmanager.numberOfTaskSlots</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">2&#34;</span>
+  <span class="na">serviceAccount</span><span class="pi">:</span> <span class="s">flink</span>
+  <span class="na">jobManager</span><span class="pi">:</span>
+    <span class="na">resource</span><span class="pi">:</span>
+      <span class="na">memory</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">2048m&#34;</span>
+      <span class="na">cpu</span><span class="pi">:</span> <span class="m">1</span>
+  <span class="na">taskManager</span><span class="pi">:</span>
+    <span class="na">resource</span><span class="pi">:</span>
+      <span class="na">memory</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">2048m&#34;</span>
+      <span class="na">cpu</span><span class="pi">:</span> <span class="m">1</span>
+  <span class="na">job</span><span class="pi">:</span>
+    <span class="na">jarURI</span><span class="pi">:</span> <span class="s">local:///opt/flink/examples/streaming/StateMachineExample.jar</span>
+    <span class="na">parallelism</span><span class="pi">:</span> <span class="m">2</span>
+    <span class="na">upgradeMode</span><span class="pi">:</span> <span class="s">stateless</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Listing 3: Resource definition</em> <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/basic.yaml">basic.yaml</a> <em>for a first Flink job</em></p>
+</div>
+<div class="paragraph">
+<p>This is running the <em>StateMachineExample.jar</em> job on Flink 1.20 with a parallelism of 2, assigning 1 CPU core and 2 GB of RAM to the job manager and task manager pods, respectively.
+No execution state will be retained between job runs (upgrade mode <code>stateless</code>).
+To deploy this job, apply the resource definition using <code>kubectl</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl apply <span class="nt">-f</span> flink/basic.yaml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As the operator exposes Flink deployments just like any other kind of Kubernetes resource, you can examine their status with kubectl, too (output adjusted for readability):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl describe FlinkDeployment basic-example
+Name:         basic-example
+Namespace:    default
+Labels:
+Annotations:
+API Version:  flink.apache.org/v1beta1
+Kind:         FlinkDeployment
+Metadata:
+  Creation Timestamp:  2025-01-15T09:58:26Z
+  Finalizers:
+    flinkdeployments.flink.apache.org/finalizer
+  Generation:  2
+  Managed Fields:
+    API Version:  flink.apache.org/v1beta1
+    ...
+  Resource Version:  16235
+  UID:               470322f2-2658-48d0-bd86-7473816a5e40
+Spec:
+  Flink Configuration:
+    taskmanager.numberOfTaskSlots:  2
+  Flink Version:                    v1_20
+  Image:                            flink:1.20
+  Job:
+    Args:
+    Jar URI:       <span class="nb">local</span>:///opt/flink/examples/streaming/StateMachineExample.jar
+    Parallelism:   4
+    State:         running
+    Upgrade Mode:  stateless
+  Job Manager:
+    Replicas:  1
+    Resource:
+      Cpu:          1
+      Memory:       2048m
+  Service Account:  flink
+  Task Manager:
+    Resource:
+      Cpu:     1
+      Memory:  2048m
+Status:
+  Cluster Info:
+    Flink - Revision:             b1fe7b4 @ 2024-07-25T04:22:22+02:00
+    Flink - Version:              1.20.0
+    Total - Cpu:                  3.0
+    Total - Memory:               6442450944
+  Job Manager Deployment Status:  READY
+  Job Status:
+    Checkpoint Info:
+      Last Periodic Checkpoint Timestamp:  0
+    Job Id:                                0f646b467710dd8f39e856f4a892be1d
+    Job Name:                              State machine job
+    Savepoint Info:
+      Last Periodic Savepoint Timestamp:  0
+      Savepoint History:
+    Start Time:         1736935168717
+    State:              RUNNING
+    Update Time:        1736935179288
+  Lifecycle State:      STABLE
+  Observed Generation:  2
+  Reconciliation Status:
+    Last Reconciled Spec:     <span class="o">{</span><span class="s2">&#34;spec&#34;</span>:<span class="o">{</span>...<span class="o">}}</span>
+    Last Stable Spec:         <span class="o">{</span><span class="s2">&#34;spec&#34;</span>:<span class="o">{</span>...<span class="o">}}</span>
+    Reconciliation Timestamp:  1736935106418
+    State:                     DEPLOYED
+  Task Manager:
+    Label Selector:  <span class="nv">component</span><span class="o">=</span>taskmanager,app<span class="o">=</span>basic-example
+    Replicas:        2
+Events:
+  Type    Reason            Age    From                  Message
+  <span class="nt">----</span>    <span class="nt">------</span>            <span class="nt">----</span>   <span class="nt">----</span>                  <span class="nt">-------</span>
+  Normal  Submit            6m28s  JobManagerDeployment  Starting deployment
+  Normal  JobStatusChanged  5m15s  Job                   Job status changed from RECONCILING to RUNNING
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When deploying a job, the operator also creates a Kubernetes <a href="https://kubernetes.io/docs/concepts/services-networking/service/">Service</a> for exposing the Flink web UI.
+For testing purposes, you can forward its port, allowing you to access the UI on <a href="http://localhost:8081">http://localhost:8081</a>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl port-forward service/basic-example-rest 8081
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/flink-on-kubernetes-2.png" alt="flink on kubernetes 2"/>
+</div>
+<div class="title">Figure 2. The Flink web UI</div>
+</div>
+<div class="paragraph">
+<p>Next, let’s make some changes to the job definition.
+Currently, the job runs with a parallelism of 2.
+As there are also two slots per task manager, a single task manager pod is running (besides the job manager pod) for the job:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl get pods <span class="nt">-l</span> <span class="nv">app</span><span class="o">=</span>basic-example
+NAME                             READY   STATUS    RESTARTS   AGE
+basic-example-5d9dd5d5c4-h42jd   1/1     Running   0          14s
+basic-example-taskmanager-1-1    1/1     Running   0          6s
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Patch the resource to change the parallelism to 4:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl patch FlinkDeployment basic-example <span class="nt">--patch</span> <span class="s1">&#39;{&#34;spec&#34; : { &#34;job&#34; : { &#34;parallelism&#34; : 4 }}}&#39;</span> <span class="nt">--type</span><span class="o">=</span>merge
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The operator will recognize the change and reconcile the deployment accordingly.
+Shortly thereafter, you’ll see another task pod running:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl get pods <span class="nt">-l</span> <span class="nv">app</span><span class="o">=</span>basic-example
+NAME                             READY   STATUS    RESTARTS   AGE
+basic-example-6fcfd8464c-sm9vc   1/1     Running   0          77s
+basic-example-taskmanager-1-1    1/1     Running   0          68s
+basic-example-taskmanager-1-2    1/1     Running   0          68s
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you go back to the Flink web UI (recreate the port forwarding, if needed), you’ll also see that there are two task managers now, with four task slots overall:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/flink-on-kubernetes-3.png" alt="flink on kubernetes 3"/>
+</div>
+<div class="title">Figure 3. Updated job in the Flink web UI</div>
+</div>
+<div class="paragraph">
+<p>Finally, to delete the job, run the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl delete FlinkDeployment basic-example
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Besides Java, you can also implement your streaming processing jobs using Flink’s Python API, PyFlink.
+Refer to <a href="https://www.decodable.co/blog/getting-started-with-pyflink-on-kubernetes">this post</a> for learning how to get started with running your first PyFlink jobs on Kubernetes.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_building_custom_job_images">Building Custom Job Images<a class="anchor" href="#_building_custom_job_images"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>So far, we’ve run an example Flink job which is contained within the upstream Flink container image.
+In practise, you want to run your own Flink job JARs of course.
+Multiple options exist for doing so:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Adding an <a href="https://kubernetes.io/docs/concepts/workloads/pods/init-containers/">init container</a> to the Flink pods which retrieves the JAR at start-up from a remote location such as an S3 bucket, as shown <a href="https://medium.com/@ravi.nishant2000/deploying-flink-jobs-in-production-using-the-flink-kubernetes-operator-part-2-bd7a9d1b77e2">in this blog post</a></p>
+</li>
+<li>
+<p>Retrieving the JAR from an HTTP server—for instance an internal Maven repository—by specifying an HTTP URI for the <code>jarURI</code> parameter; when using Flink 1.19 or later, the parameter also accepts S3 URIs, provided an S3 file system plug-in has been configured (see <a href="https://issues.apache.org/jira/browse/FLINK-28915">FLINK-28915</a>)</p>
+</li>
+<li>
+<p>Building a custom container image, extending the upstream Flink image and adding your job JAR file at build time</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>While all these approaches do the trick, my personal preference and recommendation is the last one, building a custom image with your job, rather than fetching the JAR at runtime.
+This can help to speed up things when restarting a job (as the image may be retrieved from a node-local image cache) and generally is more in line with the philosophy of immutable container images; for instance, when inspecting the image run by a pod, it’s immediately clear which version of the Flink job this is.</p>
+</div>
+<div class="paragraph">
+<p>The example project of this post contains a <a href="https://github.com/decodableco/examples/tree/main/flink-on-kubernetes/hello-world-job">small Flink job</a>, which prints out a sequence of numbers, using Flink’s built-in <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/connectors/datastream/datagen/">DataGen source</a>.
+You can build a container image for this job via Docker like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>docker build <span class="nt">-t</span> decodable-examples/hello-world-job:1.0 hello-world-job
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>While you’d normally push this image to an image registry such as ECR, we’re simply going to load it directly into Kind in this case:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kind load docker-image decodable-examples/hello-world-job:1.0 <span class="nt">--name</span> my-cluster
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Next, we need to create a <code>FlinkDeployment</code> resource for this job.
+This is very similar to the one before, only that now we’re referring to our custom image containing the Flink job JAR file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+</pre></td><td class="code"><pre><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">flink.apache.org/v1beta1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">FlinkDeployment</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">custom-job</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">image</span><span class="pi">:</span> <span class="s">decodable-examples/flink-hello-world:1.0</span>
+  <span class="na">flinkVersion</span><span class="pi">:</span> <span class="s">v1_20</span>
+  <span class="na">flinkConfiguration</span><span class="pi">:</span>
+    <span class="na">taskmanager.numberOfTaskSlots</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">2&#34;</span>
+  <span class="na">serviceAccount</span><span class="pi">:</span> <span class="s">flink</span>
+  <span class="na">jobManager</span><span class="pi">:</span>
+    <span class="na">resource</span><span class="pi">:</span>
+      <span class="na">memory</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">2048m&#34;</span>
+      <span class="na">cpu</span><span class="pi">:</span> <span class="m">1</span>
+  <span class="na">taskManager</span><span class="pi">:</span>
+    <span class="na">resource</span><span class="pi">:</span>
+      <span class="na">memory</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">2048m&#34;</span>
+      <span class="na">cpu</span><span class="pi">:</span> <span class="m">1</span>
+  <span class="na">job</span><span class="pi">:</span>
+    <span class="na">jarURI</span><span class="pi">:</span> <span class="s">local:///opt/flink/examples/streaming/flink-hello-world-0.1.jar</span>
+    <span class="na">parallelism</span><span class="pi">:</span> <span class="m">1</span>
+    <span class="na">upgradeMode</span><span class="pi">:</span> <span class="s">stateless</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Listing 4: Resource definition <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/custom-job.yaml">custom-job.yaml</a> for a custom Flink job</em></p>
+</div>
+<div class="paragraph">
+<p>Apply the descriptor:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl apply <span class="nt">-f</span> flink/custom-job.yaml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then verify the job status is running:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl get FlinkDeployment custom-job
+NAME         JOB STATUS   LIFECYCLE STATE
+custom-job   RUNNING      STABLE
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For further analysis, you can also take a look at the logs of the task manager pod like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl logs <span class="nt">-l</span> <span class="nv">app</span><span class="o">=</span>custom-job,component<span class="o">=</span>taskmanager <span class="nt">-f</span>
+...
+2025-01-20 11:07:40,323 INFO  org.apache.flink.runtime.taskmanager.Task                    <span class="o">[]</span> - Source: Generator Source -&gt; Sink: Writer <span class="o">(</span>1/1<span class="o">)</span><span class="c">#0 (d70586a2890af7b3459578ad30dcd550_cbc357ccb763df2852fee8c4fc7d55f2_0_0) switched from DEPLOYING to INITIALIZING.</span>
+2025-01-20 11:07:40,365 INFO  org.apache.flink.runtime.state.StateBackendLoader            <span class="o">[]</span> - State backend is <span class="nb">set </span>to heap memory org.apache.flink.runtime.state.hashmap.HashMapStateBackend@79439cec
+2025-01-20 11:07:40,375 INFO  org.apache.flink.runtime.state.StateBackendLoader            <span class="o">[]</span> - State backend is <span class="nb">set </span>to heap memory org.apache.flink.runtime.state.hashmap.HashMapStateBackend@177287da
+2025-01-20 11:07:40,380 INFO  org.apache.flink.runtime.taskmanager.Task                    <span class="o">[]</span> - Source: Generator Source -&gt; Sink: Writer <span class="o">(</span>1/1<span class="o">)</span><span class="c">#0 (d70586a2890af7b3459578ad30dcd550_cbc357ccb763df2852fee8c4fc7d55f2_0_0) switched from INITIALIZING to RUNNING.</span>
+Number: 0
+Number: 1
+Number: 2
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This concludes part one of this blog post series.
+Head over to <a href="/blog/get-running-with-apache-flink-on-kubernetes-2">part two</a> to learn about fault tolerance and high availability of your Flink jobs running on Kubernetes, savepoint management, observability, and more.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			
+			
+			
+			<div class="related-posts">
+				<h3>Read Next</h3>
+				<ul>
+					
+					<li><a href="/blog/get-running-with-apache-flink-on-kubernetes-2/">Get Running with Apache Flink on Kubernetes, part 2 of 2</a> <span class="meta">Jan 28, 2025</span></li>
+					
+					<li><a href="/blog/this-ai-agent-should-have-been-sql-query/">This AI Agent Should Have Been a SQL Query</a> <span class="meta">Jun 18, 2025</span></li>
+					
+					<li><a href="/blog/why-i-joined-decodable/">Why I Joined Decodable</a> <span class="meta">Nov 3, 2022</span></li>
+					
+				</ul>
+			</div>
+			
+			
+		</div>
+
+		<div class="post-footer">
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<div class="header-image-container" style="flex-shrink: 0;">
+					<img class="footer-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+				</div>
+				<p style="margin: 0;">Gunnar Morling is an open-source software engineer in the Java and data streaming space. He currently works as a Technologist for Confluent. In his past role at Decodable he focused on developer outreach and helped them build their stream processing platform based on Apache Flink. Prior to that, he spent ten years at Red Hat, where he led the Debezium project, a platform for change data capture.</p>
+			</div>
+		</div>
+
+		
+		
+		<div class="post-discussions">
+			<p>Comment below, or join the discussion on
+			<a href="https://hn.algolia.com/?query=morling.dev/blog/get-running-with-apache-flink-on-kubernetes-1/">Hacker News</a>,
+			<a href="https://lobste.rs/search?q=domain:morling.dev+title:%22Get%20Running%20with%20Apache%20Flink%20on%20Kubernetes%2c%20part%201%20of%202%22&what=stories">Lobsters</a>, and
+			<a href="https://www.reddit.com/search/?q=url:morling.dev/blog/get-running-with-apache-flink-on-kubernetes-1/">Reddit</a>.
+			</p>
+		</div>
+		<div id="disqus_thread"></div>
+
+<script>
+  
+  window.addEventListener('load', function() {
+    
+    setTimeout(function() {
+      const commentsContainer = document.getElementById('disqus_thread');
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', 'gunnarmorling/discussions.morling.dev');
+      script.setAttribute('data-repo-id', 'R_kgDOGXzqNQ');
+      script.setAttribute('data-category', 'Announcements');
+      script.setAttribute('data-category-id', 'DIC_kwDOGXzqNc4B_2Pq');
+      script.setAttribute('data-mapping', 'title');
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-theme', 'light');
+      script.setAttribute('data-lang', 'en');
+      script.setAttribute('crossorigin', 'anonymous');
+      script.async = true;
+      commentsContainer.appendChild(script);
+    }, 100);
+  });
+</script>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>

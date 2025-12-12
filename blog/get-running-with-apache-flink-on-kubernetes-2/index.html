@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Get Running with Apache Flink on Kubernetes, part 2 of 2 - Gunnar Morling</title><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="canonical" href="https://www.decodable.co/blog/get-running-with-apache-flink-on-kubernetes-2" /><meta property="og:url" content="https://www.morling.dev/blog/get-running-with-apache-flink-on-kubernetes-2/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Get Running with Apache Flink on Kubernetes, part 2 of 2">
+  <meta property="og:description" content=" This post originally appeared on the Decodable blog.
+Welcome back to this two-part blog post series about running Apache Flink on Kubernetes, using the Flink Kubernetes operator. In part one, we …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2025-01-28T00:00:00Z">
+    <meta property="article:modified_time" content="2025-01-28T00:00:00Z">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Get Running with Apache Flink on Kubernetes, part 2 of 2">
+  <meta name="twitter:description" content=" This post originally appeared on the Decodable blog.
+Welcome back to this two-part blog post series about running Apache Flink on Kubernetes, using the Flink Kubernetes operator. In part one, we …">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.672476d25c0fad0fd490e21222003c6c89ca45b73df6a5634305e06e889c49ad.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
+	
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.5e2c4cf50d01b5e8795a87894c2d08be87ed25371b30d97df693079b623d9f87.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+	<script src="/js/main.min.9ee619eea7f51473f4284ef86c76bdb1b0089e19781ca97275924edf53be5bd4.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header desktop">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myForm">
+							<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<div class="header mobile">
+
+	<div class="row">
+		<div class="header-image-container">
+			<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+		</div>
+		<div class="fill">
+			<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+			<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+		</div>
+	</div>
+	<div>
+		<div>
+			<nav class="row pre-nav">
+				<div class="pull-right">
+					<ul class="flat"><li>
+							<a href="/blog/index.xml" title="RSS FEED">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#rss"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://github.com/gunnarmorling" title="GitHub">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#github"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://twitter.com/gunnarmorling" title="Twitter">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+								</svg>
+							</a>
+						</li><li>
+							<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+								<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+								</svg>
+							</a>
+						</li></ul>
+				</div>
+			</nav>
+			<nav class="row nav">
+				<div>
+					<ul class="flat">
+						
+						<li>
+							<a href="/blog">Blog</a>
+						</li>
+						
+						<li>
+							<a href="/projects/">Projects</a>
+						</li>
+						
+						<li>
+							<a href="/conferences/">Conferences</a>
+						</li>
+						
+						<li>
+							<a href="/podcasts/">Podcasts</a>
+						</li>
+						
+						<li>
+							<a href="/about/">About</a>
+						</li>
+						
+					</ul>
+				</div>
+				<div class="pull-right">
+					<div class="club">
+						<form id="myFormMobile">
+							<input type="text" id="inputSearchMobile" name="q" placeholder="Search..." onfocus="warmUp(this)">
+							<button type="submit" id="buttonSubmitSearchMobile" style="line-height: normal;"><i id="iconSearchMobile" class="fa fa-search"></i></button>
+						</form>
+					</div>
+				</div>
+			</nav>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		
+
+
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+
+		const formMobile = document.getElementById( "myFormMobile" );
+
+		formMobile.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(formMobile));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Get Running with Apache Flink on Kubernetes, part 2 of 2</h1>
+				<div class="post-meta-line">
+					<span class="meta">Posted at Jan 28, 2025</span>
+					
+					<span class="post-tags-inline">
+						
+						<a href="/tags/flink">flink</a>
+						
+						<a href="/tags/kubernetes">kubernetes</a>
+						
+						<a href="/tags/streaming">streaming</a>
+						
+					</span>
+					
+				</div>
+			</div>
+
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_fault_tolerance_and_high_availability">Fault Tolerance and High Availability</a></li>
+<li><a href="#_manually_triggering_savepoints">Manually Triggering Savepoints</a></li>
+<li><a href="#_observability">Observability</a></li>
+<li><a href="#_bonus_managing_flink_jobs_with_the_heimdall_ui">Bonus: Managing Flink Jobs With the Heimdall UI</a></li>
+<li><a href="#_summary_and_discussion">Summary and Discussion</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p><em>This post originally appeared on the <a href="https://www.decodable.co/blog/get-running-with-apache-flink-on-kubernetes-2">Decodable blog</a>.</em></p>
+</div>
+<div class="paragraph">
+<p>Welcome back to this two-part blog post series about running Apache Flink on Kubernetes, using the Flink Kubernetes operator.
+In <a href="/blog/get-running-with-apache-flink-on-kubernetes-1">part one</a>, we discussed installation and setup of the operator, different deployment types, how to deploy Flink jobs using custom Kubernetes resources, and how to create container images for your own Flink jobs.
+In this part, we’ll focus on aspects such as fault tolerance and high availability of your Flink jobs running on Kubernetes, savepoint management, observability, and more.
+You can find the complete source code for all the examples shown in this series in the Decodable <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/">examples repository</a> on GitHub: on GitHub.</p>
+</div>
+<div class="sect1">
+<h2 id="_fault_tolerance_and_high_availability">Fault Tolerance and High Availability<a class="anchor" href="#_fault_tolerance_and_high_availability"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>So far, we don’t have any means of fault tolerance or high availability (HA) in place for our job.
+If for instance a task or job manager pod crashes, all progress the job has made will be lost.
+Similarly, its state is not retained across restarts.
+If you change the job’s configuration or suspend and restart it, it will start from the beginning.
+To ensure that no state is lost in case of failures or (intentional) restarts, the following is required:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/fault-tolerance/checkpointing/">Enable checkpointing</a> for the Flink job, allowing to recover from task manager failures</p>
+</li>
+<li>
+<p><a href="https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/ha/overview/">Enabling job manager HA</a>, allowing to gracefully handle job manager failures</p>
+</li>
+<li>
+<p><a href="https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/savepoints/">Savepoints</a>, allowing to take a consistent snapshot of a job and to resume from that snapshot later on</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It also is possible to ensure HA for the Flink Kubernetes operator itself.
+To do so, enable leader election for the operator, as <a href="https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/operations/configuration/#leader-election-and-high-availability">described in the documentation</a>.
+You then can run multiple replicas of the operator, with one of them being the leader and others in a stand-by capacity, ready to take over should the current leader fail.</p>
+</div>
+<div class="paragraph">
+<p>Whether this is necessary or not, depends on the requirements of the specific use case.
+Even without operator HA, existing job deployments are not affected by an operator failure and will continue to run.
+It thus may be acceptable to have short downtimes of the operator, provided the right monitoring is in place to detect the situation swiftly and resolve it manually.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>As Kubernetes pods are ephemeral, the corresponding state needs to be persisted externally.
+Oftentimes, object storage such as an S3 bucket is used for this purpose, thus avoiding the need to mount any persistent volumes to the Flink pods.
+Based on the upstream HA example resource, the following shows how to configure checkpoints, savepoints, and job manager HA using the bucket created in MinIO we set up before:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+</pre></td><td class="code"><pre><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">flink.apache.org/v1beta1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">FlinkDeployment</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">custom-job-ha</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">image</span><span class="pi">:</span> <span class="s">decodable-examples/flink-hello-world:1.0</span>
+  <span class="na">flinkVersion</span><span class="pi">:</span> <span class="s">v1_20</span>
+  <span class="na">flinkConfiguration</span><span class="pi">:</span>
+    <span class="na">taskmanager.numberOfTaskSlots</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">2&#34;</span>
+
+    <span class="na">s3.access.key</span><span class="pi">:</span> <span class="s">minio</span>
+    <span class="na">s3.secret.key</span><span class="pi">:</span> <span class="s">minio123</span>
+    <span class="na">s3.endpoint</span><span class="pi">:</span> <span class="s">http://minio-service.default.svc.cluster.local:9000</span>
+    <span class="na">s3.path.style.access</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">true&#34;</span>
+
+    <span class="na">state.backend</span><span class="pi">:</span> <span class="s">rocksdb</span>
+    <span class="na">state.backend.incremental</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">true&#34;</span>
+    <span class="na">state.checkpoints.dir</span><span class="pi">:</span> <span class="s">s3://flink-data/checkpoints</span>
+    <span class="na">state.savepoints.dir</span><span class="pi">:</span> <span class="s">s3://flink-data/savepoints</span>
+
+    <span class="na">high-availability.type</span><span class="pi">:</span> <span class="s">kubernetes</span>
+    <span class="na">high-availability.storageDir</span><span class="pi">:</span> <span class="s">s3://flink-data/ha</span>
+  <span class="na">serviceAccount</span><span class="pi">:</span> <span class="s">flink</span>
+  <span class="na">jobManager</span><span class="pi">:</span>
+    <span class="na">resource</span><span class="pi">:</span>
+      <span class="na">memory</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">2048m&#34;</span>
+      <span class="na">cpu</span><span class="pi">:</span> <span class="m">1</span>
+  <span class="na">taskManager</span><span class="pi">:</span>
+    <span class="na">resource</span><span class="pi">:</span>
+      <span class="na">memory</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">2048m&#34;</span>
+      <span class="na">cpu</span><span class="pi">:</span> <span class="m">1</span>
+  <span class="na">podTemplate</span><span class="pi">:</span>
+    <span class="na">spec</span><span class="pi">:</span>
+      <span class="na">containers</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">flink-main-container</span>
+          <span class="na">env</span><span class="pi">:</span>
+            <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">ENABLE_BUILT_IN_PLUGINS</span>
+              <span class="na">value</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">flink-s3-fs-presto-1.20.0.jar&#34;</span>
+  <span class="na">job</span><span class="pi">:</span>
+    <span class="na">jarURI</span><span class="pi">:</span> <span class="s">local:///opt/flink/examples/streaming/flink-hello-world-1.0.jar</span>
+    <span class="na">parallelism</span><span class="pi">:</span> <span class="m">2</span>
+    <span class="na">upgradeMode</span><span class="pi">:</span> <span class="s">savepoint</span>
+    <span class="na">state</span><span class="pi">:</span> <span class="s">running</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Listing 1: Resource definition <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/custom-job-ha.yaml">custom-job-ha.yaml</a> for a custom Flink job with fault tolerance and high availability</em></p>
+</div>
+<div class="paragraph">
+<p>Deploy the job by applying the resource:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl apply <span class="nt">-f</span> flink/custom-job-ha.yaml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Quite a few things are going on here, so let’s digest them one by one.
+First, the directories for storing checkpoints and savepoints are configured using the <code>state.checkpoints.dir</code> and <code>state.savepoints.dir</code> options, respectively.
+We are using <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/state_backends/#rocksdb-state-backend-details">RocksDB as a Flink state backend</a>, enabling incremental checkpointing, thus avoiding the need to transfer the complete state upon each checkpoint, which can substantially reduce checkpoint durations.
+While not that relevant for a small-scale example like the one at hand, it can make sense to make use of <a href="https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/filesystems/s3/#entropy-injection-for-s3-file-systems">S3 entropy injection</a>: by adding a random part at the beginning of checkpoint paths, the data will be distributed across multiple shards of the S3 bucket.</p>
+</div>
+<div class="paragraph">
+<p>To enable Flink’s <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/ha/kubernetes_ha/">job manager HA services</a>, <code>high-availability.type</code> must be set to <code>kubernetes</code> and a directory for storing job manager metadata must be given via <code>high-availability.storageDir</code>.
+In order for Flink to access data on S3, an S3 file system plug-in is enabled via the <code>ENABLE_BUILT_IN_PLUGINS</code> environment variable set for the Flink containers in the pod template of the resource descriptor.
+Flink provides <a href="https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/deployment/filesystems/s3/">two plug-ins for S3</a>; we are using the Presto one as this is the recommended option for storing checkpoint data.</p>
+</div>
+<div class="paragraph">
+<p>For accessing the S3 API provided by MinIO in this example, we are providing the access key and secret key right within the resource definition itself.
+In a production use case, storing data in an S3 bucket on AWS, this should be avoided, instead authentication should happen via IAM, granting access to S3 via an IAM role for the Flink pods.</p>
+</div>
+<div class="paragraph">
+<p>Lastly, by setting <code>job.upgradeMode</code> to <code>savepoint</code>, the operator will trigger a savepoint when suspending a job and start from that savepoint when resuming.
+To verify that this actually works, make a change to the resource descriptor (for instance to change its parallelism to 2) and apply it again.
+If you examine the logs of the task manager pod subsequently, you should notice that the emitted sequence numbers don’t start at 1 but at the point where the job left off before.</p>
+</div>
+<div class="paragraph">
+<p>You can also suspend a job explicitly, if for instance your use case doesn’t require a real-time processing of data and you want to save on compute resources.
+To do so, patch the job’s target state to suspended:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl patch FlinkDeployment custom-job-ha <span class="nt">--patch</span> <span class="s1">&#39;{&#34;spec&#34; : { &#34;job&#34; : { &#34;state&#34; : &#34;suspended&#34; }}}&#39;</span> <span class="nt">--type</span><span class="o">=</span>merge
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the operator picks up this change, it will shut down the job, removing the job manager and task manager pods.
+The actual <code>FlinkDeployment</code> resource remains present, though, now indicating that it is suspended:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl get FlinkDeployment custom-job-ha
+NAME            JOB STATUS   LIFECYCLE STATE
+custom-job-ha   FINISHED     SUSPENDED
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To resume the job, patch the target state back to <code>running</code>, after which you should be able to observe that the job continues from the latest savepoint.
+The cool thing is that savepoints created that way are represented by Kubernetes resources, too.
+The operator provides a <a href="https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/snapshots/">dedicated resource type</a> for this, <code>FlinkStateSnapshot</code>, which you can query to obtain the list of savepoints:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl get FlinkStateSnapshots
+NAME                                            PATH                                                       RESULT TIMESTAMP              SNAPSHOT STATE
+custom-job-ha-savepoint-upgrade-1736963811478   s3://flink-data/savepoints/savepoint-52e52e-58013f2a2604   2025-01-15T17:56:51.536782Z   COMPLETED
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_manually_triggering_savepoints">Manually Triggering Savepoints<a class="anchor" href="#_manually_triggering_savepoints"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>It is also possible to manually create savepoints and use them when resuming a suspended job, or when creating a new instance of that job.
+To do so, create and apply a <code>FlinkStateSnapshot</code> resource, referencing the job to snapshot:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">flink.apache.org/v1beta1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">FlinkStateSnapshot</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">example-savepoint</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">backoffLimit</span><span class="pi">:</span> <span class="m">1</span>
+  <span class="na">jobReference</span><span class="pi">:</span>
+    <span class="na">kind</span><span class="pi">:</span> <span class="s">FlinkDeployment</span>
+    <span class="na">name</span><span class="pi">:</span> <span class="s">custom-job-ha</span>
+  <span class="na">savepoint</span><span class="pi">:</span> <span class="pi">{}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Listing 2: Resource definition <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/savepoint.yaml">savepoint.yaml</a> for manually triggering a savepoint</em></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl apply <span class="nt">-f</span> flink/savepoint.yaml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In order to start a job from this savepoint, retrieve its path on S3 via <code>kubectl describe FlinkStateSnapshot example-savepoint</code> and specify it under <code>spec.job.initialSavepointPath</code> in the <code>FlinkDeployment</code> resource of the job:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre>...
+spec:
+  job:
+    jarURI: <span class="nb">local</span>:///opt/flink-jobs/flink-hello-world-1.0.jar
+    upgradeMode: savepoint
+    state: running
+    initialSavepointPath: s3://flink-data/savepoints/savepoint-eba39a-1fd698a34a01
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that if you’d like to restart an existing job from a specific savepoint, you also need to specify <code>savepointRedeployNonce</code> in addition.
+Set it to 1 when it hasn’t been set before, otherwise increment its value for each restart:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre>...
+initialSavepointPath: s3://flink-data/savepoints/savepoint-eba39a-1fd698a34a01
+savepointRedeployNonce: 1
+...
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_observability">Observability<a class="anchor" href="#_observability"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Once you are moving your Flink jobs to production, it is critical to have good observability for all the components in place, allowing you to examine the system’s state and react to failures, degraded performance, etc.
+Typically, an application’s logs, metrics, and traces are imported into services and tools such as Datadog, New Relic, or OpenSearch for this purpose.</p>
+</div>
+<div class="paragraph">
+<p>It’s beyond the scope of this post to provide a comprehensive description of an observability solution for Flink deployments.
+To give you a starting point though, the accompanying repository contains a basic <a href="https://github.com/decodableco/examples/tree/flink-on-kubernetes/flink-on-kubernetes/logging">example setup</a> which shows how to ingest logs from job and task manager pods into Elasticsearch, allowing you to analyze them in a Kibana dashboard.</p>
+</div>
+<div class="paragraph">
+<p>Install the Elasticsearch Kubernetes operator, then set up Elasticsearch and Kibana by running the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl create <span class="nt">-f</span> https://download.elastic.co/downloads/eck/2.16.0/crds.yaml
+<span class="nv">$ </span>kubectl apply <span class="nt">-f</span> https://download.elastic.co/downloads/eck/2.16.0/operator.yaml
+<span class="nv">$ </span>kubectl <span class="nt">-n</span> logging apply <span class="nt">-f</span> logging/elastic.yaml
+<span class="nv">$ </span>kubectl <span class="nt">-n</span> logging apply <span class="nt">-f</span> logging/kibana.yaml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <a href="https://kube-logging.dev/">Kubernetes Logging operator</a> is used for collecting and forwarding log files.
+You can deploy it with the following Helm command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>helm upgrade <span class="nt">--install</span> <span class="nt">--wait</span> <span class="nt">--create-namespace</span> <span class="nt">--namespace</span> logging logging-operator oci://ghcr.io/kube-logging/helm-charts/logging-operator
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Next, configure a <code>Logging</code> instance:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl <span class="nt">-n</span> logging apply <span class="nt">-f</span> logging/logging.yaml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This installs as an agent (<code>fluentbit</code>) on each worker node of the Kubernetes cluster, which collects the logs of the pods on this node—enriching them with Kubernetes metadata such as pod labels—and forwards them to a collector service (<code>fluentd</code>).
+There they are filtered and transformed as per the current configuration and finally forwarded to Elasticsearch.
+By using log4j2’s <a href="https://logging.apache.org/log4j/2.x/manual/json-template-layout.html">JsonTemplateLayout</a> for Flink log messages (configured <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/logging-job.yaml#L85">here</a>), the same are emitted in a structured form, making it very easy to process them:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="err">...</span><span class="w">
+</span><span class="p">{</span><span class="nl">&#34;@timestamp&#34;</span><span class="p">:</span><span class="s2">&#34;2025-01-17T09:51:55.295Z&#34;</span><span class="p">,</span><span class="nl">&#34;ecs.version&#34;</span><span class="p">:</span><span class="s2">&#34;1.2.0&#34;</span><span class="p">,</span><span class="nl">&#34;log.level&#34;</span><span class="p">:</span><span class="s2">&#34;INFO&#34;</span><span class="p">,</span><span class="nl">&#34;message&#34;</span><span class="p">:</span><span class="s2">&#34;Completed checkpoint 360 for job 2bd169b220ae0d7e26f3edf0869c244f (15960 bytes, checkpointDuration=9 ms, finalizationTime=0 ms).&#34;</span><span class="p">,</span><span class="nl">&#34;process.thread.name&#34;</span><span class="p">:</span><span class="s2">&#34;jobmanager-io-thread-1&#34;</span><span class="p">,</span><span class="nl">&#34;log.logger&#34;</span><span class="p">:</span><span class="s2">&#34;org.apache.flink.runtime.checkpoint.CheckpointCoordinator&#34;</span><span class="p">,</span><span class="nl">&#34;flink-job-id&#34;</span><span class="p">:</span><span class="s2">&#34;2bd169b220ae0d7e26f3edf0869c244f&#34;</span><span class="p">}</span><span class="w">
+</span><span class="err">...</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The ingestion pipeline into Elasticsearch is set up via two resources processed by the Kubernetes Logging operator.
+The first is a <code>ClusterOutput</code> resource, describing the destination of the pipeline, i.e.
+the Elasticsearch endpoint, the credentials, etc.:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+</pre></td><td class="code"><pre><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">logging.banzaicloud.io/v1beta1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">ClusterOutput</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">es-output</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">elasticsearch</span><span class="pi">:</span>
+    <span class="na">host</span><span class="pi">:</span> <span class="s">quickstart-es-http.logging.svc.cluster.local</span>
+    <span class="na">port</span><span class="pi">:</span> <span class="m">9200</span>
+    <span class="na">scheme</span><span class="pi">:</span> <span class="s">https</span>
+    <span class="na">ssl_verify</span><span class="pi">:</span> <span class="kc">false</span>
+    <span class="na">ssl_version</span><span class="pi">:</span> <span class="s">TLSv1_2</span>
+    <span class="na">user</span><span class="pi">:</span> <span class="s">elastic</span>
+    <span class="na">password</span><span class="pi">:</span>
+      <span class="na">valueFrom</span><span class="pi">:</span>
+        <span class="na">secretKeyRef</span><span class="pi">:</span>
+          <span class="na">name</span><span class="pi">:</span> <span class="s">quickstart-es-elastic-user</span>
+          <span class="na">key</span><span class="pi">:</span> <span class="s">elastic</span>
+    <span class="na">buffer</span><span class="pi">:</span>
+      <span class="na">timekey</span><span class="pi">:</span> <span class="s">1m</span>
+      <span class="na">timekey_wait</span><span class="pi">:</span> <span class="s">30s</span>
+      <span class="na">timekey_use_utc</span><span class="pi">:</span> <span class="kc">true</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Listing 3: Resource definition <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/logging/elastic-output.yaml">elastic-output.yaml</a>, describing the output of the logging pipeline</em></p>
+</div>
+<div class="paragraph">
+<p>Create the output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl <span class="nt">-n</span> logging apply <span class="nt">-f</span> logging/elastic-output.yaml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The second resource is of type <code>Flow</code> and describes the set of pods to ingest from (leveraging the component labels set up by the Flink Kubernetes operator), as well as the parsing logic and destination of log pipeline:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+</pre></td><td class="code"><pre><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">logging.banzaicloud.io/v1beta1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Flow</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">es-flow</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">filters</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">tag_normaliser</span><span class="pi">:</span> <span class="pi">{}</span>
+    <span class="pi">-</span> <span class="na">parser</span><span class="pi">:</span>
+        <span class="na">remove_key_name_field</span><span class="pi">:</span> <span class="kc">true</span>
+        <span class="na">reserve_data</span><span class="pi">:</span> <span class="kc">true</span>
+        <span class="na">parse</span><span class="pi">:</span>
+          <span class="na">type</span><span class="pi">:</span> <span class="s">json</span>
+          <span class="na">time_key</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">@timestamp&#34;</span>
+  <span class="na">match</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">select</span><span class="pi">:</span>
+        <span class="na">labels</span><span class="pi">:</span>
+          <span class="na">component</span><span class="pi">:</span> <span class="s">jobmanager</span>
+    <span class="pi">-</span> <span class="na">select</span><span class="pi">:</span>
+        <span class="na">labels</span><span class="pi">:</span>
+          <span class="na">component</span><span class="pi">:</span> <span class="s">taskmanager</span>
+  <span class="na">globalOutputRefs</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">es-output</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Listing 4: Resource definition <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/logging/elastic-flow.yaml">elastic-flow.yaml</a>, describing the logic of the logging pipeline</em></p>
+</div>
+<div class="paragraph">
+<p>Create the flow:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl apply <span class="nt">-f</span> logging/elastic-flow.yaml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once these resources are in place, the Kubernetes Logging operator will set up the required infrastructure for extracting and propagating the Flink logs, utilizing <a href="https://www.fluentd.org/">fluentbit and fluentd</a>.
+The logs will be ingested into an Elasticsearch, which you can inspect and query using Kibana.
+To access Kibana, retrieve the password of the <code>elastic</code> user like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl <span class="nt">-n</span> logging get secret quickstart-es-elastic-user <span class="nt">-o</span><span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.elastic}&#39;</span> | <span class="nb">base64</span> <span class="nt">--decode</span><span class="p">;</span> <span class="nb">echo
+</span>9V9520L2yvgzJla0RIyQo784
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then forward port 5601 of the &#34;quickstart-kb-http&#34; service:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl <span class="nt">-n</span> logging port-forward service/quickstart-kb-http 5601
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Navigate to <a href="https://localhost:5601/">https://localhost:5601/</a> (accept the warning because of the unknown certificate issue) and log in, then go to &#34;Analytics&#34; → &#34;Discover&#34; and create a data view for the index named <code>fluentd</code>:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/flink-on-kubernetes-3.png" alt="flink on kubernetes 3"/>
+</div>
+<div class="title">Figure 1. Flink job logs ingested into Elasticsearch</div>
+</div>
+<div class="paragraph">
+<p>As mentioned before, this is just scratching the surface when it comes to setting up observability infrastructure for Flink.
+There’s a wide range of tools and platforms in that space, and you should choose what matches your requirements, integrating with the solutions and infrastructure already in use with your organization.
+Besides logging, your observability strategy will typically also cover metrics (which are supported by Flink via a <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/metric_reporters/">range of metrics exporters</a>, for instance for Prometheus, InfluxDB, and DataDog) and traces (e.g. supported via the <a href="https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/trace_reporters/">OpenTelemetry trace exporter</a>).
+But also Java-specific tools such as <a href="https://openjdk.org/jeps/328">JDK Flight Recorder</a> can be invaluable to gain insight into the performance characteristics and other runtime behaviors of your Flink jobs.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_bonus_managing_flink_jobs_with_the_heimdall_ui">Bonus: Managing Flink Jobs With the Heimdall UI<a class="anchor" href="#_bonus_managing_flink_jobs_with_the_heimdall_ui"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For working with the Flink web UI in a production deployment, the operator optionally sets up a Kubernetes Ingress resource for each job, making its UI available for external access.
+To do so, simply add the following section to the job’s resource definition:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="na">ingress</span><span class="pi">:</span>
+  <span class="na">template</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">localhost/{{name}}(/|$)(.*)&#34;</span>
+  <span class="na">className</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">nginx&#34;</span>
+  <span class="na">annotations</span><span class="pi">:</span>
+    <span class="na">nginx.ingress.kubernetes.io/rewrite-target</span><span class="pi">:</span> <span class="s2">&#34;</span><span class="s">/$2&#34;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You’ll also need an ingress controller, which you can install for the local kind cluster like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="nv">$ </span>helm upgrade <span class="nt">--install</span> ingress-nginx ingress-nginx <span class="se">\</span>
+  <span class="nt">--repo</span> https://kubernetes.github.io/ingress-nginx <span class="se">\</span>
+  <span class="nt">--namespace</span> ingress-nginx <span class="nt">--create-namespace</span> <span class="nt">--set</span> controller.nodeSelector.<span class="s2">&#34;kubernetes</span><span class="se">\.</span><span class="s2">io/hostname&#34;</span><span class="o">=</span>my-cluster-worker
+
+<span class="nv">$ </span>kubectl apply <span class="nt">-f</span> heimdall/deploy-ingress-nginx.yaml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the controller is running, you can then access the Flink web UI from your local host, without requiring any port forwardings, for instance at <a href="http://localhost/custom-job-ha/">http://localhost/custom-job-ha/</a> for the <code>custom-job-ha</code> job.</p>
+</div>
+<div class="paragraph">
+<p>With a large number of jobs it can become challenging to keep track of all the deployed jobs and where to find their UIs, logs, or metrics.
+This is where <a href="https://github.com/sap1ens/heimdall">Heimdall</a> comes into the picture, a project by Yaroslav Tkachenko: it provides one unified UI for accessing all the Flink jobs executed via the operator on one Kubernetes cluster.
+You can install it into the cluster by running this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl apply <span class="nt">-f</span> heimdall/heimdall.yaml
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once running, the UI provides a list of all the deployed jobs, their status, resource, etc.
+Forward its port to access it from your host:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="nv">$ </span>kubectl port-forward service/heimdall 8080
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/flink-on-kubernetes-4.png" alt="flink on kubernetes 4"/>
+</div>
+<div class="title">Figure 2. Heimdall, a UI for managing multiple Flink jobs on one Kubernetes cluster</div>
+</div>
+<div class="paragraph">
+<p>The endpoint URLs in the Heimdall UI are customizable, so that you can easily link to the right locations of Flink UI, API, metrics, and logs of your specific environment.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary_and_discussion">Summary and Discussion<a class="anchor" href="#_summary_and_discussion"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Apache Flink Kubernetes Operator is becoming increasingly popular for running Flink jobs on Kubernetes.
+Following the well-established Kubernetes operator pattern, it allows you to deploy and run your stream processing jobs by creating declarative resources which are processed in a reconciliation loop by the operator.
+This means you get to focus on the &#34;What?&#34; of your job, with a lot of the &#34;How?&#34; being taken care of automatically for you.
+Rather than having to deal with details such as configuring deployments, services, and ingresses, the operator lets you express your intent in a higher-level resource and derives all the required lower-level resources from that.</p>
+</div>
+<div class="paragraph">
+<p>There’s quite a few features of the operator which we couldn’t discuss in this post, most prominently its capabilities for <a href="https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/autoscaler/">auto-scaling</a> (i.e.
+scaling jobs automatically up and down in order to minimize back pressure while also satisfying given utilization targets) and <a href="https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/custom-resource/autotuning/">auto-tuning</a> Flink jobs (automatically adjusting the memory consumed by a job).
+Both are very promising, warranting their own article.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The Flink Kubernetes operator is a versatile solution for deploying and managing Flink jobs.
+When it comes to building a full-fledged Flink-based stream processing platform for an organization, there’s a non-trivial amount of additional aspects to keep in mind, including the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The management and evolution of data schemas</p>
+</li>
+<li>
+<p>Developer experience, for instance the ability to deploy SQL jobs and preview their results</p>
+</li>
+<li>
+<p>Higher-level resources such as source and sink connectors or declarative end-to-end data pipelines</p>
+</li>
+<li>
+<p>Cost attribution and quota management between the teams and departments of a larger organization</p>
+</li>
+<li>
+<p>Security and Compliance with regulatory requirements such as HIPPA, GDPR, SOC 2</p>
+</li>
+<li>
+<p><a href="https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-release-1.10/docs/operations/upgrade/#normal-upgrade-process">Operator upgrades</a> as well as upgrades of (stateful) Flink jobs</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If all this sounds like it’s too much work, a fully-managed platform like Decodable might be interesting to you.
+Sign up for a <a href="https://app.decodable.co/-/accounts/create">free trial today</a> and give it a try.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>Another interesting feature of the operator is the ability to <a href="https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/operations/plugins/">customize its behavior via plug-ins</a>.
+This can be useful if for instance you want to make sure all deployed jobs adhere to specific standards (by implementing a custom resource validator) or you want to amend their configuration upon deployment, e.g.
+to add specific pod labels automatically (by implementing a resource mutator).</p>
+</div>
+<div class="paragraph">
+<p>The Flink Kubernetes operator is under active development and definitely a project worth keeping an eye on.
+For upcoming versions, the team <a href="https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/development/roadmap/">has planned</a> to work on a better &#34;rollback mechanism and stability conditions&#34; as well several improvements to the autoscaler.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			
+			
+			
+			<div class="related-posts">
+				<h3>Read Next</h3>
+				<ul>
+					
+					<li><a href="/blog/get-running-with-apache-flink-on-kubernetes-1/">Get Running with Apache Flink on Kubernetes, part 1 of 2</a> <span class="meta">Jan 21, 2025</span></li>
+					
+					<li><a href="/blog/this-ai-agent-should-have-been-sql-query/">This AI Agent Should Have Been a SQL Query</a> <span class="meta">Jun 18, 2025</span></li>
+					
+					<li><a href="/blog/why-i-joined-decodable/">Why I Joined Decodable</a> <span class="meta">Nov 3, 2022</span></li>
+					
+				</ul>
+			</div>
+			
+			
+		</div>
+
+		<div class="post-footer">
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<div class="header-image-container" style="flex-shrink: 0;">
+					<img class="footer-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+				</div>
+				<p style="margin: 0;">Gunnar Morling is an open-source software engineer in the Java and data streaming space. He currently works as a Technologist for Confluent. In his past role at Decodable he focused on developer outreach and helped them build their stream processing platform based on Apache Flink. Prior to that, he spent ten years at Red Hat, where he led the Debezium project, a platform for change data capture.</p>
+			</div>
+		</div>
+
+		
+		
+		<div class="post-discussions">
+			<p>Comment below, or join the discussion on
+			<a href="https://hn.algolia.com/?query=morling.dev/blog/get-running-with-apache-flink-on-kubernetes-2/">Hacker News</a>,
+			<a href="https://lobste.rs/search?q=domain:morling.dev+title:%22Get%20Running%20with%20Apache%20Flink%20on%20Kubernetes%2c%20part%202%20of%202%22&what=stories">Lobsters</a>, and
+			<a href="https://www.reddit.com/search/?q=url:morling.dev/blog/get-running-with-apache-flink-on-kubernetes-2/">Reddit</a>.
+			</p>
+		</div>
+		<div id="disqus_thread"></div>
+
+<script>
+  
+  window.addEventListener('load', function() {
+    
+    setTimeout(function() {
+      const commentsContainer = document.getElementById('disqus_thread');
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', 'gunnarmorling/discussions.morling.dev');
+      script.setAttribute('data-repo-id', 'R_kgDOGXzqNQ');
+      script.setAttribute('data-category', 'Announcements');
+      script.setAttribute('data-category-id', 'DIC_kwDOGXzqNc4B_2Pq');
+      script.setAttribute('data-mapping', 'title');
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-theme', 'light');
+      script.setAttribute('data-lang', 'en');
+      script.setAttribute('crossorigin', 'anonymous');
+      script.async = true;
+      commentsContainer.appendChild(script);
+    }, 100);
+  });
+</script>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2025 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
