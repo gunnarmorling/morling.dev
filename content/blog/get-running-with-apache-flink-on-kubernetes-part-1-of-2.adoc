@@ -21,15 +21,15 @@ scaling, updating) all the required resources.
 Automation is the keyword here, significantly reducing the manual effort required for running Flink jobs in production.
 
 <!--more-->
-There are multiple Kubernetes operators for Flink, including Lyft's link:https://github.com/lyft/flinkk8soperator[flinkk8soperator], link:https://github.com/spotify/flink-on-k8s-operator[flink-on-k8s-operator]  by Spotify (a fork of a now unmaintained operator initially developed by Google), and link:https://github.com/nextbreakpoint/flink-controller[flink-controller]  by Andrea Medeghini.
+There are multiple Kubernetes operators for Flink, including Lyft's link:https://github.com/lyft/flinkk8soperator[flinkk8soperator], link:https://github.com/spotify/flink-on-k8s-operator[flink-on-k8s-operator] by Spotify (a fork of a now unmaintained operator initially developed by Google), and link:https://github.com/nextbreakpoint/flink-controller[flink-controller] by Andrea Medeghini.
 The most widely used operator these days though is the upstream link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/[Flink Kubernetes Operator], developed under the umbrella of the Apache Flink project itself, which is also the focus of this two-part blog post series.
 It gives you an overview on what it takes to install the operator and run your first jobs on Kubernetes, and discuss what's missing to create a complete Flink-based data platform for an organization.
 
 In part one, we'll touch on installation and setup, deploying Flink jobs via custom resources and creating container images for your own Flink jobs.
-link:/blog/get-running-with-apache-flink-on-kubernetes-2[Part two]  covers fault tolerance and high availability, savepoint management, observability, and then UI access.
+link:/blog/get-running-with-apache-flink-on-kubernetes-2[Part two] covers fault tolerance and high availability, savepoint management, observability, and then UI access.
 
 The idea for these posts is to give you a fully runnable example so you can try out everything yourself.
-To follow along, grab the complete source code in the Decodable link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/[examples repository]  on GitHub:
+To follow along, grab the complete source code in the Decodable link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/[examples repository] on GitHub:
 
 
 [source,shell]
@@ -40,7 +40,7 @@ $ cd flink-on-kubernetes
 You'll need the following prerequisites:
 
 * link:https://www.docker.com/[Docker], for running and building container images
-* link:https://kind.sigs.k8s.io/[kind], for setting up a local Kubernetes cluster, and link:https://kubernetes.io/docs/reference/kubectl/[kubectl]  for interacting with it
+* link:https://kind.sigs.k8s.io/[kind], for setting up a local Kubernetes cluster, and link:https://kubernetes.io/docs/reference/kubectl/[kubectl] for interacting with it
 * link:https://helm.sh/[Helm], for installing the Kubernetes operator
 
 Fig.
@@ -148,9 +148,9 @@ TEST SUITE: None
 ----
 The Helm chart creates two Kubernetes roles and associated service accounts: `flink-operator`, used by the Flink operator for managing Flink deployments, and `flink`, used by the Flink job manager for spawning task manager pods.
 By default, the former is cluster-scoped, while the latter is namespace-scoped.
-In the following, we are going to deploy Flink jobs in the default namespace; if you want to deploy jobs in other namespaces, refer to the operator's link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/operations/rbac/[RBAC documentation]  to learn how to create the required role and service account.
+In the following, we are going to deploy Flink jobs in the default namespace; if you want to deploy jobs in other namespaces, refer to the operator's link:https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-main/docs/operations/rbac/[RBAC documentation] to learn how to create the required role and service account.
 
-Next, we are going to create a deployment of link:https://min.io/[MinIO]  to have an S3 backend for persisting Flink checkpoints and savepoints as well as Flink high availability data, independent of the lifetime of specific Flink pods.
+Next, we are going to create a deployment of link:https://min.io/[MinIO] to have an S3 backend for persisting Flink checkpoints and savepoints as well as Flink high availability data, independent of the lifetime of specific Flink pods.
 The MinIO deployment is taken pretty much verbatim from the link:https://github.com/kubernetes/examples/blob/master/staging/storage/minio/README.md[upstream Kubernetes examples], only that the volume for persisting the MinIO data is backed by the aforementioned Kind extra mount:
 
 
@@ -184,8 +184,8 @@ Session mode can be more resource-efficient due to the shared job manager, at th
 
 In the following, we are going to use application mode, i.e., a dedicated Flink cluster per job.
 
-Sticking to the recommendations from the operator documentation, we'll deploy Flink using the link:https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/resource-providers/native_kubernetes/[Native Kubernetes]  resource provider, which means that Flink will directly talk to the Kubernetes API to orchestrate resources such as task manager pods._
-_In particular when deploying jobs of unknown provenience, it can make sense to use the link:https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/resource-providers/standalone/overview/[Standalone]  provider instead, in which case Flink jobs don't have access to the Kubernetes API, but instead the operator is managing all the required resources.
+Sticking to the recommendations from the operator documentation, we'll deploy Flink using the link:https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/resource-providers/native_kubernetes/[Native Kubernetes] resource provider, which means that Flink will directly talk to the Kubernetes API to orchestrate resources such as task manager pods._
+_In particular when deploying jobs of unknown provenience, it can make sense to use the link:https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/resource-providers/standalone/overview/[Standalone] provider instead, in which case Flink jobs don't have access to the Kubernetes API, but instead the operator is managing all the required resources.
 
 
 == Deploying Your First Flink Job on Kubernetes
@@ -306,7 +306,7 @@ Events:
   Normal  Submit            6m28s  JobManagerDeployment  Starting deployment
   Normal  JobStatusChanged  5m15s  Job                   Job status changed from RECONCILING to RUNNING
 ----
-When deploying a job, the operator also creates a Kubernetes link:https://kubernetes.io/docs/concepts/services-networking/service/[Service]  for exposing the Flink web UI.
+When deploying a job, the operator also creates a Kubernetes link:https://kubernetes.io/docs/concepts/services-networking/service/[Service] for exposing the Flink web UI.
 For testing purposes, you can forward its port, allowing you to access the UI on link:http://localhost:8081[http://localhost:8081] :
 
 
@@ -357,7 +357,7 @@ _3: Updated job in the Flink web UI_Finally, to delete the job, run the followin
 $ kubectl delete FlinkDeployment basic-example
 ----
 Besides Java, you can also implement your streaming processing jobs using Flink's Python API, PyFlink.
-Refer to link:https://www.decodable.co/blog/getting-started-with-pyflink-on-kubernetes[this post]  for learning how to get started with running your first PyFlink jobs on Kubernetes.
+Refer to link:https://www.decodable.co/blog/getting-started-with-pyflink-on-kubernetes[this post] for learning how to get started with running your first PyFlink jobs on Kubernetes.
 
 
 == Building Custom Job Images
@@ -365,7 +365,7 @@ So far, we've run an example Flink job which is contained within the upstream Fl
 In practise, you want to run your own Flink job JARs of course.
 Multiple options exist for doing so:
 
-* Adding an link:https://kubernetes.io/docs/concepts/workloads/pods/init-containers/[init container]  to the Flink pods which retrieves the JAR at start-up from a remote location such as an S3 bucket, as shown link:https://medium.com/@ravi.nishant2000/deploying-flink-jobs-in-production-using-the-flink-kubernetes-operator-part-2-bd7a9d1b77e2[in this blog post]
+* Adding an link:https://kubernetes.io/docs/concepts/workloads/pods/init-containers/[init container] to the Flink pods which retrieves the JAR at start-up from a remote location such as an S3 bucket, as shown link:https://medium.com/@ravi.nishant2000/deploying-flink-jobs-in-production-using-the-flink-kubernetes-operator-part-2-bd7a9d1b77e2[in this blog post]
 * Retrieving the JAR from an HTTP server—for instance an internal Maven repository—by specifying an HTTP URI for the `jarURI` parameter; when using Flink 1.19 or later, the parameter also accepts S3 URIs, provided an S3 file system plug-in has been configured (see link:https://issues.apache.org/jira/browse/FLINK-28915[FLINK-28915] )
 * Building a custom container image, extending the upstream Flink image and adding your job JAR file at build time
 
@@ -451,4 +451,4 @@ Number: 2
 ...
 ----
 This concludes part one of this blog post series.
-Head over to link:/blog/get-running-with-apache-flink-on-kubernetes-2[part two]  to learn about fault tolerance and high availability of your Flink jobs running on Kubernetes, savepoint management, observability, and more.
+Head over to link:/blog/get-running-with-apache-flink-on-kubernetes-2[part two] to learn about fault tolerance and high availability of your Flink jobs running on Kubernetes, savepoint management, observability, and more.

@@ -23,22 +23,22 @@ This allows to serve queries solely from one given data collection at a time, fo
 
 <!--more-->
 _Fig._
-_1: Data pipeline from RDBMS to search index with denormalization step_In a link:https://www.youtube.com/watch?v=ICJ7-YyaC-4[Data Streaming Quick Tips episode]  a few months ago, I showed how to implement a user-defined function (UDF) for Apache Flink for exactly this purpose: it takes a list of values and emits them as a strongly-typed array.
+_1: Data pipeline from RDBMS to search index with denormalization step_In a link:https://www.youtube.com/watch?v=ICJ7-YyaC-4[Data Streaming Quick Tips episode] a few months ago, I showed how to implement a user-defined function (UDF) for Apache Flink for exactly this purpose: it takes a list of values and emits them as a strongly-typed array.
 That way, you can join two or more data streams and create nested data structures from that.
 In scenarios like above, this function allows you to take the change event streams from multiple tables of your source database and create a denormalized representation of the same data in a single index in a document store.
 
-Inspired by the same function in data stores such as link:https://www.postgresql.org/docs/current/functions-aggregate.html[Postgres]  and link:https://docs.snowflake.com/en/sql-reference/functions/array_agg[Snowflake], I recently added the link:https://docs.decodable.co/pipelines/function-reference.html[ARRAY_AGG() UDF]  to Decodable, where you can use it now in your SQL-based stream processing pipelines.
+Inspired by the same function in data stores such as link:https://www.postgresql.org/docs/current/functions-aggregate.html[Postgres] and link:https://docs.snowflake.com/en/sql-reference/functions/array_agg[Snowflake], I recently added the link:https://docs.decodable.co/pipelines/function-reference.html[ARRAY_AGG() UDF] to Decodable, where you can use it now in your SQL-based stream processing pipelines.
 This makes it easier than ever to keep a search index in sync with your operational data in a relational database such as MySQL or Postgres, with Decodable updating the nested documents in the index as the upstream data changes, allowing for fast and efficient queries of the data, without the need for expensive application-side joins at query time.
 
 
 == Let's Build a Data Streaming Pipeline!
-In this blog post I'm going to show you how to set up such a real-time streaming pipeline between link:https://www.mysql.com/[MySQL]  as a system of record and link:https://opensearch.org/[OpenSearch]  as a derived data store, enabling use cases such as full-text search and dashboarding.
+In this blog post I'm going to show you how to set up such a real-time streaming pipeline between link:https://www.mysql.com/[MySQL] as a system of record and link:https://opensearch.org/[OpenSearch] as a derived data store, enabling use cases such as full-text search and dashboarding.
 To follow along, make sure you've downloaded and installed the following things on your machine: +
 
 * link:https://docs.docker.com/get-docker/[Docker], for running MySQL and OpenSearch
 * link:https://ngrok.com/download[ngrok], for accessing the database and OpenSearch cluster running on your machine
 
-You'll also need a link:https://dashboard.ngrok.com/signup[free account]  for ngrok as well as a Decodable account.
+You'll also need a link:https://dashboard.ngrok.com/signup[free account] for ngrok as well as a Decodable account.
 If you don't have one yet you can link:https://app.decodable.co/-/accounts/create[sign up here] ; the free tier provides all the resources you'll need for this pipeline.
 
 The data model is similar to the one from the link:https://www.youtube.com/watch?v=ICJ7-YyaC-4[original quick tip video] —there are three tables in MySQL, `purchase_orders` , `order_lines` , and`products`.
@@ -91,7 +91,7 @@ The denormalized data in the index will look like this:
 }
 ----
 Alright then, let's get started!
-Check out the link:https://github.com/decodableco/examples[Decodable examples]  repository from GitHub and start the source and sink systems of the pipeline:
+Check out the link:https://github.com/decodableco/examples[Decodable examples] repository from GitHub and start the source and sink systems of the pipeline:
 
 
 [source,shell]
@@ -139,12 +139,12 @@ It is also possible to run the Decodable data plane in your own AWS virtual priv
 == Creating the Source Connection
 At this point, both MySQL and OpenSearch are up and running, accessible from the internet via ngrok.
 Next, let's set up the source connection for ingesting change events from the three tables into Decodable.
-Note that while the following describes the required steps when using the Decodable web UI, you could alternatively use the link:https://docs.decodable.co/api/the-decodable-apis.html[REST API]  or the link:https://docs.decodable.co/cli.html[command line interface], which for instance comes in handy when configuring data pipelines via CI/CD.
+Note that while the following describes the required steps when using the Decodable web UI, you could alternatively use the link:https://docs.decodable.co/api/the-decodable-apis.html[REST API] or the link:https://docs.decodable.co/cli.html[command line interface], which for instance comes in handy when configuring data pipelines via CI/CD.
 
-If you haven't done so yet, link:https://app.decodable.co/-/login[log into]  your Decodable account.
+If you haven't done so yet, link:https://app.decodable.co/-/login[log into] your Decodable account.
 Select “Connections” in the pane on the left-hand side and click “New Connection”.
 Choose “MySQL CDC” as the connector type.
-This connector is based on the link:https://debezium.io/[Debezium]  and link:https://nightlies.apache.org/flink/flink-cdc-docs-stable/[Flink CDC]  open-source projects and retrieves change events from a database's transaction log using link:https://www.decodable.co/blog/seven-ways-to-put-cdc-to-work[Change Data Capture]  (CDC).
+This connector is based on the link:https://debezium.io/[Debezium] and link:https://nightlies.apache.org/flink/flink-cdc-docs-stable/[Flink CDC] open-source projects and retrieves change events from a database's transaction log using link:https://www.decodable.co/blog/seven-ways-to-put-cdc-to-work[Change Data Capture] (CDC).
 Specify the following information in the dialog which opens up: +
 
 * *Host:* the address ngrok displays in the shell for the MySQL tunnel, for instance `2.tcp.eu.ngrok.io`
@@ -157,14 +157,14 @@ Specify the following information in the dialog which opens up: +
 Click “Next” and the connector will automatically scan the source database for its tables.
 After a little while, you should see the tables from the `ecom` database.
 If you like, you can take a look at the schema of the tables by clicking on “View Schema”.
-Each table will be ingested into a corresponding link:https://docs.decodable.co/streams.html[stream]  within Decodable.
+Each table will be ingested into a corresponding link:https://docs.decodable.co/streams.html[stream] within Decodable.
 As the name suggests, this is a logical stream of messages, essentially like a Kafka topic.
 
 Select “Sync” for the tables`ecom.purchase_orders, ecom.order_lines` and`ecom.products`, then click “Next”.
 
 _Fig._
 _4: Discovered source tables and corresponding streams in Decodable_Specify a name for the new connection, for instance`ecom_source`, then click “Create Connection”.
-This connection will now link:https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/[subscribe to the transaction log]  of the source database and ingest any change events from the three tables.
+This connection will now link:https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/[subscribe to the transaction log] of the source database and ingest any change events from the three tables.
 
 Click “Start” to fire up the connector and “Start” again on the next dialog (the defaults are fine).
 After a few moments you'll see the connector switch to “Running” and the metrics show data is being fetched successfully:
@@ -213,7 +213,7 @@ We'll take care of this in a second.
 The `ARRAY_AGG()` function will return an array with a single `NULL` row (i.e.
 a `ROW` expression whose attributes are all`NULL` ) for purchase orders without any lines.
 This is because`ARRAY_AGG()`, unlike other aggregation functions, doesn't filter out null values by default.
-If this is not what you want, you can use the link:https://modern-sql.com/feature/listagg#alternative-array-null-filter[FILTER clause]  for emitting `NULL` in this case:
+If this is not what you want, you can use the link:https://modern-sql.com/feature/listagg#alternative-array-null-filter[FILTER clause] for emitting `NULL` in this case:
 
 
 [source,sql]

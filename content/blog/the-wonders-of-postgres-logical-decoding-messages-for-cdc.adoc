@@ -18,7 +18,7 @@ _This post originally appeared on the link:https://www.decodable.co/blog/the-won
 _This article originally appeared at_ link:https://www.infoq.com/articles/wonders-of-postgres-logical-decoding-messages/[InfoQ] _._
 
 <!--more-->
-Did you know there's a function in link:https://www.postgresql.org/[Postgres]  that lets you write data which you can't query?
+Did you know there's a function in link:https://www.postgresql.org/[Postgres] that lets you write data which you can't query?
 A function that lets you persist data in all kinds and shapes but which will never show up in any table?
 Let me tell you about `pg_logical_emit_message()`!
 It's a Postgres function that allows you to write messages to the write-ahead log (WAL) of the database.
@@ -33,14 +33,14 @@ In this article, we'll explore how to take advantage of this feature for impleme
 
 For retrieving logical decoding messages from Postgres we are going to use link:https://debezium.io/[Debezium], a popular open-source platform for log-based change data capture (CDC), which can stream data changes from a large variety of databases into data streaming platforms like Apache Kafka or AWS Kinesis.
 
-We'll also use link:https://flink.apache.org/[Apache Flink]  and the link:https://github.com/ververica/flink-cdc-connectors[Flink CDC]  project, which seamlessly integrates Debezium into the Flink ecosystem, for enriching and routing raw change event streams.
-You can learn more about the foundations of change data capture and Debezium in link:https://www.infoq.com/presentations/data-streaming-kafka-debezium/[this talk]  from QCon San Francisco.
+We'll also use link:https://flink.apache.org/[Apache Flink] and the link:https://github.com/ververica/flink-cdc-connectors[Flink CDC] project, which seamlessly integrates Debezium into the Flink ecosystem, for enriching and routing raw change event streams.
+You can learn more about the foundations of change data capture and Debezium in link:https://www.infoq.com/presentations/data-streaming-kafka-debezium/[this talk] from QCon San Francisco.
 
 
 == Logical Decoding Messages 101
 Before diving into specific use cases, let's take a look at how logical decoding messages can be emitted and consumed.
 To follow along, make sure to have Docker installed on your machine.
-Start by checking out link:https://github.com/decodableco/examples/tree/main/postgres-logical-decoding[this example project]  from GitHub:
+Start by checking out link:https://github.com/decodableco/examples/tree/main/postgres-logical-decoding[this example project] from GitHub:
 
 
 [source,shell]
@@ -84,8 +84,8 @@ postgresuser@postgres:demodb> SELECT * FROM pg_create_logical_replication_slot('
 | demo_slot   | 0/1A24E38 |
 +-------------+-----------+
 ----
-For production scenarios it is recommended to use the link:https://github.com/postgres/postgres/blob/master/src/backend/replication/pgoutput/pgoutput.c[pgoutput]  plug-in, which emits change events using an efficient Postgres-specific link:https://www.postgresql.org/docs/current/protocol-logical-replication.html[binary format]  and is available by default in Postgres since version 10.
-Other commonly used options include the link:https://github.com/debezium/postgres-decoderbufs[Decoderbufs]  plug-in (based on the Google Protocol Buffers format) and link:https://github.com/eulerto/wal2json[wal2json]  (emitting change events as JSON).
+For production scenarios it is recommended to use the link:https://github.com/postgres/postgres/blob/master/src/backend/replication/pgoutput/pgoutput.c[pgoutput] plug-in, which emits change events using an efficient Postgres-specific link:https://www.postgresql.org/docs/current/protocol-logical-replication.html[binary format] and is available by default in Postgres since version 10.
+Other commonly used options include the link:https://github.com/debezium/postgres-decoderbufs[Decoderbufs] plug-in (based on the Google Protocol Buffers format) and link:https://github.com/eulerto/wal2json[wal2json] (emitting change events as JSON).
 
 Changes are typically retrieved from remote clients such as Debezium by establishing a replication stream with the database.
 Alternatively, you can use the function `pg_logical_slot_get_changes()`, which lets you fetch changes from a given replication slot via SQL, optionally reading only up to a specific LSN (the first NULL parameter) or only a specific number of changes (the second NULL parameter).
@@ -142,7 +142,7 @@ Having discussed the foundations of logical decoding messages, let's now explore
 For microservices, it's a common requirement that, when processing a request, a service needs to update its own database and simultaneously send a message to other services.
 As an example, consider a “fulfillment” service in an e-commerce scenario: when the status of a shipment changes from `READY_TO_SHIP` to `SHIPPED`, the shipment's record in the fulfillment service database needs to be updated accordingly, but also a message should be sent to the “customer” service so that it can update the customer's account history and trigger an email notification for the customer.
 
-Now, when using data streaming platforms like link:https://kafka.apache.org/[Apache Kafka]  for connecting your services, you can't reliably implement this scenario by just letting the fulfillment service issue its local database transaction and then send a message via Kafka.
+Now, when using data streaming platforms like link:https://kafka.apache.org/[Apache Kafka] for connecting your services, you can't reliably implement this scenario by just letting the fulfillment service issue its local database transaction and then send a message via Kafka.
 The reason is that it is not supported to have shared transactions for a database and Kafka (in technical terms, Kafka can't participate in distributed transaction protocols like XA).
 While everything looks fine on the surface, you can end up with an inconsistent state in case of failures.
 The database transaction could get committed, but sending out the notification via Kafka fails.
@@ -154,8 +154,8 @@ When updating the shipment state in the database, you also write the message to 
 Either the shipment state update and the outbox message get persisted, or none of them do.
 You then use change data capture to retrieve any inserts from the outbox in the database and propagate them to consumers.
 
-More information about the outbox pattern can be found in link:https://debezium.io/blog/2018/12/05/automating-cache-invalidation-with-change-data-capture/[this blog post]  on the Debezium blog.
-Another resource is link:https://www.infoq.com/articles/saga-orchestration-outbox/[this article]  on InfoQ which discusses how the outbox pattern can be used as the foundation for implementing Sagas between multiple services.
+More information about the outbox pattern can be found in link:https://debezium.io/blog/2018/12/05/automating-cache-invalidation-with-change-data-capture/[this blog post] on the Debezium blog.
+Another resource is link:https://www.infoq.com/articles/saga-orchestration-outbox/[this article] on InfoQ which discusses how the outbox pattern can be used as the foundation for implementing Sagas between multiple services.
 In the following, I'd like to dive into one particular implementation approach for the pattern.
 Instead of inserting outbox events in a dedicated outbox table, the idea is to emit them just as logical decoding messages to the WAL.
 
@@ -177,7 +177,7 @@ Specifically, Debezium recommends that your messages have the link:https://debez
 * *aggregate id*: the id of the aggregate an event is about, e.g., a customer or order id; this can be used as the record key in Kafka, thus ensuring all events pertaining to one aggregate will go to the same topic partition and making sure consumers receive these events in the correct order
 * *payload:* the actual message payload; unlike “raw” table-level CDC events, this can be a rich structure, representing an entire aggregate and all its parts, which in the database itself may spread across multiple tables
 
-*Figure 1: Routing outbox events from the transaction log to different Kafka topics.*Enough of the theory—let's see how a database transaction could look, which emits a logical decoding message with an outbox event. In the accompanying GitHub repository, you can find a Docker Compose file for spinning up all the required components and link:https://github.com/decodableco/examples/blob/main/postgres-logical-decoding/README.md[detailed instructions]  for running the complete example yourself. Emit an outbox message like this:
+*Figure 1: Routing outbox events from the transaction log to different Kafka topics.*Enough of the theory—let's see how a database transaction could look, which emits a logical decoding message with an outbox event. In the accompanying GitHub repository, you can find a Docker Compose file for spinning up all the required components and link:https://github.com/decodableco/examples/blob/main/postgres-logical-decoding/README.md[detailed instructions] for running the complete example yourself. Emit an outbox message like this:
 
 
 [source,json]
@@ -204,7 +204,7 @@ This creates a transactional message (i.e., it would not be emitted if the trans
 It uses the “outbox” prefix (allowing it to distinguish it from messages of other types) and contains a JSON message as the actual payload.
 
 Regarding retrieving change events and propagating them to Kafka, the details depend on how exactly Debezium, as the underlying CDC tool, is deployed.
-When used with link:https://kafka.apache.org/documentation/#connect[Kafka Connect], Debezium provides a link:https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html[single message transform]  (SMT) that supports outbox tables and, for instance, routes outbox events to different topics in Kafka based on a configurable column containing the aggregate type.
+When used with link:https://kafka.apache.org/documentation/#connect[Kafka Connect], Debezium provides a link:https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html[single message transform] (SMT) that supports outbox tables and, for instance, routes outbox events to different topics in Kafka based on a configurable column containing the aggregate type.
 However, this SMT doesn't yet support using logical decoding messages as the outbox format.
 
 When using Debezium via Flink CDC, you could implement a similar logic using a custom `KafkaRecordSerializationSchema` which routes outbox events to the right Kafka topic and propagates the aggregate id to the Kafka message key, thus ensuring correct ordering semantics.
@@ -275,13 +275,13 @@ The unique event id is propagated as a Kafka message header, enabling consumers 
 Lastly, the payload of the outbox event is propagated as the Kafka message value.
 
 In particular, in larger organizations with a diverse set of event producers and consumers, it makes sense to align on a shared event envelope format, which standardizes common attributes like event timestamp, origin, partitioning key, schema URLs, and others.
-The link:https://cloudevents.io/[CloudEvents]  specification comes in handy here, especially for defining event types and their schemas.
+The link:https://cloudevents.io/[CloudEvents] specification comes in handy here, especially for defining event types and their schemas.
 It is an option worth considering to have your applications emit outbox events adhering to the CloudEvents standard.
 
 
 === Logging
 While log management of modern applications typically happens through dedicated platforms like Datadog or Splunk, which ingest changes from dedicated APIs or logs in the file system, it sometimes can be convenient to persist log messages in the database of an application.
-Log libraries such as the widely used log4j 2 provide link:https://logging.apache.org/log4j/2.x/manual/appenders.html#JDBCAppender[database-backed appenders]  for this purpose.
+Log libraries such as the widely used log4j 2 provide link:https://logging.apache.org/log4j/2.x/manual/appenders.html#JDBCAppender[database-backed appenders] for this purpose.
 These will typically require a second connection for the logger, though, because in case of a rollback of an application transaction itself, you still (and in particular then) want to write out any log messages, helping you with failure analysis.
 
 Non-transactional logical decoding messages can be a nice means of using a single connection and still ensuring that log messages persist, also when a transaction is rolled back.
@@ -400,8 +400,8 @@ The logic is as follows:
 * When the incoming event is of any other type, and we have stored audit state for the event's transaction before, enrich the event with that state
 * When the transaction id of the incoming event doesn't match what's stored in the audit state (e.g., when a transaction was issued without a metadata event at the beginning), clear the state store and propagate the event as is
 
-You can find a simple yet complete link:https://github.com/decodableco/examples/blob/main/postgres-logical-decoding/src/main/java/co/decodable/examples/logicaldecoding/auditing/AuditMain.java[Flink job]  that runs that mapping function against the Flink CDC connector for Postgres in the aforementioned GitHub repository.
-See the instructions in the link:https://github.com/decodableco/examples/tree/main/postgres-logical-decoding[README]  for running that job, triggering some data changes, and observing the enriched change events.
+You can find a simple yet complete link:https://github.com/decodableco/examples/blob/main/postgres-logical-decoding/src/main/java/co/decodable/examples/logicaldecoding/auditing/AuditMain.java[Flink job] that runs that mapping function against the Flink CDC connector for Postgres in the aforementioned GitHub repository.
+See the instructions in the link:https://github.com/decodableco/examples/tree/main/postgres-logical-decoding[README] for running that job, triggering some data changes, and observing the enriched change events.
 As an example, let's consider the following transaction which first emits a logical decoding message with the transaction metadata (user name and client IP address) and then two `INSERT` statements:
 
 
@@ -475,7 +475,7 @@ The enriched change events, as emitted by Apache Flink, would look like so:
 }
 ----
 Within the same Flink job, you now could add a sink connector and for instance write the enriched events into a Kafka topic.
-Alternatively, depending on your business requirements, it can be a good idea to propagate the change events into a queryable store, for instance, an OLAP store like link:https://pinot.apache.org/[Apache Pinot]  or link:https://clickhouse.com/[Clickhouse].
+Alternatively, depending on your business requirements, it can be a good idea to propagate the change events into a queryable store, for instance, an OLAP store like link:https://pinot.apache.org/[Apache Pinot] or link:https://clickhouse.com/[Clickhouse].
 You could use the same approach for enriching change events with contextual metadata for other purposes too, generally speaking for capturing all kinds of “intent” which isn't directly persisted in the business tables of your application.
 
 
@@ -563,9 +563,9 @@ Where there is great power, there are also great responsibilities.
 As logical decoding messages don't have an explicit schema, unlike your database tables, the application developer must define sensible contracts and carefully evolve them, always keeping backward compatibility in mind.
 The CloudEvents format can be a useful foundation for your custom message schemas, providing all the producers and consumers in an organization with a consistent message structure and well-defined semantics.
 
-If you'd like to get started with your explorations around logical decoding messages, look at the link:https://github.com/decodableco/examples/tree/main/postgres-logical-decoding[GitHub repo]  accompanying this article, which contains the source code of all the examples shown above and detailed instructions for running them.
+If you'd like to get started with your explorations around logical decoding messages, look at the link:https://github.com/decodableco/examples/tree/main/postgres-logical-decoding[GitHub repo] accompanying this article, which contains the source code of all the examples shown above and detailed instructions for running them.
 
-Many thanks to link:https://twitter.com/hpgrahsl/[Hans-Peter Grahsl], link:https://twitter.com/rmetzger_[Robert Metzger], and link:https://www.infoq.com/profile/Srini-Penchikala/[Srini Penchikala]  for their feedback while writing this article.
+Many thanks to link:https://twitter.com/hpgrahsl/[Hans-Peter Grahsl], link:https://twitter.com/rmetzger_[Robert Metzger], and link:https://www.infoq.com/profile/Srini-Penchikala/[Srini Penchikala] for their feedback while writing this article.
 
 
 

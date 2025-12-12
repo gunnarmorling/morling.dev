@@ -26,21 +26,21 @@ Logical replication slots—which keep track of how far a specific subscriber ha
 This meant that after a failover from primary to replica you'd have to create a new replication slot and typically also start with a new initial snapshot of the data.
 Otherwise you might have missed change events occurring after reading from the slot on the old primary and before creating the slot on the new primary.
 
-Whilst external tools such as link:https://github.com/EnterpriseDB/pg_failover_slots[pg_failover_slots]  were added over time, a built-in solution for failing over replication slots from one Postgres node to another was sorely missed by many users.
+Whilst external tools such as link:https://github.com/EnterpriseDB/pg_failover_slots[pg_failover_slots] were added over time, a built-in solution for failing over replication slots from one Postgres node to another was sorely missed by many users.
 This situation substantially improved with the release of Postgres 16, which brought support for setting up replication slots on read replicas.
 I've discussed this feature in great detail in link:https://www.decodable.co/blog/logical-replication-from-postgres-16-stand-by-servers-part-1-of-2[this post].
-Back then, link:https://www.decodable.co/blog/logical-replication-from-postgres-16-stand-by-servers-part-2-of-2[I also explored]  how to use replication slots on replicas for manually implementing replication slot failover.
+Back then, link:https://www.decodable.co/blog/logical-replication-from-postgres-16-stand-by-servers-part-2-of-2[I also explored] how to use replication slots on replicas for manually implementing replication slot failover.
 But the good news is, as of Postgres version 17, all this is not needed any longer, as it finally supports failover slots out of the box!
 
-link:https://www.postgresql.org/docs/current/logical-replication-failover.html[Failover slots]  are replication slots which are created on the primary node and which are propagated automatically to read replicas.
+link:https://www.postgresql.org/docs/current/logical-replication-failover.html[Failover slots] are replication slots which are created on the primary node and which are propagated automatically to read replicas.
 Their state on the replica is kept in sync with the upstream slot on the primary, which means that after a failover, when promoting a replica to primary, you can continue to consume the slot on the new primary without the risk of missing any change events.
-This is really great news for using tools like Debezium (and by extension, data platforms such as Decodable, which provides a fully-managed link:https://docs.decodable.co/connect/source/postgres-cdc.html[Postgres CDC connector]  based on Debezium) in HA scenarios, so let's take a closer look at how this works.
+This is really great news for using tools like Debezium (and by extension, data platforms such as Decodable, which provides a fully-managed link:https://docs.decodable.co/connect/source/postgres-cdc.html[Postgres CDC connector] based on Debezium) in HA scenarios, so let's take a closer look at how this works.
 
 
 == Hello, Failover Slots!
 Let's start by exploring failover slots solely from the perspective of using Postgres' SQL interface to logical replication.
-If you want to follow along, check out link:https://github.com/decodableco/examples/tree/main/failover-slots[this project]  from the Decodable examples repository.
-It contains a link:https://github.com/decodableco/examples/blob/main/failover-slots/docker-compose.yaml[Docker Compose file]  which brings up a Postgres primary and a read replica (based on link:https://medium.com/@eremeykin/how-to-setup-single-primary-postgresql-replication-with-docker-compose-98c48f233bbf[this set-up]  by Peter Eremeykin, which makes it really easy to spin up an ephemeral Postgres cluster for testing purposes), as well as a few other components which we'll use later on.
+If you want to follow along, check out link:https://github.com/decodableco/examples/tree/main/failover-slots[this project] from the Decodable examples repository.
+It contains a link:https://github.com/decodableco/examples/blob/main/failover-slots/docker-compose.yaml[Docker Compose file] which brings up a Postgres primary and a read replica (based on link:https://medium.com/@eremeykin/how-to-setup-single-primary-postgresql-replication-with-docker-compose-98c48f233bbf[this set-up] by Peter Eremeykin, which makes it really easy to spin up an ephemeral Postgres cluster for testing purposes), as well as a few other components which we'll use later on.
 Start everything by running:
 
 
@@ -50,7 +50,7 @@ $ docker compose up
 ----
 Primary and replica are synchronized via a physical replication slot (i.e.
 unlike with logical replication, all the WAL segments are replicated), ensuring that all data changes done on the primary are replicated to the replica immediately.
-Get a session on the primary (I'm going to use link:https://github.com/dbcli/pgcli[pgcli]  which is my favorite Postgres CLI client, but _psql_ will do the trick as well):
+Get a session on the primary (I'm going to use link:https://github.com/dbcli/pgcli[pgcli] which is my favorite Postgres CLI client, but _psql_ will do the trick as well):
 
 
 [source,shell]
@@ -70,7 +70,7 @@ user@primary:inventorydb> SELECT * from pg_is_in_recovery();
 | False             |
 +-------------------+
 ----
-Both primary and replica are already configured with link:https://postgresqlco.nf/doc/en/param/wal_level/[WAL level]  `logical`, as required for logical replication:
+Both primary and replica are already configured with link:https://postgresqlco.nf/doc/en/param/wal_level/[WAL level] `logical`, as required for logical replication:
 
 
 [source,shell]
@@ -82,7 +82,7 @@ user@primary:inventorydb> SHOW wal_level;
 | logical   |
 +-----------+
 ----
-Note that if you are running Postgres on Amazon RDS (where version 17 link:https://aws.amazon.com/about-aws/whats-new/2024/09/postgresql-170-amazon-rds-database-preview-environment/[is available]  in the preview environment right now), you'll need to set the parameter `rds.logical_replication` to `on` for this.
+Note that if you are running Postgres on Amazon RDS (where version 17 link:https://aws.amazon.com/about-aws/whats-new/2024/09/postgresql-170-amazon-rds-database-preview-environment/[is available] in the preview environment right now), you'll need to set the parameter `rds.logical_replication` to `on` for this.
 
 There's a physical replication slot for synchronizing changes from the primary to the replica server:
 
@@ -248,14 +248,14 @@ Let's give this a try by setting up an instance of the Decodable Postgres CDC co
 
 == Failover Slots in Decodable
 Decodable is a fully managed realtime data platform based on Apache Flink.
-It offers link:https://docs.decodable.co/connections.html[managed connectors]  for a wide range of source and sink systems, allowing you to build robust and efficient ETL pipelines with ease.
+It offers link:https://docs.decodable.co/connections.html[managed connectors] for a wide range of source and sink systems, allowing you to build robust and efficient ETL pipelines with ease.
 Its Postgres CDC connector is using Debezium under the hood, which in turn uses logical replication for ingesting data change events from Postgres.
 Thanks to failover slots, it's possible to continue streaming changes from a Postgres read replica which got promoted to primary into Decodable, without missing any events.
 
 For this kind of use case it makes sense to put a Postgres proxy in front of the database cluster, exposing one stable endpoint for it.
 This will enable us later on to fail over from primary to replica without having to reconfigure the Decodable Postgres connector.
 In a production scenario, this approach will make the fail-over an implementation detail managed by the team owning the database, not requiring coordination with the team running the data platform.
-The Docker Compose set-up from above contains the link:https://www.pgbouncer.org/[pgbouncer]  proxy for this purpose.
+The Docker Compose set-up from above contains the link:https://www.pgbouncer.org/[pgbouncer] proxy for this purpose.
 
 In order to access the database on your machine from Decodable which is running in the cloud, we are going to use link:https://ngrok.com/[ngrok], an API gateway service.
 Amongst other things, ngrok lets you expose non-public resources to the cloud, i.e.
@@ -458,7 +458,7 @@ Change its configuration in the Docker Compose file so it forwards to the new pr
        - ADMIN_USERS=postgres,admin
        - AUTH_TYPE=scram-sha-256
 ----
-Stop and restart pgbouncer (other proxies such as link:https://github.com/postgresml/pgcat[pgcat]  are also be able to reload updated configuration on the fly):
+Stop and restart pgbouncer (other proxies such as link:https://github.com/postgresml/pgcat[pgcat] are also be able to reload updated configuration on the fly):
 
 
 [source,shell]
@@ -490,13 +490,13 @@ If you retrieve the state of the replication state again, using the same query a
 == Wrapping Up
 Failover slots are an essential part to using Postgres and logical replication in HA scenarios.
 Added in Postgres 17, they allow logical replication clients such as Debezium to seamlessly continue streaming change events after a database fail-over, ensuring no events are lost in the process.
-This renders previous solutions such as manually synchronizing slots on a standby server (as supported since Postgres 16) or external tools such as link:https://github.com/EnterpriseDB/pg_failover_slots[pg_failover_slots]  obsolete (although the latter still comes in handy if you are on an older Postgres version and can't upgrade to 17 just yet).
+This renders previous solutions such as manually synchronizing slots on a standby server (as supported since Postgres 16) or external tools such as link:https://github.com/EnterpriseDB/pg_failover_slots[pg_failover_slots] obsolete (although the latter still comes in handy if you are on an older Postgres version and can't upgrade to 17 just yet).
 
 To create a failover slot, the new failover parameter must be set to true when calling `pg_create_logical_replication_slot()`.
 Debezium does not do this yet at the moment, but I am planning to implement the required change in the next few weeks.
-Keep an eye on link:https://issues.redhat.com/browse/DBZ-8412[DBZ-8412]  to track the progress there.
+Keep an eye on link:https://issues.redhat.com/browse/DBZ-8412[DBZ-8412] to track the progress there.
 In the meantime, you can create the replication slot manually, as described above.
-To learn more about Postgres failover slots, check out the blog posts by link:https://bdrouvot.github.io/2024/03/16/postgres-17-highlight-logical-replication-slots-synchronization/[Bertrand Drouvot]  and link:http://amitkapila16.blogspot.com/2024/10/failover-slots-in-postgresql-17.html[Amit Kapila].
-RDS users should refer to the link:https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Appendix.PostgreSQL.CommonDBATasks.pglogical.slot.synchronization.html[AWS documentation]  on managing failover slots.
+To learn more about Postgres failover slots, check out the blog posts by link:https://bdrouvot.github.io/2024/03/16/postgres-17-highlight-logical-replication-slots-synchronization/[Bertrand Drouvot] and link:http://amitkapila16.blogspot.com/2024/10/failover-slots-in-postgresql-17.html[Amit Kapila].
+RDS users should refer to the link:https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Appendix.PostgreSQL.CommonDBATasks.pglogical.slot.synchronization.html[AWS documentation] on managing failover slots.
 
-If you'd like to give it a try yourself, including the managed Postgres CDC connector on Decodable, you can find the link:https://github.com/decodableco/examples/tree/main/failover-slots[complete source code]  for this blog post in the Decodable examples repository on GitHub.
+If you'd like to give it a try yourself, including the managed Postgres CDC connector on Decodable, you can find the link:https://github.com/decodableco/examples/tree/main/failover-slots[complete source code] for this blog post in the Decodable examples repository on GitHub.

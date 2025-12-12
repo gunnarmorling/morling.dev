@@ -19,21 +19,21 @@ Welcome back to this series about logical replication from Postgres 16 stand-by 
 a situation where your primary Postgres server becomes unavailable and a stand-by server needs to take over.
 
 <!--more-->
-If you want to learn more about logical replication in general, and why and how to use it with stand-by servers in Postgres 16, then I suggest heading over to link:/blog/logical-replication-from-postgres-16-stand-by-servers-part-1-of-2[part one]  of this blog series before continuing here.
+If you want to learn more about logical replication in general, and why and how to use it with stand-by servers in Postgres 16, then I suggest heading over to link:/blog/logical-replication-from-postgres-16-stand-by-servers-part-1-of-2[part one] of this blog series before continuing here.
 
 
 == Stand-By Logical Replication With Debezium
 The beauty of Postgres logical replication is that not only other Postgres instances can serve as the consumer of a replication stream, but that also other clients can subscribe to a replication slot for ingesting realtime change event feeds from Postgres.
-link:https://debezium.io/[Debezium], offering CDC support for many databases, including Postgres, makes use of that for exposing change event streams via Apache Kafka, but also—via its link:https://debezium.io/documentation/reference/stable/operations/debezium-server.html[Debezium Server]  component—to other kinds of messaging and streaming platforms such as AWS Kinesis, Apache Pulsar, NATS, and others.
+link:https://debezium.io/[Debezium], offering CDC support for many databases, including Postgres, makes use of that for exposing change event streams via Apache Kafka, but also—via its link:https://debezium.io/documentation/reference/stable/operations/debezium-server.html[Debezium Server] component—to other kinds of messaging and streaming platforms such as AWS Kinesis, Apache Pulsar, NATS, and others.
 So let's quickly test how to stream changes from a Postgres stand-by with Debezium.
 
 Note that we'll need to use the latest Debezium release—2.5.0.Beta 1, link:https://debezium.io/blog/2023/12/04/debezium-2-5-beta1-released/[released last week] —in order to stream changes from a stand-by server.
 When I first had tested this, things wouldn't quite work, as the connector made use of the function `pg_current_wal_lsn()` in order to obtain the current WAL position.
 This is only available on primary servers, though.
-So I took the opportunity to make my first little link:https://github.com/debezium/debezium/pull/5033/files[Debezium contribution]  for quite a while, changing it to invoke `pg_last_wal_receive_lsn()` instead when connecting against a stand-by.
+So I took the opportunity to make my first little link:https://github.com/debezium/debezium/pull/5033/files[Debezium contribution] for quite a while, changing it to invoke `pg_last_wal_receive_lsn()` instead when connecting against a stand-by.
 _Thanks a lot to the team for the quick merge and inclusion in the Beta1 release!_
 
-As a playground for this experiment, I've created a simple link:https://github.com/decodableco/examples/tree/main/postgres-logical-replication-standby[Docker Compose file]  which launches Kafka, and Kafka Connect as the runtime environment for Debezium.
+As a playground for this experiment, I've created a simple link:https://github.com/decodableco/examples/tree/main/postgres-logical-replication-standby[Docker Compose file] which launches Kafka, and Kafka Connect as the runtime environment for Debezium.
 Here's an overview of all the involved components:
 
 _Fig._
@@ -41,7 +41,7 @@ _1: Solution Overview (click to enlarge)_Fun fact: this uses Kafka in KRaft mode
 no ZooKeeper process is needed.
 Good times!
 If you want to follow along, make sure you have Docker installed and you have a Postgres primary and stand-by node set up on Amazon RDS as described in part one.
-Then clone the link:https://github.com/decodableco/examples[decodable/examples]  repository and launch the demo environment like so:
+Then clone the link:https://github.com/decodableco/examples[decodable/examples] repository and launch the demo environment like so:
 
 
 [source,shell]
@@ -52,7 +52,7 @@ docker compose up
 ----
 In order to use Debezium with Postgres on RDS, it is recommended to use the `pgoutput` logical decoding plug-in.
 It is the link:https://www.postgresql.org/docs/current/logical-replication-architecture.html[standard decoding plug-in], also used for logical replication to other Postgres instances.
-This plug-in requires a link:https://www.postgresql.org/docs/current/logical-replication-publication.html[publication]  to be set up, which configures which kinds of changes should be published for which tables.
+This plug-in requires a link:https://www.postgresql.org/docs/current/logical-replication-publication.html[publication] to be set up, which configures which kinds of changes should be published for which tables.
 Usually, Debezium will set up the publication—similar to the logical replication slot—automatically.
 Unfortunately, this is not supported when ingesting changes from a stand-by server, as publications (unlike replication slots) can only be created on a primary server.
 Debezium doesn't know about the primary, so you'll need to create that publication manually before setting up the connector:
@@ -95,7 +95,7 @@ This is done via a JSON-based configuration file looking like this:
 ----
 Adjust database host, user name, password, and database name as needed when applying this to your own environment.
 To apply this configuration, the REST API of Kafka Connect can be invoked.
-But if you're like me and tend to forget all the exact endpoint URLs, then take a look at link:https://github.com/kcctl/kcctl[kcctl]  🧸 (yes, the teddy bear emoji is part of the name), which I am going to use in the following.
+But if you're like me and tend to forget all the exact endpoint URLs, then take a look at link:https://github.com/kcctl/kcctl[kcctl] 🧸 (yes, the teddy bear emoji is part of the name), which I am going to use in the following.
 It is  a command line client for Kafka Connect, which makes it very easy to create connectors, restart and stop them, etc.
 Following the semantics of _kubectl_, a configuration file is applied like this:
 
@@ -202,11 +202,11 @@ And shortly thereafter, the corresponding change event should show up in the Kaf
   },
 ...
 ----
-At this point, you could hook up that change event stream with link:https://flink.apache.org/[Apache Flink], or the link:https://docs.decodable.co/docs/kafka[Decodable Kafka source connector]  for feeding it into a real-time stream processing pipeline, but I'll leave that for another day 🙂.
+At this point, you could hook up that change event stream with link:https://flink.apache.org/[Apache Flink], or the link:https://docs.decodable.co/docs/kafka[Decodable Kafka source connector] for feeding it into a real-time stream processing pipeline, but I'll leave that for another day 🙂.
 
 
 == Towards Fail-Over Slots
-Postgres' support for logical replication has been link:https://amitkapila16.blogspot.com/2023/09/evolution-of-logical-replication.html[built out significantly]  over the last few years.
+Postgres' support for logical replication has been link:https://amitkapila16.blogspot.com/2023/09/evolution-of-logical-replication.html[built out significantly] over the last few years.
 One thing still is missing, though: failover slots.
 Logical replication slots on the primary are not propagated to stand-bys.
 This means that when the primary unexpectedly goes down, any slots must be recreated on the new primary after promotion.

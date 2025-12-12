@@ -35,27 +35,27 @@ Compared to other styles of CDC, such as periodic polling for changed records, l
 
 
 == CDC Tools
-There are a number of commercial and open-source software (OSS) CDC tools, but the most widely used OSS CDC platform is link:https://debezium.io/[Debezium], which provides link:https://debezium.io/documentation/reference/stable/connectors/index.html[connectors for many popular databases]  such as MySQL, Postgres, SQL Server, Oracle, Cassandra, Google Cloud Spanner, and others.
-Several database vendors have implemented their own CDC connectors based on Debezium, for instance link:https://docs.yugabyte.com/preview/explore/change-data-capture/debezium-connector-yugabytedb/[Yugabyte]  and link:https://opensource.docs.scylladb.com/stable/using-scylla/integrations/scylla-cdc-source-connector.html[ScyllaDB].
+There are a number of commercial and open-source software (OSS) CDC tools, but the most widely used OSS CDC platform is link:https://debezium.io/[Debezium], which provides link:https://debezium.io/documentation/reference/stable/connectors/index.html[connectors for many popular databases] such as MySQL, Postgres, SQL Server, Oracle, Cassandra, Google Cloud Spanner, and others.
+Several database vendors have implemented their own CDC connectors based on Debezium, for instance link:https://docs.yugabyte.com/preview/explore/change-data-capture/debezium-connector-yugabytedb/[Yugabyte] and link:https://opensource.docs.scylladb.com/stable/using-scylla/integrations/scylla-cdc-source-connector.html[ScyllaDB].
 
 Debezium's record format, used to model change events, describes the old and new states of data records and includes metadata like the source database and table name, as well as the position in the transaction log file.
 This format has become a de-facto standard for change event data, supported by numerous projects and vendors in the data streaming space.
 
-CDC platforms, like Debezium, are frequently used alongside popular data engineering tools such as Apache Kafka for data streaming and link:https://flink.apache.org/[Apache Flink], which link:https://nightlies.apache.org/flink/flink-docs-master/docs/connectors/table/formats/debezium/[natively supports Debezium]  event formats for stateful stream processing, including filtering and joining change event streams from various sources.
+CDC platforms, like Debezium, are frequently used alongside popular data engineering tools such as Apache Kafka for data streaming and link:https://flink.apache.org/[Apache Flink], which link:https://nightlies.apache.org/flink/flink-docs-master/docs/connectors/table/formats/debezium/[natively supports Debezium] event formats for stateful stream processing, including filtering and joining change event streams from various sources.
 
 In this article, I'll present an overview of seven common use cases for change data capture—Let's go!
 
 
 == Analytics Data Platforms
 One of the most widely adopted uses for CDC is getting data from transactional databases into systems that more efficiently support analytical processing.
-Whereas transactional database systems such as MySQL or Postgres are optimized for efficiently processing transactions on comparatively small numbers of records, link:https://en.wikipedia.org/wiki/Online_analytical_processing[OLAP]  systems are designed to handle queries that read potentially millions of rows of data.
+Whereas transactional database systems such as MySQL or Postgres are optimized for efficiently processing transactions on comparatively small numbers of records, link:https://en.wikipedia.org/wiki/Online_analytical_processing[OLAP] systems are designed to handle queries that read potentially millions of rows of data.
 CDC provides a way to keep OLAP data stores up to date with the freshest data possible from OLTP systems, with end-to-end latencies in the range of mere seconds.
 
 CDC is commonly used as a component in data pipelines that propagate data changes into cloud data warehouses (e.g.
 Snowflake, via link:https://www.decodable.co/blog/ingest-your-data-faster-and-cheaper-with-decodable-and-snowflake-snowpipe-streaming[Snowpipe], or link:https://medium.com/google-cloud/near-real-time-data-replication-using-debezium-4da77cef67ab[Google BigQuery] ) and link:https://towardsdatascience.com/change-data-capture-cdc-for-data-ingestion-ca81ff5934d2[data lakes], enabling data science, general reporting, and ad-hoc querying use cases.
 Low-latency ingestion into real-time analytics stores on the other hand (e.g.
 Apache Pinot, Apache Druid or Clickhouse) allows you to implement use cases like in-app analytics or real-time dashboards.
-For use cases involving frequent updates to existing records, such as mutable data, stores optimized for upsert semantics (e.g., link:https://docs.pinot.apache.org/basics/data-import/upsert[Pinot]  or link:https://rockset.com/docs/cdc/[Rockset] ) often offer tailored support for the Debezium event format.
+For use cases involving frequent updates to existing records, such as mutable data, stores optimized for upsert semantics (e.g., link:https://docs.pinot.apache.org/basics/data-import/upsert[Pinot] or link:https://rockset.com/docs/cdc/[Rockset] ) often offer tailored support for the Debezium event format.
 
 
 == Application Caches
@@ -84,7 +84,7 @@ Just like with the cache example above, CDC fits perfectly in your architecture 
 CDC responds in real-time to changes made to the database and sends the changed data events to a tool such as Apache Flink which loads them into your search system.
 
 Another consideration is the potential need to create nested document structures which are used in document stores like Elasticsearch.
-I recently published an episode of “Data Streaming Quick Tips”,  exploring link:https://www.youtube.com/watch?v=ICJ7-YyaC-4[array aggregation]  and how to join and nest the data of one aggregate instead of trying to force a 1:1 mapping between RDBMS source tables and search indexes.
+I recently published an episode of “Data Streaming Quick Tips”,  exploring link:https://www.youtube.com/watch?v=ICJ7-YyaC-4[array aggregation] and how to join and nest the data of one aggregate instead of trying to force a 1:1 mapping between RDBMS source tables and search indexes.
 If you prefer a text-based version, you can find a transcript of this video link:https://www.decodable.co/blog/array-aggregation-with-flink-sql-data-streaming[here].
 
 
@@ -98,7 +98,7 @@ Stream processing with Apache Flink can then be used to incorporate the missing 
 
 Flink's datastream API can be used for enriching all the change events from one transaction with the applicable metadata.
 As all change events emitted by Debezium contain the id of the transaction they originate from, correlating the events of one transaction isn't complicated.
-You can find link:https://github.com/decodableco/examples/tree/main/postgres-logical-decoding[a basic implementation of this]  in the Decodable examples repository.
+You can find link:https://github.com/decodableco/examples/tree/main/postgres-logical-decoding[a basic implementation of this] in the Decodable examples repository.
 
 
 
