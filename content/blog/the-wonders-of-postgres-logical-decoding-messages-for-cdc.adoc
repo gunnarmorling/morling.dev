@@ -153,7 +153,7 @@ While everything looks fine on the surface, you can end up with an inconsistent 
 The database transaction could get committed, but sending out the notification via Kafka fails.
 Or, the other way around: the customer service gets notified, but the local database transaction gets rolled back.
 
-While you can find this kind of implementation in many applications, always remember: link:https://twitter.com/QConSF/status/1278315930586677250[“Friends don't let friends do dual writes”] !
+While you can find this kind of implementation in many applications, always remember: link:https://twitter.com/QConSF/status/1278315930586677250[“Friends don't let friends do dual writes”]!
 A solution to this problem is the outbox pattern: instead of trying to update two resources at once (a database and Kafka), you only update a single one—the service's database.
 When updating the shipment state in the database, you also write the message to be sent to an outbox table; this happens as part of one shared transaction, i.e., applying the atomicity guarantees you get from ACID transactions.
 Either the shipment state update and the outbox message get persisted, or none of them do.
