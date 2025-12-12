@@ -22,7 +22,7 @@ Change Data Capture (CDC) is a powerful tool in data engineering and has seen a 
 
 CDC responds to changes–such as inserts, updates, and deletions–as they are made in a transactional database and sends those changes in real time to another system for ingesting and processing. While there are multiple possible ways for implementing a CDC solution, the most powerful approach is log-based CDC, which retrieves change events from the transaction log of a database.
 
-image::cdc-use-cases-fig1.webp[]
+image::cdc-use-cases-1.webp[]
 
 _Fig. 1: Log-based change data capture_
 
@@ -54,7 +54,7 @@ A common pattern used for improving application performance is the introduction 
 
 Besides dedicated caching solutions such as Redis, https://github.com/debezium/debezium-examples/tree/main/distributed-caching[Infinispan], or Hazelcast, embedded SQLite databases are an interesting option for implementing application-side caches, as they not only allow for simple key-based look-ups but support full query flexibility via SQL. If you would like to learn more about this kind of architecture, take a look at my talk "Keep Your Cache Always Fresh With Debezium", which explores one implementation of this in depth (https://www.youtube.com/watch?v=zOOFMHAjoPI[video recording], https://speakerdeck.com/gunnarmorling/keep-your-cache-always-fresh-with-debezium-current-22[slides]).
 
-image::cdc-use-cases-fig2.webp[]
+image::cdc-use-cases-2.webp[]
 
 _Fig. 2: Application-side caches in a distributed service, kept in sync with the primary DB via CDC_
 
@@ -79,7 +79,7 @@ However, this approach lacks contextual metadata, such as user information, clie
 Flink's datastream API can be used for enriching all the change events from one transaction with the applicable metadata. As all change events emitted by Debezium contain the id of the transaction they originate from, correlating the events of one transaction isn't complicated. You can find https://github.com/decodableco/examples/tree/main/postgres-logical-decoding[a basic implementation of this] in the Decodable examples repository.
 ====
 
-image::cdc-use-cases-fig3.webp[]
+image::cdc-use-cases-3.webp[]
 
 _Fig. 3: Enriching CDC events with transactional metadata using stream processing_
 
@@ -91,7 +91,7 @@ Not all queries need to be served from static stores like Pinot or https://www.s
 
 CDC streams can be used as the source that drives a continuous query, representing a form of an incrementally updated materialized view, always yielding the latest results, as the underlying data changes.
 
-image::cdc-use-cases-fig4.webp[]
+image::cdc-use-cases-4.webp[]
 
 _Fig. 4: Continuous query for incrementally computing a join between two CDC streams_
 
@@ -101,7 +101,7 @@ This allows you to create a data pipeline that ingests CDC data into Flink, crea
 
 As part of their business logic, microservices often not only have to update their own local data store, but also need to notify other services about data changes that have happened. The https://debezium.io/blog/2019/02/19/reliable-microservices-data-exchange-with-the-outbox-pattern/[outbox pattern]—which is implemented using CDC—is an approach for letting services execute these two tasks in a safe and consistent manner, avoiding the pitfalls of unsafe dual writes.
 
-image::cdc-use-cases-fig5.webp[]
+image::cdc-use-cases-5.webp[]
 
 _Fig. 5: Microservices data exchange with the outbox pattern_
 
@@ -116,7 +116,7 @@ If you are on Postgres, then you don't even need to have a bespoke outbox table 
 
 Oftentimes, you don't start building applications from scratch, but there is an existing application landscape which needs to be evolved and expanded. In this context, it may be necessary to migrate from an existing monolithic architecture to a set of loosely coupled microservices, splitting up the existing monolith. In order to avoid the risks of a big bang migration, it is recommended to take a gradual approach, extracting one service at a time. This approach is also named the "strangler fig pattern", as the new services grow around the old application, "strangling" it over time.
 
-When doing so, the old monolith and the new service(s) will co-exist for some time. For example, you may start with extracting just a read view of some data (e.g. a customer's order history) to a new microservice, while the monolithic application continues to handle data writes. You can then use CDC to propagate data changes from the monolith to the service providing the read view. I discussed the strangler pattern with CDC in a https://speakerdeck.com/hpgrahsl/dissecting-our-legacy-the-strangler-fig-pattern-with-apache-kafka-debezium-and-mongodb-at-mongodb-dot-live-2021[joint talk with Hans-Peter Grahsl], where we also explored advanced aspects such as avoiding infinite replication loops when doing bi-directional CDC or using stream processing for establishing an anti-corruption layer between legacy data models and newly created microservices.
+When doing so, the old monolith and the new service(s) will co-exist for some time. For example, you may start with extracting just a read view of some data (e.g. a customer's order history) to a new microservice, while the monolithic application continues to handle data writes. You can then use CDC to propagate data changes from the monolith to the service providing the read view. I discussed the strangler pattern with CDC in a https://speakerdeck.com/hpgrahsl/dissecting-our-legacy-the-strangler--pattern-with-apache-kafka-debezium-and-mongodb-at-mongodb-dot-live-2021[joint talk with Hans-Peter Grahsl], where we also explored advanced aspects such as avoiding infinite replication loops when doing bi-directional CDC or using stream processing for establishing an anti-corruption layer between legacy data models and newly created microservices.
 
 == Summary
 

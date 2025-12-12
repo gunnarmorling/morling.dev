@@ -40,7 +40,7 @@ At the same time, the appointment service needs to notify the inventory service 
 To decouple the two services, the notification is sent via link:/kafka[Apache Kafka].
 
 
-image::/images/2024/10/6722604ffce61a7e064cd527_672251781005cb3d2528d63e_AD_4nXcJ6wjdd_w8Kj-6p8k-0pBcpXLk1tYcaCBEA0JomfmHajPT-ZtTCwiFbWZFg_IfM0_Lu3514P8YqVnTi4cOP0SFQClf3cNWjud-p02MmL5cIyAeytyXcP8K4jqR14jifDo3tAw6STM-y986IVWNoA3LR65C.webp[]
+image::outbox-pattern-1.webp[]
 _Fig._
 _1: The Oh-my-Dawg microservices architecture_Now, it is vital that these two operations, updating the appointment database and sending the notification, happen link:/blog/aggregating-change-data-capture-events-based-on-transactional-boundaries[atomically—that is, they either both happen, or neither of them does].
 Otherwise, the overall state of the system would be inconsistent:
@@ -54,7 +54,7 @@ As part of its local database transaction, the appointment service inserts the n
 The transaction ensures atomicity for writing the actual data and that message.
 
 
-image::/images/2024/10/67226050fce61a7e064cd536_6722517823e5e6fb168ab29a_AD_4nXdvJLQ_dfZyJn7QUMvtMwIUz_TcK3G_F1DZ4yBO1YL2vb-TWxP1-vHafm5e9mnGhaoYnj8FF-pivqmhUC2fpA_oOaN9am0KvojJ9wb30GKJsEryloNmju4pJuM-zLfPel3bdwiyv4TQahgQct9yeEFbxO-9.webp[]
+image::outbox-pattern-2.webp[]
 _Fig._
 _2: The outbox pattern for atomically updating the Appointments table and emitting a notification_A separate process, called the outbox relay, picks up that message from this outbox table and sends it to Kafka.
 This happens asynchronously and can be retried if needed, without impacting the clients of the appointment service in any way.
@@ -353,7 +353,7 @@ With tools like Flink SQL, you can apply data transformations for shaping the pu
 Flink CDC can be used to run Debezium natively within Flink, essentially letting a Flink job take the role of the outbox relay.
 
 
-image::/images/2024/10/67226050fce61a7e064cd533_6722517861ee7efeee121489_AD_4nXcZaxAhCg48ueHCC-KVH7_R1ctzVzDMtfNucZx3yokWGPXOy8ezBr2JNT575FhbmJj2p7N7WU8QqisoOxeU1U3G8_-CcAX8HTYYh2z_gRIS3BNBBjgos-2fg7hAkBSPrj1uGJjLl_myxWy069gexLi-bFDd.webp[]
+image::outbox-pattern-3.webp[]
 _Fig._
 _3: Joining “raw” change event streams (produced by Debezium and Flink CDC) via Flink SQL_The big advantage of this over the outbox pattern is that no code changes to the source application itself are required.
 Also there is no impact on the source database, as it only contains the actual data tables and nothing more.

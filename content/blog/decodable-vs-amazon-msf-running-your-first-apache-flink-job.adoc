@@ -41,7 +41,7 @@ The role must have permissions for retrieving the job file from a given S3 bucke
 You also can choose between two configuration templates, development or production, for controlling aspects such as log granularity, scaling behavior, and level of metrics.
 
 
-image::/images/2024/06/6717dc3782a396e17c57a9fa_6702b0d47775ae30353ad518_66799c9a58571ea3ec12b0a6_AD_4nXdkdIQR6Ln0Cm1oGYcJMv4mQowE1Lx2sQCe0XR8PsfrxRN6wJd3Ajc9w5nQZS2tr5k81wC56C3vo5WjHjcuy-rGAvZGjyhXyf94CZ7WY5UdIQtUOmKDp29xa5keTNlUrQdGwZ2SPzYk5xmAbiiuKnX0r3vr.webp[]
+image::decodable-vs-msf-1.webp[]
 _Fig.1: Creating a new streaming application in Amazon MSF_What follows is a mandatory second configuration step.
 Here you need to choose or create an S3 bucket which will contain the Flink job file to deploy (for security reasons, make sure to limit access to the bucket as much as possible, in particular you should disable public access).
 Upload the file, for instance using the S3 web console, and then specify the path of the file in the bucket in the MSF configuration step.
@@ -50,7 +50,7 @@ Next, you can launch your application by clicking the “Run” button in the MS
 Alternatively, the standard Flink web dashboard can also be accessed for gaining deeper insight into the runtime behaviors of your job.
 
 
-image::/images/2024/06/6717dc3782a396e17c57aa18_6702b0d47775ae30353ad51c_66799c9a27b386f94194b70b_AD_4nXfEhs67ALPV1jUq5vguahFUwk41Y_AQZMuXOHe3vnecMRzKlwKWEE2YcU3MUhIfOri3hx9ZqUEWisCmiQftnch9jDcixWYwA8w6jk0kpnugUF1T8n7WpfRV6IUvC7x-3IykN1I0Pj3TcU55GD8xyr8B9Kh0.webp[]
+image::decodable-vs-msf-2.webp[]
 _Fig.2: Configuring streaming application in Amazon MSF after setting it up_
 === Deploying a PyFlink Job on MSF
 If you'd like to deploy a Python-based job (using the link:https://nightlies.apache.org/flink/flink-docs-master/docs/dev/python/overview/[PyFlink] API), the link:https://docs.aws.amazon.com/managed-flink/latest/java/how-python-creating.html[required steps] are slightly more involved.
@@ -75,7 +75,7 @@ Click “Next”, provide a name for the application, and that's it.
 You can now launch the job, and once it's up and running, access metrics and logs from within Decodable as well as fire up the Flink web dashboard if desired.
 
 
-image::/images/2024/06/6717dc3782a396e17c57a9fd_6702b0d47775ae30353ad50e_66799c9a3abfe46674965b2a_AD_4nXdQpSaChOCo3eMnhR9e-VgdaTAPLJvDgsOYe3eSMBUJ2y4VGE1cJDCqMhVICqns4kNDUhqJHw3WehA2WdO6JPhUOu3AD3-ZRG2tQDgj7-ibcdOQuNmviAvq7B3Ypf1XozszHBL0uSmMjeWOD9worbwtdBA.webp[]
+image::decodable-vs-msf-3.webp[]
 _Fig.3: Uploading a Flink job JAR as a Custom Pipeline to Decodable_
 === Deploying a PyFlink Job on Decodable
 If you want to implement your stream processing job in Python rather than Java, the experience on Decodable is exactly the same; the only difference being that instead of a JAR file you are going to upload a ZIP file which contains your Python-based job as well as any 3rd party dependencies (Java or Python libraries) you may require.
@@ -94,7 +94,7 @@ With MSF–apart from its notebook-based experience which primarily is geared to
 
 
 
-image::/images/2024/06/6717dc3782a396e17c57aa15_6702b0d47775ae30353ad51f_66799c9a5d8cf920bf83c426_AD_4nXd73EgRlq-I1FnGkfqWqCyPcIZQiM8ITZsGgG1wrUGD8z4rhvF09pOFqa8weHuQW6jjtvfQWNcGz8Vx7sN6rO5D7XclSv217Dt_bL11-PXGryHQhZ6QnGHt9Z5DwwR5il8VSTtIKLOGH8Y9a7YlyjNwKmYQ.webp[]
+image::decodable-vs-msf-4.webp[]
 _Fig.4: The Decodable Platform_Users have two fundamental ways of working with the Decodable platform: not only can they run their own Flink jobs, but they can also set up data pipelines using link:https://docs.decodable.co/connections.html[fully-managed connectors] and processing jobs link:https://docs.decodable.co/pipelines/create-a-pipeline.html[written in SQL] _._ Connectors exist for a variety of data sources and sinks, such as databases (using change data capture based on link:https://debezium.io/[Debezium] ), Apache Kafka, Apache Pulsar, Kinesis, Apache Pinot, Snowflake, S3, Elasticsearch, and link:https://docs.decodable.co/connections.html[many others].
 
 For data processing–such as filtering, mapping, link:https://docs.decodable.co/pipelines/joins.html[joining], aggregating, link:https://docs.decodable.co/pipelines/windowing.html[windowing], etc.–SQL is a first-class citizen of the Decodable pipeline, coming with rich editing capabilities, live results preview, reprocessing of earlier data, and much more.
@@ -109,7 +109,7 @@ Thanks to the link:https://docs.decodable.co/api/pipeline-sdk.html[Decodable Pip
 Here is an example of how this could look in practice:
 
 
-image::/images/2024/06/6717dc3782a396e17c57aa12_6702b0d47775ae30353ad522_66799c9b23f072bc36539c62_AD_4nXc7AMN96ZZpm4-y-I_PIL3cegjwLv0Dehy3fQy1k_KOOH3tzw_Xug7WHiJnzuHSHO1xexZcL23xzdF5SPEygDBdMqTx9503I1OAdMWbhIGDYAtRvwmz82vwXmqRGKdV0YEjItdSj8sxQODwy8bJnddqhp5I.webp[]
+image::decodable-vs-msf-5.webp[]
 _Fig.5: Using a Custom Pipeline to customize logic within an end-to-end data flow_In this scenario, change events from a Postgres database are transferred in real time to a Kafka topic as well as a fulltext search index in Elasticsearch.
 The source and sink connectors for all the external systems are fully managed Decodable connectors (based on Debezium in the case of the Postgres change data capture source connector).
 All the change events are subject to a SQL-based filtering step, which could for example remove any logically deleted records from the change event stream.
@@ -131,7 +131,7 @@ MSF on the other hand primarily provides managed Flink clusters, with an optiona
 The following table shows a comparison of the two offerings:
 
 
-image::/images/2024/06/66b3c3be753b36b7b37d21f9_667dd2fce5b94ddb29aff1f9_table.png[]
+image::decodable-vs-msf-6.png[]
 _Fig.6: Comparison of Decodable and Amazon MSF_Our mission at Decodable is to build a cohesive stream processing platform, going way beyond just providing managed Flink clusters.
 This platform offers developers with everything they need for building and running real-time data streaming applications, from efficient-to-use developer tools, to fully managed connectors for a large number of data sources and sinks, to a feature-rich execution environment with all the required functionality for managing and scaling state, observability, security, and much more.
 A fantastic getting started experience is one of our key design goals, and we are aiming at making the integration between bespoke Flink jobs which you deploy onto the platform and fully managed connectors and SQL-based pipelines as smooth as possible.
