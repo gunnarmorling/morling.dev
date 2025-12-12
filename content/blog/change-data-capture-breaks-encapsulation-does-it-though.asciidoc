@@ -114,7 +114,7 @@ For instance you could emit a single event for an entire aggregate root which is
 
 Debezium comes with powerful support for implementing the Outbox Pattern.
 This includes a link:https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html[routing component] for propagating outbox events to specific topics in Kafka, based on configurable event metadata.
-If you are on Postgres, an interesting implementation option is link:https://www.decodable.co/blog/the-wonders-of-postgres-logical-decoding-messages-for-cdc[logical decoding messages] : instead of having a bespoke outbox table, Postgres lets you write arbitrary events solely to its write-ahead log, from where they can be retrieved using CDC.
+If you are on Postgres, an interesting implementation option is link:https://www.decodable.co/blog/the-wonders-of-postgres-logical-decoding-messages-for-cdc[logical decoding messages]: instead of having a bespoke outbox table, Postgres lets you write arbitrary events solely to its write-ahead log, from where they can be retrieved using CDC.
 This spares you from implementing your own housekeeping routines (removal of events from the outbox table after they have been captured and sent), as the database itself will discard any obsolete segments of the transaction log automatically.
 
 So, the Outbox Pattern is a rather simple option for implementing data contracts (at least the schema portion) in a reliable way.

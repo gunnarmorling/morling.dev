@@ -25,7 +25,7 @@ I am going to take a closer look at this new feature in this two-part blog serie
 
 <!--more-->
 * Part I (this part): Explaining what Postgres logical replication is, why to use it on stand-by servers, and how to set it up
-* link:/blog/logical-replication-from-postgres-16-stand-by-servers-part-2-of-2[Part II] : Discussing how to use logical replication on Postgres stand-bys with Debezium and how to handle failover scenarios
+* link:/blog/logical-replication-from-postgres-16-stand-by-servers-part-2-of-2[Part II]: Discussing how to use logical replication on Postgres stand-bys with Debezium and how to handle failover scenarios
 
 
 == What is Postgres Logical Replication?
@@ -46,7 +46,7 @@ A subscriber can consume the changes from multiple publishers, and it can also b
 You can execute local write transactions on subscribers, which means that logical replication can form the foundation for multi-master architectures.
 Unlike streaming replication, you can use logical replication between Postgres instances with different versions, making it a useful tool for link:https://knock.app/blog/zero-downtime-postgres-upgrades[zero-downtime version upgrades].
 
-On the downside, there are link:https://www.postgresql.org/docs/current/logical-replication-restrictions.html[some limitations] : most importantly, logical replication does not propagate DDL changes—i.e.
+On the downside, there are link:https://www.postgresql.org/docs/current/logical-replication-restrictions.html[some limitations]: most importantly, logical replication does not propagate DDL changes—i.e.
 you must make sure by yourself that the database schemas of source and destination are in sync.
 Also replicating sequences, (materialized) views, and large objects is currently not supported.
 
