@@ -1,0 +1,170 @@
+---
+title: 'CDC Use Cases: 7 Ways to Put CDC to Work'
+date: "2023-11-02T00:00:00+00:00"
+draft: true
+markup: adoc
+canonical_url: https://www.decodable.co/blog/cdc-use-cases
+tags:
+  - cdc
+  - debezium
+  - streaming
+  - flink
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+_This post originally appeared on the link:https://www.decodable.co/blog/cdc-use-cases[Decodable blog]._
+
+Change Data Capture (CDC) is a powerful tool in data engineering and has seen a tremendous uptake in organizations of all kinds over the last few years.
+This is because it enables the tight integration of transactional databases into many other systems in your business at a very low latency.
+
+<!--more-->
+
+== What is CDC?
+CDC responds to changes--such as inserts, updates, and deletions--as they are made in a transactional database and sends those changes in real time to another system for ingesting and processing.
+While there are multiple possible ways for implementing a CDC solution, the most powerful approach is log-based CDC, which retrieves change events from the transaction log of a database.
+
+.Log-based change data capture
+image::cdc-use-cases-fig1.webp[]
+
+Compared to other styles of CDC, such as periodic polling for changed records, log-based CDC has a number of link:https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/[advantages], including:
+
+* very low latency while also being resource-efficient
+* guaranteed to never miss any changes, including deletes
+* no impact on your source data model
+
+
+== CDC Tools
+There are a number of commercial and open-source software (OSS) CDC tools, but the most widely used OSS CDC platform is link:https://debezium.io/[Debezium], which provides link:https://debezium.io/documentation/reference/stable/connectors/index.html[connectors for many popular databases] such as MySQL, Postgres, SQL Server, Oracle, Cassandra, Google Cloud Spanner, and others.
+Several database vendors have implemented their own CDC connectors based on Debezium, for instance link:https://docs.yugabyte.com/preview/explore/change-data-capture/debezium-connector-yugabytedb/[Yugabyte] and link:https://opensource.docs.scylladb.com/stable/using-scylla/integrations/scylla-cdc-source-connector.html[ScyllaDB].
+
+Debezium's record format, used to model change events, describes the old and new states of data records and includes metadata like the source database and table name, as well as the position in the transaction log file.
+This format has become a de-facto standard for change event data, supported by numerous projects and vendors in the data streaming space.
+
+CDC platforms, like Debezium, are frequently used alongside popular data engineering tools such as Apache Kafka for data streaming and link:https://flink.apache.org/[Apache Flink], which link:https://nightlies.apache.org/flink/flink-docs-master/docs/connectors/table/formats/debezium/[natively supports Debezium] event formats for stateful stream processing, including filtering and joining change event streams from various sources.
+
+In this article, I'll present an overview of seven common use cases for change data capture—Let's go!
+
+
+== Analytics Data Platforms
+One of the most widely adopted uses for CDC is getting data from transactional databases into systems that more efficiently support analytical processing.
+Whereas transactional database systems such as MySQL or Postgres are optimized for efficiently processing transactions on comparatively small numbers of records, link:https://en.wikipedia.org/wiki/Online_analytical_processing[OLAP] systems are designed to handle queries that read potentially millions of rows of data.
+CDC provides a way to keep OLAP data stores up to date with the freshest data possible from OLTP systems, with end-to-end latencies in the range of mere seconds.
+
+CDC is commonly used as a component in data pipelines that propagate data changes into cloud data warehouses (e.g.
+Snowflake, via link:https://www.decodable.co/blog/ingest-your-data-faster-and-cheaper-with-decodable-and-snowflake-snowpipe-streaming[Snowpipe], or link:https://medium.com/google-cloud/near-real-time-data-replication-using-debezium-4da77cef67ab[Google BigQuery]) and link:https://towardsdatascience.com/change-data-capture-cdc-for-data-ingestion-ca81ff5934d2[data lakes], enabling data science, general reporting, and ad-hoc querying use cases.
+Low-latency ingestion into real-time analytics stores on the other hand (e.g.
+Apache Pinot, Apache Druid or Clickhouse) allows you to implement use cases like in-app analytics or real-time dashboards.
+For use cases involving frequent updates to existing records, such as mutable data, stores optimized for upsert semantics (e.g., link:https://docs.pinot.apache.org/basics/data-import/upsert[Pinot] or link:https://rockset.com/docs/cdc/[Rockset]) often offer tailored support for the Debezium event format.
+
+
+== Application Caches
+A common pattern used for improving application performance is the introduction of a local cache of read-only data.
+One of the main challenges with this is keeping the cache fresh and ensuring that the application does not read stale data.
+CDC can be an excellent fit here.
+CDC responds to changes to the database in real time and can feed those changes into a cache updater component that ensures that the local caches provide an up-to-date view.
+
+Besides dedicated caching solutions such as Redis, link:https://github.com/debezium/debezium-examples/tree/main/distributed-caching[Infinispan], or Hazelcast, embedded SQLite databases are an interesting option for implementing application-side caches, as they not only allow for simple key-based look-ups but support full query flexibility via SQL.
+If you would like to learn more about this kind of architecture, take a look at my talk "Keep Your Cache Always Fresh With Debezium", which explores one implementation of this in depth ( link:https://www.youtube.com/watch?v=zOOFMHAjoPI[video recording], link:https://speakerdeck.com/gunnarmorling/keep-your-cache-always-fresh-with-debezium-current-22[slides]).
+
+.Application-side caches in a distributed service, kept in sync with the primary DB via CDC
+image::cdc-use-cases-fig2.webp[]
+
+Instead of caching raw data as-is, it can be useful to create denormalized data views of your data which are then stored in the cache.
+For instance, Apache Flink could be used to join the change event streams from two tables in an RDBMS and create one single nested data structure from that.
+That way, data can be retrieved from the cache very efficiently, without performing any costly read-time joins.
+
+
+== Full-Text Search
+Similar to the way in which transactional database systems are not well suited to directly supporting analytical workloads, full-text search also benefits greatly from data stores that are specifically designed for that purpose, such as Elasticsearch or OpenSearch.
+Leveraging search-specific functionality such as stemming, normalization, stop words, synonyms, and abbreviations ensures rapid delivery of the most relevant results for broad or even "fuzzy" searches.
+
+Just like with the cache example above, CDC fits perfectly in your architecture for keeping your full-text search data store up to date.
+CDC responds in real-time to changes made to the database and sends the changed data events to a tool such as Apache Flink which loads them into your search system.
+
+Another consideration is the potential need to create nested document structures which are used in document stores like Elasticsearch.
+I recently published an episode of "Data Streaming Quick Tips",  exploring link:https://www.youtube.com/watch?v=ICJ7-YyaC-4[array aggregation] and how to join and nest the data of one aggregate instead of trying to force a 1:1 mapping between RDBMS source tables and search indexes.
+If you prefer a text-based version, you can find a transcript of this video link:https://www.decodable.co/blog/array-aggregation-with-flink-sql-data-streaming[here].
+
+
+== Audit Logs
+In enterprise applications, retaining an audit log of your data is a common requirement, keeping track of when and how data records changed.
+CDC offers an effective solution since extracting data changes from a database transaction log provides that information: A change event stream, with events for all the inserts, updates, and deletes executed for a table could be considered a simple form of an audit log.
+
+However, this approach lacks contextual metadata, such as user information, client details, use case identifiers, etc.
+To address this limitation, applications can provide metadata—either via a dedicated metadata table or in the form of a logical decoding message emitted at the start of each transaction.
+Stream processing with Apache Flink can then be used to incorporate the missing context into the records.
+
+Flink's datastream API can be used for enriching all the change events from one transaction with the applicable metadata.
+As all change events emitted by Debezium contain the id of the transaction they originate from, correlating the events of one transaction isn't complicated.
+You can find link:https://github.com/decodableco/examples/tree/main/postgres-logical-decoding[a basic implementation of this] in the Decodable examples repository.
+
+.Enriching CDC events with transactional metadata using stream processing
+image::cdc-use-cases-fig3.webp[]
+
+Within the same Flink job, you now could add a sink connector and for instance write the enriched events into a Kafka topic.
+Alternatively, depending on your business requirements, the enriched change events could also be written as an audit log to an object store such as S3, or a queryable analytics data store.
+
+
+== Continuous Queries
+Not all queries need to be served from static stores like Pinot or link:https://www.snowflake.com[Snowflake].
+Apache Flink provides dynamic tables, which is one that is link:https://flink.apache.org/2017/03/30/continuous-queries-on-dynamic-tables/#continuous-queries-on-dynamic-tables["continuously updated and can be queried like a regular, static table"].
+However, in contrast to a static table query, a query on a dynamic table runs continuously and produces a table that is continuously updated based on changes to the input table, with results stored in a new dynamic table.
+
+CDC streams can be used as the source that drives a continuous query, representing a form of an incrementally updated materialized view, always yielding the latest results, as the underlying data changes.
+
+.Continuous query for incrementally computing a join between two CDC streams
+image::cdc-use-cases-fig4.webp[]
+
+This allows you to create a data pipeline that ingests CDC data into Flink, create continuous queries to perform aggregations, filters, or pattern recognition on the CDC data stream, and the results can be used to enable real-time analytics and decision-making.
+For instance, you may consider pushing any updates directly to a dashboard in connected web browsers using technologies such as server-sent events or Web Sockets, completely avoiding the need for any intermediary query layer.
+
+
+== Microservices Data Exchange
+As part of their business logic, microservices often not only have to update their own local data store, but also need to notify other services about data changes that have happened.
+The link:https://debezium.io/blog/2019/02/19/reliable-microservices-data-exchange-with-the-outbox-pattern/[outbox pattern] —which is implemented using CDC—is an approach for letting services execute these two tasks in a safe and consistent manner, avoiding the pitfalls of unsafe dual writes.
+
+.Microservices data exchange with the outbox pattern
+image::cdc-use-cases-fig5.webp[]
+
+CDC is a great fit for responding to new entries in the outbox table and streaming them to a messaging service such as Apache Kafka for propagation to other services.
+By only modifying a single resource—the source microservice's own database—it avoids any potential inconsistencies of altering multiple resources at the same time which don't share one common transactional context.
+
+If you are on Postgres, then you don't even need to have a bespoke outbox table for implementing the outbox pattern.
+With the link:https://www.infoq.com/articles/wonders-of-postgres-logical-decoding-messages/[help of logical decoding messages], you can insert your outbox events exclusively to the transaction log, from where they can be retrieved and propagated with CDC tools such as Debezium.
+
+
+== Monolith-to-Microservices Migration
+Oftentimes, you don't start building applications from scratch, but there is an existing application landscape which needs to be evolved and expanded.
+In this context, it may be necessary to migrate from an existing monolithic architecture to a set of loosely coupled microservices, splitting up the existing monolith.
+In order to avoid the risks of a big bang migration, it is recommended to take a gradual approach, extracting one service at a time.
+This approach is also named the "strangler fig pattern", as the new services grow around the old application, "strangling" it over time.
+
+When doing so, the old monolith and the new service(s) will co-exist for some time.
+For example, you may start with extracting just a read view of some data (e.g.
+a customer's order history) to a new microservice, while the monolithic application continues to handle data writes.
+You can then use CDC to propagate data changes from the monolith to the service providing the read view.
+I discussed the strangler pattern with CDC in a link:https://speakerdeck.com/hpgrahsl/dissecting-our-legacy-the-strangler-fig-pattern-with-apache-kafka-debezium-and-mongodb-at-mongodb-dot-live-2021[joint talk with Hans-Peter Grahsl], where we also explored advanced aspects such as avoiding infinite replication loops when doing bi-directional CDC or using stream processing for establishing an anti-corruption layer between legacy data models and newly created microservices.
+
+
+== Summary
+And that's it—seven use cases for CDC.
+It is a powerful enabler for your data, allowing you to react to any data changes in real time.
+I have worked with CDC for several years now, and I'm still surprised to learn about new use cases regularly.
+Case in point: just recently we started to use CDC for capturing changes in our control plane database and materializing corresponding Kubernetes resources.
+
+When ingesting raw change streams is not enough, stateful stream processing—e.g.
+with Apache Flink—allows you to transform, filter, join and aggregate your data.
+Flink's rich ecosystem of connectors also provides you with connectivity with a wide range of data sinks, allowing you to implement cohesive end-to-end data flows on one unified platform.
+
+Are you using CDC already?
+For any of the use cases discussed above, or maybe others not mentioned here?
+I'd love to hear from you about your experiences with CDC—just reach out to me on link:https://twitter.com/gunnarmorling[Twitter], link:https://www.linkedin.com/in/gunnar-morling-2b44b7229/[LinkedIn], or the link:https://decodablecommunity.slack.com/join/shared_invite/zt-uvow71bk-Uf914umgpoyIbOQSxriJkA#/shared-invite/email[Decodable Slack community].
+
+_Want to try out CDC for yourself?_
+_Decodable has managed CDC—_ link:https://app.decodable.co/-/accounts/create[try it now] _and get started with processing your change streams today._
