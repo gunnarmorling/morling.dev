@@ -38,7 +38,7 @@ That five-way join required to fetch a purchase order with all its order lines, 
 image::push_pull_01.jpg["It's ok to have multiple copies of your data."]
 
 --
-Put differently, in order to get the most value out of pull queries, you should lean into data duplication and denormalization. Arranging multiple materialized views of your data set in different ways, each one optimized for specific query and access patterns, allows you to satisfy the requirements of different use cases operating on that data set. Ultimately, it is physics which are demanding this: there's only ever going to be a single way to iterate efficiently through a data set in its natural sort order. This is why we have indexes in databases, which, if you squint a little, are just another kind of materialized view, at least in their covering form+++<sup>[1]</sup>+++.
+Put differently, in order to get the most value out of pull queries, you should lean into data duplication and denormalization. Arranging multiple materialized views of your data set in different ways, each one optimized for specific query and access patterns, allows you to satisfy the requirements of different use cases operating on that data set. Ultimately, it is physics which are demanding this: there's only ever going to be a single way to iterate efficiently through a data set in its natural sort order. This is why we have indexes in databases, which, if you squint a little, are just another kind of materialized view, at least in their covering form+++<sup>1</sup>+++.
 
 [.aside]
 ****
@@ -79,7 +79,7 @@ image::push_pull_02.jpg["Push, pull. Why not both?"]
 There are several ways for implementing this. This could be a stream processor such as https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/overview/[Flink SQL], operating on https://www.morling.dev/blog/ingesting-debezium-events-from-kafka-with-flink-sql/[change events sourced from a database via change data capture], and writing data into Elasticsearch, or an Iceberg table. It could be a database supporting incremental view maintenance (IVM), such as Postgres with the https://github.com/sraoss/pg_ivm[pg_ivm] extension. Or it could be an external IVM engine such as https://www.feldera.com/[Feldera], https://materialize.com/[Materialize], or https://risingwave.com/[RisingWave].
 
 --
-The IVM space has seen https://materializedview.io/p/everything-to-know-incremental-view-maintenance[considerable activity] over the past few years, with vendors working to extend incremental computation to increasingly complex SQL queries, e.g. with windowed aggregations or recursive logic, managing the potentially large state+++<sup>[2]</sup>+++ required for incremental computations and amortizing it across multiple queries, supporting edge-based caching (https://readyset.io/[ReadySet]), and much more.
+The IVM space has seen https://materializedview.io/p/everything-to-know-incremental-view-maintenance[considerable activity] over the past few years, with vendors working to extend incremental computation to increasingly complex SQL queries, e.g. with windowed aggregations or recursive logic, managing the potentially large state+++<sup>2</sup>+++ required for incremental computations and amortizing it across multiple queries, supporting edge-based caching (https://readyset.io/[ReadySet]), and much more.
 
 [.aside]
 ****
