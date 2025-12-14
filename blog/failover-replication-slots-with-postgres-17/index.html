@@ -363,18 +363,18 @@ To verify you are on the primary and not the replica run the following:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 3
 4
 5
 6
-</pre></td><td class="code"><pre>user@primary:inventorydb&gt; SELECT <span class="k">*</span> from pg_is_in_recovery<span class="o">()</span><span class="p">;</span>
-+-------------------+
-| pg_is_in_recovery |
-|-------------------|
-| False             |
-+-------------------+
+</pre></td><td class="code"><pre><span class="k">user</span><span class="o">@</span><span class="k">primary</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">from</span> <span class="n">pg_is_in_recovery</span><span class="p">();</span>
+<span class="o">+</span><span class="c1">-------------------+</span>
+<span class="o">|</span> <span class="n">pg_is_in_recovery</span> <span class="o">|</span>
+<span class="o">|</span><span class="c1">-------------------|</span>
+<span class="o">|</span> <span class="k">False</span>             <span class="o">|</span>
+<span class="o">+</span><span class="c1">-------------------+</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -383,18 +383,18 @@ To verify you are on the primary and not the replica run the following:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 3
 4
 5
 6
-</pre></td><td class="code"><pre>user@primary:inventorydb&gt; SHOW wal_level<span class="p">;</span>
-+-----------+
-| wal_level |
-|-----------|
-| logical   |
-+-----------+
+</pre></td><td class="code"><pre><span class="k">user</span><span class="o">@</span><span class="k">primary</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">SHOW</span> <span class="n">wal_level</span><span class="p">;</span>
+<span class="o">+</span><span class="c1">-----------+</span>
+<span class="o">|</span> <span class="n">wal_level</span> <span class="o">|</span>
+<span class="o">|</span><span class="c1">-----------|</span>
+<span class="o">|</span> <span class="n">logical</span>   <span class="o">|</span>
+<span class="o">+</span><span class="c1">-----------+</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -406,7 +406,7 @@ To verify you are on the primary and not the replica run the following:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
  3
  4
@@ -425,25 +425,25 @@ To verify you are on the primary and not the replica run the following:</p>
 17
 18
 19
-</pre></td><td class="code"><pre>user@primary:inventorydb&gt; WITH node_status AS <span class="o">(</span>
-       SELECT
-         CASE WHEN pg_is_in_recovery<span class="o">()</span> <span class="o">=</span> <span class="s1">&#39;True&#39;</span> Then <span class="s1">&#39;stand-by&#39;</span> ELSE <span class="s1">&#39;primary&#39;</span> END AS role
-      <span class="o">)</span>
-      SELECT
-        node_status.role AS node,
-        slot_name,
-        slot_type,
-        active,
-        plugin,
-        database, failover, synced,
-        confirmed_flush_lsn
-      FROM
-        pg_replication_slots, node_status<span class="p">;</span>
-+---------+------------------+-----------+--------+--------+----------+----------+--------+---------------------+
-| node    | slot_name        | slot_type | active | plugin | database | failover | synced | confirmed_flush_lsn |
-|---------+------------------+-----------+--------+--------+----------+----------+--------+---------------------|
-| primary | replication_slot | physical  | True   |  |    | False    | False  |               |
-+---------+------------------+-----------+--------+--------+----------+----------+--------+---------------------+
+</pre></td><td class="code"><pre><span class="k">user</span><span class="o">@</span><span class="k">primary</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">WITH</span> <span class="n">node_status</span> <span class="k">AS</span> <span class="p">(</span>
+       <span class="k">SELECT</span>
+         <span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">pg_is_in_recovery</span><span class="p">()</span> <span class="o">=</span> <span class="s1">&#39;True&#39;</span> <span class="k">Then</span> <span class="s1">&#39;stand-by&#39;</span> <span class="k">ELSE</span> <span class="s1">&#39;primary&#39;</span> <span class="k">END</span> <span class="k">AS</span> <span class="k">role</span>
+      <span class="p">)</span>
+      <span class="k">SELECT</span>
+        <span class="n">node_status</span><span class="p">.</span><span class="k">role</span> <span class="k">AS</span> <span class="n">node</span><span class="p">,</span>
+        <span class="n">slot_name</span><span class="p">,</span>
+        <span class="n">slot_type</span><span class="p">,</span>
+        <span class="n">active</span><span class="p">,</span>
+        <span class="n">plugin</span><span class="p">,</span>
+        <span class="k">database</span><span class="p">,</span> <span class="n">failover</span><span class="p">,</span> <span class="n">synced</span><span class="p">,</span>
+        <span class="n">confirmed_flush_lsn</span>
+      <span class="k">FROM</span>
+        <span class="n">pg_replication_slots</span><span class="p">,</span> <span class="n">node_status</span><span class="p">;</span>
+<span class="o">+</span><span class="c1">---------+------------------+-----------+--------+--------+----------+----------+--------+---------------------+</span>
+<span class="o">|</span> <span class="n">node</span>    <span class="o">|</span> <span class="n">slot_name</span>        <span class="o">|</span> <span class="n">slot_type</span> <span class="o">|</span> <span class="n">active</span> <span class="o">|</span> <span class="n">plugin</span> <span class="o">|</span> <span class="k">database</span> <span class="o">|</span> <span class="n">failover</span> <span class="o">|</span> <span class="n">synced</span> <span class="o">|</span> <span class="n">confirmed_flush_lsn</span> <span class="o">|</span>
+<span class="o">|</span><span class="c1">---------+------------------+-----------+--------+--------+----------+----------+--------+---------------------|</span>
+<span class="o">|</span> <span class="k">primary</span> <span class="o">|</span> <span class="n">replication_slot</span> <span class="o">|</span> <span class="n">physical</span>  <span class="o">|</span> <span class="k">True</span>   <span class="o">|</span>  <span class="o">|</span>    <span class="o">|</span> <span class="k">False</span>    <span class="o">|</span> <span class="k">False</span>  <span class="o">|</span>               <span class="o">|</span>
+<span class="o">+</span><span class="c1">---------+------------------+-----------+--------+--------+----------+----------+--------+---------------------+</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -452,10 +452,10 @@ To verify you are on the primary and not the replica run the following:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
-</pre></td><td class="code"><pre>user@primary:inventorydb&gt; ALTER SYSTEM SET <span class="nv">synchronized_standby_slots</span><span class="o">=</span><span class="s1">&#39;replication_slot&#39;</span><span class="p">;</span>
-user@primary:inventorydb&gt; SELECT pg_reload_conf<span class="o">()</span><span class="p">;</span>
+</pre></td><td class="code"><pre><span class="k">user</span><span class="o">@</span><span class="k">primary</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">ALTER</span> <span class="k">SYSTEM</span> <span class="k">SET</span> <span class="n">synchronized_standby_slots</span><span class="o">=</span><span class="s1">&#39;replication_slot&#39;</span><span class="p">;</span>
+<span class="k">user</span><span class="o">@</span><span class="k">primary</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="n">pg_reload_conf</span><span class="p">();</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -478,18 +478,18 @@ Without that setting, logical replication consumers such as Debezium may receive
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 3
 4
 5
 6
-</pre></td><td class="code"><pre>user@primary:inventorydb&gt; SELECT <span class="k">*</span> from pg_is_in_recovery<span class="o">()</span><span class="p">;</span>
-+-------------------+
-| pg_is_in_recovery |
-|-------------------|
-| True              |
-+-------------------+
+</pre></td><td class="code"><pre><span class="k">user</span><span class="o">@</span><span class="k">primary</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">from</span> <span class="n">pg_is_in_recovery</span><span class="p">();</span>
+<span class="o">+</span><span class="c1">-------------------+</span>
+<span class="o">|</span> <span class="n">pg_is_in_recovery</span> <span class="o">|</span>
+<span class="o">|</span><span class="c1">-------------------|</span>
+<span class="o">|</span> <span class="k">True</span>              <span class="o">|</span>
+<span class="o">+</span><span class="c1">-------------------+</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -500,12 +500,12 @@ I couldn’t find a way for just adding a single attribute, so I retrieved the c
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 3
-</pre></td><td class="code"><pre>user@replica:inventorydb&gt; ALTER SYSTEM SET primary_conninfo <span class="o">=</span> <span class="s1">&#39;user=replicator password=&#39;&#39;zufsob-kuvtum-bImxa6&#39;&#39; channel_binding=prefer host=postgres_primary port=5432 sslmode=prefer sslnegotiation=postgres sslcompression=0 sslcertmode=allow sslsni=1 ssl_min_protocol_version=TLSv1.2 gssencmode=prefer krbsrvname=postgres gssdelegation=0 target_session_attrs=any load_balance_hosts=disable dbname=inventorydb&#39;</span><span class="p">;</span>
+</pre></td><td class="code"><pre><span class="k">user</span><span class="o">@</span><span class="n">replica</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">ALTER</span> <span class="k">SYSTEM</span> <span class="k">SET</span> <span class="n">primary_conninfo</span> <span class="o">=</span> <span class="s1">&#39;user=replicator password=</span><span class="se">&#39;&#39;</span><span class="s1">zufsob-kuvtum-bImxa6</span><span class="se">&#39;&#39;</span><span class="s1"> channel_binding=prefer host=postgres_primary port=5432 sslmode=prefer sslnegotiation=postgres sslcompression=0 sslcertmode=allow sslsni=1 ssl_min_protocol_version=TLSv1.2 gssencmode=prefer krbsrvname=postgres gssdelegation=0 target_session_attrs=any load_balance_hosts=disable dbname=inventorydb&#39;</span><span class="p">;</span>
 
-user@replica:inventorydb&gt; SELECT pg_reload_conf<span class="o">()</span><span class="p">;</span>
+<span class="k">user</span><span class="o">@</span><span class="n">replica</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="n">pg_reload_conf</span><span class="p">();</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -515,18 +515,18 @@ So let’s create a logical replication slot on the primary next:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 3
 4
 5
 6
-</pre></td><td class="code"><pre>user@primary:inventorydb&gt; SELECT <span class="k">*</span> FROM pg_create_logical_replication_slot<span class="o">(</span><span class="s1">&#39;test_slot&#39;</span>, <span class="s1">&#39;test_decoding&#39;</span>, <span class="nb">false</span>, <span class="nb">false</span>, <span class="nb">true</span><span class="o">)</span><span class="p">;</span>
-+-----------+-----------+
-| slot_name | lsn       |
-|-----------+-----------|
-| test_slot | 0/304DCA0 |
-+-----------+-----------+
+</pre></td><td class="code"><pre><span class="k">user</span><span class="o">@</span><span class="k">primary</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">pg_create_logical_replication_slot</span><span class="p">(</span><span class="s1">&#39;test_slot&#39;</span><span class="p">,</span> <span class="s1">&#39;test_decoding&#39;</span><span class="p">,</span> <span class="k">false</span><span class="p">,</span> <span class="k">false</span><span class="p">,</span> <span class="k">true</span><span class="p">);</span>
+<span class="o">+</span><span class="c1">-----------+-----------+</span>
+<span class="o">|</span> <span class="n">slot_name</span> <span class="o">|</span> <span class="n">lsn</span>       <span class="o">|</span>
+<span class="o">|</span><span class="c1">-----------+-----------|</span>
+<span class="o">|</span> <span class="n">test_slot</span> <span class="o">|</span> <span class="mi">0</span><span class="o">/</span><span class="mi">304</span><span class="n">DCA0</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">-----------+-----------+</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -536,18 +536,18 @@ On the replica, call <code>pg_sync_replication_slots()</code> for synchronizing 
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 3
 4
 5
 6
-</pre></td><td class="code"><pre>user@replica:inventorydb&gt; SELECT pg_sync_replication_slots<span class="o">()</span><span class="p">;</span>
-+---------------------------+
-| pg_sync_replication_slots |
-|---------------------------|
-|                           |
-+---------------------------+
+</pre></td><td class="code"><pre><span class="k">user</span><span class="o">@</span><span class="n">replica</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="n">pg_sync_replication_slots</span><span class="p">();</span>
+<span class="o">+</span><span class="c1">---------------------------+</span>
+<span class="o">|</span> <span class="n">pg_sync_replication_slots</span> <span class="o">|</span>
+<span class="o">|</span><span class="c1">---------------------------|</span>
+<span class="o">|</span>                           <span class="o">|</span>
+<span class="o">+</span><span class="c1">---------------------------+</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -597,10 +597,10 @@ By setting <code>sync_replication_slots</code> to <code>on</code> on the replica
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
-</pre></td><td class="code"><pre>user@replica:inventorydb&gt; ALTER SYSTEM SET sync_replication_slots <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
-user@replica:inventorydb&gt; SELECT pg_reload_conf<span class="o">()</span><span class="p">;</span>
+</pre></td><td class="code"><pre><span class="k">user</span><span class="o">@</span><span class="n">replica</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">ALTER</span> <span class="k">SYSTEM</span> <span class="k">SET</span> <span class="n">sync_replication_slots</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+<span class="k">user</span><span class="o">@</span><span class="n">replica</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="n">pg_reload_conf</span><span class="p">();</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -609,7 +609,7 @@ user@replica:inventorydb&gt; SELECT pg_reload_conf<span class="o">()</span><span
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
  3
  4
@@ -624,21 +624,21 @@ user@replica:inventorydb&gt; SELECT pg_reload_conf<span class="o">()</span><span
 13
 14
 15
-</pre></td><td class="code"><pre>user@primary:inventorydb&gt; UPDATE inventory.customers SET <span class="nv">first_name</span><span class="o">=</span><span class="s1">&#39;Sarah&#39;</span> where <span class="nb">id</span> <span class="o">=</span> 1001<span class="p">;</span>
+</pre></td><td class="code"><pre><span class="k">user</span><span class="o">@</span><span class="k">primary</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">UPDATE</span> <span class="n">inventory</span><span class="p">.</span><span class="n">customers</span> <span class="k">SET</span> <span class="n">first_name</span><span class="o">=</span><span class="s1">&#39;Sarah&#39;</span> <span class="k">where</span> <span class="n">id</span> <span class="o">=</span> <span class="mi">1001</span><span class="p">;</span>
 
-user@primary:inventorydb&gt; UPDATE inventory.customers SET <span class="nv">first_name</span><span class="o">=</span><span class="s1">&#39;Sam&#39;</span> where <span class="nb">id</span> <span class="o">=</span> 1001<span class="p">;</span>
+<span class="k">user</span><span class="o">@</span><span class="k">primary</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">UPDATE</span> <span class="n">inventory</span><span class="p">.</span><span class="n">customers</span> <span class="k">SET</span> <span class="n">first_name</span><span class="o">=</span><span class="s1">&#39;Sam&#39;</span> <span class="k">where</span> <span class="n">id</span> <span class="o">=</span> <span class="mi">1001</span><span class="p">;</span>
 
-user@primary:inventorydb&gt; SELECT <span class="k">*</span> FROM pg_logical_slot_get_changes<span class="o">(</span><span class="s1">&#39;test_slot&#39;</span>, NULL, NULL<span class="o">)</span><span class="p">;</span>
-+-----------+-----+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| lsn       | xid | data                                                                                                                                                                                                                                                                                                                                                                                                             |
-|-----------+-----+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 0/304DCD8 | 752 | BEGIN 752                                                                                                                                                                                                                                                                                                                                                                                                        |
-| 0/304DCD8 | 752 | table inventory.customers: UPDATE: old-key: <span class="nb">id</span><span class="o">[</span>integer]:1001 first_name[character varying]:<span class="s1">&#39;Sally&#39;</span> last_name[character varying]:<span class="s1">&#39;Thomas&#39;</span> email[character varying]:<span class="s1">&#39;sally.thomas@acme.com&#39;</span> is_test_account[boolean]:false new-tuple: <span class="nb">id</span><span class="o">[</span>integer]:1001 first_name[character varying]:<span class="s1">&#39;Sarah&#39;</span> last_name[character varying]:<span class="s1">&#39;Thomas&#39;</span> email[character varying]:<span class="s1">&#39;sally.thomas@acme.com&#39;</span> is_test_account[boolean]:false |
-| 0/304DFE8 | 752 | COMMIT 752                                                                                                                                                                                                                                                                                                                                                                                                       |
-| 0/304E038 | 753 | BEGIN 753                                                                                                                                                                                                                                                                                                                                                                                                        |
-| 0/304E038 | 753 | table inventory.customers: UPDATE: old-key: <span class="nb">id</span><span class="o">[</span>integer]:1001 first_name[character varying]:<span class="s1">&#39;Sarah&#39;</span> last_name[character varying]:<span class="s1">&#39;Thomas&#39;</span> email[character varying]:<span class="s1">&#39;sally.thomas@acme.com&#39;</span> is_test_account[boolean]:false new-tuple: <span class="nb">id</span><span class="o">[</span>integer]:1001 first_name[character varying]:<span class="s1">&#39;Sam&#39;</span> last_name[character varying]:<span class="s1">&#39;Thomas&#39;</span> email[character varying]:<span class="s1">&#39;sally.thomas@acme.com&#39;</span> is_test_account[boolean]:false   |
-| 0/304E100 | 753 | COMMIT 753                                                                                                                                                                                                                                                                                                                                                                                                       |
-+-----------+-----+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+<span class="k">user</span><span class="o">@</span><span class="k">primary</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">pg_logical_slot_get_changes</span><span class="p">(</span><span class="s1">&#39;test_slot&#39;</span><span class="p">,</span> <span class="k">NULL</span><span class="p">,</span> <span class="k">NULL</span><span class="p">);</span>
+<span class="o">+</span><span class="c1">-----------+-----+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+</span>
+<span class="o">|</span> <span class="n">lsn</span>       <span class="o">|</span> <span class="n">xid</span> <span class="o">|</span> <span class="k">data</span>                                                                                                                                                                                                                                                                                                                                                                                                             <span class="o">|</span>
+<span class="o">|</span><span class="c1">-----------+-----+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|</span>
+<span class="o">|</span> <span class="mi">0</span><span class="o">/</span><span class="mi">304</span><span class="n">DCD8</span> <span class="o">|</span> <span class="mi">752</span> <span class="o">|</span> <span class="k">BEGIN</span> <span class="mi">752</span>                                                                                                                                                                                                                                                                                                                                                                                                        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">0</span><span class="o">/</span><span class="mi">304</span><span class="n">DCD8</span> <span class="o">|</span> <span class="mi">752</span> <span class="o">|</span> <span class="k">table</span> <span class="n">inventory</span><span class="p">.</span><span class="n">customers</span><span class="p">:</span> <span class="k">UPDATE</span><span class="p">:</span> <span class="k">old</span><span class="o">-</span><span class="k">key</span><span class="p">:</span> <span class="n">id</span><span class="p">[</span><span class="nb">integer</span><span class="p">]:</span><span class="mi">1001</span> <span class="n">first_name</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;Sally&#39;</span> <span class="n">last_name</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;Thomas&#39;</span> <span class="n">email</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;sally.thomas@acme.com&#39;</span> <span class="n">is_test_account</span><span class="p">[</span><span class="nb">boolean</span><span class="p">]:</span><span class="k">false</span> <span class="k">new</span><span class="o">-</span><span class="n">tuple</span><span class="p">:</span> <span class="n">id</span><span class="p">[</span><span class="nb">integer</span><span class="p">]:</span><span class="mi">1001</span> <span class="n">first_name</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;Sarah&#39;</span> <span class="n">last_name</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;Thomas&#39;</span> <span class="n">email</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;sally.thomas@acme.com&#39;</span> <span class="n">is_test_account</span><span class="p">[</span><span class="nb">boolean</span><span class="p">]:</span><span class="k">false</span> <span class="o">|</span>
+<span class="o">|</span> <span class="mi">0</span><span class="o">/</span><span class="mi">304</span><span class="n">DFE8</span> <span class="o">|</span> <span class="mi">752</span> <span class="o">|</span> <span class="k">COMMIT</span> <span class="mi">752</span>                                                                                                                                                                                                                                                                                                                                                                                                       <span class="o">|</span>
+<span class="o">|</span> <span class="mi">0</span><span class="o">/</span><span class="mi">304</span><span class="n">E038</span> <span class="o">|</span> <span class="mi">753</span> <span class="o">|</span> <span class="k">BEGIN</span> <span class="mi">753</span>                                                                                                                                                                                                                                                                                                                                                                                                        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">0</span><span class="o">/</span><span class="mi">304</span><span class="n">E038</span> <span class="o">|</span> <span class="mi">753</span> <span class="o">|</span> <span class="k">table</span> <span class="n">inventory</span><span class="p">.</span><span class="n">customers</span><span class="p">:</span> <span class="k">UPDATE</span><span class="p">:</span> <span class="k">old</span><span class="o">-</span><span class="k">key</span><span class="p">:</span> <span class="n">id</span><span class="p">[</span><span class="nb">integer</span><span class="p">]:</span><span class="mi">1001</span> <span class="n">first_name</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;Sarah&#39;</span> <span class="n">last_name</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;Thomas&#39;</span> <span class="n">email</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;sally.thomas@acme.com&#39;</span> <span class="n">is_test_account</span><span class="p">[</span><span class="nb">boolean</span><span class="p">]:</span><span class="k">false</span> <span class="k">new</span><span class="o">-</span><span class="n">tuple</span><span class="p">:</span> <span class="n">id</span><span class="p">[</span><span class="nb">integer</span><span class="p">]:</span><span class="mi">1001</span> <span class="n">first_name</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;Sam&#39;</span> <span class="n">last_name</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;Thomas&#39;</span> <span class="n">email</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;sally.thomas@acme.com&#39;</span> <span class="n">is_test_account</span><span class="p">[</span><span class="nb">boolean</span><span class="p">]:</span><span class="k">false</span>   <span class="o">|</span>
+<span class="o">|</span> <span class="mi">0</span><span class="o">/</span><span class="mi">304</span><span class="n">E100</span> <span class="o">|</span> <span class="mi">753</span> <span class="o">|</span> <span class="k">COMMIT</span> <span class="mi">753</span>                                                                                                                                                                                                                                                                                                                                                                                                       <span class="o">|</span>
+<span class="o">+</span><span class="c1">-----------+-----+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -648,14 +648,14 @@ To conclude our basic experiments, let’s see what happens when we try to consu
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 3
 4
-</pre></td><td class="code"><pre>user@replica:inventorydb&gt; SELECT <span class="k">*</span> FROM pg_logical_slot_get_changes<span class="o">(</span><span class="s1">&#39;test_slot&#39;</span>, NULL, NULL<span class="o">)</span><span class="p">;</span>
-cannot use replication slot <span class="s2">&#34;test_slot&#34;</span> <span class="k">for </span>logical decoding
-DETAIL:  This replication slot is being synchronized from the primary server.
-HINT:  Specify another replication slot.
+</pre></td><td class="code"><pre><span class="k">user</span><span class="o">@</span><span class="n">replica</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">pg_logical_slot_get_changes</span><span class="p">(</span><span class="s1">&#39;test_slot&#39;</span><span class="p">,</span> <span class="k">NULL</span><span class="p">,</span> <span class="k">NULL</span><span class="p">);</span>
+<span class="n">cannot</span> <span class="n">use</span> <span class="n">replication</span> <span class="n">slot</span> <span class="nv">&#34;test_slot&#34;</span> <span class="k">for</span> <span class="n">logical</span> <span class="n">decoding</span>
+<span class="n">DETAIL</span><span class="p">:</span>  <span class="n">This</span> <span class="n">replication</span> <span class="n">slot</span> <span class="k">is</span> <span class="n">being</span> <span class="n">synchronized</span> <span class="k">from</span> <span class="n">the</span> <span class="k">primary</span> <span class="n">server</span><span class="p">.</span>
+<span class="n">HINT</span><span class="p">:</span>  <span class="n">Specify</span> <span class="n">another</span> <span class="n">replication</span> <span class="n">slot</span><span class="p">.</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -930,8 +930,8 @@ To obtain the connection id, refer to the output of the <code>decodable apply</c
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
-</pre></td><td class="code"><pre>user@primary:inventorydb&gt; SELECT <span class="k">*</span> FROM pg_create_logical_replication_slot<span class="o">(</span><span class="s1">&#39;decodable_&#39;</span>, <span class="s1">&#39;pgoutput&#39;</span>, <span class="nb">false</span>, <span class="nb">false</span>, <span class="nb">true</span><span class="o">)</span><span class="p">;</span>
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="k">user</span><span class="o">@</span><span class="k">primary</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">pg_create_logical_replication_slot</span><span class="p">(</span><span class="s1">&#39;decodable_&#39;</span><span class="p">,</span> <span class="s1">&#39;pgoutput&#39;</span><span class="p">,</span> <span class="k">false</span><span class="p">,</span> <span class="k">false</span><span class="p">,</span> <span class="k">true</span><span class="p">);</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -967,10 +967,10 @@ Do a few data changes in the Postgres session on the primary node:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
-</pre></td><td class="code"><pre>user@primary:inventorydb&gt; UPDATE inventory.customers SET <span class="nv">first_name</span><span class="o">=</span><span class="s1">&#39;Saundra&#39;</span> where <span class="nb">id</span> <span class="o">=</span> 1001<span class="p">;</span>
-user@primary:inventorydb&gt; UPDATE inventory.customers SET <span class="nv">first_name</span><span class="o">=</span><span class="s1">&#39;Samantha&#39;</span> where <span class="nb">id</span> <span class="o">=</span> 1001<span class="p">;</span>
+</pre></td><td class="code"><pre><span class="k">user</span><span class="o">@</span><span class="k">primary</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">UPDATE</span> <span class="n">inventory</span><span class="p">.</span><span class="n">customers</span> <span class="k">SET</span> <span class="n">first_name</span><span class="o">=</span><span class="s1">&#39;Saundra&#39;</span> <span class="k">where</span> <span class="n">id</span> <span class="o">=</span> <span class="mi">1001</span><span class="p">;</span>
+<span class="k">user</span><span class="o">@</span><span class="k">primary</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">UPDATE</span> <span class="n">inventory</span><span class="p">.</span><span class="n">customers</span> <span class="k">SET</span> <span class="n">first_name</span><span class="o">=</span><span class="s1">&#39;Samantha&#39;</span> <span class="k">where</span> <span class="n">id</span> <span class="o">=</span> <span class="mi">1001</span><span class="p">;</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -999,8 +999,8 @@ Stop the primary Postgres node:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
-</pre></td><td class="code"><pre>user@replica:inventorydb&gt; <span class="k">select </span>pg_promote<span class="o">()</span><span class="p">;</span>
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="k">user</span><span class="o">@</span><span class="n">replica</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">select</span> <span class="n">pg_promote</span><span class="p">();</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -1010,7 +1010,7 @@ Change its configuration in the Docker Compose file so it forwards to the new pr
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+<pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
  3
  4
@@ -1020,16 +1020,16 @@ Change its configuration in the Docker Compose file so it forwards to the new pr
  8
  9
 10
-</pre></td><td class="code"><pre>   pgbouncer:
-     image: edoburu/pgbouncer:latest
-     environment:
--      - <span class="nv">DB_HOST</span><span class="o">=</span>postgres_primary
-+      - <span class="nv">DB_HOST</span><span class="o">=</span>postgres_replica
-       - <span class="nv">DB_PORT</span><span class="o">=</span>5432
-       - <span class="nv">DB_USER</span><span class="o">=</span>user
-       - <span class="nv">DB_PASSWORD</span><span class="o">=</span>top-secret
-       - <span class="nv">ADMIN_USERS</span><span class="o">=</span>postgres,admin
-       - <span class="nv">AUTH_TYPE</span><span class="o">=</span>scram-sha-256
+</pre></td><td class="code"><pre>   <span class="na">pgbouncer</span><span class="pi">:</span>
+     <span class="na">image</span><span class="pi">:</span> <span class="s">edoburu/pgbouncer:latest</span>
+     <span class="na">environment</span><span class="pi">:</span>
+<span class="pi">-</span>      <span class="pi">-</span> <span class="s">DB_HOST=postgres_primary</span>
+<span class="s">+      - DB_HOST=postgres_replica</span>
+       <span class="s">- DB_PORT=5432</span>
+       <span class="s">- DB_USER=user</span>
+       <span class="s">- DB_PASSWORD=top-secret</span>
+       <span class="s">- ADMIN_USERS=postgres,admin</span>
+       <span class="s">- AUTH_TYPE=scram-sha-256</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -1052,8 +1052,8 @@ The connector now consumes from the replication slot on that new primary server,
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
-</pre></td><td class="code"><pre>user@replica:inventorydb&gt; INSERT INTO inventory.customers VALUES <span class="o">(</span>default, <span class="s1">&#39;Rudy&#39;</span>, <span class="s1">&#39;Replica&#39;</span>, <span class="s1">&#39;rudy@example.com&#39;</span>, FALSE<span class="o">)</span>
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+</pre></td><td class="code"><pre><span class="k">user</span><span class="o">@</span><span class="n">replica</span><span class="p">:</span><span class="n">inventorydb</span><span class="o">&gt;</span> <span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">inventory</span><span class="p">.</span><span class="n">customers</span> <span class="k">VALUES</span> <span class="p">(</span><span class="k">default</span><span class="p">,</span> <span class="s1">&#39;Rudy&#39;</span><span class="p">,</span> <span class="s1">&#39;Replica&#39;</span><span class="p">,</span> <span class="s1">&#39;rudy@example.com&#39;</span><span class="p">,</span> <span class="k">FALSE</span><span class="p">)</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -1062,16 +1062,16 @@ The connector now consumes from the replication slot on that new primary server,
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 3
 4
 5
-</pre></td><td class="code"><pre>+----------+--------------------+-----------+--------+----------+-------------+----------+--------+---------------------+
-| node     | slot_name          | slot_type | active | plugin   | database    | failover | synced | confirmed_flush_lsn |
-|----------+--------------------+-----------+--------+----------+-------------+----------+--------+---------------------|
-| stand-by | decodable_62943949 | logical   | False  | pgoutput | inventorydb | True     | True   | 0/304E2E0           |
-+----------+--------------------+-----------+--------+----------+-------------+----------+--------+---------------------+
+</pre></td><td class="code"><pre><span class="o">+</span><span class="c1">----------+--------------------+-----------+--------+----------+-------------+----------+--------+---------------------+</span>
+<span class="o">|</span> <span class="n">node</span>     <span class="o">|</span> <span class="n">slot_name</span>          <span class="o">|</span> <span class="n">slot_type</span> <span class="o">|</span> <span class="n">active</span> <span class="o">|</span> <span class="n">plugin</span>   <span class="o">|</span> <span class="k">database</span>    <span class="o">|</span> <span class="n">failover</span> <span class="o">|</span> <span class="n">synced</span> <span class="o">|</span> <span class="n">confirmed_flush_lsn</span> <span class="o">|</span>
+<span class="o">|</span><span class="c1">----------+--------------------+-----------+--------+----------+-------------+----------+--------+---------------------|</span>
+<span class="o">|</span> <span class="n">stand</span><span class="o">-</span><span class="k">by</span> <span class="o">|</span> <span class="n">decodable_62943949</span> <span class="o">|</span> <span class="n">logical</span>   <span class="o">|</span> <span class="k">False</span>  <span class="o">|</span> <span class="n">pgoutput</span> <span class="o">|</span> <span class="n">inventorydb</span> <span class="o">|</span> <span class="k">True</span>     <span class="o">|</span> <span class="k">True</span>   <span class="o">|</span> <span class="mi">0</span><span class="o">/</span><span class="mi">304</span><span class="n">E2E0</span>           <span class="o">|</span>
+<span class="o">+</span><span class="c1">----------+--------------------+-----------+--------+----------+-------------+----------+--------+---------------------+</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
