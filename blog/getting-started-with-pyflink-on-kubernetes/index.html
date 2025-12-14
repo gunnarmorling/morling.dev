@@ -19,12 +19,15 @@
 	<link rel="preload" href="/fonts/raleway-v37-latin-300.woff2" as="font" type="font/woff2" crossorigin>
 	<link rel="preload" href="/fonts/raleway-v37-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
 
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-300.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-300italic.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-700.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-700italic.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-italic.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-regular.woff2" as="font" type="font/woff2" crossorigin><link rel="canonical" href="https://www.decodable.co/blog/getting-started-with-pyflink-on-kubernetes" /><meta property="og:url" content="https://www.morling.dev/blog/getting-started-with-pyflink-on-kubernetes/">
+	<link rel="preload" href="/fonts/lato-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin>
+
+	<link rel="preload" href="/fonts/lora-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin><link rel="canonical" href="https://www.decodable.co/blog/getting-started-with-pyflink-on-kubernetes" /><meta property="og:url" content="https://www.morling.dev/blog/getting-started-with-pyflink-on-kubernetes/">
   <meta property="og:site_name" content="Gunnar Morling">
   <meta property="og:title" content="Getting Started With PyFlink on Kubernetes">
   <meta property="og:description" content=" This post originally appeared on the Decodable blog. All rights reserved.
@@ -40,12 +43,12 @@ The other day, I wanted to get my feet wet with PyFlink. While there is a fair a
 The other day, I wanted to get my feet wet with PyFlink. While there is a fair amount of related information out there, I …">
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
 	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
-	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.40ab409fe708b80e041d3ee8bb0fdfc853ad3e4bef3e49d077ba69aeb9dd3e49.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.59aa0509fe392f7421b53571b18ca50d23acb3dc5444249945a674f0ef9c7e36.css" />
 
 	
 	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
 	
-	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.7af673a56f71129d475a6640f33fa032f13e74a5067f9e12e9061b94e06a44dd.css" />
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.c0b12fef85d2653c45f7c39d936e9526ec09724b52aa6f89da7958dc0f162a5f.css" />
 	
 
 	<script>
@@ -574,6 +577,7 @@ At the time of writing, Python 3.11 is not supported yet, it is on the roadmap f
 <p>Here is the complete job:</p>
 </div>
 <div class="listingblock">
+<div class="title">pyflink_hello_world.py (<a href="https://github.com/decodableco/examples/blob/main/pyflink/pyflink_hello_world.py">source</a>)</div>
 <div class="content">
 <pre class="rouge highlight"><code data-lang="python"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
@@ -685,9 +689,6 @@ At the time of writing, Python 3.11 is not supported yet, it is on the roadmap f
 </div>
 </div>
 <div class="paragraph">
-<p><em>Listing 1: pyflink_hello_world.py (<a href="https://github.com/decodableco/examples/blob/main/pyflink/pyflink_hello_world.py">source</a>)</em></p>
-</div>
-<div class="paragraph">
 <p>The logic is fairly straightforward: A <code>StreamTableEnvironment</code> is created and the Flink SQL Kafka connector JAR is registered with it.
 Then two tables are created: a source table <code>orders</code>, based on the datagen connector, and a sink table <code>orders_sink</code>, based on the Kafka sink connector.
 Finally, an <code>INSERT</code> query is issued, which propagates any changed rows from the source to the sink table.</p>
@@ -739,6 +740,7 @@ it contains only a subset of all the modules provided by the Java platform.
 This is not quite ideal in terms of overall image size, and the cleaner approach would be to create a new image derived from the JDK one, but it does the trick for now to get going:</p>
 </div>
 <div class="listingblock">
+<div class="title">Dockerfile.pyflink-base (<a href="https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile.pyflink-base">source</a>)</div>
 <div class="content">
 <pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
@@ -768,9 +770,6 @@ RUN pip3 <span class="nb">install </span>apache-flink<span class="o">==</span>1.
 </div>
 </div>
 <div class="paragraph">
-<p><em>Listing 2: Dockerfile.pyflink-base (<a href="https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile.pyflink-base">source</a>)</em></p>
-</div>
-<div class="paragraph">
 <p>Create an image from that Dockerfile and store it in your local container image registry:</p>
 </div>
 <div class="listingblock">
@@ -784,6 +783,7 @@ RUN pip3 <span class="nb">install </span>apache-flink<span class="o">==</span>1.
 <p>As for the actual image with our job, all that remains needed to be done is to extend that base image and add the Python job with all its dependencies (in this case, just the Kafka connector):</p>
 </div>
 <div class="listingblock">
+<div class="title">Dockerfile (<a href="https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile">source</a>)</div>
 <div class="content">
 <pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
@@ -795,9 +795,6 @@ RUN wget <span class="nt">-P</span> /opt/flink/usrlib https://repo.maven.apache.
 ADD <span class="nt">--chown</span><span class="o">=</span>flink:flink python_demo.py /opt/flink/usrlib/pyflink_hello_world.py
 </pre></td></tr></tbody></table></code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p><em>Listing 3: Dockerfile (<a href="https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile">source</a>)</em></p>
 </div>
 <div class="paragraph">
 <p>Let’s also build an image for that:</p>
@@ -830,6 +827,7 @@ The operator project comes with an <a href="https://github.com/apache/flink-kube
 Only the image name and the Flink version need to be changed to the image you’ve just created:</p>
 </div>
 <div class="listingblock">
+<div class="title">pyflink-hello-world.yaml (<a href="https://github.com/decodableco/examples/blob/main/pyflink/pyflink-hello-world.yaml">source</a>)</div>
 <div class="content">
 <pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
@@ -881,9 +879,6 @@ Only the image name and the Flink version need to be changed to the image you’
    <span class="na">upgradeMode</span><span class="pi">:</span> <span class="s">stateless</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p><em>Listing 4: pyflink-hello-world.yaml (<a href="https://github.com/decodableco/examples/blob/main/pyflink/pyflink-hello-world.yaml">source</a>)</em></p>
 </div>
 <div class="paragraph">
 <p>Note how the <code>PythonDriver</code> class is used as the entry point for running a PyFlink job and the job to run is passed in via the <code>-py</code> argument.

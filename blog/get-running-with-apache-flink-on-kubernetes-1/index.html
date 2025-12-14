@@ -19,12 +19,15 @@
 	<link rel="preload" href="/fonts/raleway-v37-latin-300.woff2" as="font" type="font/woff2" crossorigin>
 	<link rel="preload" href="/fonts/raleway-v37-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
 
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-300.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-300italic.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-700.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-700italic.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-italic.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-regular.woff2" as="font" type="font/woff2" crossorigin><link rel="canonical" href="https://www.decodable.co/blog/get-running-with-apache-flink-on-kubernetes-1" /><meta property="og:url" content="https://www.morling.dev/blog/get-running-with-apache-flink-on-kubernetes-1/">
+	<link rel="preload" href="/fonts/lato-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin>
+
+	<link rel="preload" href="/fonts/lora-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin><link rel="canonical" href="https://www.decodable.co/blog/get-running-with-apache-flink-on-kubernetes-1" /><meta property="og:url" content="https://www.morling.dev/blog/get-running-with-apache-flink-on-kubernetes-1/">
   <meta property="og:site_name" content="Gunnar Morling">
   <meta property="og:title" content="Get Running with Apache Flink on Kubernetes, part 1 of 2">
   <meta property="og:description" content=" This post originally appeared on the Decodable blog. All rights reserved.
@@ -40,12 +43,12 @@ Kubernetes is a widely used deployment platform for Apache Flink. While Flink ha
 Kubernetes is a widely used deployment platform for Apache Flink. While Flink has had native support for Kubernetes for quite …">
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
 	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
-	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.40ab409fe708b80e041d3ee8bb0fdfc853ad3e4bef3e49d077ba69aeb9dd3e49.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.59aa0509fe392f7421b53571b18ca50d23acb3dc5444249945a674f0ef9c7e36.css" />
 
 	
 	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
 	
-	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.7af673a56f71129d475a6640f33fa032f13e74a5067f9e12e9061b94e06a44dd.css" />
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.c0b12fef85d2653c45f7c39d936e9526ec09724b52aa6f89da7958dc0f162a5f.css" />
 	
 
 	<script>
@@ -376,6 +379,7 @@ The kind configuration makes the directory <em>/tmp/kind-worker</em> available t
 It also maps ports 80 and 443 of the worker node to the host, which will allow you to access the Flink web UI via a Kubernetes ingress later on:</p>
 </div>
 <div class="listingblock">
+<div class="title"><a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/kind-cluster.yml">kind-cluster.yml</a> for spinning up a local Kubernetes cluster</div>
 <div class="content">
 <pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
@@ -409,9 +413,6 @@ It also maps ports 80 and 443 of the worker node to the host, which will allow y
      <span class="na">protocol</span><span class="pi">:</span> <span class="s">TCP</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p><em>Listing 1:</em> <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/kind-cluster.yml">kind-cluster.yml</a> <em>for spinning up a local Kubernetes cluster</em></p>
 </div>
 <div class="paragraph">
 <p>Verify the cluster is running:</p>
@@ -468,6 +469,7 @@ We’re gonna make the following adjustments:</p>
 <p>The Helm values file with these configuration amendments looks like so:</p>
 </div>
 <div class="listingblock">
+<div class="title"><a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/helm-values.yaml">helm-values.yaml</a> for customizing the operator configuration</div>
 <div class="content">
 <pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
@@ -485,9 +487,6 @@ We’re gonna make the following adjustments:</p>
     <span class="s">kubernetes.operator.jm-deployment.shutdown-ttl: 10000</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p><em>Listing 2: <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/helm-values.yaml">helm-values.yaml</a> for customizing the operator configuration</em></p>
 </div>
 <div class="paragraph">
 <p>Install the Helm chart, using this values file:</p>
@@ -586,6 +585,7 @@ In particular when deploying jobs of unknown provenience, it can make sense to u
 Slightly adjusted to run with Flink 1.20 on Java 17, the most basic <code>FlinkDeployment</code> definition for running one of the example jobs shipping with Flink looks like this:</p>
 </div>
 <div class="listingblock">
+<div class="title">Resource definition <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/basic.yaml">basic.yaml</a> for a first Flink job</div>
 <div class="content">
 <pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
@@ -633,9 +633,6 @@ Slightly adjusted to run with Flink 1.20 on Java 17, the most basic <code>FlinkD
     <span class="na">upgradeMode</span><span class="pi">:</span> <span class="s">stateless</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p><em>Listing 3: Resource definition</em> <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/basic.yaml">basic.yaml</a> <em>for a first Flink job</em></p>
 </div>
 <div class="paragraph">
 <p>This is running the <em>StateMachineExample.jar</em> job on Flink 1.20 with a parallelism of 2, assigning 1 CPU core and 2 GB of RAM to the job manager and task manager pods, respectively.
@@ -939,6 +936,7 @@ You can build a container image for this job via Docker like so:</p>
 This is very similar to the one before, only that now we’re referring to our custom image containing the Flink job JAR file:</p>
 </div>
 <div class="listingblock">
+<div class="title">Resource definition <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/custom-job.yaml">custom-job.yaml</a> for a custom Flink job</div>
 <div class="content">
 <pre class="rouge highlight"><code data-lang="yaml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
@@ -986,9 +984,6 @@ This is very similar to the one before, only that now we’re referring to our c
     <span class="na">upgradeMode</span><span class="pi">:</span> <span class="s">stateless</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p><em>Listing 4: Resource definition <a href="https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/custom-job.yaml">custom-job.yaml</a> for a custom Flink job</em></p>
 </div>
 <div class="paragraph">
 <p>Apply the descriptor:</p>

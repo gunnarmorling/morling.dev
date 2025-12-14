@@ -19,12 +19,15 @@
 	<link rel="preload" href="/fonts/raleway-v37-latin-300.woff2" as="font" type="font/woff2" crossorigin>
 	<link rel="preload" href="/fonts/raleway-v37-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
 
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-300.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-300italic.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-700.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-700italic.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-italic.woff2" as="font" type="font/woff2" crossorigin>
-	<link rel="preload" href="/fonts/ubuntu-v21-latin-regular.woff2" as="font" type="font/woff2" crossorigin><link rel="canonical" href="https://www.decodable.co/blog/change-data-capture-breaks-encapsulation-does-it-though" /><meta property="og:url" content="https://www.morling.dev/blog/change-data-capture-breaks-encapsulation-does-it-though/">
+	<link rel="preload" href="/fonts/lato-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin>
+
+	<link rel="preload" href="/fonts/lora-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin><link rel="canonical" href="https://www.decodable.co/blog/change-data-capture-breaks-encapsulation-does-it-though" /><meta property="og:url" content="https://www.morling.dev/blog/change-data-capture-breaks-encapsulation-does-it-though/">
   <meta property="og:site_name" content="Gunnar Morling">
   <meta property="og:title" content="&#34;Change Data Capture Breaks Encapsulation&#34;. Does it, though?">
   <meta property="og:description" content=" This post originally appeared on the Decodable blog. All rights reserved.
@@ -40,12 +43,12 @@ Having worked on Debezium—​an open-source platform for Change Data Capture (
 Having worked on Debezium—​an open-source platform for Change Data Capture (CDC)--for several years, one concern I’ve heard …">
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
 	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
-	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.40ab409fe708b80e041d3ee8bb0fdfc853ad3e4bef3e49d077ba69aeb9dd3e49.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.59aa0509fe392f7421b53571b18ca50d23acb3dc5444249945a674f0ef9c7e36.css" />
 
 	
 	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
 	
-	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.7af673a56f71129d475a6640f33fa032f13e74a5067f9e12e9061b94e06a44dd.css" />
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.c0b12fef85d2653c45f7c39d936e9526ec09724b52aa6f89da7958dc0f162a5f.css" />
 	
 
 	<script>
@@ -504,6 +507,7 @@ With its <a href="https://nightlies.apache.org/flink/flink-docs-release-1.18/doc
 <p><a href="https://github.com/ververica/flink-cdc-connectors">Flink CDC</a> is used to ingest the raw CDC feed into a Flink SQL table. The data is transformed and published to a Kafka topic which adheres to a stable data contract (specifically, the topic’s schema represents the schema part of the contract). The source and sink connectors are represented as tables in Flink SQL; here’s the definition of the source table, <code>customers</code>, using the <code>postgres-cdc</code> connector, which itself is based on top of the Debezium <a href="https://debezium.io/documentation/reference/stable/connectors/postgresql">connector for Postgres</a> (you can find the complete <a href="https://github.com/decodableco/examples/tree/main/cdc-data-contracts">source code</a> for this blog post in the <a href="https://github.com/decodableco/examples/">decodableco/examples</a> repository on GitHub):</p>
 </div>
 <div class="listingblock">
+<div class="title">Configuration of the Postgres source connector</div>
 <div class="content">
 <pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
@@ -555,12 +559,10 @@ With its <a href="https://nightlies.apache.org/flink/flink-docs-release-1.18/doc
 </div>
 </div>
 <div class="paragraph">
-<p><em>Listing 1: Configuration of the Postgres source connector</em></p>
-</div>
-<div class="paragraph">
 <p>For publishing the change events into a Kafka topic <code>customers</code>, another table, <code>customers_public</code>, is created which looks like this:</p>
 </div>
 <div class="listingblock">
+<div class="title">Configuration of the Kafka sink connector</div>
 <div class="content">
 <pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
@@ -600,14 +602,12 @@ With its <a href="https://nightlies.apache.org/flink/flink-docs-release-1.18/doc
 </div>
 </div>
 <div class="paragraph">
-<p><em>Listing 2: Configuration of the Kafka sink connector</em></p>
-</div>
-<div class="paragraph">
 <p>Note that the <code>upsert-kafka</code> connector must be used (i.e.
 not the <code>kafka</code> one), as I’ve discussed recently in <a href="https://www.youtube.com/watch?v=1ezf3OyLz3w">this Data Streaming Quick Tip episode</a>.
 Finally, the transformation from the source stream into the published format is a simple <code>INSERT</code> statements, using just a few lines of Flink SQL:</p>
 </div>
 <div class="listingblock">
+<div class="title">Flink SQL job for transforming the source table into the sink table</div>
 <div class="content">
 <pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
@@ -643,9 +643,6 @@ Finally, the transformation from the source stream into the published format is 
   <span class="k">FROM</span> <span class="n">customers</span><span class="p">;</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p><em>Listing 3: Flink SQL job for transforming the source table into the sink table</em></p>
 </div>
 <div class="paragraph">
 <p>When submitting this query, a job will be deployed onto your Flink cluster which executes the query in a continuous fashion, propagating any changes from the source to the destination, whenever there is a row inserted, updated, or deleted in the source table.
@@ -732,6 +729,7 @@ To make things a bit more interesting, let’s emit one of the numbers (the cust
 <p>A Flink SQL <a href="https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/functions/udfs/">user-defined function</a> (UDF) for aggregating the elements of the &#34;many&#34; side of the join into an array in a type-safe way can come in handy here, something I’ve recently explored in <a href="https://www.youtube.com/watch?v=ICJ7-YyaC-4">this video</a>. Using the <code>ARRAY_AGGR()</code> function discussed in that quick tip, the two source tables could be joined like this:</p>
 </div>
 <div class="listingblock">
+<div class="title">Joining two source change streams into a single public stream</div>
 <div class="content">
 <pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
@@ -787,9 +785,6 @@ To make things a bit more interesting, let’s emit one of the numbers (the cust
     <span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">lname</span><span class="p">,</span> <span class="n">email</span><span class="p">,</span> <span class="n">zip</span><span class="p">,</span> <span class="k">c</span><span class="p">.</span><span class="n">phone</span><span class="p">,</span> <span class="n">registered</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">preferred</span><span class="p">.</span><span class="nv">`value`</span><span class="p">;</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p><strong>Listing 4: Joining two source change streams into a single public stream.</strong></p>
 </div>
 <div class="paragraph">
 <p>The <code>phone_numbers</code> table is left-joined here twice, once to obtain the preferred phone number and once for all the non-preferred numbers, which then are exposed as an array via the aforementioned <code>ARRAY_AGGR()</code> function.</p>
@@ -905,6 +900,7 @@ This makes sure the job, after restarting, will continue to process the source c
 </ol>
 </div>
 <div class="listingblock">
+<div class="title">Retrieving the first name from the correct column, depending on which value is present</div>
 <div class="content">
 <pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
@@ -920,9 +916,6 @@ This makes sure the job, after restarting, will continue to process the source c
   <span class="k">FROM</span> <span class="n">customers</span><span class="p">;</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p><strong>Listing 5: Retrieving the first name from the correct column, depending on which value is present</strong></p>
 </div>
 <div class="paragraph">
 <p>With this procedure, any consumers of the public data contract are fully shielded from the column name change in the database.
