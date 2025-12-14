@@ -128,7 +128,7 @@ Turns out you can--at least with Postgres!
 Through its function `pg_logical_emit_message()`, Postgres lets you write arbitrary messages to the WAL.
 This is exactly what you need for the outbox pattern: instead of inserting the outbox messages into a dedicated table, you just store them in the transaction log by means of a simple function call:
 
-
+.Writing an outbox message to the transaction log with `pg_logical_emit_message()`
 [source,sql,linenums]
 ----
 SELECT * FROM pg_logical_emit_message(
@@ -144,7 +144,6 @@ SELECT * FROM pg_logical_emit_message(
   '{ ... }'
 );
 ----
-_Listing 1: Writing an outbox message to the transaction log with `pg_logical_emit_message()`_
 
 These messages never materialize in any tables (and thus don't cause any database growth apart from the WAL itself) and you also don't need to take care of housekeeping, as any obsolete WAL segments will automatically be disposed of.
 If you are on Postgres, such a log-only outbox implementation is the one I'd recommend to use; you can learn more about the details in link:https://www.decodable.co/blog/the-wonders-of-postgres-logical-decoding-messages-for-cdc[this article].
@@ -269,7 +268,7 @@ As the Kafka access happens behind the scenes via the CDC process, they don't ne
 The key thing here is to find the right abstractions, so as to simplify the process of emitting outbox messages as much as possible.
 As an example, link:https://debezium.io/documentation/reference/stable/integrations/outbox.html[Debezium's extension] for implementing the outbox pattern within link:https://quarkus.io/[Quarkus]-based microservices allows you to use link:https://www.cdi-spec.org/[CDI] events for doing so:
 
-
+.Persisting an appointment and emitting an outbox message in a Quarkus-based microservice
 [source,java,linenums]
 ----
 @Inject AppointmentRepository appointmentRepository;
@@ -286,7 +285,6 @@ As an example, link:https://debezium.io/documentation/reference/stable/integrati
   return appointment;
 }
 ----
-_Listing 2: Persisting an appointment and emitting an outbox message in a Quarkus-based microservice_
 
 Similar solutions exist for other stacks, link:https://www.wimdeblauwe.com/blog/2024/06/25/transactional-outbox-pattern-with-spring-boot/[for instance for Spring Boot], and programming languages.
 Whether using a ready-made solution or implementing something from scratch, the required infrastructure for enabling the outbox pattern within an application can and should be encapsulated in an easy-to-use component, shielding application logic from the implementation details.

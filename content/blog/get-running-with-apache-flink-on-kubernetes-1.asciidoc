@@ -66,7 +66,7 @@ The cluster contains a control plane as well as a worker node.
 The kind configuration makes the directory _/tmp/kind-worker_ available to the worker node of the cluster, which will allow you to keep Flink savepoints when rebuilding the kind cluster.
 It also maps ports 80 and 443 of the worker node to the host, which will allow you to access the Flink web UI via a Kubernetes ingress later on:
 
-
+.link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/kind-cluster.yml[kind-cluster.yml] for spinning up a local Kubernetes cluster
 [source,yaml,linenums]
 ----
 kind: Cluster
@@ -85,7 +85,6 @@ nodes:
      hostPort: 443
      protocol: TCP
 ----
-_Listing 1:_ link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/kind-cluster.yml[kind-cluster.yml] _for spinning up a local Kubernetes cluster_
 
 Verify the cluster is running:
 
@@ -120,7 +119,7 @@ We're gonna make the following adjustments:
 
 The Helm values file with these configuration amendments looks like so:
 
-
+.link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/helm-values.yaml[helm-values.yaml] for customizing the operator configuration
 [source,yaml,linenums]
 ----
 defaultConfiguration:
@@ -131,7 +130,6 @@ defaultConfiguration:
 
     kubernetes.operator.jm-deployment.shutdown-ttl: 10000
 ----
-_Listing 2: link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/helm-values.yaml[helm-values.yaml] for customizing the operator configuration_
 
 Install the Helm chart, using this values file:
 
@@ -198,7 +196,7 @@ In particular when deploying jobs of unknown provenience, it can make sense to u
 The operator's repository on GitHub contains a number of very useful link:https://github.com/apache/flink-kubernetes-operator/tree/main/examples[example resource definitions].
 Slightly adjusted to run with Flink 1.20 on Java 17, the most basic `FlinkDeployment` definition for running one of the example jobs shipping with Flink looks like this:
 
-
+.Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/basic.yaml[basic.yaml] for a first Flink job
 [source,yaml,linenums]
 ----
 apiVersion: flink.apache.org/v1beta1
@@ -224,7 +222,6 @@ spec:
     parallelism: 2
     upgradeMode: stateless
 ----
-_Listing 3: Resource definition_ link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/basic.yaml[basic.yaml] _for a first Flink job_
 
 This is running the _StateMachineExample.jar_ job on Flink 1.20 with a parallelism of 2, assigning 1 CPU core and 2 GB of RAM to the job manager and task manager pods, respectively.
 No execution state will be retained between job runs (upgrade mode `stateless`).
@@ -400,7 +397,7 @@ $ kind load docker-image decodable-examples/hello-world-job:1.0 --name my-cluste
 Next, we need to create a `FlinkDeployment` resource for this job.
 This is very similar to the one before, only that now we're referring to our custom image containing the Flink job JAR file:
 
-
+.Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/custom-job.yaml[custom-job.yaml] for a custom Flink job
 [source,yaml,linenums]
 ----
 apiVersion: flink.apache.org/v1beta1
@@ -426,7 +423,6 @@ spec:
     parallelism: 1
     upgradeMode: stateless
 ----
-_Listing 4: Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/custom-job.yaml[custom-job.yaml] for a custom Flink job_
 
 Apply the descriptor:
 

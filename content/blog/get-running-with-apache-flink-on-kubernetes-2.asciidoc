@@ -52,7 +52,7 @@ As Kubernetes pods are ephemeral, the corresponding state needs to be persisted 
 Oftentimes, object storage such as an S3 bucket is used for this purpose, thus avoiding the need to mount any persistent volumes to the Flink pods.
 Based on the upstream HA example resource, the following shows how to configure checkpoints, savepoints, and job manager HA using the bucket created in MinIO we set up before:
 
-
+.Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/custom-job-ha.yaml[custom-job-ha.yaml] for a custom Flink job with fault tolerance and high availability
 [source,yaml,linenums]
 ----
 apiVersion: flink.apache.org/v1beta1
@@ -99,7 +99,6 @@ spec:
     upgradeMode: savepoint
     state: running
 ----
-_Listing 1: Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/custom-job-ha.yaml[custom-job-ha.yaml] for a custom Flink job with fault tolerance and high availability_
 
 Deploy the job by applying the resource:
 
@@ -159,7 +158,7 @@ custom-job-ha-savepoint-upgrade-1736963811478   s3://flink-data/savepoints/savep
 It is also possible to manually create savepoints and use them when resuming a suspended job, or when creating a new instance of that job.
 To do so, create and apply a `FlinkStateSnapshot` resource, referencing the job to snapshot:
 
-
+.Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/savepoint.yaml[savepoint.yaml] for manually triggering a savepoint
 [source,yaml,linenums]
 ----
 apiVersion: flink.apache.org/v1beta1
@@ -173,7 +172,6 @@ spec:
     name: custom-job-ha
   savepoint: {}
 ----
-_Listing 2: Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/flink/savepoint.yaml[savepoint.yaml] for manually triggering a savepoint_
 
 
 [source,shell,linenums]
@@ -254,7 +252,7 @@ The ingestion pipeline into Elasticsearch is set up via two resources processed 
 The first is a `ClusterOutput` resource, describing the destination of the pipeline, i.e.
 the Elasticsearch endpoint, the credentials, etc.:
 
-
+.Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/logging/elastic-output.yaml[elastic-output.yaml], describing the output of the logging pipeline
 [source,yaml,linenums]
 ----
 apiVersion: logging.banzaicloud.io/v1beta1
@@ -279,7 +277,6 @@ spec:
       timekey_wait: 30s
       timekey_use_utc: true
 ----
-_Listing 3: Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/logging/elastic-output.yaml[elastic-output.yaml], describing the output of the logging pipeline_
 
 Create the output:
 
@@ -290,7 +287,7 @@ $ kubectl -n logging apply -f logging/elastic-output.yaml
 ----
 The second resource is of type `Flow` and describes the set of pods to ingest from (leveraging the component labels set up by the Flink Kubernetes operator), as well as the parsing logic and destination of log pipeline:
 
-
+.Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/logging/elastic-flow.yaml[elastic-flow.yaml], describing the logic of the logging pipeline
 [source,yaml,linenums]
 ----
 apiVersion: logging.banzaicloud.io/v1beta1
@@ -316,7 +313,6 @@ spec:
   globalOutputRefs:
     - es-output
 ----
-_Listing 4: Resource definition link:https://github.com/decodableco/examples/blob/main/flink-on-kubernetes/logging/elastic-flow.yaml[elastic-flow.yaml], describing the logic of the logging pipeline_
 
 Create the flow:
 

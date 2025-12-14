@@ -64,7 +64,7 @@ When migrating existing Flink jobs to Decodable, you can either run them as-is, 
 To further simplify the integration of custom Flink jobs with the Decodable platform, we are planning to publish an SDK which will allow you to access the Decodable link:https://docs.decodable.co/docs/streams[streams] of your account in the form of a simple Flink source and sink.
 The following example code shows how this could look like (subject to change, this SDK has not been released yet):
 
-
+.A Flink job using the upcoming Decodable SDK.
 [source,java,linenums]
 ----
 public class CustomDecodablePipeline {
@@ -90,7 +90,7 @@ public class CustomDecodablePipeline {
 
     // For each incoming address, enrich it with the coordinates from the
     // geo-coding service; showing a simple synchronous call for illustration
-    // purposes; in production code, Flink’s Async I/O API should be used
+    // purposes; in production code, Flink's Async I/O API should be used
     stream.map(address -> address.withCoordinates(
             geoCodeService.encode(address.asText())))
         .sinkTo(addressesWithCoordinates);
@@ -99,7 +99,6 @@ public class CustomDecodablePipeline {
   }
 }
 ----
-_Listing 1: A Flink job using the upcoming Decodable SDK._
 
 In this example, an instance of DecodableSource (representing the managed Decodable stream "addresses") and an instance of DecodableSink (representing the "enrichedAddresses" stream) are created.
 For each incoming address object, an external service for geo-coding addresses is invoked, the address is enriched with the coordinates returned by the service, and finally emitted to the sink stream.

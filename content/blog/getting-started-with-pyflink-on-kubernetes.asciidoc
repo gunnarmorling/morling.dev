@@ -178,7 +178,7 @@ At the time of writing, Python 3.11 is not supported yet, it is on the roadmap f
 
 Here is the complete job:
 
-
+.pyflink_hello_world.py (link:https://github.com/decodableco/examples/blob/main/pyflink/pyflink_hello_world.py[source])
 [source,python,linenums]
 ----
 import logging
@@ -200,7 +200,7 @@ def pyflink_hello_world():
    t_env.get_config()\
            .get_configuration()\
            .set_string("pipeline.jars", "file://{}".format(kafka_jar))
-  
+
    t_env.execute_sql("""
    CREATE TABLE orders (
      order_number BIGINT,
@@ -211,7 +211,7 @@ def pyflink_hello_world():
      'connector' = 'datagen',
      'rows-per-second' = '4'
    )""")
-  
+
    t_env.execute_sql("""
    CREATE TABLE orders_sink (
      order_number BIGINT,
@@ -235,7 +235,6 @@ if __name__ == '__main__':
    pyflink_hello_world()
 pyflink_hello_world.py (source)
 ----
-_Listing 1: pyflink_hello_world.py (link:https://github.com/decodableco/examples/blob/main/pyflink/pyflink_hello_world.py[source])_
 
 The logic is fairly straightforward: A `StreamTableEnvironment` is created and the Flink SQL Kafka connector JAR is registered with it.
 Then two tables are created: a source table `orders`, based on the datagen connector, and a sink table `orders_sink`, based on the Kafka sink connector.
@@ -270,7 +269,7 @@ link:https://github.com/alibaba/pemja[PemJa], one of PyFlink's dependencies, req
 I have therefore created a new base image for PyFlink jobs, which removes the JRE and adds back the complete JDK, inspired by the link:https://hub.docker.com/layers/library/eclipse-temurin/11.0.21_9-jdk-jammy/images/sha256-0b1c4c2bd4bc536c3ee914cd9e7c3ac05e136f891bceb18d355f60d548e84096?context=explore[equivalent step] in the Dockerfile for creating the link:https://hub.docker.com/layers/library/eclipse-temurin/11-jdk-jammy/images/sha256-0b1c4c2bd4bc536c3ee914cd9e7c3ac05e136f891bceb18d355f60d548e84096?context=explore[JDK 11 image] provided by the Eclipse Temurin project.
 This is not quite ideal in terms of overall image size, and the cleaner approach would be to create a new image derived from the JDK one, but it does the trick for now to get going:
 
-
+.Dockerfile.pyflink-base (link:https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile.pyflink-base[source])
 [source,shell,linenums]
 ----
 FROM flink:1.18.0
@@ -286,7 +285,6 @@ RUN apt-get update -y && \
 # install PyFlink
 RUN pip3 install apache-flink==1.18.0
 ----
-_Listing 2: Dockerfile.pyflink-base (link:https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile.pyflink-base[source])_
 
 Create an image from that Dockerfile and store it in your local container image registry:
 
@@ -297,7 +295,7 @@ docker build -f Dockerfile.pyflink-base . -t decodable-examples/pyflink-base:lat
 ----
 As for the actual image with our job, all that remains needed to be done is to extend that base image and add the Python job with all its dependencies (in this case, just the Kafka connector):
 
-
+.Dockerfile (link:https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile[source])
 [source,shell,linenums]
 ----
 FROM decodable-examples/pyflink-base:latest
@@ -305,7 +303,6 @@ FROM decodable-examples/pyflink-base:latest
 RUN wget -P /opt/flink/usrlib https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.0.2-1.18/flink-sql-connector-kafka-3.0.2-1.18.jar
 ADD --chown=flink:flink python_demo.py /opt/flink/usrlib/pyflink_hello_world.py
 ----
-_Listing 3: Dockerfile (link:https://github.com/decodableco/examples/blob/main/pyflink/Dockerfile[source])_
 
 Let's also build an image for that:
 
@@ -327,7 +324,7 @@ At this point, you have everything in place for deploying your PyFlink job to Ku
 The operator project comes with an link:https://github.com/apache/flink-kubernetes-operator/blob/main/examples/flink-python-example/python-example.yaml[example resource] of type `FlinkDeployment`, which works pretty much as-is for our purposes.
 Only the image name and the Flink version need to be changed to the image you've just created:
 
-
+.pyflink-hello-world.yaml (link:https://github.com/decodableco/examples/blob/main/pyflink/pyflink-hello-world.yaml[source])
 [source,yaml,linenums]
 ----
 apiVersion: flink.apache.org/v1beta1
@@ -355,7 +352,6 @@ spec:
    parallelism: 1
    upgradeMode: stateless
 ----
-_Listing 4: pyflink-hello-world.yaml (link:https://github.com/decodableco/examples/blob/main/pyflink/pyflink-hello-world.yaml[source])_
 
 Note how the `PythonDriver` class is used as the entry point for running a PyFlink job and the job to run is passed in via the `-py` argument.
 Just as any other Kubernetes resource, this Flink job can be deployed using `kubectl`:

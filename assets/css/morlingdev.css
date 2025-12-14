@@ -322,7 +322,7 @@ table.tableblock #preamble>.sectionbody>[class="paragraph"]:first-of-type p{font
     font-size:2.0em;
 }
 .admonitionblock>table td.content{padding-left:1.125em;padding-right:1.25em;border-left:1px solid #dddddf;color:rgba(0,0,0,.6)}
-.admonitionblock>table td.content>:last-child>:last-child{margin-bottom:0}
+.admonitionblock>table td.content>:last-child>:last-child{margin-top:5px;margin-bottom:5px;}
 .admonitionblock td.icon [class^="fa icon-"]{font-size:2.5em;text-shadow:1px 1px 2px rgba(0,0,0,.5);cursor:default}
 .admonitionblock td.icon .icon-note::before{content:"\f05a";color:#19407c}
 .admonitionblock td.icon .icon-tip::before{content:"\f0eb";text-shadow:1px 1px 2px rgba(155,155,0,.8);color:#111}
@@ -519,8 +519,9 @@ code:not(pre code) {
     font-size: 0.9em;
 }
 
-/* Image captions - regular italic text */
-.imageblock .title {
+/* Unified caption styling for images and listings */
+.imageblock .title,
+.listingblock .title {
     font-style: italic;
     font-weight: normal;
     font-size: 1rem;
@@ -528,3 +529,26 @@ code:not(pre code) {
     margin-top: 0.5em;
     font-family: ubuntu,sans-serif;
 }
+
+/* Listing-specific: display caption below the listing */
+.listingblock {
+    display: flex;
+    flex-direction: column;
+}
+
+.listingblock .title {
+    order: 2;
+}
+
+.listingblock .content {
+    order: 1;
+}
+
+/* Auto-numbering for listing captions */
+.post-content {
+    counter-reset: listing;
+}
+
+.post-content .listingblock .title::before {
+    counter-increment: listing;
+    content: "Listing " counter(listing) ". ";
