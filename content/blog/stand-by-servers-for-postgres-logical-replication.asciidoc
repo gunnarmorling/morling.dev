@@ -108,7 +108,7 @@ Set `wal_level` to logical in the _postgresql.conf_ of the stand-by in this case
 With our database cluster up and running, let's take a look at the existing replication slots on the primary and on the stand-by server:
 
 
-[source,shell,linenums]
+[source,sql,linenums]
 ----
 primary> WITH node_status AS (
  SELECT
@@ -138,7 +138,7 @@ On the stand-by server itself, there's no replication slot at this point.
 So let's create a logical replication slot on the stand-by using `pg_create_logical_replication_slot()`:
 
 
-[source,shell,linenums]
+[source,sql,linenums]
 ----
 standby> SELECT * FROM pg_create_logical_replication_slot('demo_slot_standby', 'test_decoding');
 
@@ -156,7 +156,7 @@ Postgres 16 therefore adds a new function `pg_log_standby_snapshot()`, which can
 Unfortunately, it failed with a permission error when I tried to invoke it on RDS:
 
 
-[source,shell,linenums]
+[source,sql,linenums]
 ----
 primary> SELECT pg_log_standby_snapshot();
 
@@ -166,7 +166,7 @@ So if you are on RDS, and there are not a lot of transactions on your primary, y
 Once that's done, running the query from above again should show the new slot:
 
 
-[source,shell,linenums]
+[source,sql,linenums]
 ----
 +----------+-------------------+-----------+--------+---------------+-----------+---------------------+
 | node     | slot_name         | slot_type | active | plugin        | database  | confirmed_flush_lsn |
@@ -178,7 +178,7 @@ Now it's time to do some data changes on the primary then.
 Let's create a simple table on the primary:
 
 
-[source,shell,linenums]
+[source,sql,linenums]
 ----
 primary> CREATE TABLE some_data (
   id SERIAL NOT NULL PRIMARY KEY,
@@ -192,7 +192,7 @@ The table's link:https://debezium.io/documentation/reference/stable/connectors/p
 Insert a few rows with random data using the `generate_series()` function:
 
 
-[source,shell,linenums]
+[source,sql,linenums]
 ----
 
 primary> INSERT INTO some_data(short_text, long_text) 
@@ -203,7 +203,7 @@ primary> INSERT INTO some_data(short_text, long_text)
 To confirm that streaming replication from the primary to the stand-by server works, query that data on the stand-by:
 
 
-[source,shell,linenums]
+[source,sql,linenums]
 ----
 standby> SELECT * FROM some_data;
 +----+------------+----------------------------------+
@@ -228,7 +228,7 @@ If neither of `upto_lsn` or `upto_nchanges` are specified, the WAL is consumed u
 So let's retrieve all changes for the slot:
 
 
-[source,shell,linenums]
+[source,sql,linenums]
 ----
 standby> SELECT * FROM pg_logical_slot_get_changes('demo_slot_standby', NULL, NULL);
 +-------------+------+----------------------------------------------------------------------------------------------------------------------------------------+
