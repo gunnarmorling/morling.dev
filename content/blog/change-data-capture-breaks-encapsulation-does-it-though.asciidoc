@@ -33,7 +33,7 @@ In this blog post I am going to dive into this problem space, discuss when--and 
 With log-based change data capture--for instance, using link:https://debezium.io/[Debezium]{emdash}you can expose realtime change event streams for the tables of your database, sourced from the database's transaction log.
 For each executed `INSERT`, `UPDATE`, and `DELETE`, an event is appended to the log, from where it is captured by the CDC tool and propagated to consumers, usually through data streaming platforms such as Apache Kafka or Amazon Kinesis.
 
-These event streams enable a link:/blog/seven-ways-to-put-cdc-to-work[large variety of use cases], such as low-latency data feeds for analytical data stores, cache updates, full-text search indexes, and many more.
+These event streams enable a link:/blog/cdc-use-cases/[large variety of use cases], such as low-latency data feeds for analytical data stores, cache updates, full-text search indexes, and many more.
 While there are different alternatives for implementing CDC systems (for instance based on polling for changed rows, or using database triggers), log-based CDC is generally the link:https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/[most powerful and efficient approach] and should be preferred whenever possible.
 
 
@@ -118,7 +118,7 @@ But you may also decide to adjust the types of exposed fields, only expose a sub
 
 Debezium comes with powerful support for implementing the Outbox Pattern.
 This includes a link:https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html[routing component] for propagating outbox events to specific topics in Kafka, based on configurable event metadata.
-If you are on Postgres, an interesting implementation option is link:https://www.decodable.co/blog/the-wonders-of-postgres-logical-decoding-messages-for-cdc[logical decoding messages]: instead of having a bespoke outbox table, Postgres lets you write arbitrary events solely to its write-ahead log, from where they can be retrieved using CDC.
+If you are on Postgres, an interesting implementation option is link:https://www.infoq.com/articles/wonders-of-postgres-logical-decoding-messages/[logical decoding messages]: instead of having a bespoke outbox table, Postgres lets you write arbitrary events solely to its write-ahead log, from where they can be retrieved using CDC.
 This spares you from implementing your own housekeeping routines (removal of events from the outbox table after they have been captured and sent), as the database itself will discard any obsolete segments of the transaction log automatically.
 
 So, the Outbox Pattern is a rather simple option for implementing data contracts (at least the schema portion) in a reliable way.

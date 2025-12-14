@@ -34,7 +34,7 @@ _Pedicure for poodles, lathering for labradors, grooming for greyhounds--there's
 
 Let's look at one of the business processes, the creation of appointments for a treatment, and how it could be implemented.
 Oh-my-Dawg runs a microservices architecture, with one service for managing appointments, and another one for managing inventory.
-When the appointment service receives a request via its link:/blog/exploring-the-flink-sql-gateway-rest-api[REST API], it must persist the information about the requested treatment in its own database.
+When the appointment service receives a request via its REST API, it must persist the information about the requested treatment in its own database.
 We're members of the link:https://boringtechnology.club/[boring technology club], so Postgres is used as a data store.
 At the same time, the appointment service needs to notify the inventory service about the new appointment, so that shampoo and whatever else is needed can be reserved, and backordered, if needed.
 To decouple the two services, the notification is sent via link:/kafka[Apache Kafka].
@@ -42,7 +42,7 @@ To decouple the two services, the notification is sent via link:/kafka[Apache Ka
 .The Oh-my-Dawg microservices architecture
 image::outbox-pattern-1.webp[]
 
-Now, it is vital that these two operations, updating the appointment database and sending the notification, happen link:/blog/aggregating-change-data-capture-events-based-on-transactional-boundaries[atomically--that is, they either both happen, or neither of them does].
+Now, it is vital that these two operations, updating the appointment database and sending the notification, happen link:https://www.decodable.co/blog/aggregating-change-data-capture-events-based-on-transactional-boundaries[atomically--that is, they either both happen, or neither of them does].
 Otherwise, the overall state of the system would be inconsistent:
 
 * If the database transaction commits but the inventory notification isn't sent, we'd end up without shampoo for the appointment. Our furry customers won't be happy!
@@ -79,13 +79,13 @@ For one, it can be resource-intensive, creating spikes of high load on the datab
 There's a natural conflict between achieving low latency and not overwhelming the database due to polling too frequently.
 
 The biggest challenge of this approach though, as link:https://x.com/martinkl/status/1349099872897658880[pointed out] by Martin Kleppmann, are its poor ordering semantics.
-If there are multiple transactions running in parallel, and each one emits an outbox message, it can't be guaranteed that the order of messages in the outbox table--e.g., link:/blog/understanding-apache-flink-event-time-and-watermarks[designated by timestamps] or a sequence field--is the same as the order of commits.
+If there are multiple transactions running in parallel, and each one emits an outbox message, it can't be guaranteed that the order of messages in the outbox table--e.g., designated by timestamps or a sequence field--is the same as the order of commits.
 This can have severe implications.
 When not being very careful, it can cause the relay to miss outbox messages, providing consumers with an incomplete feed of events (Oskar Dudycz does a great job in link:https://event-driven.io/en/ordering_in_postgres_outbox/[explaining the problem and describing one potential solution]; the basic idea is to consider an outbox event only once there are no more transactions running which are older than the one emitting the outbox event).
 But this also means that there can be inconsistencies between the state of the writing service's local database and the external state as represented by its published messages.
 While serialization may be enforced in some cases, for instance using optimistic locking on a specific record, the problem can't be solved generically in the presence of concurrent writers.
 
-A much better solution is to retrieve link:/blog/why-do-i-need-cdc#the-best-way-to-do-cdc-is-log-based-cdc[the outbox events via log-based CDC].
+A much better solution is to retrieve link:https://www.decodable.co/blog/why-do-i-need-cdc#the-best-way-to-do-cdc-is-log-based-cdc[the outbox events via log-based CDC].
 By tailing the database's transaction log (e.g.
 the link:https://www.postgresql.org/docs/current/wal-intro.html[write-ahead log], WAL, in case of Postgres), events are emitted in the exact same order as transactions were committed to the database, ensuring consistency between internal and external representation of the data.
 Log-based CDC comes with a few link:https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/[other advantages]: it avoids the polling overhead and ensures a low latency (typically, changes can be propagated from Postgres to Kafka within a two-digit milliseconds timeframe).
@@ -146,7 +146,7 @@ SELECT * FROM pg_logical_emit_message(
 ----
 
 These messages never materialize in any tables (and thus don't cause any database growth apart from the WAL itself) and you also don't need to take care of housekeeping, as any obsolete WAL segments will automatically be disposed of.
-If you are on Postgres, such a log-only outbox implementation is the one I'd recommend to use; you can learn more about the details in link:https://www.decodable.co/blog/the-wonders-of-postgres-logical-decoding-messages-for-cdc[this article].
+If you are on Postgres, such a log-only outbox implementation is the one I'd recommend to use; you can learn more about the details in link:https://www.infoq.com/articles/wonders-of-postgres-logical-decoding-messages/[this article].
 It shows how to implement the outbox pattern with Postgres logical decoding messages, using link:https://nightlies.apache.org/flink/flink-cdc-docs-stable/[Flink CDC] and Debezium as a log-based outbox relay.
 
 For services using MySQL as a datastore, the `BLACKHOLE` storage engine can be used in a similar way.
@@ -229,7 +229,7 @@ Similar ids exist in other databases too, check their documentation on the exact
 
 
 == Criticisms of the Outbox pattern
-The outbox pattern definitely fulfills its purpose: allowing a service to update its own database and send out notifications to other services via streaming platforms such as Kafka, in a safe and reliable way, without link:/blog/why-do-i-need-cdc#the-best-way-to-do-cdc-is-log-based-cdc[requiring distributed transactions].
+The outbox pattern definitely fulfills its purpose: allowing a service to update its own database and send out notifications to other services via streaming platforms such as Kafka, in a safe and reliable way, without requiring distributed transactions.
 When it comes to critique on this pattern, I mostly see two things being mentioned: overhead on the database, and complexity.
 A less commonly brought up concern is latency.
 Let's take a look at all of these in turn.
