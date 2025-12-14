@@ -442,7 +442,7 @@ Set <code>wal_level</code> to logical in the <em>postgresql.conf</em> of the sta
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
  3
  4
@@ -462,26 +462,26 @@ Set <code>wal_level</code> to logical in the <em>postgresql.conf</em> of the sta
 18
 19
 20
-</pre></td><td class="code"><pre>primary&gt; WITH node_status AS <span class="o">(</span>
- SELECT
-   CASE WHEN pg_is_in_recovery<span class="o">()</span> <span class="o">=</span> <span class="s1">&#39;True&#39;</span> Then <span class="s1">&#39;stand-by&#39;</span> ELSE <span class="s1">&#39;primary&#39;</span> END AS role
-<span class="o">)</span>
-SELECT
-  node_status.role as node,
-  slot_name,
-  slot_type,
-  active,
-  plugin,
-  database,
-  confirmed_flush_lsn
-FROM
-  pg_replication_slots, node_status<span class="p">;</span>
+</pre></td><td class="code"><pre><span class="k">primary</span><span class="o">&gt;</span> <span class="k">WITH</span> <span class="n">node_status</span> <span class="k">AS</span> <span class="p">(</span>
+ <span class="k">SELECT</span>
+   <span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">pg_is_in_recovery</span><span class="p">()</span> <span class="o">=</span> <span class="s1">&#39;True&#39;</span> <span class="k">Then</span> <span class="s1">&#39;stand-by&#39;</span> <span class="k">ELSE</span> <span class="s1">&#39;primary&#39;</span> <span class="k">END</span> <span class="k">AS</span> <span class="k">role</span>
+<span class="p">)</span>
+<span class="k">SELECT</span>
+  <span class="n">node_status</span><span class="p">.</span><span class="k">role</span> <span class="k">as</span> <span class="n">node</span><span class="p">,</span>
+  <span class="n">slot_name</span><span class="p">,</span>
+  <span class="n">slot_type</span><span class="p">,</span>
+  <span class="n">active</span><span class="p">,</span>
+  <span class="n">plugin</span><span class="p">,</span>
+  <span class="k">database</span><span class="p">,</span>
+  <span class="n">confirmed_flush_lsn</span>
+<span class="k">FROM</span>
+  <span class="n">pg_replication_slots</span><span class="p">,</span> <span class="n">node_status</span><span class="p">;</span>
 
-+---------+------------------------------------------------+-----------+--------+--------+----------+---------------------+
-| node    | slot_name                                      | slot_type | active | plugin | database | confirmed_flush_lsn |
-|---------+------------------------------------------------+-----------+--------+--------+----------+---------------------|
-| primary | rds_eu_central_1_db_eygryp2llpzqewobw57j5mrtum | physical  | True   |  |    |               |
-+---------+------------------------------------------------+-----------+--------+--------+----------+---------------------+
+<span class="o">+</span><span class="c1">---------+------------------------------------------------+-----------+--------+--------+----------+---------------------+</span>
+<span class="o">|</span> <span class="n">node</span>    <span class="o">|</span> <span class="n">slot_name</span>                                      <span class="o">|</span> <span class="n">slot_type</span> <span class="o">|</span> <span class="n">active</span> <span class="o">|</span> <span class="n">plugin</span> <span class="o">|</span> <span class="k">database</span> <span class="o">|</span> <span class="n">confirmed_flush_lsn</span> <span class="o">|</span>
+<span class="o">|</span><span class="c1">---------+------------------------------------------------+-----------+--------+--------+----------+---------------------|</span>
+<span class="o">|</span> <span class="k">primary</span> <span class="o">|</span> <span class="n">rds_eu_central_1_db_eygryp2llpzqewobw57j5mrtum</span> <span class="o">|</span> <span class="n">physical</span>  <span class="o">|</span> <span class="k">True</span>   <span class="o">|</span>  <span class="o">|</span>    <span class="o">|</span>               <span class="o">|</span>
+<span class="o">+</span><span class="c1">---------+------------------------------------------------+-----------+--------+--------+----------+---------------------+</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -494,20 +494,20 @@ So let’s create a logical replication slot on the stand-by using <code>pg_crea
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 3
 4
 5
 6
 7
-</pre></td><td class="code"><pre>standby&gt; SELECT <span class="k">*</span> FROM pg_create_logical_replication_slot<span class="o">(</span><span class="s1">&#39;demo_slot_standby&#39;</span>, <span class="s1">&#39;test_decoding&#39;</span><span class="o">)</span><span class="p">;</span>
+</pre></td><td class="code"><pre><span class="n">standby</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">pg_create_logical_replication_slot</span><span class="p">(</span><span class="s1">&#39;demo_slot_standby&#39;</span><span class="p">,</span> <span class="s1">&#39;test_decoding&#39;</span><span class="p">);</span>
 
-+-------------------+-------------+
-| slot_name         | lsn         |
-|-------------------+-------------|
-| demo_slot_standby | 5B/D80000E8 |
-+-------------------+-------------+
+<span class="o">+</span><span class="c1">-------------------+-------------+</span>
+<span class="o">|</span> <span class="n">slot_name</span>         <span class="o">|</span> <span class="n">lsn</span>         <span class="o">|</span>
+<span class="o">|</span><span class="c1">-------------------+-------------|</span>
+<span class="o">|</span> <span class="n">demo_slot_standby</span> <span class="o">|</span> <span class="mi">5</span><span class="n">B</span><span class="o">/</span><span class="n">D80000E8</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">-------------------+-------------+</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -522,12 +522,12 @@ Unfortunately, it failed with a permission error when I tried to invoke it on RD
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 3
-</pre></td><td class="code"><pre>primary&gt; SELECT pg_log_standby_snapshot<span class="o">()</span><span class="p">;</span>
+</pre></td><td class="code"><pre><span class="k">primary</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="n">pg_log_standby_snapshot</span><span class="p">();</span>
 
-permission denied <span class="k">for function </span>pg_log_standby_snapshot
+<span class="n">permission</span> <span class="n">denied</span> <span class="k">for</span> <span class="k">function</span> <span class="n">pg_log_standby_snapshot</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -537,16 +537,16 @@ Once that’s done, running the query from above again should show the new slot:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 3
 4
 5
-</pre></td><td class="code"><pre>+----------+-------------------+-----------+--------+---------------+-----------+---------------------+
-| node     | slot_name         | slot_type | active | plugin        | database  | confirmed_flush_lsn |
-|----------+-------------------+-----------+--------+---------------+-----------+---------------------|
-| stand-by | demo_slot_standby | logical   | False  | test_decoding | inventory | 5E/700010B8         |
-+----------+-------------------+-----------+--------+---------------+-----------+---------------------+
+</pre></td><td class="code"><pre><span class="o">+</span><span class="c1">----------+-------------------+-----------+--------+---------------+-----------+---------------------+</span>
+<span class="o">|</span> <span class="n">node</span>     <span class="o">|</span> <span class="n">slot_name</span>         <span class="o">|</span> <span class="n">slot_type</span> <span class="o">|</span> <span class="n">active</span> <span class="o">|</span> <span class="n">plugin</span>        <span class="o">|</span> <span class="k">database</span>  <span class="o">|</span> <span class="n">confirmed_flush_lsn</span> <span class="o">|</span>
+<span class="o">|</span><span class="c1">----------+-------------------+-----------+--------+---------------+-----------+---------------------|</span>
+<span class="o">|</span> <span class="n">stand</span><span class="o">-</span><span class="k">by</span> <span class="o">|</span> <span class="n">demo_slot_standby</span> <span class="o">|</span> <span class="n">logical</span>   <span class="o">|</span> <span class="k">False</span>  <span class="o">|</span> <span class="n">test_decoding</span> <span class="o">|</span> <span class="n">inventory</span> <span class="o">|</span> <span class="mi">5</span><span class="n">E</span><span class="o">/</span><span class="mi">700010</span><span class="n">B8</span>         <span class="o">|</span>
+<span class="o">+</span><span class="c1">----------+-------------------+-----------+--------+---------------+-----------+---------------------+</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -556,18 +556,18 @@ Let’s create a simple table on the primary:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 3
 4
 5
 6
-</pre></td><td class="code"><pre>primary&gt; CREATE TABLE some_data <span class="o">(</span>
-  <span class="nb">id </span>SERIAL NOT NULL PRIMARY KEY,
-  short_text VARCHAR<span class="o">(</span>255<span class="o">)</span> NOT NULL,
-  long_text text
-<span class="o">)</span><span class="p">;</span>
-ALTER TABLE some_data REPLICA IDENTITY FULL<span class="p">;</span>
+</pre></td><td class="code"><pre><span class="k">primary</span><span class="o">&gt;</span> <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">some_data</span> <span class="p">(</span>
+  <span class="n">id</span> <span class="nb">SERIAL</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
+  <span class="n">short_text</span> <span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+  <span class="n">long_text</span> <span class="nb">text</span>
+<span class="p">);</span>
+<span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">some_data</span> <span class="n">REPLICA</span> <span class="k">IDENTITY</span> <span class="k">FULL</span><span class="p">;</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -579,15 +579,15 @@ ALTER TABLE some_data REPLICA IDENTITY FULL<span class="p">;</span>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
 2
 3
 4
 5
-</pre></td><td class="code"><pre>primary&gt; INSERT INTO some_data<span class="o">(</span>short_text, long_text<span class="o">)</span>
-           SELECT left<span class="o">(</span>md5<span class="o">(</span>i::text<span class="o">)</span>, 5<span class="o">)</span>,
-                  md5<span class="o">(</span>random<span class="o">()</span>::text<span class="o">)</span>
-           FROM generate_series<span class="o">(</span>1, 5<span class="o">)</span> s<span class="o">(</span>i<span class="o">)</span><span class="p">;</span>
+</pre></td><td class="code"><pre><span class="k">primary</span><span class="o">&gt;</span> <span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">some_data</span><span class="p">(</span><span class="n">short_text</span><span class="p">,</span> <span class="n">long_text</span><span class="p">)</span>
+           <span class="k">SELECT</span> <span class="k">left</span><span class="p">(</span><span class="n">md5</span><span class="p">(</span><span class="n">i</span><span class="p">::</span><span class="nb">text</span><span class="p">),</span> <span class="mi">5</span><span class="p">),</span>
+                  <span class="n">md5</span><span class="p">(</span><span class="n">random</span><span class="p">()::</span><span class="nb">text</span><span class="p">)</span>
+           <span class="k">FROM</span> <span class="n">generate_series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span> <span class="n">s</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -596,7 +596,7 @@ ALTER TABLE some_data REPLICA IDENTITY FULL<span class="p">;</span>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
  3
  4
@@ -606,16 +606,16 @@ ALTER TABLE some_data REPLICA IDENTITY FULL<span class="p">;</span>
  8
  9
 10
-</pre></td><td class="code"><pre>standby&gt; SELECT <span class="k">*</span> FROM some_data<span class="p">;</span>
-+----+------------+----------------------------------+
-| <span class="nb">id</span> | short_text | long_text                        |
-|----+------------+----------------------------------|
-| 1  | c4ca4      | 22f3cc8011bb8e2f553f8af1c5db18be |
-| 2  | c81e7      | 205304c828220a5aea30d5a13af4a01f |
-| 3  | eccbc      | c049b5cdd131fbdceb6b3172dfe7399e |
-| 4  | a87ff      | 0aed3b4e9d9e1a50e65597bdec7dfbc6 |
-| 5  | e4da3      | 68db5e5b4a57e7189f48cc89936567c2 |
-+----+------------+----------------------------------+
+</pre></td><td class="code"><pre><span class="n">standby</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">some_data</span><span class="p">;</span>
+<span class="o">+</span><span class="c1">----+------------+----------------------------------+</span>
+<span class="o">|</span> <span class="n">id</span> <span class="o">|</span> <span class="n">short_text</span> <span class="o">|</span> <span class="n">long_text</span>                        <span class="o">|</span>
+<span class="o">|</span><span class="c1">----+------------+----------------------------------|</span>
+<span class="o">|</span> <span class="mi">1</span>  <span class="o">|</span> <span class="n">c4ca4</span>      <span class="o">|</span> <span class="mi">22</span><span class="n">f3cc8011bb8e2f553f8af1c5db18be</span> <span class="o">|</span>
+<span class="o">|</span> <span class="mi">2</span>  <span class="o">|</span> <span class="n">c81e7</span>      <span class="o">|</span> <span class="mi">205304</span><span class="n">c828220a5aea30d5a13af4a01f</span> <span class="o">|</span>
+<span class="o">|</span> <span class="mi">3</span>  <span class="o">|</span> <span class="n">eccbc</span>      <span class="o">|</span> <span class="n">c049b5cdd131fbdceb6b3172dfe7399e</span> <span class="o">|</span>
+<span class="o">|</span> <span class="mi">4</span>  <span class="o">|</span> <span class="n">a87ff</span>      <span class="o">|</span> <span class="mi">0</span><span class="n">aed3b4e9d9e1a50e65597bdec7dfbc6</span> <span class="o">|</span>
+<span class="o">|</span> <span class="mi">5</span>  <span class="o">|</span> <span class="n">e4da3</span>      <span class="o">|</span> <span class="mi">68</span><span class="n">db5e5b4a57e7189f48cc89936567c2</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">----+------------+----------------------------------+</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
@@ -645,7 +645,7 @@ So let’s retrieve all changes for the slot:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="shell"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+<pre class="rouge highlight"><code data-lang="sql"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
  2
  3
  4
@@ -657,18 +657,18 @@ So let’s retrieve all changes for the slot:</p>
 10
 11
 12
-</pre></td><td class="code"><pre>standby&gt; SELECT <span class="k">*</span> FROM pg_logical_slot_get_changes<span class="o">(</span><span class="s1">&#39;demo_slot_standby&#39;</span>, NULL, NULL<span class="o">)</span><span class="p">;</span>
-+-------------+------+----------------------------------------------------------------------------------------------------------------------------------------+
-| lsn         | xid  | data                                                                                                                                   |
-|-------------+------+----------------------------------------------------------------------------------------------------------------------------------------|
-| 5E/90005120 | 6983 | BEGIN 6983                                                                                                                             |
-| 5E/90005188 | 6983 | table public.some_data: INSERT: <span class="nb">id</span><span class="o">[</span>integer]:1 short_text[character varying]:<span class="s1">&#39;c4ca4&#39;</span> long_text[text]:<span class="s1">&#39;3a3c3274941c83e253ebf8d2438ea5a2&#39;</span> |
-| 5E/90005290 | 6983 | table public.some_data: INSERT: <span class="nb">id</span><span class="o">[</span>integer]:2 short_text[character varying]:<span class="s1">&#39;c81e7&#39;</span> long_text[text]:<span class="s1">&#39;9d6d86f986523accd08b372333e77b4f&#39;</span> |
-| 5E/90005338 | 6983 | table public.some_data: INSERT: <span class="nb">id</span><span class="o">[</span>integer]:3 short_text[character varying]:<span class="s1">&#39;eccbc&#39;</span> long_text[text]:<span class="s1">&#39;8848fd2b0bd6fbddbbb72091658c047d&#39;</span> |
-| 5E/900053E0 | 6983 | table public.some_data: INSERT: <span class="nb">id</span><span class="o">[</span>integer]:4 short_text[character varying]:<span class="s1">&#39;a87ff&#39;</span> long_text[text]:<span class="s1">&#39;d7ce7d90eacaee6b8f8390023fa0636f&#39;</span> |
-| 5E/90005488 | 6983 | table public.some_data: INSERT: <span class="nb">id</span><span class="o">[</span>integer]:5 short_text[character varying]:<span class="s1">&#39;e4da3&#39;</span> long_text[text]:<span class="s1">&#39;843ea832ec1f7adc2f23647379435982&#39;</span> |
-| 5E/90005560 | 6983 | COMMIT 6983                                                                                                                            |
-+-------------+------+----------------------------------------------------------------------------------------------------------------------------------------+
+</pre></td><td class="code"><pre><span class="n">standby</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">pg_logical_slot_get_changes</span><span class="p">(</span><span class="s1">&#39;demo_slot_standby&#39;</span><span class="p">,</span> <span class="k">NULL</span><span class="p">,</span> <span class="k">NULL</span><span class="p">);</span>
+<span class="o">+</span><span class="c1">-------------+------+----------------------------------------------------------------------------------------------------------------------------------------+</span>
+<span class="o">|</span> <span class="n">lsn</span>         <span class="o">|</span> <span class="n">xid</span>  <span class="o">|</span> <span class="k">data</span>                                                                                                                                   <span class="o">|</span>
+<span class="o">|</span><span class="c1">-------------+------+----------------------------------------------------------------------------------------------------------------------------------------|</span>
+<span class="o">|</span> <span class="mi">5</span><span class="n">E</span><span class="o">/</span><span class="mi">90005120</span> <span class="o">|</span> <span class="mi">6983</span> <span class="o">|</span> <span class="k">BEGIN</span> <span class="mi">6983</span>                                                                                                                             <span class="o">|</span>
+<span class="o">|</span> <span class="mi">5</span><span class="n">E</span><span class="o">/</span><span class="mi">90005188</span> <span class="o">|</span> <span class="mi">6983</span> <span class="o">|</span> <span class="k">table</span> <span class="k">public</span><span class="p">.</span><span class="n">some_data</span><span class="p">:</span> <span class="k">INSERT</span><span class="p">:</span> <span class="n">id</span><span class="p">[</span><span class="nb">integer</span><span class="p">]:</span><span class="mi">1</span> <span class="n">short_text</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;c4ca4&#39;</span> <span class="n">long_text</span><span class="p">[</span><span class="nb">text</span><span class="p">]:</span><span class="s1">&#39;3a3c3274941c83e253ebf8d2438ea5a2&#39;</span> <span class="o">|</span>
+<span class="o">|</span> <span class="mi">5</span><span class="n">E</span><span class="o">/</span><span class="mi">90005290</span> <span class="o">|</span> <span class="mi">6983</span> <span class="o">|</span> <span class="k">table</span> <span class="k">public</span><span class="p">.</span><span class="n">some_data</span><span class="p">:</span> <span class="k">INSERT</span><span class="p">:</span> <span class="n">id</span><span class="p">[</span><span class="nb">integer</span><span class="p">]:</span><span class="mi">2</span> <span class="n">short_text</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;c81e7&#39;</span> <span class="n">long_text</span><span class="p">[</span><span class="nb">text</span><span class="p">]:</span><span class="s1">&#39;9d6d86f986523accd08b372333e77b4f&#39;</span> <span class="o">|</span>
+<span class="o">|</span> <span class="mi">5</span><span class="n">E</span><span class="o">/</span><span class="mi">90005338</span> <span class="o">|</span> <span class="mi">6983</span> <span class="o">|</span> <span class="k">table</span> <span class="k">public</span><span class="p">.</span><span class="n">some_data</span><span class="p">:</span> <span class="k">INSERT</span><span class="p">:</span> <span class="n">id</span><span class="p">[</span><span class="nb">integer</span><span class="p">]:</span><span class="mi">3</span> <span class="n">short_text</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;eccbc&#39;</span> <span class="n">long_text</span><span class="p">[</span><span class="nb">text</span><span class="p">]:</span><span class="s1">&#39;8848fd2b0bd6fbddbbb72091658c047d&#39;</span> <span class="o">|</span>
+<span class="o">|</span> <span class="mi">5</span><span class="n">E</span><span class="o">/</span><span class="mi">900053</span><span class="n">E0</span> <span class="o">|</span> <span class="mi">6983</span> <span class="o">|</span> <span class="k">table</span> <span class="k">public</span><span class="p">.</span><span class="n">some_data</span><span class="p">:</span> <span class="k">INSERT</span><span class="p">:</span> <span class="n">id</span><span class="p">[</span><span class="nb">integer</span><span class="p">]:</span><span class="mi">4</span> <span class="n">short_text</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;a87ff&#39;</span> <span class="n">long_text</span><span class="p">[</span><span class="nb">text</span><span class="p">]:</span><span class="s1">&#39;d7ce7d90eacaee6b8f8390023fa0636f&#39;</span> <span class="o">|</span>
+<span class="o">|</span> <span class="mi">5</span><span class="n">E</span><span class="o">/</span><span class="mi">90005488</span> <span class="o">|</span> <span class="mi">6983</span> <span class="o">|</span> <span class="k">table</span> <span class="k">public</span><span class="p">.</span><span class="n">some_data</span><span class="p">:</span> <span class="k">INSERT</span><span class="p">:</span> <span class="n">id</span><span class="p">[</span><span class="nb">integer</span><span class="p">]:</span><span class="mi">5</span> <span class="n">short_text</span><span class="p">[</span><span class="nb">character</span> <span class="nb">varying</span><span class="p">]:</span><span class="s1">&#39;e4da3&#39;</span> <span class="n">long_text</span><span class="p">[</span><span class="nb">text</span><span class="p">]:</span><span class="s1">&#39;843ea832ec1f7adc2f23647379435982&#39;</span> <span class="o">|</span>
+<span class="o">|</span> <span class="mi">5</span><span class="n">E</span><span class="o">/</span><span class="mi">90005560</span> <span class="o">|</span> <span class="mi">6983</span> <span class="o">|</span> <span class="k">COMMIT</span> <span class="mi">6983</span>                                                                                                                            <span class="o">|</span>
+<span class="o">+</span><span class="c1">-------------+------+----------------------------------------------------------------------------------------------------------------------------------------+</span>
 </pre></td></tr></tbody></table></code></pre>
 </div>
 </div>
