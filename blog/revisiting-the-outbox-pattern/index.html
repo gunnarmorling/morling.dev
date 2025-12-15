@@ -433,7 +433,7 @@ But this also means that there can be inconsistencies between the state of the w
 While serialization may be enforced in some cases, for instance using optimistic locking on a specific record, the problem can’t be solved generically in the presence of concurrent writers.</p>
 </div>
 <div class="paragraph">
-<p>A much better solution is to retrieve <a href="https://www.decodable.co/blog/why-do-i-need-cdc#the-best-way-to-do-cdc-is-log-based-cdc">the outbox events via log-based CDC</a>.
+<p>A much better solution is to retrieve <a href="https://rmoff.net/2024/10/15/why-do-i-need-cdc/#_the_best_way_to_do_cdc_is_log_based_cdc">the outbox events via log-based CDC</a>.
 By tailing the database’s transaction log (e.g.
 the <a href="https://www.postgresql.org/docs/current/wal-intro.html">write-ahead log</a>, WAL, in case of Postgres), events are emitted in the exact same order as transactions were committed to the database, ensuring consistency between internal and external representation of the data.
 Log-based CDC comes with a few <a href="https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/">other advantages</a>: it avoids the polling overhead and ensures a low latency (typically, changes can be propagated from Postgres to Kafka within a two-digit milliseconds timeframe).
@@ -678,7 +678,7 @@ In a microservices architecture, there’ll be a database for each service and a
 When implementing the outbox pattern, you’ll also need the outbox relay.
 If you don’t do CDC yet, adding a system like Debezium—​for instance by standing up a Kafka Connect cluster—​for this purpose will add one more component indeed.
 This component needs to be operated, updated, kept secure, etc.
-On the other hand, chances are you <a href="https://www.decodable.co/blog/why-do-i-need-cdc">need CDC anyways</a>, in which case configuring it for also capturing outbox events doesn’t change the consideration much.
+On the other hand, chances are you <a href="https://rmoff.net/2024/10/15/why-do-i-need-cdc/">need CDC anyways</a>, in which case configuring it for also capturing outbox events doesn’t change the consideration much.
 Another option can be to run the outbox relay within the writing service yourself: via its embedded engine, Debezium can be used <a href="https://www.decodable.co/blog/understanding-cdc-with-debezium-server-and-debezium-engine">as a library in Java-based applications</a>, thus avoiding the need for running the outbox relay in a separate process.</p>
 </div>
 <div class="paragraph">
