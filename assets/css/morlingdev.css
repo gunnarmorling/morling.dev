@@ -296,15 +296,59 @@ div.club {
     color: rgb(54, 54, 54);
 }
 
-@media only screen and (max-width: 670px) {
-    div.desktop {
-      display: none;
+/* Header layout using CSS Grid */
+.header {
+    display: grid;
+}
+
+/* Desktop: Image spans rows, Title and Nav stack in column 2 */
+@media only screen and (min-width: 671px) {
+    .header {
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto auto;
+        grid-template-areas:
+            "image title"
+            "image nav";
+    }
+
+    .header-image-container {
+        grid-area: image;
+    }
+
+    .header-title {
+        grid-area: title;
+        align-self: center;
+        padding-top: 5px;
+    }
+
+    .header-nav-wrapper {
+        grid-area: nav;
+        margin-top: -5px;
     }
 }
 
-@media only screen and (min-width: 671px) {
-    div.mobile {
-      display: none;
+/* Mobile: 2 rows (Row1: Image+Title | Row2: Nav) */
+@media only screen and (max-width: 670px) {
+    .header {
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto auto;
+        grid-template-areas:
+            "image title"
+            "nav nav";
+    }
+
+    .header-image-container {
+        grid-area: image;
+        align-self: center;
+    }
+
+    .header-title {
+        grid-area: title;
+        align-self: center;
+    }
+
+    .header-nav-wrapper {
+        grid-area: nav;
     }
 }
 
