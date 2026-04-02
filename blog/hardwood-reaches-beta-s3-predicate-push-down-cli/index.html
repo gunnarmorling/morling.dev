@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Hardwood Reaches Beta: S3, Predicate Push-Down, CLI, and More - Gunnar Morling</title>
+	<link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png" />
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png" />
+	<link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+	<link rel="shortcut icon" href="/favicon/favicon.ico" />
+
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	
+	<link rel="preload" href="/fonts/raleway-v37-latin-200.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/raleway-v37-latin-300.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/raleway-v37-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+
+	<link rel="preload" href="/fonts/lato-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin>
+
+	<link rel="preload" href="/fonts/lora-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin><meta property="og:url" content="https://www.morling.dev/blog/hardwood-reaches-beta-s3-predicate-push-down-cli/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Hardwood Reaches Beta: S3, Predicate Push-Down, CLI, and More">
+  <meta property="og:description" content=" I am pleased to announce the release of Hardwood 1.0.0.Beta1!
+Hardwood is a new parser for Apache Parquet, optimized for minimal dependencies and great performance. Since the project’s initial …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2026-04-02T19:20:00&#43;01:00">
+    <meta property="article:modified_time" content="2026-04-02T19:20:00&#43;01:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Hardwood Reaches Beta: S3, Predicate Push-Down, CLI, and More">
+  <meta name="twitter:description" content=" I am pleased to announce the release of Hardwood 1.0.0.Beta1!
+Hardwood is a new parser for Apache Parquet, optimized for minimal dependencies and great performance. Since the project’s initial …">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.7e747dab5a47b967474cfdc64085734aa21b459c2bc3519033238d0258bb7dcc.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
+	
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.20888cb6b76ed17eb07628f659718d130e32ea466294927dc4dfb410a3e3f3ab.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+	<script src="/js/main.min.9ee619eea7f51473f4284ef86c76bdb1b0089e19781ca97275924edf53be5bd4.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header">
+	<div class="header-image-container">
+		<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+	</div>
+	<div class="header-title">
+		<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+		<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+	</div>
+	<div class="header-nav-wrapper">
+		<nav class="row pre-nav">
+			<div class="pull-right">
+				<ul class="flat"><li>
+						<a href="/blog/index.xml" title="RSS FEED">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#rss"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://github.com/gunnarmorling" title="GitHub">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#github"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://twitter.com/gunnarmorling" title="Twitter">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+							</svg>
+						</a>
+					</li></ul>
+			</div>
+		</nav>
+		<nav class="row nav">
+			<div>
+				<ul class="flat">
+					
+					<li>
+						<a href="/blog">Blog</a>
+					</li>
+					
+					<li>
+						<a href="/projects/">Projects</a>
+					</li>
+					
+					<li>
+						<a href="/conferences/">Conferences</a>
+					</li>
+					
+					<li>
+						<a href="/podcasts/">Podcasts</a>
+					</li>
+					
+					<li>
+						<a href="/about/">About</a>
+					</li>
+					
+				</ul>
+			</div>
+			<div class="pull-right">
+				<div class="club">
+					<form id="myForm">
+						<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+						<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+					</form>
+				</div>
+			</div>
+		</nav>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Hardwood Reaches Beta: S3, Predicate Push-Down, CLI, and More</h1>
+				<div class="post-meta-line">
+					<span class="meta">Posted at Apr 2, 2026</span>
+					
+					<span class="post-tags-inline">
+						
+						<a href="/tags/parquet">parquet</a>
+						
+						<a href="/tags/open-source">open-source</a>
+						
+						<a href="/tags/java">java</a>
+						
+						<a href="/tags/performance">performance</a>
+						
+					</span>
+					
+				</div>
+			</div>
+
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_s3_backend">S3 Backend</a></li>
+<li><a href="#_predicate_push_down">Predicate Push-Down</a></li>
+<li><a href="#_avro_bindings">Avro Bindings</a></li>
+<li><a href="#_hardwood_cli">hardwood-cli</a></li>
+<li><a href="#_wrapping_up">Wrapping Up</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p>I am pleased to announce the release of Hardwood 1.0.0.Beta1!</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/hardwood-hq/hardwood">Hardwood</a> is a new parser for Apache Parquet, optimized for minimal dependencies and great performance.
+Since the project’s initial release just <a href="/blog/hardwood-new-parser-for-apache-parquet/">a few weeks back</a>, a small yet very active community has come together and evolved Hardwood significantly.
+Today, we are shipping an S3 backend, allowing to parse files directly from object storage,
+predicate pushdown for both local and remote files, Avro bindings, a CLI for inspecting Parquet files, and much more.
+We’re also excited to launch a website for the project, <a href="https://hardwood.dev">hardwood.dev</a>, which contains the documentation and API reference.</p>
+</div>
+<div class="paragraph">
+<p>Let’s dig in.</p>
+</div>
+<div class="sect1">
+<h2 id="_s3_backend">S3 Backend<a class="anchor" href="#_s3_backend"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hardwood now allows you to parse files from <a href="https://aws.amazon.com/s3/">Amazon S3</a>, or any API-compatible object storage such as Cloudflare R2 or Google Cloud Storage.
+This means you can parse remote files directly, without having to download them first.
+Together with column projection and predicate push-down (see below),
+this can drastically reduce network IO if you only want to access a certain subset of your data,
+which is key when querying Parquet files in a data lake.</p>
+</div>
+<div class="paragraph">
+<p>Living up to Hardwood’s premise of having a minimal dependency footprint,
+the S3 feature adds no mandatory dependencies, in particular avoiding pulling in heavy dependencies such as the AWS S3 SDK.
+Instead, Hardwood issues requests to the S3 REST API using Java’s built-in HTTP client;
+requests are signed using a custom implementation of the AWS <a href="https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html">SigV4 algorithm</a>.
+Complete compatibility with the reference implementation is ensured by validating the signer against the complete suite of the <a href="https://github.com/awslabs/aws-c-auth">official SigV4 test vectors</a>.</p>
+</div>
+<div class="paragraph">
+<p>Authentication is done via a simple callback API;
+in the simplest case, access key id and secret access key can be specified like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre><span class="nc">S3Source</span> <span class="n">source</span> <span class="o">=</span> <span class="nc">S3Source</span><span class="o">.</span><span class="na">builder</span><span class="o">()</span>
+  <span class="o">.</span><span class="na">region</span><span class="o">(</span><span class="s">&#34;us-east-1&#34;</span><span class="o">)</span>
+  <span class="o">.</span><span class="na">credentials</span><span class="o">(</span><span class="nc">S3Credentials</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">&#34;AKIA...&#34;</span><span class="o">,</span> <span class="s">&#34;secret&#34;</span><span class="o">))</span>
+  <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+
+<span class="k">try</span> <span class="o">(</span><span class="nc">ParquetFileReader</span> <span class="n">reader</span> <span class="o">=</span> <span class="nc">ParquetFileReader</span><span class="o">.</span><span class="na">open</span><span class="o">(</span>
+    <span class="n">source</span><span class="o">.</span><span class="na">inputFile</span><span class="o">(</span><span class="s">&#34;s3://my-bucket/data/trips.parquet&#34;</span><span class="o">)))</span> <span class="o">{</span>
+
+  <span class="k">try</span> <span class="o">(</span><span class="nc">RowReader</span> <span class="n">rows</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="na">createRowReader</span><span class="o">())</span> <span class="o">{</span>
+    <span class="k">while</span> <span class="o">(</span><span class="n">rows</span><span class="o">.</span><span class="na">hasNext</span><span class="o">())</span> <span class="o">{</span>
+      <span class="n">rows</span><span class="o">.</span><span class="na">next</span><span class="o">();</span>
+      <span class="kt">long</span> <span class="n">id</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="na">getLong</span><span class="o">(</span><span class="s">&#34;id&#34;</span><span class="o">);</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For dynamic or refreshable credentials, you can implement the <code>S3CredentialsProvider</code> functional interface:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="nc">S3Source</span> <span class="n">source</span> <span class="o">=</span> <span class="nc">S3Source</span><span class="o">.</span><span class="na">builder</span><span class="o">()</span>
+    <span class="o">.</span><span class="na">region</span><span class="o">(</span><span class="s">&#34;us-east-1&#34;</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">credentials</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="n">fetchCredentialsFromVault</span><span class="o">())</span>
+    <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you’d like to use the full AWS credential chain (env vars, ~/.aws/credentials, EC2/ECS instance profile, SSO, web identity), you can do so by adding the optional <code>hardwood-aws-auth</code> module
+(which in turn relies on the <code>software.amazon.awssdk:auth</code> module from the official AWS SDK):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="nt">&lt;dependency&gt;</span>
+  <span class="nt">&lt;groupId&gt;</span>dev.hardwood<span class="nt">&lt;/groupId&gt;</span>
+  <span class="nt">&lt;artifactId&gt;</span>hardwood-aws-auth<span class="nt">&lt;/artifactId&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="kn">import</span> <span class="nn">dev.hardwood.aws.auth.SdkCredentialsProviders</span><span class="o">;</span>
+
+<span class="nc">S3Source</span> <span class="n">source</span> <span class="o">=</span> <span class="nc">S3Source</span><span class="o">.</span><span class="na">builder</span><span class="o">()</span>
+  <span class="o">.</span><span class="na">region</span><span class="o">(</span><span class="s">&#34;us-east-1&#34;</span><span class="o">)</span>
+  <span class="o">.</span><span class="na">credentials</span><span class="o">(</span><span class="nc">SdkCredentialsProviders</span><span class="o">.</span><span class="na">defaultChain</span><span class="o">())</span>
+  <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For S3-compatible services, timeout and retry configuration, and other options, see the <a href="https://hardwood.dev/latest/s3/">S3 backend documentation</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_predicate_push_down">Predicate Push-Down<a class="anchor" href="#_predicate_push_down"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When querying files on remote storage, it is essential to limit the amount of fetched data as much as possible,
+reducing network I/O and thus minimizing query times as well as any potential data transfer fees.
+For this purpose, Hardwood now also supports <a href="https://hardwood.dev/latest/usage/#predicate-pushdown-filter">predicate push-down</a> in addition to column projections.
+Parquet files can optionally contain statistics for row groups as well as for specific chunk pages.
+At the row-group level, entire row groups whose statistics prove no rows can match are skipped.
+Within matching row groups, the Column Index (per-page min/max statistics) is used to skip individual pages,
+avoiding unnecessary decompression and decoding.</p>
+</div>
+<div class="paragraph">
+<p>The <code>FilterPredicate</code> API allows you to create filters based on the operators <code>eq</code>, <code>notEq</code>, <code>lt</code>, <code>ltEq</code>, <code>gt</code>, <code>gtEq</code>, <code>in</code>, <code>isNull</code>, and <code>isNotNull</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+</pre></td><td class="code"><pre><span class="c1">// Simple filter</span>
+<span class="nc">FilterPredicate</span> <span class="n">filter</span> <span class="o">=</span> <span class="nc">FilterPredicate</span><span class="o">.</span><span class="na">gt</span><span class="o">(</span><span class="s">&#34;age&#34;</span><span class="o">,</span> <span class="mi">21</span><span class="o">);</span>
+
+<span class="c1">// IN filter</span>
+<span class="nc">FilterPredicate</span> <span class="n">filter</span> <span class="o">=</span> <span class="nc">FilterPredicate</span><span class="o">.</span><span class="na">in</span><span class="o">(</span><span class="s">&#34;department_id&#34;</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">7</span><span class="o">);</span>
+<span class="nc">FilterPredicate</span> <span class="n">filter</span> <span class="o">=</span> <span class="nc">FilterPredicate</span><span class="o">.</span><span class="na">inStrings</span><span class="o">(</span>
+    <span class="s">&#34;city&#34;</span><span class="o">,</span> <span class="s">&#34;NYC&#34;</span><span class="o">,</span> <span class="s">&#34;LA&#34;</span><span class="o">,</span> <span class="s">&#34;Chicago&#34;</span><span class="o">);</span>
+
+<span class="c1">// NULL checks</span>
+<span class="nc">FilterPredicate</span> <span class="n">filter</span> <span class="o">=</span> <span class="nc">FilterPredicate</span><span class="o">.</span><span class="na">isNull</span><span class="o">(</span><span class="s">&#34;middle_name&#34;</span><span class="o">);</span>
+<span class="nc">FilterPredicate</span> <span class="n">filter</span> <span class="o">=</span> <span class="nc">FilterPredicate</span><span class="o">.</span><span class="na">isNotNull</span><span class="o">(</span><span class="s">&#34;email&#34;</span><span class="o">);</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The logical operators <code>and</code>, <code>or</code>, and <code>not</code> can be used to combine basic filters:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="c1">// Compound filter</span>
+<span class="nc">FilterPredicate</span> <span class="n">filter</span> <span class="o">=</span> <span class="nc">FilterPredicate</span><span class="o">.</span><span class="na">and</span><span class="o">(</span>
+    <span class="nc">FilterPredicate</span><span class="o">.</span><span class="na">gtEq</span><span class="o">(</span><span class="s">&#34;salary&#34;</span><span class="o">,</span> <span class="mi">50000L</span><span class="o">),</span>
+    <span class="nc">FilterPredicate</span><span class="o">.</span><span class="na">lt</span><span class="o">(</span><span class="s">&#34;age&#34;</span><span class="o">,</span> <span class="mi">65</span><span class="o">)</span>
+<span class="o">);</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then, when obtaining a Parquet row or column reader, specify the filter predicate like so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+</pre></td><td class="code"><pre><span class="k">try</span> <span class="o">(</span><span class="nc">ParquetFileReader</span> <span class="n">fileReader</span> <span class="o">=</span> <span class="nc">ParquetFileReader</span><span class="o">.</span><span class="na">open</span><span class="o">(</span>
+    <span class="nc">InputFile</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">path</span><span class="o">));</span>
+
+  <span class="nc">RowReader</span> <span class="n">rowReader</span> <span class="o">=</span> <span class="n">fileReader</span><span class="o">.</span><span class="na">createRowReader</span><span class="o">(</span><span class="n">filter</span><span class="o">))</span> <span class="o">{</span>
+
+  <span class="k">while</span> <span class="o">(</span><span class="n">rowReader</span><span class="o">.</span><span class="na">hasNext</span><span class="o">())</span> <span class="o">{</span>
+    <span class="n">rowReader</span><span class="o">.</span><span class="na">next</span><span class="o">();</span>
+    <span class="c1">// Only rows from non-skipped row groups are returned</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <a href="https://hardwood.dev/latest/usage/#predicate-pushdown-filter">reference documentation</a> discusses predicate push-down in full depth,
+for instance touching on how to use this together with column projections as well as on some limitations of the current implementation.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_avro_bindings">Avro Bindings<a class="anchor" href="#_avro_bindings"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If your application already works with Avro records, for instance in a Kafka pipeline or Flink job, the new <code>hardwood-avro</code> module lets you read Parquet files directly into <code>GenericRecord</code> instances.
+Add it alongside <code>hardwood-core</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="nt">&lt;dependency&gt;</span>
+  <span class="nt">&lt;groupId&gt;</span>dev.hardwood<span class="nt">&lt;/groupId&gt;</span>
+  <span class="nt">&lt;artifactId&gt;</span>hardwood-avro<span class="nt">&lt;/artifactId&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then use the <code>AvroReaders</code> class to obtain a reader:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+</pre></td><td class="code"><pre><span class="k">try</span> <span class="o">(</span><span class="nc">ParquetFileReader</span> <span class="n">fileReader</span> <span class="o">=</span> <span class="nc">ParquetFileReader</span><span class="o">.</span><span class="na">open</span><span class="o">(</span>
+      <span class="nc">InputFile</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">path</span><span class="o">));</span>
+
+  <span class="nc">AvroRowReader</span> <span class="n">reader</span> <span class="o">=</span> <span class="nc">AvroReaders</span><span class="o">.</span><span class="na">createRowReader</span><span class="o">(</span><span class="n">fileReader</span><span class="o">))</span> <span class="o">{</span>
+
+  <span class="k">while</span> <span class="o">(</span><span class="n">reader</span><span class="o">.</span><span class="na">hasNext</span><span class="o">())</span> <span class="o">{</span>
+    <span class="nc">GenericRecord</span> <span class="n">record</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="na">next</span><span class="o">();</span>
+    <span class="kt">long</span> <span class="n">id</span> <span class="o">=</span> <span class="o">(</span><span class="nc">Long</span><span class="o">)</span> <span class="n">record</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;id&#34;</span><span class="o">);</span>
+    <span class="nc">GenericRecord</span> <span class="n">address</span> <span class="o">=</span> <span class="o">(</span><span class="nc">GenericRecord</span><span class="o">)</span> <span class="n">record</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;address&#34;</span><span class="o">);</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Column projection and predicate push-down are fully supported, so you’re not giving anything up compared to the native row API.
+The schema conversion and type mapping match the behavior of parquet-java’s <code>AvroReadSupport</code>, which should make migration straightforward.
+See the <a href="https://hardwood.dev/latest/avro/">Avro documentation</a> for the full details.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hardwood_cli">hardwood-cli<a class="anchor" href="#_hardwood_cli"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Building a command line client for Hardwood was something which had been on my mind for a while,
+but initially I had planned to only do so after the 1.0 release.
+However, Brandon Brown stepped up to build a <a href="https://hardwood.dev/latest/cli/">first version of the CLI</a> before I even got around to it.
+It lets you examine Parquet files (both locally and on object storage),
+e.g. to take a look at their metadata and schema,
+inspect dictionaries and column indexes,
+print a few lines for getting a quick understanding of a file’s contents,
+convert them to JSON and CSV, and more.</p>
+</div>
+<div class="paragraph">
+<p>You can see some of the features in action in this recording:</p>
+</div>
+<div class="paragraph">
+<p>
+<script src="https://asciinema.org/a/eT56vIokffsf3f0v.js" id="asciicast-eT56vIokffsf3f0v" async="true"></script>
+</p>
+</div>
+<div class="paragraph">
+<p>To get started with the Hardwood CLI,
+<a href="https://github.com/hardwood-hq/hardwood/releases/tag/v1.0.0.Beta1">download the right native binary</a> for your platform from GitHub;
+we currently provide binaries for Linux (x86_64 and aarch64), macOS (x86_64 and aarch64), and Windows (x86_64).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_wrapping_up">Wrapping Up<a class="anchor" href="#_wrapping_up"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Besides these key features, there’s also support for key/value metadata, Page CRC verification, and more.
+See the <a href="https://hardwood.dev/latest/release-notes/">release notes</a> for the details.
+You can grab the new release from <a href="https://central.sonatype.com/search?q=hardwood&amp;namespace=dev.hardwood">Maven Central</a>.</p>
+</div>
+<div class="paragraph">
+<p>Hardwood wouldn’t be possible without the help of the following amazing folks from the open-source community, who contributed to this release:
+<a href="https://github.com/ArnavBalyan">Arnav Balyan</a>, <a href="https://github.com/bmscomp">Said Boudjelda</a>, <a href="https://github.com/brbrown25">Brandon Brown</a>, <a href="https://github.com/mghildiy">Manish Ghildiyal</a>, <a href="https://github.com/ngrondin">Nicolas Grondin</a>, <a href="https://github.com/rionmonster">Rion Williams</a>, and <a href="https://github.com/rmannibucau">Romain Manni-Bucau</a>.
+Thank you all!</p>
+</div>
+<div class="paragraph">
+<p>At this point, Hardwood handles the common Parquet reading use cases.
+For the remainder of the 1.0 release train,
+we are planning to focus on performance optimizations,
+close some gaps like Bloom filters, and stabilize the public API.
+You should expect a first 1.0 candidate in a week or two,
+with the 1.0.0.Final release hopefully following later this month.</p>
+</div>
+<div class="paragraph">
+<p>Key features for the 1.1 release later this year will be write support as well as support for less widely adopted Parquet features such as <code>VARIANT</code> columns.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			
+			
+			
+			<div class="related-posts">
+				<h3>Read Next</h3>
+				<ul>
+					
+					<li><a href="/blog/hardwood-new-parser-for-apache-parquet/">Hardwood: A New Parser for Apache Parquet</a> <span class="meta">Feb 26, 2026</span></li>
+					
+					<li><a href="/blog/lower-java-tail-latencies-with-zgc/">Let&#39;s Take a Look at... Lower Java Tail Latencies With ZGC</a> <span class="meta">Sep 17, 2025</span></li>
+					
+					<li><a href="/blog/jep-483-aot-class-loading-linking/">Let&#39;s Take a Look at... JEP 483: Ahead-of-Time Class Loading &amp; Linking!</a> <span class="meta">Mar 27, 2025</span></li>
+					
+				</ul>
+			</div>
+			
+			
+		</div>
+
+		<div class="post-footer">
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<div class="header-image-container" style="flex-shrink: 0;">
+					<img class="footer-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+				</div>
+				<p style="margin: 0;">Gunnar Morling is an open-source software engineer in the Java and data streaming space, currently working as a Technologist at Confluent. Previously, he helped to build a realtime stream processing platform based on Apache Flink and led the Debezium project, a distributed platform for change data capture. He is a Java Champion and has founded multiple open source projects such as Hardwood, kcctl, JfrUnit, and MapStruct.</p>
+			</div>
+		</div>
+
+		
+		
+		<div class="post-discussions">
+			<p>Comment below, or join the discussion on
+			<a href="https://hn.algolia.com/?query=morling.dev/blog/hardwood-reaches-beta-s3-predicate-push-down-cli/">Hacker News</a>,
+			<a href="https://lobste.rs/search?q=domain:morling.dev+title:%22Hardwood%20Reaches%20Beta%3a%20S3%2c%20Predicate%20Push-Down%2c%20CLI%2c%20and%20More%22&what=stories">Lobsters</a>, and
+			<a href="https://www.reddit.com/search/?q=url:morling.dev/blog/hardwood-reaches-beta-s3-predicate-push-down-cli/">Reddit</a>.
+			</p>
+		</div>
+		<div id="disqus_thread"></div>
+
+<script>
+  
+  window.addEventListener('load', function() {
+    
+    setTimeout(function() {
+      const commentsContainer = document.getElementById('disqus_thread');
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', 'gunnarmorling/discussions.morling.dev');
+      script.setAttribute('data-repo-id', 'R_kgDOGXzqNQ');
+      script.setAttribute('data-category', 'Announcements');
+      script.setAttribute('data-category-id', 'DIC_kwDOGXzqNc4B_2Pq');
+      script.setAttribute('data-mapping', 'title');
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-theme', 'light');
+      script.setAttribute('data-lang', 'en');
+      script.setAttribute('crossorigin', 'anonymous');
+      script.async = true;
+      commentsContainer.appendChild(script);
+    }, 100);
+  });
+</script>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2026 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
