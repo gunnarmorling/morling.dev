@@ -1,0 +1,230 @@
+---
+title: "Hardwood Reaches Beta: S3, Predicate Push-Down, CLI, and More"
+date: 2026-04-02T19:20:00+01:00
+draft: false
+markup: adoc
+tags:
+  - parquet
+  - open-source
+  - java
+  - performance
+
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+I am pleased to announce the release of Hardwood 1.0.0.Beta1!
+
+https://github.com/hardwood-hq/hardwood[Hardwood] is a new parser for Apache Parquet, optimized for minimal dependencies and great performance.
+Since the project's initial release just link:/blog/hardwood-new-parser-for-apache-parquet/[a few weeks back], a small yet very active community has come together and evolved Hardwood significantly.
+Today, we are shipping an S3 backend, allowing to parse files directly from object storage,
+predicate pushdown for both local and remote files, Avro bindings, a CLI for inspecting Parquet files, and much more.
+We're also excited to launch a website for the project, https://hardwood.dev[hardwood.dev], which contains the documentation and API reference.
+
+Let's dig in.
+
+<!--more-->
+
+== S3 Backend
+
+Hardwood now allows you to parse files from https://aws.amazon.com/s3/[Amazon S3], or any API-compatible object storage such as Cloudflare R2 or Google Cloud Storage.
+This means you can parse remote files directly, without having to download them first.
+Together with column projection and predicate push-down (see below),
+this can drastically reduce network IO if you only want to access a certain subset of your data,
+which is key when querying Parquet files in a data lake.
+
+Living up to Hardwood's premise of having a minimal dependency footprint,
+the S3 feature adds no mandatory dependencies, in particular avoiding pulling in heavy dependencies such as the AWS S3 SDK.
+Instead, Hardwood issues requests to the S3 REST API using Java's built-in HTTP client;
+requests are signed using a custom implementation of the AWS https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html[SigV4 algorithm].
+Complete compatibility with the reference implementation is ensured by validating the signer against the complete suite of the https://github.com/awslabs/aws-c-auth[official SigV4 test vectors]. 
+
+Authentication is done via a simple callback API;
+in the simplest case, access key id and secret access key can be specified like so:
+
+[source,java,linenums=true]
+----
+S3Source source = S3Source.builder()
+  .region("us-east-1")
+  .credentials(S3Credentials.of("AKIA...", "secret"))
+  .build();
+
+try (ParquetFileReader reader = ParquetFileReader.open(
+    source.inputFile("s3://my-bucket/data/trips.parquet"))) {
+
+  try (RowReader rows = reader.createRowReader()) {
+    while (rows.hasNext()) {
+      rows.next();
+      long id = rows.getLong("id");
+    }
+  }
+}
+----
+
+For dynamic or refreshable credentials, you can implement the `S3CredentialsProvider` functional interface:
+
+[source,java,linenums=true]
+----
+S3Source source = S3Source.builder()
+    .region("us-east-1")
+    .credentials(() -> fetchCredentialsFromVault())
+    .build();
+----
+
+If you'd like to use the full AWS credential chain (env vars, ~/.aws/credentials, EC2/ECS instance profile, SSO, web identity), you can do so by adding the optional `hardwood-aws-auth` module
+(which in turn relies on the `software.amazon.awssdk:auth` module from the official AWS SDK):
+
+[source,xml,linenums=true]
+----
+<dependency>
+  <groupId>dev.hardwood</groupId>
+  <artifactId>hardwood-aws-auth</artifactId>
+</dependency>
+----
+
+[source,java,linenums=true]
+----
+import dev.hardwood.aws.auth.SdkCredentialsProviders;
+
+S3Source source = S3Source.builder()
+  .region("us-east-1")
+  .credentials(SdkCredentialsProviders.defaultChain())
+  .build();
+----
+
+For S3-compatible services, timeout and retry configuration, and other options, see the https://hardwood.dev/latest/s3/[S3 backend documentation].
+
+== Predicate Push-Down
+
+When querying files on remote storage, it is essential to limit the amount of fetched data as much as possible,
+reducing network I/O and thus minimizing query times as well as any potential data transfer fees.
+For this purpose, Hardwood now also supports https://hardwood.dev/latest/usage/#predicate-pushdown-filter[predicate push-down] in addition to column projections.
+Parquet files can optionally contain statistics for row groups as well as for specific chunk pages.
+At the row-group level, entire row groups whose statistics prove no rows can match are skipped.
+Within matching row groups, the Column Index (per-page min/max statistics) is used to skip individual pages,
+avoiding unnecessary decompression and decoding.
+
+The `FilterPredicate` API allows you to create filters based on the operators `eq`, `notEq`, `lt`, `ltEq`, `gt`, `gtEq`, `in`, `isNull`, and `isNotNull`.
+
+[source,java,linenums=true]
+----
+// Simple filter
+FilterPredicate filter = FilterPredicate.gt("age", 21);
+
+// IN filter
+FilterPredicate filter = FilterPredicate.in("department_id", 1, 3, 7);
+FilterPredicate filter = FilterPredicate.inStrings(
+    "city", "NYC", "LA", "Chicago");
+
+// NULL checks
+FilterPredicate filter = FilterPredicate.isNull("middle_name");
+FilterPredicate filter = FilterPredicate.isNotNull("email");
+----
+
+The logical operators `and`, `or`, and `not` can be used to combine basic filters:
+
+[source,java,linenums=true]
+----
+// Compound filter
+FilterPredicate filter = FilterPredicate.and(
+    FilterPredicate.gtEq("salary", 50000L),
+    FilterPredicate.lt("age", 65)
+);
+----
+
+Then, when obtaining a Parquet row or column reader, specify the filter predicate like so:
+
+[source,java,linenums=true]
+----
+try (ParquetFileReader fileReader = ParquetFileReader.open(
+    InputFile.of(path));
+
+  RowReader rowReader = fileReader.createRowReader(filter)) {
+
+  while (rowReader.hasNext()) {
+    rowReader.next();
+    // Only rows from non-skipped row groups are returned
+  }
+}
+----
+
+The https://hardwood.dev/latest/usage/#predicate-pushdown-filter[reference documentation] discusses predicate push-down in full depth,
+for instance touching on how to use this together with column projections as well as on some limitations of the current implementation.
+
+== Avro Bindings
+
+If your application already works with Avro records, for instance in a Kafka pipeline or Flink job, the new `hardwood-avro` module lets you read Parquet files directly into `GenericRecord` instances.
+Add it alongside `hardwood-core`:
+
+[source,xml,linenums=true]
+----
+<dependency>
+  <groupId>dev.hardwood</groupId>
+  <artifactId>hardwood-avro</artifactId>
+</dependency>
+----
+Then use the `AvroReaders` class to obtain a reader:
+
+[source,java,linenums=true]
+----
+try (ParquetFileReader fileReader = ParquetFileReader.open(
+      InputFile.of(path));
+
+  AvroRowReader reader = AvroReaders.createRowReader(fileReader)) {
+  
+  while (reader.hasNext()) {
+    GenericRecord record = reader.next();
+    long id = (Long) record.get("id");
+    GenericRecord address = (GenericRecord) record.get("address");
+  }
+}
+----
+
+Column projection and predicate push-down are fully supported, so you're not giving anything up compared to the native row API.
+The schema conversion and type mapping match the behavior of parquet-java's `AvroReadSupport`, which should make migration straightforward.
+See the https://hardwood.dev/latest/avro/[Avro documentation] for the full details.
+
+== hardwood-cli
+
+Building a command line client for Hardwood was something which had been on my mind for a while,
+but initially I had planned to only do so after the 1.0 release.
+However, Brandon Brown stepped up to build a https://hardwood.dev/latest/cli/[first version of the CLI] before I even got around to it.
+It lets you examine Parquet files (both locally and on object storage),
+e.g. to take a look at their metadata and schema,
+inspect dictionaries and column indexes,
+print a few lines for getting a quick understanding of a file's contents,
+convert them to JSON and CSV, and more.
+
+You can see some of the features in action in this recording:
+
++++
+<script src="https://asciinema.org/a/eT56vIokffsf3f0v.js" id="asciicast-eT56vIokffsf3f0v" async="true"></script>
++++
+
+To get started with the Hardwood CLI,
+https://github.com/hardwood-hq/hardwood/releases/tag/v1.0.0.Beta1[download the right native binary] for your platform from GitHub;
+we currently provide binaries for Linux (x86_64 and aarch64), macOS (x86_64 and aarch64), and Windows (x86_64).
+
+== Wrapping Up
+
+Besides these key features, there's also support for key/value metadata, Page CRC verification, and more.
+See the https://hardwood.dev/latest/release-notes/[release notes] for the details.
+You can grab the new release from https://central.sonatype.com/search?q=hardwood&namespace=dev.hardwood[Maven Central].
+
+Hardwood wouldn't be possible without the help of the following amazing folks from the open-source community, who contributed to this release:
+https://github.com/ArnavBalyan[Arnav Balyan], https://github.com/bmscomp[Said Boudjelda], https://github.com/brbrown25[Brandon Brown], https://github.com/mghildiy[Manish Ghildiyal], https://github.com/ngrondin[Nicolas Grondin], https://github.com/rionmonster[Rion Williams], and https://github.com/rmannibucau[Romain Manni-Bucau].
+Thank you all!
+
+At this point, Hardwood handles the common Parquet reading use cases.
+For the remainder of the 1.0 release train,
+we are planning to focus on performance optimizations,
+close some gaps like Bloom filters, and stabilize the public API.
+You should expect a first 1.0 candidate in a week or two,
+with the 1.0.0.Final release hopefully following later this month.
+
+Key features for the 1.1 release later this year will be write support as well as support for less widely adopted Parquet features such as `VARIANT` columns.
