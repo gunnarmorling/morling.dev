@@ -1,0 +1,173 @@
+---
+title: "VARIANT Support, Interactive Parquet File TUI: Hardwood 1.0.0.Beta2 Is Out"
+date: 2026-04-29T18:45:00+01:00
+draft: false
+markup: adoc
+tags:
+  - parquet
+  - open-source
+  - java
+  - performance
+  - hardwood
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+I am happy to announce the release of Hardwood 1.0.0.Beta2!
+
+The latest version of this https://hardwood.dev[new parser for Apache Parquet] comes with support for `VARIANT` columns,
+an interactive text-based UI (TUI) for examining and analysing the structure of Parquet files,
+significantly improved performance, more efficient reading of files from object storage, and much more.
+
+<!--more-->
+
+== VARIANT Support
+
+Parquet's https://parquet.apache.org/docs/file-format/types/variantencoding/[`VARIANT` logical type] lets you store semi-structured, JSON-like data in a self-describing binary encoding.
+Physically it is a group of two required `BYTE_ARRAY` children, metadata and value, whose bytes together define a variant value with its own type tag (object, array, string, int, etc.).
+
+`VARIANT` columns come in handy to store dynamically shaped data, such as entity-attribute-value (EAV) data models.
+They are also useful to model data with varying types, for instance a "measurements" column which contains both `long` and `double` values.
+Hardwood surfaces variant values through the new `PqVariant` API:
+
+[source,java,linenums=true]
+----
+// attributes.parquet — an entity-attribute-value table:
+//
+// id    BIGINT      -- entity being described
+// name  STRING      -- which attribute
+// value VARIANT     -- the attribute's value, shape depends on `name`
+//
+// id  name           value
+// (1, "age",         42)                                  - INT64
+// (1, "email",       "ada@example.com")                   - STRING
+// (1, "preferences", { "theme": "dark", "opt_in": true }) - OBJECT
+
+RowReader rows = file.rowReader();
+
+while (rows.hasNext()) {
+  rows.next();
+
+  long id = rows.getLong("id");
+  String name = rows.getString("name");
+  PqVariant v = rows.getVariant("value"); // <1>
+
+  String rendered = switch (v.type()) {  // <2>
+    case INT8, INT16, INT32, INT64 -> Long.toString(v.asLong());
+    case STRING -> v.asString();
+    case OBJECT -> v.asObject().getString("theme");
+    default -> "<" + v.type() + ">";
+  };
+
+  System.out.println(id + "  " + name + " = " + rendered);
+
+  // 1  age = 42
+  // 1  email = ada@example.com
+  // 1  preferences = dark
+
+  byte[] metadata = v.metadata(); // <3>
+  byte[] value    = v.value();
+}
+----
+<1> dynamically typed variant value, shape varies per row
+<2> narrow to specific runtime type
+<3> access raw canonical bytes if needed
+
+The `as*()` methods (`asInt()`, `asString()`, `asTimestamp()`, etc.) let you extract primitives from a variant value.
+Via `getObject()` and `getArray()` you can navigate to nested variant objects and arrays, respectively.
+
+Hardwood also supports the retrieval of https://parquet.apache.org/docs/file-format/types/variantshredding/[shredded variants]: Some writers store part of the payload in a typed sibling column (`typed_value`) alongside `value` for better compression and pushdown. Reassembly is transparent:
+access is exactly the same as for non-shredded variants, and `metadata()` and `value()` return canonical bytes regardless of whether the file was shredded, so `PqVariant` consumers see a single consistent representation.
+Note that predicate push-down and path projections are not aware of shredding yet;
+this optimization is tracked as https://github.com/hardwood-hq/hardwood/issues/309[#309].
+
+== Hardwood CLI TUI
+
+The https://hardwood.dev/latest/cli/[Hardwood CLI] now has a new command `dive` which lets you interactively explore and analyse Parquet files through a text-based UI (TUI).
+It complements the existing non-interactive commands such as `inspect`, `schema`, and `convert`,
+which continue to be available e.g. for scripting and automation use cases.
+The TUI shows you file statistics and schemas; you can drill into row groups and column chunks, examine indexes and dictionaries, take a look at the parsed data, and much more.
+
+To run the TUI, grab the https://github.com/hardwood-hq/hardwood/releases[Hardwood CLI native binary distribution] for your platform from GitHub, then launch it via `hardwood dive`,
+specifying the name of the file to explore (either locally or on S3):
+
+[source,bash,linenums=true]
+----
+hardwood dive -f s3://your-bucket/your-data.parquet
+----
+
+See the following screen recording for some of the features of the Hardwood TUI:
+
++++
+<script src="https://asciinema.org/a/992284.js" id="asciicast-992284" async="true"></script>
++++
+
+When examining a file on object storage, only the required sections are retrieved;
+the number of S3 requests and the downloaded data volume are shown in the title bar.
+A local off-heap cache ensures that each segment of a file is downloaded only once.
+
+The current release is just the starting point for the TUI, we have quite a few ideas for expanding it into a complete Parquet diagnostics tool, e.g. showing raw page data, inspecting Bloom filters, and much more.
+Of course, your ideas and feature requests are welcome in the https://github.com/hardwood-hq/hardwood/issues[issue tracker], too.
+
+== Unified Reader API
+
+As we added more capabilities to the core Hardwood https://hardwood.dev/api/1.0.0.Beta2/dev/hardwood/reader/RowReader.html[row reader API] (projections, filters, row limits, start offsets, etc.), more and more overloaded versions of the `createRowReader()` method accumulated.
+So we decided to rework this API.
+A reader for fetching all rows and all columns can now be obtained via `rowReader()`.
+Otherwise, a builder can be used to customize readers as needed:
+
+[source,java,linenums=true]
+----
+ParquetFileReader fileReader = ParquetFileReader.open(<some file>);
+     
+RowReader rowReader = fileReader.buildRowReader()
+    .projection(ColumnProjection.columns("id", "name")) // <1>
+    .filter(FilterPredicate.gt("age", 21)) // <2>
+    .firstRow(1_000_000) // <3>
+    .head(100) // <4>
+    .build();
+----
+<1> project only the `id` and `name` columns
+<2> only return those rows where `age` is greater than 21
+<3> start from row 1_000_000
+<4> return 100 rows
+
+Similarly, `buildColumnReader()` allows you to retrieve a customized columnar reader.
+The previous split of single-file and multi-file readers has been replaced with one unified reader abstraction.
+
+== Performance Improvements
+
+As part of this release, we've substantially reworked and optimized the core page fetching and decoding pipeline,
+yielding some nice performance gains.
+The pipeline applies per-column parallelism when fetching and decoding pages, and uses column filters, when set, to skip entire pages of non-matching values.
+On a MacBook Pro M3 Max, the existing flat-file benchmark (processing 9.6 GB of NYC taxi ride data, aggregating three of 20 columns via the Hardwood row reader API) improved from ~2.7 sec to 2.2 sec. The nested-file benchmark (4.7 M rows from the Overture Maps dataset, via the column reader API) improved from ~1.4 sec to 0.7 sec.
+Object allocations have been reduced, resulting in less GC pressure and thus more stable tail latencies.
+
+When reading files from S3, `GET` requests for file segments are scheduled much more efficiently than before.
+When applicable, requests are coalesced across column chunks,
+small columns are fetched in a single request,
+and fetched segments can be cached locally for repeated access.
+
+== Wrapping Up
+
+Other additions in this release include support for more Parquet logical types (`INTERVAL`, `MAP`/`LIST`, `INT96`),
+reproducible builds for the published Hardwood JARs,
+and a reorganized `hardwood inspect` CLI command with a more consistent subcommand layout
+(if you have scripts using `inspect`, take a look at the release notes for the migration).
+See the https://hardwood.dev/latest/release-notes/#100beta2-2026-04-29[1.0.0.Beta2 release notes] and https://github.com/hardwood-hq/hardwood/milestone/3?closed=1[GitHub milestone] for the complete list of closed issues.
+
+I am particularly excited about the growing number of people involved with this project.
+A big thank you to everyone contributing to this release:
+https://github.com/arouel[André Rouél], https://github.com/brbrown25[Brandon Brown], https://github.com/brunoborges[Bruno Borges], https://github.com/iifawzi[Fawzi Essam], https://github.com/mghildiy[Manish Ghildiyal], https://github.com/polo7[polo], https://github.com/rionmonster[Rion Williams], https://github.com/sabarish98[Sabarish Rajamohan], https://github.com/tmchow[Trevin Chow].
+If you'd like to start your own contribution journey,
+then check out the https://github.com/hardwood-hq/hardwood/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22["good first issue"] and https://github.com/hardwood-hq/hardwood/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22[help wanted] labels in the issue tracker.
+If you want to discuss any ideas or have questions around the project,
+join the https://github.com/hardwood-hq/hardwood/discussions[Hardwood Discussions] on GitHub.
+
+A first candidate release for Hardwood 1.0 should be out next week, followed by the 1.0 Final release later in May,
+barring any unforeseen issues. Hardwood 1.1 with support for writing Parquet files should follow shortly thereafter.
