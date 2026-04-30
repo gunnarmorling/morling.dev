@@ -434,9 +434,22 @@ The previous split of single-file and multi-file readers has been replaced with 
 <div class="paragraph">
 <p>As part of this release, we’ve substantially reworked and optimized the core page fetching and decoding pipeline,
 yielding some nice performance gains.
-The pipeline applies per-column parallelism when fetching and decoding pages, and uses column filters, when set, to skip entire pages of non-matching values.
-On a MacBook Pro M3 Max, the existing flat-file benchmark (processing 9.6 GB of NYC taxi ride data, aggregating three of 20 columns via the Hardwood row reader API) improved from ~2.7 sec to 2.2 sec. The nested-file benchmark (4.7 M rows from the Overture Maps dataset, via the column reader API) improved from ~1.4 sec to 0.7 sec.
+The pipeline applies per-column parallelism when fetching and decoding pages, and uses column filters, when set, to skip entire pages of non-matching values.</p>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="paragraph">
+<p>On a MacBook Pro M3 Max, the existing flat-file benchmark (processing 9.6 GB of NYC taxi ride data, aggregating three of 20 columns via the Hardwood row reader API) improved from ~2.7 sec to 2.2 sec. The nested-file benchmark (4.7 M rows from the Overture Maps dataset, via the column reader API) improved from ~1.4 sec to 0.7 sec<sup>1</sup>.
 Object allocations have been reduced, resulting in less GC pressure and thus more stable tail latencies.</p>
+</div>
+<div class="sidebarblock aside">
+<div class="content">
+<div class="paragraph">
+<p>[1] Setting up a comprehensive benchmark suite, systematically testing Hardwood’s performance for a range of representative workloads and comparing to other solutions including parquet-java is very high on our roadmap; if you’d like to help with this task, please reach out.</p>
+</div>
+</div>
+</div>
+</div>
 </div>
 <div class="paragraph">
 <p>When reading files from S3, <code>GET</code> requests for file segments are scheduled much more efficiently than before.
@@ -459,7 +472,7 @@ See the <a href="https://hardwood.dev/latest/release-notes/#100beta2-2026-04-29"
 <div class="paragraph">
 <p>I am particularly excited about the growing number of people involved with this project.
 A big thank you to everyone contributing to this release:
-<a href="https://github.com/arouel">André Rouél</a>, <a href="https://github.com/brbrown25">Brandon Brown</a>, <a href="https://github.com/brunoborges">Bruno Borges</a>, <a href="https://github.com/iifawzi">Fawzi Essam</a>, <a href="https://github.com/mghildiy">Manish Ghildiyal</a>, <a href="https://github.com/polo7">polo</a>, <a href="https://github.com/rionmonster">Rion Williams</a>, <a href="https://github.com/sabarish98">Sabarish Rajamohan</a>, <a href="https://github.com/tmchow">Trevin Chow</a>.
+<a href="https://github.com/arouel">André Rouél</a>, <a href="https://github.com/brbrown25">Brandon Brown</a>, <a href="https://github.com/brunoborges">Bruno Borges</a>, <a href="https://github.com/iifawzi">Fawzi Essam</a>, <a href="https://github.com/mghildiy">Manish Ghildiyal</a>, <a href="https://github.com/polo7">polo</a>, <a href="https://github.com/rionmonster">Rion Williams</a>, <a href="https://github.com/sabarish98">Sabarish Rajamohan</a>, and <a href="https://github.com/tmchow">Trevin Chow</a>.
 If you’d like to start your own contribution journey,
 then check out the <a href="https://github.com/hardwood-hq/hardwood/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22">&#34;good first issue&#34;</a> and <a href="https://github.com/hardwood-hq/hardwood/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22">&#34;help wanted&#34;</a> labels in the issue tracker.
 If you want to discuss any ideas or have questions around the project,
