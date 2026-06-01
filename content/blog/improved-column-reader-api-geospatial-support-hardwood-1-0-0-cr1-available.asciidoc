@@ -138,6 +138,8 @@ System.out.printf("Mean daily maximum: %.1f °C over %d days%n",
 <6> Reduce each list within its own span — a per-list `max` can't be recovered from one flat array of every reading
 <7> Left at `-inf` by an empty list (or one whose readings were all null), so those days don't count
 
+Handing values back as contiguous primitive arrays plus a set-bit-means-present validity bitmap is also exactly the shape vectorized processing wants:
+callers can run branch-free, data-parallel loops over the values (e.g. with Java's Vector API).
 The https://hardwood.dev/1.0.0.CR1/how-to/column-reader/[how-to guide] covers the API in depth:
 multi-level nesting, efficient retrieval of repeatable `String` values,
 working effectively with sparse columns, and more.
@@ -202,6 +204,8 @@ allowing the row groups of a file to be processed by multiple worker instances
 * Exhaustive logical-type formatting in the Hardwood CLI; faster navigation of large collections and corrected "go to latest" in the data preview of `hardwood dive`
 
 Overall, 50 issues were resolved for Hardwood 1.0.0.CR1; see the https://hardwood.dev/1.0.0.CR1/release-notes/#100cr1-2026-05-31[release notes] and the https://github.com/hardwood-hq/hardwood/milestone/6?closed=1[GitHub milestone] for the complete list.
+The Hardwood library artifacts (_hardwood-core_, _hardwood-s3_, etc.) are available on https://central.sonatype.com/namespace/dev.hardwood[Maven Central],
+while platform-specific native binaries for the Hardwood CLI can be downloaded from the https://github.com/hardwood-hq/hardwood/releases/tag/v1.0.0.CR1[1.0.0.CR1 release page].
 
 As always, a massive shout-out to everyone who contributed to this release:
 https://github.com/CarlosEduR[Carlos Sousa], https://github.com/iifawzi[Fawzi Essam], https://github.com/mghildiy[Manish], https://github.com/mohamedibrahim54[Mohamed Ibrahim Elsawy], https://github.com/muhannd2004[Muhannd Sayed], https://github.com/polo7[polo], https://github.com/prshnt[Prashant Khanal], https://github.com/rionmonster[Rion Williams], and https://github.com/bmscomp[Said Boudjelda]!
