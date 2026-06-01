@@ -1,0 +1,213 @@
+---
+title: "Improved Column Reader API, First Cut of Geospatial Support: Hardwood 1.0.0.CR1 Is Available"
+date: 2026-05-31T21:36:00+01:00
+draft: false
+markup: adoc
+tags:
+  - parquet
+  - open-source
+  - java
+  - performance
+  - hardwood
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+I am happy to announce the release of https://hardwood.dev/1.0.0.CR1/[Hardwood 1.0.0.CR1]!
+
+This first candidate release of Hardwood 1.0 brings a substantially improved API for columnar access to Apache Parquet files,
+initial support for Parquet's `GEOMETRY`/`GEOGRAPHY` column types, and many other improvements to the core library as well as the Hardwood CLI.
+
+<!--more-->
+
+== Reworked ColumnReader API
+
+Hardwood provides https://hardwood.dev/1.0.0.CR1/concepts/reader-models/[two APIs] for parsing Parquet files:
+
+* The `RowReader` API provides row-oriented access to Parquet records, including nested structs, lists, and maps. Optimized for ergonomics and ease of use, it is the recommended general-purpose API for reading arbitrarily complex structured records one by one
+* The `ColumnReader` API offers batch-style access to the columnar data of a Parquet file; it is optimized for throughput and the preferred choice for analytical workloads that operate on large numbers of values
+
+For the 1.0.0.CR1 release, we've reworked the columnar API to close some gaps around the retrieval of optional and repeatable columns and make the API less error-prone to use.
+Taking inspiration from https://arrow.apache.org/docs/format/Columnar.html[Apache Arrow's columnar format] for nested data,
+we introduced a new type, `Validity`, to model nullability across both flat and nested data.
+Let's take a look at some examples.
+First, here's how to sum all the values from a flat (i.e. non-nested and non-repeatable) column:
+
+[source,java,linenums=true]
+----
+ParquetFileReader reader = ...;
+
+try (ColumnReader fare = reader.columnReader("fare_amount")) { // <1>
+    double sum = 0;
+    while (fare.nextBatch()) {
+        int count = fare.getValueCount();
+        double[] values = fare.getDoubles(); // <2>
+        Validity validity = fare.getLeafValidity();
+        boolean hasNulls = validity.hasNulls(); // <3>
+
+        for (int i = 0; i < count; i++) { // <4>
+            if (!hasNulls || validity.isNotNull(i)) {
+                sum += values[i];
+            }
+        }
+    }
+}
+----
+<1> Create a column reader by name (spans all row groups automatically)
+<2> Get the values from the current batch as `double`
+<3> Hoisting the `hasNulls()` check outside the loop increases throughput if most batches don't have nulls
+<4> Process the values from the current batch
+
+When reading multiple columns from a file,
+you can obtain a `ColumnReaders` object which lets you drive the readers in lockstep:
+
+[source,java,linenums=true]
+----
+ParquetFileReader reader = ...;
+long passengerCount = 0;
+double tripDistance = 0, fareAmount = 0;
+
+ColumnReaders columns = reader.buildColumnReaders(
+        ColumnProjection.columns(
+                "passenger_count", "trip_distance", "fare_amount"))
+        .build();
+
+while (columns.nextBatch()) {
+    int count = columns.getRecordCount();
+    long[]   v0 = columns.getColumnReader("passenger_count").getLongs();
+    double[] v1 = columns.getColumnReader("trip_distance").getDoubles();
+    double[] v2 = columns.getColumnReader("fare_amount").getDoubles();
+
+    for (int i = 0; i < count; i++) {
+        passengerCount += v0[i];
+        tripDistance += v1[i];
+        fareAmount += v2[i];
+    }
+}
+----
+
+Parquet also allows for repeatable columns (i.e. lists) and even nested repeatable columns (i.e. lists of lists).
+The column reader API captures the nullability of these structures through a notion of *layers* — telling you which elements at each level of nesting are null, say an outermost list, a list nested within it, or a leaf value inside a list.
+Here is an example of a dataset which contains multiple temperature measurements per day,
+and we'd like to calculate the mean daily maximum:
+
+[source,java,linenums=true]
+----
+// temperature_samples is a list<double> — each record holds one day's
+// readings. Mean daily maximum: the average, across days, of each day's
+// hottest reading.
+ColumnReader col = reader.columnReader(
+        "temperature_samples.list.element"); // <1>
+double sumOfMaxima = 0;
+long days = 0;
+
+while (col.nextBatch()) {
+    int records = col.getRecordCount();
+    double[] readings = col.getDoubles();
+    int[] offsets = col.getLayerOffsets(0); // <2>
+    Validity present = col.getLayerValidity(0); // <3>
+    Validity valid = col.getLeafValidity(); // <4>
+
+    for (int r = 0; r < records; r++) {
+        if (present.isNull(r)) continue; // <5>
+
+        double dailyMax = Double.NEGATIVE_INFINITY;
+        for (int i = offsets[r]; i < offsets[r + 1]; i++) { // <6>
+            if (valid.isNull(i)) continue;
+            if (readings[i] > dailyMax) dailyMax = readings[i];
+        }
+        if (dailyMax != Double.NEGATIVE_INFINITY) { // <7>
+            sumOfMaxima += dailyMax;
+            days++;
+        }
+    }
+}
+System.out.printf("Mean daily maximum: %.1f °C over %d days%n",
+        sumOfMaxima / days, days);
+----
+<1> Open a column reader on the list's leaf, `element`
+<2> Per-list boundaries: record `r`'s readings run from `offsets[r]` up to (excluding) `offsets[r + 1]`
+<3> List-level validity — which records actually logged a day, versus a null list
+<4> Leaf-level validity — which individual readings within those lists are non-null
+<5> Skip null lists; the layer model keeps this per-record check separate from element nulls
+<6> Reduce each list within its own span — a per-list `max` can't be recovered from one flat array of every reading
+<7> Left at `-inf` by an empty list (or one whose readings were all null), so those days don't count
+
+The https://hardwood.dev/1.0.0.CR1/how-to/column-reader/[how-to guide] covers the API in depth:
+multi-level nesting, efficient retrieval of repeatable `String` values,
+working effectively with sparse columns, and more.
+
+Note that the `ColumnReader` API is marked experimental in Hardwood 1.0:
+there may be changes--potentially backwards-incompatible ones--in response to the feedback we receive.
+We're planning to promote the API to stable in a future Hardwood 1.x version.
+
+== Geospatial Support
+
+Via its `GEOMETRY` and `GEOGRAPHY` logical types,
+Apache Parquet allows you to https://parquet.apache.org/docs/file-format/types/geospatial/[store geospatial data] using the Well-Known Binary (WKB) serialization.
+Both column types are https://hardwood.dev/1.0.0.CR1/how-to/geospatial/[supported by Hardwood] as of this release,
+and their geospatial statistics drive predicate push-down to the row group and page level.
+Geospatial data is currently exposed as raw byte arrays,
+so you can use a geometry library of your choice (e.g. https://locationtech.github.io/jts/[JTS]) for decoding:
+
+[source,java,linenums=true]
+----
+ParquetFileReader fileReader = ...;
+
+FilterPredicate filter = FilterPredicate.intersects(
+        "location", -25.0, 35.0, 45.0, 72.0); // <1>
+
+WKBReader wkbReader = new WKBReader(); // <2>
+
+RowReader rowReader = fileReader.buildRowReader().filter(filter).build();
+
+while (rowReader.hasNext()) {
+    rowReader.next();
+    byte[] wkb = rowReader.getBinary("location");
+    Geometry geom = wkbReader.read(wkb); // <3>
+}
+----
+<1> Filter records by intersecting with the given bounding box; note this applies at the row group / page level, i.e. a record will be returned if there's at least one match in the same page or row group
+<2> Decode the raw bytes with any WKB library — here JTS' `WKBReader`
+<3> The decoded `Geometry` is ready to inspect, intersect, etc.
+
+== Documentation Overhaul
+
+As we're approaching the Hardwood 1.0 release, we've also spent some time improving and completing the project documentation.
+We're big fans of the https://diataxis.fr/[Diátaxis] approach for structuring technical documentation,
+which proposes to organize docs in four distinct categories: tutorials (learning-oriented), how-to guides (goal-oriented), reference (information-oriented), and explanation (understanding-oriented).
+The docs on https://hardwood.dev[hardwood.dev] have been restructured and built out based on this framework:
+
+image::hardwood_documentation_rework.png[Updated Hardwood Documentation, based on the Diátaxis framework]
+
+We hope that Hardwood users will find it much easier now to get started with the library, solve specific tasks such as reading files on S3,
+or learn more about Hardwood's concurrency model.
+Any feedback on the new documentation structure is more than welcome!
+
+== Further Fixes and Improvements
+
+In addition, Hardwood 1.0.0.CR1 contains a number of other changes:
+
+* Local files of arbitrary size can be parsed, as long as individual column chunks don't exceed 2 GB; for remote files (e.g. on S3), the 2 GB total file size limit remains in place
+* Hardwood now supports Parquet's `FLOAT16` column type
+* The `RowReader` value model gained more ergonomic accessors: by-index field access on `PqStruct`, key-based lookup and typed accessors on `PqMap`, typed `List` accessors on `PqList`, and additional Variant accessors
+* Multi-column filter expressions are now evaluated more efficiently by pushing as much work as possible to individual page decoder threads
+* To distribute work across cluster engines such as Apache Flink, Hardwood now supports split-aware reading via `RowGroupPredicate.byteRange(...)`,
+allowing the row groups of a file to be processed by multiple worker instances
+* Exhaustive logical-type formatting in the Hardwood CLI; faster navigation of large collections and corrected "go to latest" in the data preview of `hardwood dive`
+
+Overall, 50 issues were resolved for Hardwood 1.0.0.CR1; see the https://hardwood.dev/1.0.0.CR1/release-notes/#100cr1-2026-05-31[release notes] and the https://github.com/hardwood-hq/hardwood/milestone/6?closed=1[GitHub milestone] for the complete list.
+
+As always, a massive shout-out to everyone who contributed to this release:
+https://github.com/CarlosEduR[Carlos Sousa], https://github.com/iifawzi[Fawzi Essam], https://github.com/mghildiy[Manish], https://github.com/mohamedibrahim54[Mohamed Ibrahim Elsawy], https://github.com/muhannd2004[Muhannd Sayed], https://github.com/polo7[polo], https://github.com/prshnt[Prashant Khanal], https://github.com/rionmonster[Rion Williams], and https://github.com/bmscomp[Said Boudjelda]!
+
+With 1.0.0.CR1 out the door,
+we're on the home stretch to Hardwood 1.0 Final,
+which should ship in a week or so.
+After that, we'll begin work on writing Parquet files,
+slated for Hardwood 1.1 in early summer.
