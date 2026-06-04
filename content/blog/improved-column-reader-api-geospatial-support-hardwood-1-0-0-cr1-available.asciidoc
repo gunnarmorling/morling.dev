@@ -153,7 +153,7 @@ We're planning to promote the API to stable in a future Hardwood 1.x version.
 Via its `GEOMETRY` and `GEOGRAPHY` logical types,
 Apache Parquet allows you to https://parquet.apache.org/docs/file-format/types/geospatial/[store geospatial data] using the Well-Known Binary (WKB) serialization.
 Both column types are https://hardwood.dev/1.0.0.CR1/how-to/geospatial/[supported by Hardwood] as of this release,
-and their geospatial statistics drive predicate push-down to the row group and page level.
+and their geospatial statistics drive predicate push-down to the row group level.
 Geospatial data is currently exposed as raw byte arrays,
 so you can use a geometry library of your choice (e.g. https://locationtech.github.io/jts/[JTS]) for decoding:
 
@@ -174,7 +174,7 @@ while (rowReader.hasNext()) {
     Geometry geom = wkbReader.read(wkb); // <3>
 }
 ----
-<1> Filter records by intersecting with the given bounding box; note this applies at the row group / page level, i.e. a record will be returned if there's at least one match in the same page or row group
+<1> Filter records by intersecting with the given bounding box; note this applies at the row group level, i.e. a record will be returned if there's at least one match in the same row group
 <2> Decode the raw bytes with any WKB library — here JTS' `WKBReader`
 <3> The decoded `Geometry` is ready to inspect, intersect, etc.
 
