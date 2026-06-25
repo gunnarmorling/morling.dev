@@ -90,7 +90,14 @@ image::hardwood_1_0_flat_chart1_columnar.png["Flat scan throughput in M rows/s â
 
 As expected, Hardwood's advantage here comes from using all the available CPU cores. Even when pinned to a single core (as in, say, a Kubernetes pod with a one-CPU allocation) it held a modest edge over parquet-java on this machine, which makes it a viable option in constrained deployments, too. That single-core margin is small and machine-dependent, though: on other instances we've seen it narrow, or tip slightly in parquet-java's favor. The multi-core advantage, by contrast, was consistent across all our runs.
 
-Next, let's run the same task with the record-based APIs in both libraries, the row reader API in Hardwood and parquet-java's Avro reader:
+--
+Next, let's run the same task with the record-based APIs in both libraries, the row reader API in Hardwood and the Avro reader in parquet-java, materializing Avro's `GenericRecord`+++<sup>2</sup>+++:
+
+[.aside]
+****
+[2] A quick spot check with a typed `SpecificRecord` showed no material difference, so the results aren't an artifact of the generic object model.
+****
+--
 
 image::hardwood_1_0_flat_chart2_record.png["Flat scan throughput in M rows/s â€” Hardwood row reader (indexed and by-name access) vs. parquet-java's Avro reader"]
 
