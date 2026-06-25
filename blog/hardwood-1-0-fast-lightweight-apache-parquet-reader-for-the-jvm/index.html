@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Hardwood 1.0: A Fast, Lightweight Apache Parquet Reader for the JVM - Gunnar Morling</title>
+	<link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png" />
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png" />
+	<link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+	<link rel="shortcut icon" href="/favicon/favicon.ico" />
+
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	
+	<link rel="preload" href="/fonts/raleway-v37-latin-200.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/raleway-v37-latin-300.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/raleway-v37-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+
+	<link rel="preload" href="/fonts/lato-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin>
+
+	<link rel="preload" href="/fonts/lora-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin><meta property="og:url" content="https://www.morling.dev/blog/hardwood-1-0-fast-lightweight-apache-parquet-reader-for-the-jvm/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Hardwood 1.0: A Fast, Lightweight Apache Parquet Reader for the JVM">
+  <meta property="og:description" content=" Hardwood is a new Parquet library for the JVM, written from scratch to do one thing well: read (and soon, write) Apache Parquet files fast, with no mandatory dependencies. It is performance-focused …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2026-06-25T07:30:00&#43;02:00">
+    <meta property="article:modified_time" content="2026-06-25T07:30:00&#43;02:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Hardwood 1.0: A Fast, Lightweight Apache Parquet Reader for the JVM">
+  <meta name="twitter:description" content=" Hardwood is a new Parquet library for the JVM, written from scratch to do one thing well: read (and soon, write) Apache Parquet files fast, with no mandatory dependencies. It is performance-focused …">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.7e747dab5a47b967474cfdc64085734aa21b459c2bc3519033238d0258bb7dcc.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
+	
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.20888cb6b76ed17eb07628f659718d130e32ea466294927dc4dfb410a3e3f3ab.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+	<script src="/js/main.min.9ee619eea7f51473f4284ef86c76bdb1b0089e19781ca97275924edf53be5bd4.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header">
+	<div class="header-image-container">
+		<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+	</div>
+	<div class="header-title">
+		<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+		<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+	</div>
+	<div class="header-nav-wrapper">
+		<nav class="row pre-nav">
+			<div class="pull-right">
+				<ul class="flat"><li>
+						<a href="/blog/index.xml" title="RSS FEED">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#rss"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://github.com/gunnarmorling" title="GitHub">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#github"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://twitter.com/gunnarmorling" title="Twitter">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+							</svg>
+						</a>
+					</li></ul>
+			</div>
+		</nav>
+		<nav class="row nav">
+			<div>
+				<ul class="flat">
+					
+					<li>
+						<a href="/blog">Blog</a>
+					</li>
+					
+					<li>
+						<a href="/projects/">Projects</a>
+					</li>
+					
+					<li>
+						<a href="/conferences/">Conferences</a>
+					</li>
+					
+					<li>
+						<a href="/podcasts/">Podcasts</a>
+					</li>
+					
+					<li>
+						<a href="/about/">About</a>
+					</li>
+					
+				</ul>
+			</div>
+			<div class="pull-right">
+				<div class="club">
+					<form id="myForm">
+						<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+						<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+					</form>
+				</div>
+			</div>
+		</nav>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Hardwood 1.0: A Fast, Lightweight Apache Parquet Reader for the JVM</h1>
+				<div class="post-meta-line">
+					<span class="meta">Posted at Jun 25, 2026</span>
+					
+					<span class="post-tags-inline">
+						
+						<a href="/tags/parquet">parquet</a>
+						
+						<a href="/tags/open-source">open-source</a>
+						
+						<a href="/tags/java">java</a>
+						
+						<a href="/tags/performance">performance</a>
+						
+						<a href="/tags/hardwood">hardwood</a>
+						
+					</span>
+					
+				</div>
+			</div>
+
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_why_hardwood">Why Hardwood</a></li>
+<li><a href="#_whats_in_hardwood_1_0">What’s in Hardwood 1.0</a></li>
+<li><a href="#_performance">Performance</a></li>
+<li><a href="#_the_hardwood_cli">The Hardwood CLI</a></li>
+<li><a href="#_building_open_source_with_ai">Building Open-Source With AI</a></li>
+<li><a href="#_a_big_thank_you">A Big Thank You</a></li>
+<li><a href="#_whats_ahead">What’s Ahead</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Hardwood is a new Parquet library for the JVM, written from scratch to do one thing well: read (and soon, write) Apache Parquet files fast, with no mandatory dependencies.
+It is performance-focused and multi-threaded at its core, fanning page decoding out across all your CPU cores by default.</p>
+</div>
+<div class="paragraph">
+<p>Today, <strong>Hardwood reaches 1.0</strong>. After five preview releases since the start of the year (<a href="/blog/hardwood-new-parser-for-apache-parquet/">Alpha1</a>, <a href="/blog/hardwood-reaches-beta-s3-predicate-push-down-cli/">Beta1</a>, <a href="/blog/variant-support-interactive-parquet-file-tui-hardwood-1-0-0-beta2-is-out/">Beta2</a>, <a href="/blog/improved-column-reader-api-geospatial-support-hardwood-1-0-0-cr1-available/">CR1</a>, <a href="https://hardwood.dev/1.0.0.Final/release-notes/#100cr2-2026-06-7">CR2</a>), we now consider Hardwood ready for production, and its public API will evolve with a strong focus on backwards compatibility going forward. Hardwood targets Java 21 or newer, is open-source (Apache License 2.0), and is available from <a href="https://central.sonatype.com/artifact/dev.hardwood/hardwood-core">Maven Central</a>.</p>
+</div>
+<div class="sect1">
+<h2 id="_why_hardwood">Why Hardwood<a class="anchor" href="#_why_hardwood"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Working with the <a href="https://parquet.apache.org/">Apache Parquet</a> columnar file format on the JVM has traditionally come with a fairly heavyweight stack: a large number of dependencies on the classpath and a single-threaded reader at the core. Hardwood explores a different set of tradeoffs. The full rationale is in the <a href="/blog/hardwood-new-parser-for-apache-parquet/">original project announcement</a>; in a nutshell, the goals are:</p>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Implement a Parquet library without any mandatory dependencies:</strong><sup>1</sup> Parquet files which are either uncompressed or gzip-compressed don’t require any 3rd party libraries at all; for parsing files compressed with Snappy/Zstd/LZ4/Brotli you only need to provide the (typically single-JAR) codec of your choosing</p>
+</li>
+<li>
+<p><strong>Utilize modern multi-core CPUs as much as possible:</strong> unlike <a href="https://github.com/apache/parquet-java">parquet-java</a>, which is single-threaded at its core, Hardwood fans out the decoding of the individual pages of a Parquet file to multiple threads, resulting in significantly reduced wall clock parsing times</p>
+</li>
+<li>
+<p><strong>Be compatible:</strong> every file which can be parsed by parquet-java should also be parseable with Hardwood; if that’s not the case for a given file, we consider this a bug which needs fixing</p>
+</li>
+</ul>
+</div>
+<div class="sidebarblock aside">
+<div class="content">
+<div class="paragraph">
+<p>[1] In particular, no Hadoop. IYKYK.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_whats_in_hardwood_1_0">What’s in Hardwood 1.0<a class="anchor" href="#_whats_in_hardwood_1_0"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The 1.0 release implements all the key capabilities you’d expect from a Parquet reader: coverage of all the physical and logical Parquet column types, including VARIANT and a first cut of handling geo-spatial columns, support for all relevant column encodings and compression schemes, the ability to parse both local and remote files (on object storage such as S3), projections and predicate push-down, and much more. The <a href="https://github.com/hardwood-hq/hardwood-examples">hardwood-examples</a> repository is a great starting point to learn all about Hardwood’s capabilities and how to make the best use of them.</p>
+</div>
+<div class="paragraph">
+<p>Hardwood comes with two distinct APIs which are at opposite ends of the ergonomics-vs-performance spectrum. The <a href="https://hardwood.dev/1.0.0.Final/how-to/row-reader/">row reader API</a> provides structured access to the records of a Parquet file, including nested and repeatable columns. It’s a great starting point for general-purpose access to Parquet:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><span class="k">try</span> <span class="o">(</span><span class="nc">ParquetFileReader</span> <span class="n">fileReader</span> <span class="o">=</span> <span class="nc">ParquetFileReader</span><span class="o">.</span><span class="na">open</span><span class="o">(</span>
+        <span class="nc">InputFile</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">path</span><span class="o">));</span>
+
+    <span class="nc">RowReader</span> <span class="n">rowReader</span> <span class="o">=</span> <span class="n">fileReader</span><span class="o">.</span><span class="na">rowReader</span><span class="o">())</span> <span class="o">{</span>
+
+    <span class="k">while</span> <span class="o">(</span><span class="n">rowReader</span><span class="o">.</span><span class="na">hasNext</span><span class="o">())</span> <span class="o">{</span>
+        <span class="n">rowReader</span><span class="o">.</span><span class="na">next</span><span class="o">();</span>
+
+        <span class="kt">long</span> <span class="n">id</span> <span class="o">=</span> <span class="n">rowReader</span><span class="o">.</span><span class="na">getLong</span><span class="o">(</span><span class="s">&#34;id&#34;</span><span class="o">);</span>
+        <span class="nc">String</span> <span class="n">name</span> <span class="o">=</span> <span class="n">rowReader</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="s">&#34;name&#34;</span><span class="o">);</span>
+        <span class="nc">LocalDate</span> <span class="n">birthDate</span> <span class="o">=</span> <span class="n">rowReader</span><span class="o">.</span><span class="na">getDate</span><span class="o">(</span><span class="s">&#34;birth_date&#34;</span><span class="o">);</span>
+        <span class="nc">Instant</span> <span class="n">createdAt</span> <span class="o">=</span> <span class="n">rowReader</span><span class="o">.</span><span class="na">getTimestamp</span><span class="o">(</span><span class="s">&#34;created_at&#34;</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <a href="https://hardwood.dev/1.0.0.Final/how-to/column-reader/">column reader API</a> on the other hand exposes a batch-style API for accessing arrays of raw Parquet column values, with a <a href="https://hardwood.dev/1.0.0.Final/concepts/nested-columns/">layer scheme</a> inspired by Apache Arrow for representing repeatable columns.
+It trades ergonomics for throughput: minimal per-value overhead, and batches of primitive arrays the caller can hand straight to a pool of worker threads or a vectorized loop.
+This makes the column reader the right foundation for analytical workloads over large numbers of values.</p>
+</div>
+<div class="paragraph">
+<p>While striving to expose exactly one way to achieve a given task generally is a good idea for API design, ergonomics and peak throughput genuinely require different shapes, and we didn’t want to compromise one for the sake of the other.
+To learn more about the differences between the two reader APIs in Hardwood and when to use which one, refer to <a href="https://hardwood.dev/1.0.0.Final/concepts/reader-models/">this guide</a> on reader models.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_performance">Performance<a class="anchor" href="#_performance"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Speaking of performance, let’s take a look at some numbers. Benchmarking Parquet workloads is a wide field; in the following we’re going to touch on two specific workloads.</p>
+</div>
+<div class="paragraph">
+<p>The first one is a full scan of a flat dataset (i.e. no repeatable or nested columns) of <a href="https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page">taxi rides in New York City</a>, provided by the NYC Taxi &amp; Limousine Commission. The benchmark folds the values of all 20 columns across twelve files from the dataset, representing the months January to December of 2025. There are 48.7M rows, with a total size of 830 MB compressed.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Both benchmarks are implemented using <a href="https://github.com/openjdk/jmh">JMH</a>, running five forks with ten measurements each. Benchmarking was done with Java 25 (Temurin build) on an AWS m7i.2xlarge instance (8 vCPU / 4 physical cores; 32 GB of RAM), with the files being served from the operating system’s page cache, i.e. these are microbenchmarks focusing on CPU. To account for variability of the machine’s performance, three runs of the benchmark suite were executed, out of which the results from the median run are shown. Importantly, while absolute throughput varied roughly 10% across runs, the relative ratio between the contenders was stable within ±~3%. The complete source code of the benchmarks and the raw numbers from all runs can be found in this <a href="https://github.com/hardwood-hq/hardwood-benchmarks/">GitHub repository</a>.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>Below are the numbers from processing the taxi rides data with both Hardwood’s column reader and the column API in parquet-java (version 1.17.1). Using all 8 vCPUs, Hardwood achieves a throughput of 16.5M rows/sec. As measuring a multi-threaded engine against a single-threaded one is a bit apples-to-oranges, Hardwood has also been run on a single CPU core, achieving 3.9M rows/sec for this workload.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/hardwood_1_0_flat_chart1_columnar.png" alt="Flat scan throughput in M rows/s — Hardwood column reader (all cores and single core) vs. parquet-java’s column API"/>
+</div>
+</div>
+<div class="paragraph">
+<p>As expected, Hardwood’s advantage here comes from using all the available CPU cores. Even when pinned to a single core (as in, say, a Kubernetes pod with a one-CPU allocation) it held a modest edge over parquet-java on this machine, which makes it a viable option in constrained deployments, too. That single-core margin is small and machine-dependent, though: on other instances we’ve seen it narrow, or tip slightly in parquet-java’s favor. The multi-core advantage, by contrast, was consistent across all our runs.</p>
+</div>
+<div class="paragraph">
+<p>Next, let’s run the same task with the record-based APIs in both libraries, the row reader API in Hardwood and parquet-java’s Avro reader:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/hardwood_1_0_flat_chart2_record.png" alt="Flat scan throughput in M rows/s — Hardwood row reader (indexed and by-name access) vs. parquet-java’s Avro reader"/>
+</div>
+</div>
+<div class="paragraph">
+<p>There are a few interesting things worth pointing out.
+First, Hardwood’s indexed row reader lands within ~10% of the columnar API (14.9 vs 16.5M rows/sec):
+both feed off the same multi-threaded decode pipeline and differ mainly in how decoded values are surfaced.
+That being said, once the consumption logic becomes the limiting factor, you could take throughput a step further with the columnar API by fanning out processing to separate worker threads.</p>
+</div>
+<div class="paragraph">
+<p>Then, there’s a substantial advantage to accessing columns using their projected index instead of via their name. The latter requires a look-up of the column index, for each column of each row. This adds up, so much so that the consumption loop actually becomes the bottleneck, substantially diminishing the advantage of multi-threaded page decoding, with Hardwood only achieving 2.8M rows/sec. So whenever possible, you should hoist the index look-up out of the core reader loop and then work with index-based access.</p>
+</div>
+<div class="paragraph">
+<p>A key aspect to achieving high throughput when parsing Parquet files is predicate push-down: instead of parsing entire files, the idea is to fetch only those row groups or even pages which match a given query, thus reducing IO (particularly critical when parsing files from object storage) and CPU cycles for decoding. So let’s dive into this use case with a second benchmark. It runs a basic comparison query against a synthetic dataset with 50M rows, filtering on one column, <code>event_time</code>, and projecting another, <code>amount</code>. The visual shows the results from both a selective scenario (the query matches ~5% of rows, clustered in a small number of pages) and the non-selective baseline where all rows match the query:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/hardwood_1_0_filtered_chart.png" alt="Filtered scan execution time in ms — Hardwood vs. parquet-java, for the selective (~5% match) and match-all cases, on all cores and pinned to a single core"/>
+</div>
+</div>
+<div class="paragraph">
+<p>Hardwood performs the selective scan in 12.9 ms on all cores vs. 53.8 ms when pinned to a single vCPU. The match-all scan finishes in 222 ms and 983 ms, respectively. For both Hardwood and parquet-java, execution times scale almost linearly with the ratio of matching results (~17-18x speed-up for returning a result set of 1/20th of the full size), with Hardwood having a substantial and consistent advantage in both cases, benefitting from its branchless, batch-at-a-time predicate evaluation.</p>
+</div>
+<div class="paragraph">
+<p>Now, you should take these numbers as what they are: a snapshot of the results from running two specific workloads on a specific machine. You should do your own benchmarking with your own files on your own hardware, for your individual access patterns. Start by running the benchmarks discussed, then adjust or extend them as it makes sense. Results depend on a range of factors such as machine specs (how many cores, available SIMD instructions, etc.), local vs. remote access, what kind of queries you are running, what metadata exists in the files, and more. For example, Hardwood doesn’t support Bloom filters yet (it’s under development <a href="https://github.com/hardwood-hq/hardwood/pull/671">right now</a>), so if you have an equality predicate on a high cardinality column against a file with Bloom filters, Hardwood wouldn’t run this query optimally yet. That being said, high performance is a key concern for the project which is being worked on continuously, so stay tuned for more.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_hardwood_cli">The Hardwood CLI<a class="anchor" href="#_the_hardwood_cli"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hardwood started life as a JVM library. But as we quickly realized, the same machinery also makes for a handy command-line tool, so we decided to ship it as one too.
+You can think of the <a href="https://hardwood.dev/1.0.0.Final/reference/cli/">Hardwood CLI</a> as a Swiss-army knife for Parquet files.</p>
+</div>
+<div class="paragraph">
+<p>It lets you inspect file schemas and metadata such as indexes and dictionaries, you can drill into row groups and column chunks, take a glimpse at the records in a file, export its data to JSON, and much more. The CLI comes with both non-interactive commands, for instance useful for scripting use cases, and an interactive text-based UI (TUI) called hardwood dive, which lets you drill into a file very quickly and intuitively.</p>
+</div>
+<div class="paragraph">
+<p>If you’d like to give the CLI a shot, you can download native binaries for Linux (aarch64 and x86_64), macOS (aarch64 and x86_64), and Windows (x86_64) from our <a href="https://github.com/hardwood-hq/hardwood/releases">GitHub release page</a>. No JVM needed, just download the right binary for your platform, and off you go. The following recording shows hardwood dive in action:</p>
+</div>
+<div class="paragraph">
+<p>
+<script src="https://asciinema.org/a/992284.js" id="asciicast-992284" async="true"></script>
+</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_building_open_source_with_ai">Building Open-Source With AI<a class="anchor" href="#_building_open_source_with_ai"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>It’s 2026, so you didn’t think we wouldn’t mention AI at least once in this post, did you? As discussed in the initial project announcement, Hardwood is being <a href="/blog/hardwood-new-parser-for-apache-parquet/#_built_with_ai_not_by_ai">built <em>with</em> AI, but not <em>by</em> AI</a>. While I firmly believe we wouldn’t have made progress as quickly without coding agents like Claude Code, we’re generally not vibe coding: every larger change starts from a design doc, the architecture and invariants stay human-owned, and every diff gets read and reviewed before it lands.</p>
+</div>
+<div class="paragraph">
+<p>As it turns out, Apache Parquet is an excellent fit for this way of LLM-assisted working. It not only provides a comprehensive and well-written specification, it also comes with an extensive test suite in the form of more than 200 Parquet files which we’re using as an executable quality gate for asserting conformance. There are quite a few things to be said about this topic: what works well, what doesn’t, how we go about code reviews, and the one place where we actually do accept a little bit of vibe coding. All of this will get its own post soon. In the meantime, the slides from my recent <a href="https://speakerdeck.com/gunnarmorling/hardwood-building-a-parquet-parser-from-scratch-with-a-little-help-from-ai">Hardwood talk</a> at Current London and this <a href="https://www.infoq.com/podcasts/chasing-efficient-java-development/">InfoQ podcast</a> touch on the approach.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_a_big_thank_you">A Big Thank You<a class="anchor" href="#_a_big_thank_you"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hardwood wouldn’t be anything without the people behind it. Since the project was started in January this year, more than 20 individuals have contributed to the project in the form of pull requests:</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/AlexeiZenin">Alexei Zenin</a>, <a href="https://github.com/arouel">André Rouél</a>, <a href="https://github.com/aalmiray">Andres Almiray</a>, <a href="https://github.com/ArnavBalyan">Arnav Balyan</a>, <a href="https://github.com/brbrown25">Brandon Brown</a>, <a href="https://github.com/brunoborges">Bruno Borges</a>, <a href="https://github.com/CarlosEduR">Carlos Sousa</a>, <a href="https://github.com/iifawzi">Fawzi Essam</a>, <a href="https://github.com/gunnarmorling">Gunnar Morling</a>, <a href="https://github.com/mghildiy">Manish</a>, <a href="https://github.com/mohamedibrahim54">Mohamed Ibrahim Elsawy</a>, <a href="https://github.com/muhannd2004">muhannd Sayed</a>, <a href="https://github.com/ngrondin">Nicolas Grondin</a>, <a href="https://github.com/RayanRal">Leo Chashnikov</a>, <a href="https://github.com/polo7">polo</a>, <a href="https://github.com/prshnt">Prashant Khanal</a>, <a href="https://github.com/rionmonster">Rion Williams</a>, <a href="https://github.com/rmannibucau">Romain Manni-Bucau</a>, <a href="https://github.com/sabarish98">Sabarish Rajamohan</a>, <a href="https://github.com/bmscomp">Said Boudjelda</a>, <a href="https://github.com/tmchow">Trevin Chow</a>, and <a href="https://github.com/yashpriyadarshan">Yash Priyadarshan</a>.</p>
+</div>
+<div class="paragraph">
+<p>Others participated by logging bug reports, asking questions, providing input and feedback, and more. Thanks a lot to all of you! It’s a unique joy to see how a community of like-minded enthusiasts is coming together to build this project.</p>
+</div>
+<div class="paragraph">
+<p>If you’d like to join the Hardwood community too and do your own first contributions, have a look at the <a href="https://github.com/hardwood-hq/hardwood/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22">good first issue</a> and <a href="https://github.com/hardwood-hq/hardwood/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22">help wanted</a> labels in the issue tracker. If you have questions around the project or want to discuss any ideas, then bring them to the <a href="https://github.com/hardwood-hq/hardwood/discussions">Discussion page</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_whats_ahead">What’s Ahead<a class="anchor" href="#_whats_ahead"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The 1.0 Final release is a major milestone for Hardwood; at the same time, we’re really just getting started, and you can look forward to subsequent releases later this year. Most importantly, for Hardwood 1.1, we’re planning to ship initial support for writing Parquet files. This will close a substantial gap, allowing projects with both read and write use cases to adopt Hardwood and benefit from its minimal dependency footprint and multi-threaded execution engine. The exact shape and form of write support for 1.1 is still under discussion, and you’re very much invited to be part of this.</p>
+</div>
+<div class="paragraph">
+<p>We’re also going to work on a number of <a href="https://github.com/hardwood-hq/hardwood/issues?q=is%3Aissue%20state%3Aopen%20label%3Aperformance">performance-related improvements</a>: there’ll be support for Bloom filters as mentioned above, String reuse for dictionary-encoded columns, optimizations around IO when parsing remote files, etc. Other features on the roadmap include support for Parquet encryption, improvements to the TUI, full geo-spatial support, and much more. Besides working on Hardwood itself, we’re also planning to explore integrations with the wider Java data ecosystem; for instance, we’re going to look into building Parquet file support for Apache Flink based on Hardwood.</p>
+</div>
+<div class="paragraph">
+<p>To get started with using Hardwood, fetch the library from <a href="https://central.sonatype.com/artifact/dev.hardwood/hardwood-core">Maven Central</a> (using the <code>dev.hardwood:hardwood-core:1.0.0.Final</code> GAV) or grab the CLI binary for your platform from <a href="https://github.com/hardwood-hq/hardwood/releases">GitHub Releases</a>. Happy Parquet parsing!</p>
+</div>
+</div>
+</div>
+			</div>
+
+			
+			
+			
+			<div class="related-posts">
+				<h3>Read Next</h3>
+				<ul>
+					
+					<li><a href="/blog/improved-column-reader-api-geospatial-support-hardwood-1-0-0-cr1-available/">Improved Column Reader API, First Cut of Geospatial Support: Hardwood 1.0.0.CR1 Is Available</a> <span class="meta">May 31, 2026</span></li>
+					
+					<li><a href="/blog/variant-support-interactive-parquet-file-tui-hardwood-1-0-0-beta2-is-out/">VARIANT Support, Interactive Parquet File TUI: Hardwood 1.0.0.Beta2 Is Out</a> <span class="meta">Apr 29, 2026</span></li>
+					
+					<li><a href="/blog/hardwood-reaches-beta-s3-predicate-push-down-cli/">Hardwood Reaches Beta: S3, Predicate Push-Down, CLI, and More</a> <span class="meta">Apr 2, 2026</span></li>
+					
+				</ul>
+			</div>
+			
+			
+		</div>
+
+		<div class="post-footer">
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<div class="header-image-container" style="flex-shrink: 0;">
+					<img class="footer-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+				</div>
+				<p style="margin: 0;">Gunnar Morling is an open-source software engineer in the Java and data streaming space, currently working as a Technologist at Confluent. Previously, he helped to build a realtime stream processing platform based on Apache Flink and led the Debezium project, a distributed platform for change data capture. He is a Java Champion and has founded multiple open source projects such as Hardwood, kcctl, JfrUnit, and MapStruct.</p>
+			</div>
+		</div>
+
+		
+		
+		<div class="post-discussions">
+			<p>Comment below, or join the discussion on
+			<a href="https://hn.algolia.com/?query=morling.dev/blog/hardwood-1-0-fast-lightweight-apache-parquet-reader-for-the-jvm/">Hacker News</a>,
+			<a href="https://lobste.rs/search?q=domain:morling.dev+title:%22Hardwood%201.0%3a%20A%20Fast%2c%20Lightweight%20Apache%20Parquet%20Reader%20for%20the%20JVM%22&what=stories">Lobsters</a>, and
+			<a href="https://www.reddit.com/search/?q=url:morling.dev/blog/hardwood-1-0-fast-lightweight-apache-parquet-reader-for-the-jvm/">Reddit</a>.
+			</p>
+		</div>
+		<div id="disqus_thread"></div>
+
+<script>
+  
+  window.addEventListener('load', function() {
+    
+    setTimeout(function() {
+      const commentsContainer = document.getElementById('disqus_thread');
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', 'gunnarmorling/discussions.morling.dev');
+      script.setAttribute('data-repo-id', 'R_kgDOGXzqNQ');
+      script.setAttribute('data-category', 'Announcements');
+      script.setAttribute('data-category-id', 'DIC_kwDOGXzqNc4B_2Pq');
+      script.setAttribute('data-mapping', 'title');
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-theme', 'light');
+      script.setAttribute('data-lang', 'en');
+      script.setAttribute('crossorigin', 'anonymous');
+      script.async = true;
+      commentsContainer.appendChild(script);
+    }, 100);
+  });
+</script>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2026 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
