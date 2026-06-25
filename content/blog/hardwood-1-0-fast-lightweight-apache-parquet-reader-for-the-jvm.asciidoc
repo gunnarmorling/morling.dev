@@ -29,7 +29,7 @@ Today, **Hardwood reaches 1.0**. After five preview releases since the start of 
 
 == Why Hardwood
 
-Parquet on the JVM has traditionally come with a fairly heavyweight stack: Hadoop on the classpath and a single-threaded reader at the core. Hardwood explores a different set of tradeoffs. The full rationale is in the link:/blog/hardwood-new-parser-for-apache-parquet/[original project announcement]; in a nutshell, the goals are:
+Working with the https://parquet.apache.org/[Apache Parquet] columnar file format on the JVM has traditionally come with a fairly heavyweight stack: a large number of dependencies on the classpath and a single-threaded reader at the core. Hardwood explores a different set of tradeoffs. The full rationale is in the link:/blog/hardwood-new-parser-for-apache-parquet/[original project announcement]; in a nutshell, the goals are:
 
 --
 * **Implement a Parquet library without any mandatory dependencies:**+++<sup>1</sup>+++ Parquet files which are either uncompressed or gzip-compressed don't require any 3rd party libraries at all; for parsing files compressed with Snappy/Zstd/LZ4/Brotli you only need to provide the (typically single-JAR) codec of your choosing
@@ -67,11 +67,10 @@ try (ParquetFileReader fileReader = ParquetFileReader.open(
 ----
 
 The https://hardwood.dev/1.0.0.Final/how-to/column-reader/[column reader API] on the other hand exposes a batch-style API for accessing arrays of raw Parquet column values, with a https://hardwood.dev/1.0.0.Final/concepts/nested-columns/[layer scheme] inspired by Apache Arrow for representing repeatable columns.
-It trades ergonomics for throughput: minimal per-value overhead, and batches of primitive arrays the caller can hand straight to a thread pool or a vectorized loop.
-
+It trades ergonomics for throughput: minimal per-value overhead, and batches of primitive arrays the caller can hand straight to a pool of worker threads or a vectorized loop.
 This makes the column reader the right foundation for analytical workloads over large numbers of values.
-While striving to expose exactly one way to achieve a given task generally is a good idea for API design, ergonomics and peak throughput genuinely require different shapes, and we didn't want to compromise one for the sake of the other.
 
+While striving to expose exactly one way to achieve a given task generally is a good idea for API design, ergonomics and peak throughput genuinely require different shapes, and we didn't want to compromise one for the sake of the other.
 To learn more about the differences between the two reader APIs in Hardwood and when to use which one, refer to https://hardwood.dev/1.0.0.Final/concepts/reader-models/[this guide] on reader models.
 
 == Performance
@@ -82,10 +81,10 @@ The first one is a full scan of a flat dataset (i.e. no repeatable or nested col
 
 [NOTE]
 ====
-Both benchmarks are implemented using JMH, running five forks with ten measurements each. Benchmarking was done with Java 25 (Temurin build) on an AWS m7i.2xlarge (8 vCPU / 4 physical cores; 32 GB of RAM) instance, with the files being served from the operating system's page cache, i.e. these are microbenchmarks focusing on CPU. To account for variability of the machine's performance, three runs of the benchmark suite were executed out of which the results from the median run are shown. Importantly, while absolute throughput varied roughly 10% across runs, the relative ratio between the contenders was stable within ±~3%. The complete source code of the benchmarks and the raw numbers from all runs can be found in this https://github.com/hardwood-hq/hardwood-benchmarks/[GitHub repository].
+Both benchmarks are implemented using https://github.com/openjdk/jmh[JMH], running five forks with ten measurements each. Benchmarking was done with Java 25 (Temurin build) on an AWS m7i.2xlarge instance (8 vCPU / 4 physical cores; 32 GB of RAM), with the files being served from the operating system's page cache, i.e. these are microbenchmarks focusing on CPU. To account for variability of the machine's performance, three runs of the benchmark suite were executed, out of which the results from the median run are shown. Importantly, while absolute throughput varied roughly 10% across runs, the relative ratio between the contenders was stable within ±~3%. The complete source code of the benchmarks and the raw numbers from all runs can be found in this https://github.com/hardwood-hq/hardwood-benchmarks/[GitHub repository].
 ====
 
-Below are the numbers from solving this task with both Hardwood's column reader and the column API in parquet-java (version 1.17.1). Using all 8 vCPUs, Hardwood achieves a throughput of 16.5M rows/sec. As comparing a multi-threaded engine to a single-threaded one is kind of an apples-to-oranges comparison, Hardwood has also been run on a single CPU core, achieving 3.9M rows/sec for this workload.
+Below are the numbers from processing the taxi rides data with both Hardwood's column reader and the column API in parquet-java (version 1.17.1). Using all 8 vCPUs, Hardwood achieves a throughput of 16.5M rows/sec. As measuring a multi-threaded engine against a single-threaded one is a bit apples-to-oranges, Hardwood has also been run on a single CPU core, achieving 3.9M rows/sec for this workload.
 
 image::hardwood_1_0_flat_chart1_columnar.png["Flat scan throughput in M rows/s — Hardwood column reader (all cores and single core) vs. parquet-java's column API"]
 
@@ -97,23 +96,23 @@ image::hardwood_1_0_flat_chart2_record.png["Flat scan throughput in M rows/s —
 
 There are a few interesting things worth pointing out.
 First, Hardwood's indexed row reader lands within ~10% of the columnar API (14.9 vs 16.5M rows/sec):
-both feed off the same multi-threaded decode pipeline and differ mainly in how decoded values are surfaced
-(note that once the consumption logic becomes the bottleneck, you could take throughput a step further with the columnar API by fanning out processing to separate worker threads).
+both feed off the same multi-threaded decode pipeline and differ mainly in how decoded values are surfaced.
+That being said, once the consumption logic becomes the limiting factor, you could take throughput a step further with the columnar API by fanning out processing to separate worker threads.
 
 Then, there's a substantial advantage to accessing columns using their projected index instead of via their name. The latter requires a look-up of the column index, for each column of each row. This adds up, so much so that the consumption loop actually becomes the bottleneck, substantially diminishing the advantage of multi-threaded page decoding, with Hardwood only achieving 2.8M rows/sec. So whenever possible, you should hoist the index look-up out of the core reader loop and then work with index-based access.
 
-A key to achieving high throughput when parsing Parquet files is predicate push-down: instead of parsing entire files, the idea is to fetch only those row groups or even pages matching a given query, thus reducing IO (in particular when parsing files from object storage) and CPU cycles for decoding. So let's dive into this scenario with a second benchmark. It runs a basic comparison query against a synthetic dataset with 50M rows, filtering on one column (event_time) and projecting another (amount). The visual shows the results from both a selective scenario (the query matches ~5% of rows, clustered in a small number of pages) and the non-selective baseline (all rows match the query):
+A key aspect to achieving high throughput when parsing Parquet files is predicate push-down: instead of parsing entire files, the idea is to fetch only those row groups or even pages which match a given query, thus reducing IO (particularly critical when parsing files from object storage) and CPU cycles for decoding. So let's dive into this use case with a second benchmark. It runs a basic comparison query against a synthetic dataset with 50M rows, filtering on one column, `event_time`, and projecting another, `amount`. The visual shows the results from both a selective scenario (the query matches ~5% of rows, clustered in a small number of pages) and the non-selective baseline where all rows match the query:
 
 image::hardwood_1_0_filtered_chart.png["Filtered scan execution time in ms — Hardwood vs. parquet-java, for the selective (~5% match) and match-all cases, on all cores and pinned to a single core"]
 
 Hardwood performs the selective scan in 12.9 ms on all cores vs. 53.8 ms when pinned to a single vCPU. The match-all scan finishes in 222 ms and 983 ms, respectively. For both Hardwood and parquet-java, execution times scale almost linearly with the ratio of matching results (~17-18x speed-up for returning a result set of 1/20th of the full size), with Hardwood having a substantial and consistent advantage in both cases, benefitting from its branchless, batch-at-a-time predicate evaluation.
 
-Now, you should take these numbers as what they are: a snapshot of the results from running two specific workloads on a specific machine. You should do your own benchmarking with your own files on your own hardware, for your individual access patterns. Start by running the benchmarks discussed, then adjust or extend them as it makes sense. Results depend on a range of factors such as machine specs (how many cores, which SIMD instructions it offers, etc.), local vs. remote access, what kind of queries you are running, what metadata exists in the files, and more. For example, Hardwood doesn't support Bloom filters yet (it's under development https://github.com/hardwood-hq/hardwood/pull/671[right now]), so if you have an equality predicate on a high cardinality column against a file with Bloom filters, Hardwood wouldn't run this query optimally yet. That being said, high performance is a key concern for the project which is being worked on continuously, so stay tuned for more.
+Now, you should take these numbers as what they are: a snapshot of the results from running two specific workloads on a specific machine. You should do your own benchmarking with your own files on your own hardware, for your individual access patterns. Start by running the benchmarks discussed, then adjust or extend them as it makes sense. Results depend on a range of factors such as machine specs (how many cores, available SIMD instructions, etc.), local vs. remote access, what kind of queries you are running, what metadata exists in the files, and more. For example, Hardwood doesn't support Bloom filters yet (it's under development https://github.com/hardwood-hq/hardwood/pull/671[right now]), so if you have an equality predicate on a high cardinality column against a file with Bloom filters, Hardwood wouldn't run this query optimally yet. That being said, high performance is a key concern for the project which is being worked on continuously, so stay tuned for more.
 
 == The Hardwood CLI
 
 Hardwood started life as a JVM library. But as we quickly realized, the same machinery also makes for a handy command-line tool, so we decided to ship it as one too.
-You can think of the Hardwood CLI as a Swiss-army knife for Parquet files.
+You can think of the https://hardwood.dev/1.0.0.Final/reference/cli/[Hardwood CLI] as a Swiss-army knife for Parquet files.
 
 It lets you inspect file schemas and metadata such as indexes and dictionaries, you can drill into row groups and column chunks, take a glimpse at the records in a file, export its data to JSON, and much more. The CLI comes with both non-interactive commands, for instance useful for scripting use cases, and an interactive text-based UI (TUI) called hardwood dive, which lets you drill into a file very quickly and intuitively.
 
@@ -127,7 +126,7 @@ If you'd like to give the CLI a shot, you can download native binaries for Linux
 
 It's 2026, so you didn't think we wouldn't mention AI at least once in this post, did you? As discussed in the initial project announcement, Hardwood is being link:{post-ai}[built _with_ AI, but not _by_ AI]. While I firmly believe we wouldn't have made progress as quickly without coding agents like Claude Code, we're generally not vibe coding: every larger change starts from a design doc, the architecture and invariants stay human-owned, and every diff gets read and reviewed before it lands.
 
-As it turns out, Apache Parquet is an excellent fit for this way of LLM-assisted working. It not only provides a comprehensive and well-written specification, it also comes with an extensive test suite in the form of more than 200 Parquet files which we're using as an executable quality gate for asserting conformance. There are quite a few things to be said about this topic: what works well, what doesn't, how we go about code reviews, and the one place where we actually do accept a little bit of vibe coding. All of this will get its own post soon. In the meantime, the slides from my recent talk https://speakerdeck.com/gunnarmorling/hardwood-building-a-parquet-parser-from-scratch-with-a-little-help-from-ai[Hardwood: Building a Parquet Parser From Scratch (With a Little Help From AI)] and this https://www.infoq.com/podcasts/chasing-efficient-java-development/[InfoQ podcast] touch on the approach.
+As it turns out, Apache Parquet is an excellent fit for this way of LLM-assisted working. It not only provides a comprehensive and well-written specification, it also comes with an extensive test suite in the form of more than 200 Parquet files which we're using as an executable quality gate for asserting conformance. There are quite a few things to be said about this topic: what works well, what doesn't, how we go about code reviews, and the one place where we actually do accept a little bit of vibe coding. All of this will get its own post soon. In the meantime, the slides from my recent https://speakerdeck.com/gunnarmorling/hardwood-building-a-parquet-parser-from-scratch-with-a-little-help-from-ai[Hardwood talk] at Current London and this https://www.infoq.com/podcasts/chasing-efficient-java-development/[InfoQ podcast] touch on the approach.
 
 == A Big Thank You
 
