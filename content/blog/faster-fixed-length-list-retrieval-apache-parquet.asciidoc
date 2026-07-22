@@ -1,6 +1,6 @@
 ---
 title: "Faster Fixed-Length List Reading for Apache Parquet"
-date: 2026-06-25T07:30:00+02:00
+date: 2026-07-22T07:30:00+02:00
 draft: false
 markup: adoc
 images:
@@ -22,11 +22,10 @@ ifdef::env-github[]
 endif::[]
 :post-ai: /blog/hardwood-new-parser-for-apache-parquet/#_built_with_ai_not_by_ai
 
-In its current form Apache Parquet isn't a great fit for storing fixed-length lists, such as coordinates, RGB(A) colors, or vector embeddings.
-While Parquet's Dremel machinery allows you to store this kind of data,
-the encoding is wasteful and unnecessarily expensive to decode if you know that each list in your dataset actually has exactly the same length.
-The overhead is substantial: 
-roughly 3× as per https://github.com/apache/arrow/issues/34510[apache/arrow#34510], compared to a purely flat columnar representation of the same data.
+In its current form Apache Parquet isn't a great fit for storing fixed-length lists, such as coordinates, RGB(A) colors, or--an increasingly common case--vector embeddings driving search and retrieval workloads.
+A 768-dimensional embedding is just a list of floats that always has the same length,
+yet Parquet's Dremel machinery encodes it as if that length could vary from row to row, spelling out and reconstructing each vector's structure on read.
+That costs roughly 3× more than a purely flat columnar representation of the same data (see https://github.com/apache/arrow/issues/34510[apache/arrow#34510]).
 
 <!--more-->
 
@@ -38,25 +37,20 @@ However, until that's the case, is there anything we can do to narrow or even cl
 
 Turns out, yes we can.
 
---
-By examining the encoded data streams for Parquet's definition and repetition levels it is possible to detect data pages which only contain lists of the same lengths and put these onto a fast path which bypasses the regular Dremel recovery.
+By examining the _encoded_ data streams for Parquet's definition and repetition levels it is possible to detect data pages which only contain lists of the same lengths and put these onto a fast path which bypasses the regular Dremel record reconstruction.
 We've implemented this optimization for the upcoming Hardwood release,
 with striking results.
-The exact impact depends on the list length--larger lists benefit more--and the chosen Hardwood reader (row vs. column).
-The following chart shows the results from parsing ZSTD-compressed files with two list widths, each with 128M four byte float values.
-The short 3-element lists (for instance, 3D coordinates) see a modest improvement of 1.1× for the row reader and 1.8× for the column reader.
-For the larger 768-element lists (representing vector embeddings), the speed-up is 4.3× and 2.5×, respectively,
-essentially getting on par with a flat column storing the same number of values+++<sup>1</sup>+++.
-The row reader benefits in particular as it can skip more list-object materializations.
-[.aside]
-****
-[1] On that particular AWS m7i.2xlarge instance, the fixed length list read is even a few percent faster than reading a flat column with the same number of values.
-Testing showed that it is a consequence of batch sizing:
-The reader auto-sizes the list's batch smaller than the flat read's, and on this machine's cache hierarchy these smaller, more cache-resident batches more than offset the cost of the list's extra bookkeeping.
-The list case's smaller batch size is somewhat picked by accident (a heuristic that over-budgets for metadata the fast path skips).
-Making that sizing intentional is on our list.
-****
---
+The exact impact depends on the chosen Hardwood reader (row vs. column) and list length.
+The following chart shows the results from parsing ZSTD-compressed files with two list widths, each with 128M four-byte float values.
+
+////
+Numbers from headline/median
+////
+The short 3-element lists (say, 3D coordinates) see a modest speed-up of 1.1× for the row reader and a solid 2.5× for the column reader.
+For the larger 768-element lists (for instance, vector embeddings), the speed-up is 3.7× and 2.5×, respectively,
+getting on par with a flat column storing the same number of values.
+The row reader's advantage grows with the list length: it has to materialize one list object per record, an overhead the fast path can't remove.
+At short lists (many records), that cost dominates and the win is minor, whereas for long lists (few records) it essentially vanishes and the fast path brings the row reader down to the flat-column floor.
 
 image::fixedlist_bars.png[]
 
@@ -77,7 +71,7 @@ optional group mylist (LIST) {
 }
 ----
 
-This three-level encoding is required to tell apart `null` lists from `null` elements.
+This three-level encoding is required to tell apart `null` and empty lists from `null` elements.
 Parquet uses the notion of _definition levels_ to encode which elements in the serialized data are `null`.
 In the case of `mylist`, the maximum definition level is 3:
 
@@ -102,49 +96,41 @@ The definition-level stream encodes the `null` and empty values,
 while the repetition-level stream establishes the record boundaries.
 This mechanism is great for encoding lists which actually are of varying lengths and which may contain `null` elements as well as may be `null` themselves.
 
-Now let's take a look at an example of a required (i.e. non-optional) fixed-length lists of required elements (max def = 1):
+Now let's take a look at an example of required (i.e. non-optional) fixed-length lists of required elements (max def = 1):
 
 image::fixedlist_dremel_example_constant.png[width=80%]
 
-The definition levels are now a constant stream of 1's;
+The definition levels are now a constant stream of 1s;
 while this can be encoded very efficiently using run-length encoding,
 we'd ideally not store anything for this at all, as the non-nullness already is part of the data schema.
-The repetition levels are a recurring sequence of one 0 followed by `n - 1` 1's, with `n` being the fixed length of our lists: `0,1,1,0,1,1,0,...`.
-That's pretty much the most inefficient way you could think of for encoding a constant `n`,
-so it is very understandable that the Parquet community is exploring alternatives for storing fixed length lists more efficiently.
+The repetition levels are a recurring sequence of one 0 followed by `n - 1` 1s, with `n` being the fixed length of our lists: `0,1,1,0,1,1,0,...`.
+That's about the most inefficient way you could think of for encoding a constant `n`,
+so it is understandable that the Parquet community is exploring alternatives for storing fixed-length lists more efficiently.
 
-Now, the disk footprint actually is not that much of an issue, as this data encodes really tightly.
+Now, the disk footprint is not that much of an issue, as this data encodes tightly.
 The issue is the processing overhead:
 Definition- and repetition-level streams need to be decoded,
 arrays for them allocated,
 the reader needs to keep track when to start a new record with a new list, etc.
 All this adds up, leading to the 3× slow-down mentioned above.
 
-== Reading Effectively Fixed-Length Lists Faster
+== Reading Effectively-Fixed-Length Lists Faster
 
-In Hardwood, we have recently implemented an optimization which avoids this overhead.
-By scanning the _encoded_ definition and repetition levels (def and rep levels from here on) we can detect that lists in a data set effectively are fixed-length, i.e. they all have the same size.
-If that's the case, we can bypass the regular Dremel recovery machinery for the affected data pages, yielding a very nice speed-up.
+In Hardwood, we have recently implemented https://github.com/hardwood-hq/hardwood/blob/main/core/src/main/java/dev/hardwood/internal/reader/FixedSizeListDetector.java[an optimization] which avoids this overhead.
+By scanning the encoded definition and repetition levels (def and rep levels from here on) we can detect that lists in a data set effectively are fixed-length, i.e. they all have the same size.
+If that's the case, we can bypass the regular Dremel record reconstruction machinery for the affected data pages, yielding a very nice speed-up.
 So how does this work?
 
 For def levels, it's trivial.
 For a given page, we're looking for a stream of `max_def_level` whose length matches the number of values in the page.
 Both required lists (max def = 1) and optional lists (max def = 2) are handled.
-Parquet stores both def and rep levels using a https://parquet.apache.org/docs/file-format/data-pages/encodings/#RLE[hybrid scheme] of bit packing and run-length encoding (RLE).
+Parquet stores def and rep levels using a https://parquet.apache.org/docs/file-format/data-pages/encodings/#RLE[hybrid scheme] of bit-packing and run-length encoding (RLE).
 Say, we're dealing with a page of 3D float coordinates, i.e. fixed-length lists with `n` = 3.
 With 4-byte floats, a ~1 MB page holds roughly 87,000 records of 3 coordinates each--261,000 leaf entries in total (261,000 × 4 bytes ≈ 1 MB).
 For a stream of all-present list elements, the encoder will serialize the def levels as one single RLE run,
 made up of a varint header--the run length shifted left by one, with the freed low bit set to 0 to mark this as an RLE run rather than bit-packed--followed by a byte for the max def level:
 
 image::fixedlist_def_levels.png[]
-
-[source,linenums]
-----
- 90 EE 1F   01
-└────────┘   └── value = 1   (max def level; a 1-bit level, rounded up to a 1-byte slot)
- run length = 261,000
- (varint 522,000 = 261,000 << 1; low bit 0 ⇒ RLE run, not bit-packed)
-----
 
 This check for the absence of null values computes in O(1) and if it succeeds, the page is simply stamped with a "no null values" marker,
 avoiding the decoding and processing of the def-level stream.
@@ -154,61 +140,53 @@ That shortcut is a well-known one and is also implemented in other Parquet reade
 
 Detecting the repeating 0,1,1,0,... pattern in the encoded rep-level stream is a bit more complex.
 How it encodes depends on the value of `n`:
-Parquet's RLE/bit-packing hybrid bitpacks the 0 at the record start and up to seven subsequent 1's.
-If the list length is longer--there are more 1's left--any remaining 1's are put into an RLE run.
-This means we need to either look for a series of bitpacked runs (n <= 8) or for bitpack and RLE runs alternating.
+Parquet's RLE/bit-packing hybrid bit-packs the 0 at the record start and up to seven subsequent 1s.
+If the list length is longer--there are more 1s left--any remaining 1s are put into an RLE run.
+This means we need to either look for a series of bit-packed runs (n ≤ 8) or for alternating bit-packed and RLE runs.
 
 If the def-level gate has been passed,
-the fixed length list detector tries to detect small `n` rep levels first.
+the fixed-length list detector tries to detect small `n` rep levels first.
 `n` itself is the distance between the first zero and the next zero.
 Bit-packing a periodic bit pattern yields a periodic _byte_ pattern, with period `n / gcd(n, 8)` bytes:
 a single byte when `n` divides 8 (`n` in {1,2,4,8}), or 3/5/7 bytes otherwise.
 For example, for `n` = 4 the stamp is one byte, `0xee` (`0 1 1 1 0 1 1 1`, read LSB-first),
 i.e. the lists of two records are covered by one byte:
 
-[source,linenums]
-----
- 21   ee ee ee … ee        (16 payload bytes)
- │    └── each byte = 0 1 1 1 0 1 1 1 (LSB-first) = two 4-element records
- └── 0x21 = (16 << 1) | 1  ⇒ bit-packed run, 16 groups = 128 levels = 32 records
-----
+image::fixedlist_rep_levels_bitpacked.png[]
 
+--
 If `n` = 3, the stamp is three bytes, `B6 6D DB`, spanning eight records (24 bits).
 Both single-byte and multi-byte stamps are calculated once and then applied in batches,
 reading eight rep-level bytes at a time into one long.
 If a given small-`n` rep-level stream doesn't match the stamping pattern at some point, this means it contains lists of varying lengths and the fast path can't be taken.
-This technique (SWAR, SIMD within a register) proves fast enough during benchmarking,
-but should it ever turn out to be a bottleneck, even wider strides would be possible by leveraging Java's Vector API,
-mapping to the underlying platform's SIMD instructions.
+This technique (SWAR, SIMD within a register) proved fast enough during benchmarking+++<sup>1</sup>+++.
 
-Next, let's discuss the case where `n` >= 16;
-here we need to look for the recurring sequence of a bitpacked run at the record boundary followed by an RLE run of `n` - 8 1's.
+[.aside]
+****
+[1] Should it ever turn out to be a bottleneck, even wider strides would be possible by leveraging Java's Vector API, mapping to the underlying platform's SIMD instructions.
+****
+--
+
+Next, let's discuss the case where `n` ≥ 16;
+here we need to look for the recurring sequence of a bit-packed run at the record boundary followed by an RLE run of `n` - 8 1s.
 In the common case each record lands on a byte boundary, so every record is the _same_ sequence of bytes.
 
 As an example, for `n` = 16, we'd have four bytes per record:
 
-[source,linenums]
-----
- 03 fe   10 01
- └────┘  └────┘
- boundary  RLE run of eight 1s (0x10 = 8 << 1, value 0x01)
- group
-
- 0x03 = bit-packed, one group; 0xfe = 0 then seven 1s
- ⇒ 0 followed by 7 + 8 = 15 ones = one 16-element record
-----
+image::fixedlist_rep_levels_rle.png[]
 
 We only need to parse the rep levels of the first record, so we can derive `n` and the stride (in bytes) and then can check whether the whole stream is that stride repeated. It is byte-periodic with period `strideBytes`, so the stream shifted left by one stride must equal itself.
 That one bulk compare replaces per-value rep-level processing.
 
 [NOTE]
 ====
-The exact byte split shown, a bit-packed boundary group plus an RLE run, is what mainstream encoders emit (including parquet-java and Arrow C++), but it's encoder-dependent.
+The exact byte split shown, a bit-packed boundary group plus an RLE run, is what mainstream encoders emit, including parquet-java and Arrow C++.
+It is encoder-dependent, however.
 The Parquet specification itself only requires that the rep levels decode to the right sequence, not how the RLE/bit-packing hybrid chunks them into runs.
 Therefore, the detector doesn't hardcode any specific pattern; instead, it derives the stride from the first record and verifies that the rest of the stream repeats it, deferring to the scalar fallback described below for any layout it doesn't recognize.
 ====
 
-The third and final scenario is where 9 <= `n` <= 15.
+The third and final scenario is where 9 ≤ `n` ≤ 15.
 In this case, there's no per-record stride to bulk-compare:
 For instance, the rep levels of a 9-element list are nine bits; against eight-bit bytes its boundary drifts by one bit each record and only realigns every lcm(8, 9) = 72 values.
 A scalar fallback handles these cases, processing the rep levels run by run, ensuring equal distance between record boundaries.
@@ -217,104 +195,95 @@ As soon as two records disagree in length, the page is rejected from the fast pa
 Because it assumes nothing about the layout, this path also catches the rarer irregular cases:
 one-element lists, or writers that split runs unusually.
 
-Now, what do we actually gain by applying this logic,
-what exactly is the "fixed length list fast-path" once we have determined that the lists in a given page are all of the same length?
+== Performance Gains
+
+Now, what do we actually gain by applying this logic
+-- what exactly is the "fixed-length list fast path" once we have determined that the lists in a given page are all of the same length?
 A number of optimizations can be applied in this case:
 
-- actual values can be copied page-wise, instead of processing element by element
-- trivial offset handling, no rep-level scan is required to recover record boundaries
-- the def- and rep-level arrays are never materialized at all, helping to reduce GC pressure
+- values are copied page-wise, rather than processed element by element
+- offsets are trivial--no rep-level scan is required to recover record boundaries
+- def- and rep-level arrays are never materialized, reducing GC pressure
 
 The effect is substantial.
 The fast path is opt-in currently,
 so we can easily measure the parse times of fixed-length lists with and without the optimization.
-The visual shows a sweep of `n` from 1 all the way up to 1536:
+The chart shows a sweep of `n` from 1 all the way up to 1536.
 
 image::fixedlist_sweep.png[]
 
-For the column reader the advantage rises quickly and then plateaus: past `n` = 4 it stays in a 2.2--2.7× band, dropping back toward 2× only for `n` = 768 and beyond.
-The row reader gains far more and has a more pronounced shape, climbing steeply to a peak of 4.4× around `n` = 64 before settling to roughly 3.2× for large lists.
-The pathological case of lists with a length of 1 is the one exception:
-with a single element per record, list-object creation dominates and the fast path brings no advantage for the row reader--if anything, it's a tiny bit slower, although within measurement noise.
-The files used for benchmarking were ZSTD-compressed, as production Parquet files typically are.
-For comparison, I also ran the files uncompressed: the speedups were within noise of the compressed ones.
+--
+////
+Numbers from sweep/median-128M (per-point median of three 128M runs)
+////
+For the column reader the advantage hovers around 2.5× across most of the sweep.
+The shaded band flags the scalar-fallback widths (`n` = 9–15), which aren't byte-aligned and so make the detector's rep-level scan fall back to a slower bit-by-bit walk--visible here as a slight dip in the column curve, and the detector's most expensive case (which we quantify below).
+The row reader has a more pronounced shape, climbing to a peak of around 3.9× in the mid-range (`n` ≈ 64–256) before settling to 3.6× for large lists.
+The rare pathological case of lists with a length of 1 is the one exception:
+with a single element per record, list-object creation dominates and the fast path brings no advantage for the row reader--if anything, it's a tiny bit slower+++<sup>2</sup>+++.
+
+////
+Numbers from headline-plain/median (per-point median of three uncompressed runs)
+////
+[.aside]
+****
+[2] The files used for benchmarking were ZSTD-compressed, as production Parquet files typically are.
+For comparison, I also ran against uncompressed files.
+For small `n`, the numbers didn't significantly change,
+whereas for `n` = 768, uncompressed files see a systematically higher speed-up:
+4.4× for the row reader (vs 3.7× with ZSTD) and 2.9× for the column reader (vs 2.5×).
+Which makes sense, as decompression is a cost shared by both the fast and the regular path, so it narrows the ratio between them.
+****
+--
+
+////
+Numbers from FixedSizeListDecodeBenchmark
+////
+Of course, running this detection logic over the encoded def-level and (in particular) rep-level streams has a cost of its own.
+So does it penalize a regular variable-length `LIST` column?
+The computational cost for the detector heavily depends on the list size and the applied pattern logic:
+for `n` ≤ 8, where bit-packed runs of all rep levels need to be walked, it is up to ~1.7% of the regular list retrieval cost (latency).
+For larger `n`, the highly efficient RLE runs bring detection down toward `O(records)` complexity, so the relative cost falls from ~0.2% (for `n` = 16) to under 0.1% (`n` = 768).
+As expected, the most expensive case is the scalar fallback, with a relative detector overhead of ~17% for `n` = 15.
+
+////
+Numbers from FixedSizeListFallbackBenchmark
+////
+However, these are the pure detection latencies https://github.com/hardwood-hq/hardwood-benchmarks/blob/main/results/2026-07-22-fixed-size-list/decode-benchmark.log[measured in isolation] in a microbenchmark.
+When looking at actual end-to-end parsing times,
+the fast-path detector cost is negligible for all values of `n`.
+Even in the absolute worst case, where only the very last list in a page has a different length than all the lists before--i.e. the detector's O(1) def-level gate passes and it then scans the entire rep-level stream before finding the odd list at the very end and falling back to the regular decode path--there's https://github.com/hardwood-hq/hardwood-benchmarks/blob/main/results/2026-07-22-fixed-size-list/fallback-benchmark.log[no measurable impact] on the overall processing time for all list sizes but one.
+Only for `n` = 15 (an uncommon width, and the most expensive scalar fallback case) is there an overhead of ~2%, just outside the 99.9% confidence intervals.
 
 [NOTE]
 ====
 The benchmarks in this post are based on https://github.com/openjdk/jmh[JMH], running five forks with five measurements each.
 Benchmarking was done with Java 25 (Temurin build) on an AWS m7i.2xlarge instance (8 vCPU / 4 physical cores; 32 GB of RAM).
+Hardwood parallelizes page decoding internally, so the reads exercise all cores.
 Files were served from the operating system's page cache.
-To account for variability of the machine's performance, three runs of each benchmark were executed, out of which the results from the median run are shown.
-The benchmarks also contain a correctness gate: before any timing, it verifies that the fast path and the regular parsing routine decode bit-identical values--every element, through both readers--so any divergence fails the run.
+To account for run-to-run variability, the throughput benchmarks (the two charts above) were each run three times and the per-point median is shown.
+The detector micro-benchmarks further down are single JMH runs of five forks each.
+The benchmarks also contain a correctness gate that verifies the fast path and the regular parsing routine decode bit-identical values.
 The complete benchmark source code and the raw numbers from all runs can be found https://github.com/hardwood-hq/hardwood-benchmarks#fixed-size-list-scan--run-fixedlistsh[here].
 ====
-
-
-Of course, this detection logic on top of the encoded def- and, in particular, rep-level streams has its own cost, too.
-So does it penalize a regular variable-length `LIST` column?
-The computational cost for the detector heavily depends on the list size and the applied pattern logic:
-for `n` <= 8, where bit-packed runs of all rep levels need to be walked, it is ~1-2.5% of the regular list retrieval cost (latency).
-For larger `n`, the highly efficient RLE runs bring detection down toward `O(records)` complexity, so the relative cost falls from ~0.5% (for `n` = 16) to < 0.1% (`n` = 768).
-As to be expected, the most expensive case is the scalar fallback, with a relative detector overhead of ~10% for `n` = 9.
-However, these are the pure detection latencies measured in isolation in a microbenchmark.
-When looking at actual end-to-end parsing times,
-the fast path detector cost is actually negligible for all values of `n`.
-Even in the absolute worst case, where only the very last list in a page has a different length than all the others--i.e. the detector's O(1) def-level gate passes and it then scans the entire rep-level stream before finding the odd list at the very end and falling back to the regular decode path--
-there's no measurable impact on the overall processing time across all list sizes, including those triggering the scalar fallback.
-
-////
-TODO #13 — scalar-fallback prose, pending the 3-run median. The single ZSTD sweep (2026-07)
-shows an end-to-end dip at n=15 (column fast path ~35% above the flat floor; speedup ~1.9x vs
-~2.5x at n=16), because n=15 is the worst scalar alignment (interior 7 ones can't RLE, byte-
-misaligned) — worse than n=9. If this holds across three full runs:
-  - line 260: the "most expensive case ~10% for n=9" should become n=15 (and the backing
-    FixedSizeListDecodeBenchmark now measures n=15 instead of 9, so quote that number).
-  - line 263: "negligible for all n" is then too strong — carve out the scalar band, e.g.
-    "negligible for all n except the scalar-fallback widths 9-15, where the worst alignment
-    (n=15) costs a little more but the fast path still wins clearly."
-If the median washes it out (single-run noise), leave the prose as is.
-////
-
-////
-TODO #12 — upload the micro-bench results backing this section and hyperlink them.
-Backing benches (main repo, performance-testing/micro-benchmarks):
-  FixedSizeListDecodeBenchmark   — repScanOnly (detector alone) vs full decode -> the ~1-2.5% / ~0.5% / <0.1% relative-cost figures (n=1..1536)
-  FixedSizeListFallbackBenchmark — detectorThenFallback minus regularNoDetector on an almost-fixed page -> the ~10% (n=9) worst case + "no measurable end-to-end impact"
-
-Invocations (from repo root; one datagen run feeds both benches). Each run tees the full
-console output to a .log and writes JMH's machine-readable results to a .json in one dir,
-so the whole results/fixedlist-micro dir is the capture to upload:
-  ./mvnw -pl core install -DskipTests
-  ./mvnw -pl performance-testing/micro-benchmarks package -Pperformance-test
-  source .docker-venv/bin/activate && python performance-testing/generate_fixed_size_list_data.py /tmp/fsl-data
-  mkdir -p results/fixedlist-micro
-  java -jar performance-testing/micro-benchmarks/target/benchmarks.jar FixedSizeListDecodeBenchmark \
-    -p dataDir=/tmp/fsl-data -rf json -rff results/fixedlist-micro/decode.json \
-    2>&1 | tee results/fixedlist-micro/decode.log
-  java -jar performance-testing/micro-benchmarks/target/benchmarks.jar FixedSizeListFallbackBenchmark \
-    -p dataDir=/tmp/fsl-data -rf json -rff results/fixedlist-micro/fallback.json \
-    2>&1 | tee results/fixedlist-micro/fallback.log
-  (both bake in Fork=2, warmup 3x1s, meas 5x1s, --add-modules jdk.incubator.vector; add -f 5 to match the post's five-fork scan run)
-
-Then host decode.json / fallback.json (hardwood-benchmarks repo section, next to the scan results, or a gist) and hyperlink from "measured in isolation in a microbenchmark" below.
-////
 
 == Summary
 
 Until the fixed-length list support is added to the Parquet format,
 it's sub-optimal for storing data such as vector embeddings,
 triggering a costly retrieval of list boundaries from the file's repetition-level stream.
-However, by examining the _encoded_ repetition levels and looking for the patterns clearly identifying actually fixed length lists,
+However, by examining the _encoded_ repetition levels and looking for the patterns clearly identifying actually fixed-length lists,
 Hardwood's Parquet parser significantly reduces the reading times for such lists,
-yielding improvements of up to 2.5× for the column reader and up to 4.3× for the row reader, depending on the specific list lengths.
+yielding improvements of up to 2.7× for the column reader and up to 3.9× for the row reader, depending on the specific list lengths.
 
-While the discussed definition-level optimization is relatively common,
-I'm not aware of any mainstream Parquet parser which is applying the encoded repetition-level inspection
+While the definition-level optimization discussed above is relatively common,
+I'm not aware of any mainstream Parquet parser that applies the encoded repetition-level inspection
 (if you know of any parser doing this, I'd love to learn about it in the comments below).
 This optimization is part of the upcoming Hardwood 1.1.0.Beta1 release.
 It currently must be explicitly enabled by setting the parser option `hardwood.fixed-list-fast-path` to `true`,
 but we expect to enable it by default for the 1.1 release barring any unforeseen issues.
 
-So if you're storing embeddings, coordinates, or other fixed-shape vectors in Parquet, give it a try and see for yourself how much of the list-decoding overhead falls away in your case.
+So if you're storing embeddings, coordinates, or other fixed-length vectors in Parquet, give it a try and see for yourself how much of the list-decoding overhead falls away in your case.
+Note that the numbers reported above come from relatively large (~500 MB) files; on smaller inputs the wins tend to be not quite as large, yet still substantial.
 Once the Parquet format has a proper fixed-length list type, that optimization should become unnecessary for newly written files.
 But until then, and for all the list-encoded data already out there, a little inspection of the encoded levels goes a long way.
