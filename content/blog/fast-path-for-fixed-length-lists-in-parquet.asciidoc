@@ -1,5 +1,5 @@
 ---
-title: "Faster Fixed-Length List Reading for Apache Parquet"
+title: "A Fast Path for Fixed-Length Lists in Parquet"
 date: 2026-07-22T07:30:00+02:00
 draft: false
 markup: adoc
@@ -257,7 +257,7 @@ Only for `n` = 15 (an uncommon width, and the most expensive scalar fallback cas
 
 [NOTE]
 ====
-The benchmarks in this post are based on https://github.com/openjdk/jmh[JMH], running five forks with five measurements each.
+The benchmarks in this post are based on https://github.com/openjdk/jmh[JMH], running three forks with five measurements each.
 Benchmarking was done with Java 25 (Temurin build) on an AWS m7i.2xlarge instance (8 vCPU / 4 physical cores; 32 GB of RAM).
 Hardwood parallelizes page decoding internally, so the reads exercise all cores.
 Files were served from the operating system's page cache.
@@ -284,6 +284,6 @@ It currently must be explicitly enabled by setting the parser option `hardwood.f
 but we expect to enable it by default for the 1.1 release barring any unforeseen issues.
 
 So if you're storing embeddings, coordinates, or other fixed-length vectors in Parquet, give it a try and see for yourself how much of the list-decoding overhead falls away in your case.
-Note that the numbers reported above come from relatively large (~500 MB) files; on smaller inputs the wins tend to be not quite as large, yet still substantial.
+Note that the numbers reported above come from relatively large (~450-500 MB) files; on smaller inputs the wins tend to be not quite as large, yet still substantial.
 Once the Parquet format has a proper fixed-length list type, that optimization should become unnecessary for newly written files.
 But until then, and for all the list-encoded data already out there, a little inspection of the encoded levels goes a long way.
