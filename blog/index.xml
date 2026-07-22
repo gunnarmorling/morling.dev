@@ -7,10 +7,33 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>© 2019 - 2026 Gunnar Morling</copyright>
-    <lastBuildDate>Thu, 25 Jun 2026 07:30:00 +0200</lastBuildDate>
+    <lastBuildDate>Wed, 22 Jul 2026 07:30:00 +0200</lastBuildDate>
     
 	<atom:link href="https://www.morling.dev/blog/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>A Fast Path for Fixed-Length Lists in Parquet</title>
+      <link>https://www.morling.dev/blog/fast-path-for-fixed-length-lists-in-parquet/</link>
+      <pubDate>Wed, 22 Jul 2026 07:30:00 +0200</pubDate>
+      
+      <guid>https://www.morling.dev/blog/fast-path-for-fixed-length-lists-in-parquet/</guid>
+      <description>&lt;div id=&#34;toc&#34; class=&#34;toc&#34;&gt;
+&lt;div id=&#34;toctitle&#34;&gt;Table of Contents&lt;/div&gt;
+&lt;ul class=&#34;sectlevel1&#34;&gt;
+&lt;li&gt;&lt;a href=&#34;#_parquets_dremel_encoding&#34;&gt;Parquet’s Dremel Encoding&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_reading_effectively_fixed_length_lists_faster&#34;&gt;Reading Effectively-Fixed-Length Lists Faster&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_performance_gains&#34;&gt;Performance Gains&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#_summary&#34;&gt;Summary&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;In its current form Apache Parquet isn’t a great fit for storing fixed-length lists, such as coordinates, RGB(A) colors, or—​an increasingly common case—​vector embeddings driving search and retrieval workloads.
+A 768-dimensional embedding is just a list of floats that always has the same length,
+yet Parquet’s Dremel machinery encodes it as if that length could vary from row to row, spelling out and reconstructing each vector’s structure on read.
+That costs roughly 3× more than a purely flat columnar representation of the same data (see &lt;a href=&#34;https://github.com/apache/arrow/issues/34510&#34;&gt;apache/arrow#34510&lt;/a&gt;).&lt;/p&gt;
+&lt;/div&gt;</description>
+    </item>
     
     <item>
       <title>Hardwood 1.0: A Fast, Lightweight Apache Parquet Reader for the JVM</title>

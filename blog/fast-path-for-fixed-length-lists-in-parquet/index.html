@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>A Fast Path for Fixed-Length Lists in Parquet - Gunnar Morling</title>
+	<link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png" />
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png" />
+	<link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+	<link rel="shortcut icon" href="/favicon/favicon.ico" />
+
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	
+	<link rel="preload" href="/fonts/raleway-v37-latin-200.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/raleway-v37-latin-300.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/raleway-v37-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+
+	<link rel="preload" href="/fonts/lato-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin>
+
+	<link rel="preload" href="/fonts/lora-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin><meta property="og:url" content="https://www.morling.dev/blog/fast-path-for-fixed-length-lists-in-parquet/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="A Fast Path for Fixed-Length Lists in Parquet">
+  <meta property="og:description" content=" In its current form Apache Parquet isn’t a great fit for storing fixed-length lists, such as coordinates, RGB(A) colors, or—​an increasingly common case—​vector embeddings driving search and …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2026-07-22T07:30:00&#43;02:00">
+    <meta property="article:modified_time" content="2026-07-22T07:30:00&#43;02:00">
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="A Fast Path for Fixed-Length Lists in Parquet">
+  <meta name="twitter:description" content=" In its current form Apache Parquet isn’t a great fit for storing fixed-length lists, such as coordinates, RGB(A) colors, or—​an increasingly common case—​vector embeddings driving search and …">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.7e747dab5a47b967474cfdc64085734aa21b459c2bc3519033238d0258bb7dcc.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
+	
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.20888cb6b76ed17eb07628f659718d130e32ea466294927dc4dfb410a3e3f3ab.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+	<script src="/js/main.min.9ee619eea7f51473f4284ef86c76bdb1b0089e19781ca97275924edf53be5bd4.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header">
+	<div class="header-image-container">
+		<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+	</div>
+	<div class="header-title">
+		<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+		<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+	</div>
+	<div class="header-nav-wrapper">
+		<nav class="row pre-nav">
+			<div class="pull-right">
+				<ul class="flat"><li>
+						<a href="/blog/index.xml" title="RSS FEED">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#rss"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://github.com/gunnarmorling" title="GitHub">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#github"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://twitter.com/gunnarmorling" title="Twitter">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+							</svg>
+						</a>
+					</li></ul>
+			</div>
+		</nav>
+		<nav class="row nav">
+			<div>
+				<ul class="flat">
+					
+					<li>
+						<a href="/blog">Blog</a>
+					</li>
+					
+					<li>
+						<a href="/projects/">Projects</a>
+					</li>
+					
+					<li>
+						<a href="/conferences/">Conferences</a>
+					</li>
+					
+					<li>
+						<a href="/podcasts/">Podcasts</a>
+					</li>
+					
+					<li>
+						<a href="/about/">About</a>
+					</li>
+					
+				</ul>
+			</div>
+			<div class="pull-right">
+				<div class="club">
+					<form id="myForm">
+						<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+						<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+					</form>
+				</div>
+			</div>
+		</nav>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">A Fast Path for Fixed-Length Lists in Parquet</h1>
+				<div class="post-meta-line">
+					<span class="meta">Posted at Jul 22, 2026</span>
+					
+					<span class="post-tags-inline">
+						
+						<a href="/tags/parquet">parquet</a>
+						
+						<a href="/tags/open-source">open-source</a>
+						
+						<a href="/tags/java">java</a>
+						
+						<a href="/tags/performance">performance</a>
+						
+						<a href="/tags/hardwood">hardwood</a>
+						
+					</span>
+					
+				</div>
+			</div>
+
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_parquets_dremel_encoding">Parquet’s Dremel Encoding</a></li>
+<li><a href="#_reading_effectively_fixed_length_lists_faster">Reading Effectively-Fixed-Length Lists Faster</a></li>
+<li><a href="#_performance_gains">Performance Gains</a></li>
+<li><a href="#_summary">Summary</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In its current form Apache Parquet isn’t a great fit for storing fixed-length lists, such as coordinates, RGB(A) colors, or—​an increasingly common case—​vector embeddings driving search and retrieval workloads.
+A 768-dimensional embedding is just a list of floats that always has the same length,
+yet Parquet’s Dremel machinery encodes it as if that length could vary from row to row, spelling out and reconstructing each vector’s structure on read.
+That costs roughly 3× more than a purely flat columnar representation of the same data (see <a href="https://github.com/apache/arrow/issues/34510">apache/arrow#34510</a>).</p>
+</div>
+<div class="paragraph">
+<p>The Parquet community has recognized this problem and is actively working on addressing it.
+Several options for adding fixed-length list support are <a href="https://lists.apache.org/thread/qhq33wg1loxhymsyqjnsfsrd82qnv43m">currently under discussion</a>,
+for instance in the form of a new logical type <code>FIXED_SIZE_LIST</code>.
+Eventually, this should bring decoding performance of fixed-length list data to the level of a fully flat schema.
+However, until that’s the case, is there anything we can do to narrow or even close the gap by retrieving effectively fixed-length lists in a smarter way?</p>
+</div>
+<div class="paragraph">
+<p>Turns out, yes we can.</p>
+</div>
+<div class="paragraph">
+<p>By examining the <em>encoded</em> data streams for Parquet’s definition and repetition levels it is possible to detect data pages which only contain lists of the same lengths and put these onto a fast path which bypasses the regular Dremel record reconstruction.
+We’ve implemented this optimization for the upcoming Hardwood release,
+with striking results.
+The exact impact depends on the chosen Hardwood reader (row vs. column) and list length.
+The following chart shows the results from parsing ZSTD-compressed files with two list widths, each with 128M four-byte float values.</p>
+</div>
+<div class="paragraph">
+<p>The short 3-element lists (say, 3D coordinates) see a modest speed-up of 1.1× for the row reader and a solid 2.5× for the column reader.
+For the larger 768-element lists (for instance, vector embeddings), the speed-up is 3.7× and 2.5×, respectively,
+getting on par with a flat column storing the same number of values.
+The row reader’s advantage grows with the list length: it has to materialize one list object per record, an overhead the fast path can’t remove.
+At short lists (many records), that cost dominates and the win is minor, whereas for long lists (few records) it essentially vanishes and the fast path brings the row reader down to the flat-column floor.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/fixedlist_bars.png" alt="fixedlist bars"/>
+</div>
+</div>
+<div class="paragraph">
+<p>In the following, we’ll take a closer look at why Parquet in its current form isn’t optimal for storing fixed-length lists and how Hardwood’s fixed-length list fast path makes up for it.</p>
+</div>
+<div class="sect1">
+<h2 id="_parquets_dremel_encoding">Parquet’s Dremel Encoding<a class="anchor" href="#_parquets_dremel_encoding"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>First, let’s explore how exactly Parquet stores nested and repeated data.
+The storage representation is described in the seminal <a href="https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/36632.pdf">Dremel paper</a> from 2010.
+An optional list, i.e. a list which itself can be <code>null</code>, of optional elements has the following schema:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="n">optional</span> <span class="n">group</span> <span class="nf">mylist</span> <span class="o">(</span><span class="no">LIST</span><span class="o">)</span> <span class="o">{</span>
+  <span class="n">repeated</span> <span class="n">group</span> <span class="n">list</span> <span class="o">{</span>
+    <span class="n">optional</span> <span class="kt">float</span> <span class="n">element</span><span class="o">;</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This three-level encoding is required to tell apart <code>null</code> and empty lists from <code>null</code> elements.
+Parquet uses the notion of <em>definition levels</em> to encode which elements in the serialized data are <code>null</code>.
+In the case of <code>mylist</code>, the maximum definition level is 3:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>the entire list is null (definition level = 0)</p>
+</li>
+<li>
+<p>the list is present but empty (definition level = 1)</p>
+</li>
+<li>
+<p>the list contains a null element  (definition level = 2)</p>
+</li>
+<li>
+<p>the list contains an actual value (definition level = 3)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The notion of <em>repetition levels</em> is used to express at which level of the (potentially deeply nested) document tree elements are repeated.
+In our example, the maximum repetition level is 1:
+a value either continues the list of the current record (repetition level = 1),
+or a new record’s list starts (repetition level = 0).</p>
+</div>
+<div class="paragraph">
+<p>As an example, let’s consider a Parquet file with four records which contain the following <code>mylist</code> values: <code>[1.0, null, 1.2]</code>, <code>null</code>, <code>[]</code>, <code>[4.0, 4.1]</code>.
+Here are the value stream as well as the definition- and repetition-level streams:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/fixedlist_dremel_example_variable.png" alt="fixedlist dremel example variable" width="80%"/>
+</div>
+</div>
+<div class="paragraph">
+<p>The value stream solely by itself would be ambiguous;
+when reading it back, you wouldn’t know to which record a given value belongs and where null values sit.
+The definition-level stream encodes the <code>null</code> and empty values,
+while the repetition-level stream establishes the record boundaries.
+This mechanism is great for encoding lists which actually are of varying lengths and which may contain <code>null</code> elements as well as may be <code>null</code> themselves.</p>
+</div>
+<div class="paragraph">
+<p>Now let’s take a look at an example of required (i.e. non-optional) fixed-length lists of required elements (max def = 1):</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/fixedlist_dremel_example_constant.png" alt="fixedlist dremel example constant" width="80%"/>
+</div>
+</div>
+<div class="paragraph">
+<p>The definition levels are now a constant stream of 1s;
+while this can be encoded very efficiently using run-length encoding,
+we’d ideally not store anything for this at all, as the non-nullness already is part of the data schema.
+The repetition levels are a recurring sequence of one 0 followed by <code>n - 1</code> 1s, with <code>n</code> being the fixed length of our lists: <code>0,1,1,0,1,1,0,…​</code>.
+That’s about the most inefficient way you could think of for encoding a constant <code>n</code>,
+so it is understandable that the Parquet community is exploring alternatives for storing fixed-length lists more efficiently.</p>
+</div>
+<div class="paragraph">
+<p>Now, the disk footprint is not that much of an issue, as this data encodes tightly.
+The issue is the processing overhead:
+Definition- and repetition-level streams need to be decoded,
+arrays for them allocated,
+the reader needs to keep track when to start a new record with a new list, etc.
+All this adds up, leading to the 3× slow-down mentioned above.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_reading_effectively_fixed_length_lists_faster">Reading Effectively-Fixed-Length Lists Faster<a class="anchor" href="#_reading_effectively_fixed_length_lists_faster"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In Hardwood, we have recently implemented <a href="https://github.com/hardwood-hq/hardwood/blob/main/core/src/main/java/dev/hardwood/internal/reader/FixedSizeListDetector.java">an optimization</a> which avoids this overhead.
+By scanning the encoded definition and repetition levels (def and rep levels from here on) we can detect that lists in a data set effectively are fixed-length, i.e. they all have the same size.
+If that’s the case, we can bypass the regular Dremel record reconstruction machinery for the affected data pages, yielding a very nice speed-up.
+So how does this work?</p>
+</div>
+<div class="paragraph">
+<p>For def levels, it’s trivial.
+For a given page, we’re looking for a stream of <code>max_def_level</code> whose length matches the number of values in the page.
+Both required lists (max def = 1) and optional lists (max def = 2) are handled.
+Parquet stores def and rep levels using a <a href="https://parquet.apache.org/docs/file-format/data-pages/encodings/#RLE">hybrid scheme</a> of bit-packing and run-length encoding (RLE).
+Say, we’re dealing with a page of 3D float coordinates, i.e. fixed-length lists with <code>n</code> = 3.
+With 4-byte floats, a ~1 MB page holds roughly 87,000 records of 3 coordinates each—​261,000 leaf entries in total (261,000 × 4 bytes ≈ 1 MB).
+For a stream of all-present list elements, the encoder will serialize the def levels as one single RLE run,
+made up of a varint header—​the run length shifted left by one, with the freed low bit set to 0 to mark this as an RLE run rather than bit-packed—​followed by a byte for the max def level:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/fixedlist_def_levels.png" alt="fixedlist def levels"/>
+</div>
+</div>
+<div class="paragraph">
+<p>This check for the absence of null values computes in O(1) and if it succeeds, the page is simply stamped with a &#34;no null values&#34; marker,
+avoiding the decoding and processing of the def-level stream.
+In fact, this optimization isn’t specific to fixed-length lists;
+it also speeds up the common case of a column whose schema permits null values but that happens to contain none.
+That shortcut is a well-known one and is also implemented in other Parquet readers and engines, <a href="https://github.com/duckdb/duckdb/blob/2c2d62b247fdd87311b4f0a00bc7d3e209a0381b/extension/parquet/column_reader.cpp#L719-L723">including DuckDB</a>.</p>
+</div>
+<div class="paragraph">
+<p>Detecting the repeating 0,1,1,0,…​ pattern in the encoded rep-level stream is a bit more complex.
+How it encodes depends on the value of <code>n</code>:
+Parquet’s RLE/bit-packing hybrid bit-packs the 0 at the record start and up to seven subsequent 1s.
+If the list length is longer—​there are more 1s left—​any remaining 1s are put into an RLE run.
+This means we need to either look for a series of bit-packed runs (n ≤ 8) or for alternating bit-packed and RLE runs.</p>
+</div>
+<div class="paragraph">
+<p>If the def-level gate has been passed,
+the fixed-length list detector tries to detect small <code>n</code> rep levels first.
+<code>n</code> itself is the distance between the first zero and the next zero.
+Bit-packing a periodic bit pattern yields a periodic <em>byte</em> pattern, with period <code>n / gcd(n, 8)</code> bytes:
+a single byte when <code>n</code> divides 8 (<code>n</code> in {1,2,4,8}), or 3/5/7 bytes otherwise.
+For example, for <code>n</code> = 4 the stamp is one byte, <code>0xee</code> (<code>0 1 1 1 0 1 1 1</code>, read LSB-first),
+i.e. the lists of two records are covered by one byte:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/fixedlist_rep_levels_bitpacked.png" alt="fixedlist rep levels bitpacked"/>
+</div>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="paragraph">
+<p>If <code>n</code> = 3, the stamp is three bytes, <code>B6 6D DB</code>, spanning eight records (24 bits).
+Both single-byte and multi-byte stamps are calculated once and then applied in batches,
+reading eight rep-level bytes at a time into one long.
+If a given small-<code>n</code> rep-level stream doesn’t match the stamping pattern at some point, this means it contains lists of varying lengths and the fast path can’t be taken.
+This technique (SWAR, SIMD within a register) proved fast enough during benchmarking<sup>1</sup>.</p>
+</div>
+<div class="sidebarblock aside">
+<div class="content">
+<div class="paragraph">
+<p>[1] Should it ever turn out to be a bottleneck, even wider strides would be possible by leveraging Java’s Vector API, mapping to the underlying platform’s SIMD instructions.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Next, let’s discuss the case where <code>n</code> ≥ 16;
+here we need to look for the recurring sequence of a bit-packed run at the record boundary followed by an RLE run of <code>n</code> - 8 1s.
+In the common case each record lands on a byte boundary, so every record is the <em>same</em> sequence of bytes.</p>
+</div>
+<div class="paragraph">
+<p>As an example, for <code>n</code> = 16, we’d have four bytes per record:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/fixedlist_rep_levels_rle.png" alt="fixedlist rep levels rle"/>
+</div>
+</div>
+<div class="paragraph">
+<p>We only need to parse the rep levels of the first record, so we can derive <code>n</code> and the stride (in bytes) and then can check whether the whole stream is that stride repeated. It is byte-periodic with period <code>strideBytes</code>, so the stream shifted left by one stride must equal itself.
+That one bulk compare replaces per-value rep-level processing.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The exact byte split shown, a bit-packed boundary group plus an RLE run, is what mainstream encoders emit, including parquet-java and Arrow C++.
+It is encoder-dependent, however.
+The Parquet specification itself only requires that the rep levels decode to the right sequence, not how the RLE/bit-packing hybrid chunks them into runs.
+Therefore, the detector doesn’t hardcode any specific pattern; instead, it derives the stride from the first record and verifies that the rest of the stream repeats it, deferring to the scalar fallback described below for any layout it doesn’t recognize.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>The third and final scenario is where 9 ≤ <code>n</code> ≤ 15.
+In this case, there’s no per-record stride to bulk-compare:
+For instance, the rep levels of a 9-element list are nine bits; against eight-bit bytes its boundary drifts by one bit each record and only realigns every lcm(8, 9) = 72 values.
+A scalar fallback handles these cases, processing the rep levels run by run, ensuring equal distance between record boundaries.
+It reads each run’s header and scans bit-packed groups in 64-bit words at a time, while skipping RLE runs of 1s in O(1) rather than expanding them.
+As soon as two records disagree in length, the page is rejected from the fast path.
+Because it assumes nothing about the layout, this path also catches the rarer irregular cases:
+one-element lists, or writers that split runs unusually.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_performance_gains">Performance Gains<a class="anchor" href="#_performance_gains"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now, what do we actually gain by applying this logic — what exactly is the &#34;fixed-length list fast path&#34; once we have determined that the lists in a given page are all of the same length?
+A number of optimizations can be applied in this case:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>values are copied page-wise, rather than processed element by element</p>
+</li>
+<li>
+<p>offsets are trivial—​no rep-level scan is required to recover record boundaries</p>
+</li>
+<li>
+<p>def- and rep-level arrays are never materialized, reducing GC pressure</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The effect is substantial.
+The fast path is opt-in currently,
+so we can easily measure the parse times of fixed-length lists with and without the optimization.
+The chart shows a sweep of <code>n</code> from 1 all the way up to 1536.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/fixedlist_sweep.png" alt="fixedlist sweep"/>
+</div>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="paragraph">
+<p>For the column reader the advantage hovers around 2.5× across most of the sweep.
+The shaded band flags the scalar-fallback widths (<code>n</code> = 9–15), which aren’t byte-aligned and so make the detector’s rep-level scan fall back to a slower bit-by-bit walk—​visible here as a slight dip in the column curve, and the detector’s most expensive case (which we quantify below).
+The row reader has a more pronounced shape, climbing to a peak of around 3.9× in the mid-range (<code>n</code> ≈ 64–256) before settling to 3.6× for large lists.
+The rare pathological case of lists with a length of 1 is the one exception:
+with a single element per record, list-object creation dominates and the fast path brings no advantage for the row reader—​if anything, it’s a tiny bit slower<sup>2</sup>.</p>
+</div>
+<div class="sidebarblock aside">
+<div class="content">
+<div class="paragraph">
+<p>[2] The files used for benchmarking were ZSTD-compressed, as production Parquet files typically are.
+For comparison, I also ran against uncompressed files.
+For small <code>n</code>, the numbers didn’t significantly change,
+whereas for <code>n</code> = 768, uncompressed files see a systematically higher speed-up:
+4.4× for the row reader (vs 3.7× with ZSTD) and 2.9× for the column reader (vs 2.5×).
+Which makes sense, as decompression is a cost shared by both the fast and the regular path, so it narrows the ratio between them.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Of course, running this detection logic over the encoded def-level and (in particular) rep-level streams has a cost of its own.
+So does it penalize a regular variable-length <code>LIST</code> column?
+The computational cost for the detector heavily depends on the list size and the applied pattern logic:
+for <code>n</code> ≤ 8, where bit-packed runs of all rep levels need to be walked, it is up to ~1.7% of the regular list retrieval cost (latency).
+For larger <code>n</code>, the highly efficient RLE runs bring detection down toward <code>O(records)</code> complexity, so the relative cost falls from ~0.2% (for <code>n</code> = 16) to under 0.1% (<code>n</code> = 768).
+As expected, the most expensive case is the scalar fallback, with a relative detector overhead of ~17% for <code>n</code> = 15.</p>
+</div>
+<div class="paragraph">
+<p>However, these are the pure detection latencies <a href="https://github.com/hardwood-hq/hardwood-benchmarks/blob/main/results/2026-07-22-fixed-size-list/decode-benchmark.log">measured in isolation</a> in a microbenchmark.
+When looking at actual end-to-end parsing times,
+the fast-path detector cost is negligible for all values of <code>n</code>.
+Even in the absolute worst case, where only the very last list in a page has a different length than all the lists before—​i.e. the detector’s O(1) def-level gate passes and it then scans the entire rep-level stream before finding the odd list at the very end and falling back to the regular decode path—​there’s <a href="https://github.com/hardwood-hq/hardwood-benchmarks/blob/main/results/2026-07-22-fixed-size-list/fallback-benchmark.log">no measurable impact</a> on the overall processing time for all list sizes but one.
+Only for <code>n</code> = 15 (an uncommon width, and the most expensive scalar fallback case) is there an overhead of ~2%, just outside the 99.9% confidence intervals.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tbody><tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The benchmarks in this post are based on <a href="https://github.com/openjdk/jmh">JMH</a>, running three forks with five measurements each.
+Benchmarking was done with Java 25 (Temurin build) on an AWS m7i.2xlarge instance (8 vCPU / 4 physical cores; 32 GB of RAM).
+Hardwood parallelizes page decoding internally, so the reads exercise all cores.
+Files were served from the operating system’s page cache.
+To account for run-to-run variability, the throughput benchmarks (the two charts above) were each run three times and the per-point median is shown.
+The detector micro-benchmarks further down are single JMH runs of five forks each.
+The benchmarks also contain a correctness gate that verifies the fast path and the regular parsing routine decode bit-identical values.
+The complete benchmark source code and the raw numbers from all runs can be found <a href="https://github.com/hardwood-hq/hardwood-benchmarks#fixed-size-list-scan—​run-fixedlistsh">here</a>.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary">Summary<a class="anchor" href="#_summary"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Until the fixed-length list support is added to the Parquet format,
+it’s sub-optimal for storing data such as vector embeddings,
+triggering a costly retrieval of list boundaries from the file’s repetition-level stream.
+However, by examining the <em>encoded</em> repetition levels and looking for the patterns clearly identifying actually fixed-length lists,
+Hardwood’s Parquet parser significantly reduces the reading times for such lists,
+yielding improvements of up to 2.7× for the column reader and up to 3.9× for the row reader, depending on the specific list lengths.</p>
+</div>
+<div class="paragraph">
+<p>While the definition-level optimization discussed above is relatively common,
+I’m not aware of any mainstream Parquet parser that applies the encoded repetition-level inspection
+(if you know of any parser doing this, I’d love to learn about it in the comments below).
+This optimization is part of the upcoming Hardwood 1.1.0.Beta1 release.
+It currently must be explicitly enabled by setting the parser option <code>hardwood.fixed-list-fast-path</code> to <code>true</code>,
+but we expect to enable it by default for the 1.1 release barring any unforeseen issues.</p>
+</div>
+<div class="paragraph">
+<p>So if you’re storing embeddings, coordinates, or other fixed-length vectors in Parquet, give it a try and see for yourself how much of the list-decoding overhead falls away in your case.
+Note that the numbers reported above come from relatively large (~450-500 MB) files; on smaller inputs the wins tend to be not quite as large, yet still substantial.
+Once the Parquet format has a proper fixed-length list type, that optimization should become unnecessary for newly written files.
+But until then, and for all the list-encoded data already out there, a little inspection of the encoded levels goes a long way.</p>
+</div>
+</div>
+</div>
+			</div>
+
+			
+			
+			
+			<div class="related-posts">
+				<h3>Read Next</h3>
+				<ul>
+					
+					<li><a href="/blog/hardwood-1-0-fast-lightweight-apache-parquet-reader-for-the-jvm/">Hardwood 1.0: A Fast, Lightweight Apache Parquet Reader for the JVM</a> <span class="meta">Jun 25, 2026</span></li>
+					
+					<li><a href="/blog/improved-column-reader-api-geospatial-support-hardwood-1-0-0-cr1-available/">Improved Column Reader API, First Cut of Geospatial Support: Hardwood 1.0.0.CR1 Is Available</a> <span class="meta">May 31, 2026</span></li>
+					
+					<li><a href="/blog/variant-support-interactive-parquet-file-tui-hardwood-1-0-0-beta2-is-out/">VARIANT Support, Interactive Parquet File TUI: Hardwood 1.0.0.Beta2 Is Out</a> <span class="meta">Apr 29, 2026</span></li>
+					
+				</ul>
+			</div>
+			
+			
+		</div>
+
+		<div class="post-footer">
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<div class="header-image-container" style="flex-shrink: 0;">
+					<img class="footer-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+				</div>
+				<p style="margin: 0;">Gunnar Morling is an open-source software engineer in the Java and data streaming space, currently working as a Technologist at Confluent. Previously, he helped to build a realtime stream processing platform based on Apache Flink and led the Debezium project, a distributed platform for change data capture. He is a Java Champion and has founded multiple open source projects such as Hardwood, kcctl, JfrUnit, and MapStruct.</p>
+			</div>
+		</div>
+
+		
+		
+		<div class="post-discussions">
+			<p>Comment below, or join the discussion on
+			<a href="https://hn.algolia.com/?query=morling.dev/blog/fast-path-for-fixed-length-lists-in-parquet/">Hacker News</a>,
+			<a href="https://lobste.rs/search?q=domain:morling.dev+title:%22A%20Fast%20Path%20for%20Fixed-Length%20Lists%20in%20Parquet%22&what=stories">Lobsters</a>, and
+			<a href="https://www.reddit.com/search/?q=url:morling.dev/blog/fast-path-for-fixed-length-lists-in-parquet/">Reddit</a>.
+			</p>
+		</div>
+		<div id="disqus_thread"></div>
+
+<script>
+  
+  window.addEventListener('load', function() {
+    
+    setTimeout(function() {
+      const commentsContainer = document.getElementById('disqus_thread');
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', 'gunnarmorling/discussions.morling.dev');
+      script.setAttribute('data-repo-id', 'R_kgDOGXzqNQ');
+      script.setAttribute('data-category', 'Announcements');
+      script.setAttribute('data-category-id', 'DIC_kwDOGXzqNc4B_2Pq');
+      script.setAttribute('data-mapping', 'title');
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-theme', 'light');
+      script.setAttribute('data-lang', 'en');
+      script.setAttribute('crossorigin', 'anonymous');
+      script.async = true;
+      commentsContainer.appendChild(script);
+    }, 100);
+  });
+</script>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2026 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
