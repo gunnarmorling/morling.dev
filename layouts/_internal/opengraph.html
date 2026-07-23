@@ -18,6 +18,11 @@
 {{- with $description }}
   <meta property="og:description" content="{{ . }}">
 {{- end }}
+{{- with .Params.images | default .Site.Params.images }}
+  {{- range first 6 . }}
+  <meta property="og:image" content="{{ . | absURL }}">
+  {{- end }}
+{{- end }}
 {{- with .Site.Language.LanguageCode }}
   <meta property="og:locale" content="{{ . }}">
 {{- end }}

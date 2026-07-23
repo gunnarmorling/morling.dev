@@ -8,7 +8,15 @@
   {{- $description = .Site.Params.description | default "" -}}
 {{- end -}}
 
+{{- $images := .Params.images | default .Site.Params.images -}}
+{{- with $images }}
+<meta name="twitter:card" content="summary_large_image">
+  {{- with index . 0 }}
+  <meta name="twitter:image" content="{{ . | absURL }}">
+  {{- end }}
+{{- else }}
 <meta name="twitter:card" content="summary">
+{{- end }}
 {{- with .Title }}
   <meta name="twitter:title" content="{{ . }}">
 {{- end }}
