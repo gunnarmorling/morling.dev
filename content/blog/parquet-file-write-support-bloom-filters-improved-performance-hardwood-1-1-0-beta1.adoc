@@ -1,0 +1,166 @@
+---
+title: "Parquet File Write Support, Bloom Filters, Improved Performance: Hardwood 1.1.0.Beta1 Is Out"
+date: 2026-08-31T21:36:00+02:00
+draft: false
+markup: adoc
+images:
+  - /images/hardwood_1_1_0_beta1_og.png
+tags:
+  - parquet
+  - open-source
+  - java
+  - performance
+  - hardwood
+
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+"When is write support gonna land in Hardwood?"
+
+That's probably the most common question I got over the last few months.
+As of today, I am very happy to share that the answer has changed from "It's coming soon" to "A first cut is there, give it a try" -- the first Beta of Hardwood 1.1 is out!
+This is a major milestone for the project, marking the first step in evolving Hardwood from being solely a Parquet parser to a complete library for this widely used columnar file format.
+
+But there's more.
+This release also comes with significant enhancements to the query layer (Bloom filters, dictionary-based row-group pruning), many performance improvements such as a fast path for effectively fixed-length list columns, an even snappier CLI, and much more.
+Let's dig into some of the new features and changes!
+
+<!--more-->
+
+== Write Support
+
+For link:/blog/hardwood-1-0-fast-lightweight-apache-parquet-reader-for-the-jvm/[Hardwood 1.0] we were laser-focused on building a fast, multi-threaded reader for Apache Parquet, with no mandatory dependencies.
+But if you're reading Parquet, chances are that you need to write it too: your application might have a data ingestion layer where you're writing Parquet files and a query layer where you need to read them.
+Or, you may have compaction logic which reads files, deletes some values, and writes them back right away.
+
+Hence, Parquet write support is the key theme of Hardwood 1.1, and today's Beta1 ships a first preview of this.
+Mirroring the reader side, the writer comes in two flavors: the record-based `RowWriter` API and the batch-oriented `ColumnWriter` API.
+The https://hardwood.dev/1.1.0.Beta1/how-to/write-row-by-row/[row writer] receives one record at a time, and comes in handy in particular for writing files with complex schemas, containing structs, lists, or maps.
+Here's how you produce a Parquet file with the row writer:
+
+[source,java,linenums=true]
+----
+List<Person> people = List.of(...);
+
+FileSchema schema = FileSchema.builder("person") // <1>
+    .addColumn("id", PhysicalType.INT64, RepetitionType.REQUIRED)
+    ... 
+    .build();
+
+Path path = Path.of("people.parquet");
+
+try (ParquetFileWriter writer = ParquetFileWriter.create(
+        OutputFile.of(path), schema)) {
+
+    RowWriter rows = writer.rowWriter(); // <2>
+
+    for (Person person : people) {
+        rows.writeRow(row -> row // <3>
+                .setLong("id", person.id())
+                .setString("name", person.name())
+                .setDate("birth_date", person.birthDate())
+                .setDouble("salary", person.salary())
+                .setList("phones", phones -> {
+                    for (String phone : person.phones()) {
+                        phones.addString(phone);
+                    }
+                }));
+    }
+}
+----
+<1> Define the schema with its columns, their types, repetition type, etc.
+<2> Obtain a row writer with default settings
+<3> Iterate through the source data set, appending a row for each record, navigating into sub-lists, etc.
+
+Internally, the engine buffers the incoming records and cuts row groups and pages using sensible defaults.
+If applicable and where it's advantageous, values will automatically be encoded using dictionaries.
+If needed, the writer can be customized via a `WriterConfig` object,
+which https://hardwood.dev/1.1.0.Beta1/reference/writer/#writer-options[lets you control] row-group and page sizes, as well as other aspects such as encodings, compression codecs, and statistics, on a file-global as well as a per-column basis.
+
+The `RowWriter` API is complemented by the batch-oriented `ColumnWriter` API.
+It takes column values in batches, as arrays, and is optimized for use cases where performance is the primary concern,
+for instance when rewriting large numbers of files in a compaction routine.
+Refer to the https://hardwood.dev/1.1.0.Beta1/how-to/write-column-by-column/[documentation] to see the columnar API in action.
+
+Both the row and column writer APIs are extensively tested not only against Hardwood's own reader, but also against DuckDB (which can run SQL queries against Parquet files) as well as the Apache parquet-java project,
+ensuring compatibility of files produced by Hardwood with the wider Parquet ecosystem.
+
+Hardwood's write support is currently under active development and there are a few limitations to consider:
+As of the Beta1 release, the implementation is single-threaded (unlike the reader APIs),
+and writing files directly to S3 is not supported yet.
+Over the next few weeks we're planning to close these and some other gaps:
+there'll be support for page indexes and Bloom filters, support for writing `VARIANT` columns, and more.
+We're also going to subject the writer to some proper benchmarking.
+
+== Query Evaluation: Bloom Filters and Dictionary-Based Row-Group Pruning
+
+When querying Parquet files on remote storage (S3), it is critical to minimize the amount of downloaded data as much as possible, reducing both query runtime and data transfer cost.
+This is achieved by pushing query predicates into the parsing engine, which then fetches only those row groups or even pages of a file matching a given query.
+
+This release builds on the predicate push-down capabilities of Hardwood 1.0, adding support for Bloom filters and dictionary-based row-group pruning.
+
+https://en.wikipedia.org/wiki/Bloom_filter[Bloom filters] are space-efficient probabilistic data structures which can quickly answer the question whether a given element is safely not contained in a given set.
+In Parquet, they complement statistics, helping to speed up selective queries on high-cardinality columns.
+If a file contains such Bloom filters, Hardwood utilizes them now for the evaluation of `EQ` and `IN` predicates,
+skipping row groups which a Bloom filter proves don't contain the search key.
+
+Dictionary-based row-group pruning leverages the fact that, if a column chunk's encoding statistics show that all its pages are dictionary-encoded and the search key is not found in the dictionary, this row group can be ignored.
+
+Further improvements around query execution include a fast path when statistics prove that all values in a row group match (no need to evaluate individual values then) and not fetching column indexes for unfiltered scans, as well as a number of correctness fixes around filtering and nested reads.
+
+== Performance Improvements
+
+A key goal for the Hardwood project is to build the fastest Parquet library for the JVM.
+To that end, we're happy to share a number of performance improvements in this release:
+
+* A link:/blog/fast-path-for-fixed-length-lists-in-parquet/[fast path for effectively fixed-length lists], providing a significant speed-up when parsing vector data such as 3D coordinates, RGB(A) colors, or vector embeddings
++
+image::fixedlist_bars.png[]
+
+* Dictionary-encoded strings are interned within a chunk, reducing allocation rate and GC pressure
+* The parsing of the Thrift-encoded footer in Parquet files has been optimized, yielding fast metadata parsing also for wide schemas with hundreds of thousands of columns
+* All-present definition levels are no longer materialized, and all-present nested pages are bulk-copied rather than one-by-one
+
+== Hardwood CLI
+
+While our focus has been primarily on building out the core library, the Hardwood CLI has seen quite a few improvements in this release, too.
+Most importantly, we've moved its foundation from Quarkus and the picocli framework to the Æsh command-line framework.
+Much more light-weight, it proved a better fit for Hardwood's "minimal dependencies" stance.
+From a user's perspective, this change is mostly transparent — though you may notice a significantly faster start-up: `hardwood info` for the 628 MB Overture Maps file clocks in at 12.8 ms ± 1.7 ms (Apple M3 Max, warm page cache).
+That is great news if you're using the Hardwood CLI to inspect Parquet files in environments with usage-based billing, such as AWS Lambda.
+
+Further CLI improvements include consistent value rendering for unannotated `BYTE_ARRAY` columns as well as correct and consistent handling of null values in CSV and JSON output.
+The interactive dive TUI now shows size statistics and rep/def level distributions in the column chunk view, the data preview screen is rendered more space-efficiently, and the navigation and cursor model has been unified across all screens.
+
+If you'd like to use AI coding agents for inspecting and examining Parquet files, you might find the new Hardwood Agent Skill useful.
+It teaches agents when and how to reach for the CLI, for instance to check a file's schema and physical/logical types, diagnose why predicate pushdown or page skipping isn't happening, or read dictionary entries.
+Refer to the https://hardwood.dev/1.1.0.Beta1/reference/cli/#use-with-ai-coding-agents[documentation] for more details, such as how to install this skill as a plug-in for Claude Code.
+
+And finally, mostly for fun and giggles, we ported the Hardwood CLI to WebAssembly.
+With the help of GraalVM's Web Image, the CLI is compiled into a WASM bundle of about 10 MB, allowing you to load and inspect Parquet files https://hardwood.dev/experiments/dive-web/[directly from within your browser] (i.e. the file never leaves your machine).
+
+image::hardwood_dive.png[]
+
+This is just an experiment at this point and shouldn't be considered production-ready (the code is single-threaded, not all compression codecs are supported, and we had to take a few other shortcuts to make it work). Use it at your own risk and don't blame us if it makes your browser explode. More seriously, we'd love for you to give this a try and report back if you think WASM should become an official distribution target for Hardwood.
+
+== Closing Thoughts
+
+This release has been our largest ever, with no fewer than https://github.com/hardwood-hq/hardwood/milestone/8?closed=1[109 issues] resolved.
+Refer to the https://hardwood.dev/latest/release-notes/#110beta1-2026-08-31[release notes] for the complete list of new features, improvements, and bug fixes in the 1.1.0.Beta1 release, including some breaking changes to the (incubating) column reader API.
+
+The Hardwood 1.1.0.Beta1 modules are available on https://central.sonatype.com/artifact/dev.hardwood/hardwood-core[Maven Central]. To download the pre-built native binaries of the CLI for Linux, macOS, and Windows, check out the https://github.com/hardwood-hq/hardwood/releases/tag/v1.1.0.Beta1[Hardwood releases] page on GitHub; alternatively, you can run it as a https://hardwood.dev/1.1.0.Beta1/reference/cli/#docker[Linux container image].
+
+Hardwood wouldn't be where and what it is without its amazing community of contributors,
+and it's great to see that more individuals contributed than to any release before:
+
+https://github.com/arnabnandy7[Arnab Nandy], https://github.com/nitrogen404[Chandan Dhamande], https://github.com/iifawzi[Fawzi Essam], https://github.com/alloutflo[Florian Meyer], https://github.com/gunnarmorling[Gunnar Morling], https://github.com/hurshh[Hursh], https://github.com/chlgusrbs0[Hyungun], https://github.com/chicagobuss[Joshua Buss], https://github.com/k-barseghyan[Karen Barseghyan], https://github.com/kogupta[Kohinoor Gupta], https://github.com/mturac[Mehmet Turac], https://github.com/ZhaoMJ[Mingjie Zhao], https://github.com/fzlzjerry[Morax], https://github.com/w3lld1[Nikulin Nikita], https://github.com/rionmonster[Rion Williams], https://github.com/slegarraga[Sebastian Legarraga], https://github.com/SemyonSinchenko[Semyon Sinchenko], https://github.com/samsameer2804-cloud[Shaik Sameer], https://github.com/shril[Shril Kumar], https://github.com/stalep[Ståle Pedersen].
+
+For 1.1.0.Beta2, the writer remains at the center of our efforts.
+But you can also look forward to some meaty improvements to the query side, such as evaluating predicates in the dictionary space and late materialization, an exciting technique to further limit the volume of data fetched when parsing remote files.
+Stay tuned!
