@@ -1,0 +1,16 @@
+{{- $input := . -}}
+{{- /* Insert marker before first paragraph to mark end of ToC */ -}}
+{{- $input = replaceRE `(<div class="paragraph">)` `<!-- END_TOC -->$1` $input 1 -}}
+{{- /* Split on marker and take everything after it (removes ToC) */ -}}
+{{- $parts := split $input "<!-- END_TOC -->" -}}
+{{- $withoutTOC := "" -}}
+{{- if gt (len $parts) 1 -}}
+  {{- $withoutTOC = index $parts 1 -}}
+{{- else -}}
+  {{- $withoutTOC = $input -}}
+{{- end -}}
+{{- /* Plainify the result and decode HTML entities, so that callers get plain
+       text which Hugo's contextual escaping can encode correctly for its target
+       (text node, attribute, ...). Emitting it as partial output instead would
+       escape it here already, leaving callers with double-escaped entities. */ -}}
+{{- return ($withoutTOC | plainify | htmlUnescape) -}}
