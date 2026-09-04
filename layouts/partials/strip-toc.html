@@ -9,5 +9,8 @@
 {{- else -}}
   {{- $withoutTOC = $input -}}
 {{- end -}}
-{{- /* Plainify the result */ -}}
-{{- $withoutTOC | plainify -}}
+{{- /* Plainify the result and decode HTML entities, so that callers get plain
+       text which Hugo's contextual escaping can encode correctly for its target
+       (text node, attribute, ...). Emitting it as partial output instead would
+       escape it here already, leaving callers with double-escaped entities. */ -}}
+{{- return ($withoutTOC | plainify | htmlUnescape) -}}
