@@ -125,6 +125,20 @@ function createHelix(svg, { turns = 4, radius = 120, height = 240, speed = 0.6 }
     tilted ? h.tilt() : h.untilt();
   }
 
+  // Print builds one page per fragment step by cloning the slide, so every clone carries the
+  // paths that were drawn into the live SVG: the spiral would be a flat ring on both pages.
+  // Draw each clone once, in the state its own page implies.
+  Reveal.on('pdf-ready', () => {
+    helixes.forEach((h) => h.stop());
+    document.querySelectorAll('.pdf-page svg[data-helix]').forEach((svg) => {
+      svg.querySelectorAll(':scope > :not(text)').forEach((node) => node.remove());
+      const fragment = svg.closest('section').querySelector('[data-helix-tilt]');
+      const tilted = !!(fragment && fragment.classList.contains('visible'));
+      svg.classList.toggle('tilted', tilted);
+      createHelix(svg, { turns: Number(svg.dataset.turns || 4) }).snap(tilted);
+    });
+  });
+
   Reveal.on('ready', (event) => {
     document.querySelectorAll('svg[data-helix]').forEach((svg) => {
       const turns = Number(svg.dataset.turns || 4);

@@ -264,6 +264,53 @@
   display: none;
 }
 
+/* Reveal's overview (Esc) zooms the slides out but leaves the footer, the number and any side
+   credit floating over the page. They belong to a slide being shown, not to the map of them. */
+.reveal.overview .deck-footer,
+.reveal.overview .slide-number,
+.reveal.overview .side-credit {
+  display: none !important;
+}
+
+/* Print: each page gets its own footer and number, built by index.html at pdf-ready. A print page
+   is larger than the slide, so both are inset from the slide's edge rather than the paper's. */
+html.reveal-print .pdf-page .page-footer,
+html.reveal-print .pdf-page .page-number {
+  position: absolute;
+  bottom: calc((100% - var(--slide-height, 720px)) / 2 + 14px);
+  z-index: 30;
+  font-family: var(--r-main-font);
+  font-size: 18px;
+  line-height: 1;
+  color: var(--dim);
+}
+
+html.reveal-print .pdf-page .page-footer { left: calc((100% - var(--slide-width, 1280px)) / 2 + 28px); }
+html.reveal-print .pdf-page .page-number { right: calc((100% - var(--slide-width, 1280px)) / 2 + 28px); }
+
+html.reveal-print .pdf-page .page-footer:not(.page-credit)::before {
+  content: "";
+  display: inline-block;
+  width: 29px;
+  height: 29px;
+  margin-right: 10px;
+  vertical-align: -8px;
+  background: url("images/hardwood.svg") no-repeat center / contain;
+}
+
+/* On an act divider the credit sits on the dimmed photo; on a chapter divider, on near-white. */
+html.reveal-print .pdf-page .page-credit-dark { color: rgba(255, 255, 255, 0.75); }
+html.reveal-print .pdf-page .page-credit-dark a { color: #9cc7ea; }
+html.reveal-print .pdf-page .page-credit-light { color: var(--dim); }
+
+/* Print stacks every page inside .reveal, so the one footer, slide number and side credit land
+   once, at the foot of the last page, rather than on each. None of them belongs in the PDF. */
+html.reveal-print .reveal .deck-footer,
+html.reveal-print .reveal .side-credit,
+html.reveal-print .reveal .slide-number {
+  display: none !important;
+}
+
 /* !important: reveal sets the slide number's display inline. */
 .reveal.no-footer .deck-footer,
 .reveal.no-footer .slide-number {

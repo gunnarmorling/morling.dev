@@ -178,13 +178,52 @@
 
       Reveal.on('ready', (event) => {
         // With center: false, Reveal still centres slides that carry the "center" class.
+        // The deck number is stamped here, while each slide is still a single element: print
+        // clones a slide once per fragment step, and the clones carry the attribute along.
+        let number = 0;
         document.querySelectorAll('.reveal .slides section').forEach((slide) => {
           if (isCentred(slide)) slide.classList.add('center');
+          if (slide.dataset.visibility !== 'uncounted') number += 1;
+          slide.dataset.deckNumber = number;
         });
         Reveal.layout();
         syncFooter(event.currentSlide);
       });
       Reveal.on('slidechanged', (event) => syncFooter(event.currentSlide));
+
+      // Print keeps one footer and one slide number inside .reveal, so with every page stacked in
+      // there they land on the last page alone. Give each page its own pair, numbered like the
+      // deck and not like the page sequence: a slide with fragments spans several pages under one
+      // number, and an uncounted slide repeats the previous one, as it does on screen. The grid
+      // has its own numbering and wants no footers, so it is left alone.
+      Reveal.on('pdf-ready', () => {
+        if (document.documentElement.classList.contains('grid-view')) return;
+        const deckFooter = document.querySelector('.reveal .deck-footer');
+        const text = deckFooter.dataset.default ?? deckFooter.textContent;
+        document.querySelectorAll('.reveal .slides .pdf-page').forEach((page) => {
+          const slide = page.querySelector('section');
+          if (!slide) return;
+          const photo = slide.classList.contains('section') || slide.classList.contains('chapter');
+          const credit = photo ? slide.querySelector('.credit') : null;
+          if (slide.classList.contains('section') && !credit) return;
+          const line = document.createElement('div');
+          line.className = 'page-footer';
+          if (credit) {
+            line.classList.add('page-credit',
+              slide.classList.contains('chapter') ? 'page-credit-light' : 'page-credit-dark');
+            line.innerHTML = credit.innerHTML;
+          } else {
+            line.textContent = text;
+          }
+          page.appendChild(line);
+          if (credit) return;                    // the credit takes the slide number's place
+          const count = document.createElement('div');
+          count.className = 'page-number';
+          count.textContent = slide.dataset.deckNumber;
+          page.appendChild(count);
+        });
+      });
+
 
       // Stepping back past the exhaustion slide's crop: hold the counters' box back until the tweet
       // has moved down again, instead of showing it on the moving tweet.
