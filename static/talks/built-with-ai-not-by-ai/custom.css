@@ -666,6 +666,25 @@ html.grid-view.reveal-print .reveal .slides .pdf-page.grid-current {
   transform: rotate(var(--r, 0deg));
   background: #fff;
   box-shadow: 0 10px 34px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+}
+
+/* Showing the (invisible) trigger fragment plays the pile: one click, then each post fades in on
+   its own --d, so the groups arrive 1.5s apart without a click each. */
+.reveal section:has(.montage-go.visible) .montage img {
+  animation: montage-fade 0.22s ease-out forwards;
+  animation-delay: var(--d, 0s);
+}
+
+@keyframes montage-fade {
+  to { opacity: 1; }
+}
+
+/* Print captures the page at a moment nobody controls, so a post still inside its delay comes out
+   missing. The page for the trigger step shows the finished pile instead of animating to it. */
+html.reveal-print .pdf-page:has(.montage-go.visible) .montage img {
+  animation: none;
+  opacity: 1;
 }
 
 /* A wall of text in a terminal, e.g. a classpath. Use: <pre class="classpath"> */
@@ -1192,7 +1211,8 @@ html.reveal-print .pdf-page {
   transform: rotate(var(--r));
 }
 
-.reveal .pr-go {
+.reveal .pr-go,
+.reveal .montage-go {
   display: none;
 }
 
@@ -1204,6 +1224,14 @@ html.reveal-print .pdf-page {
 
 @keyframes pr-pop {
   to { opacity: 1; transform: rotate(var(--r)) scale(1); }
+}
+
+/* As for the montage above: the later PRs sit behind delays of several seconds, long enough that
+   print catches them unscaled and invisible. Show the end state on the page that triggers it. */
+html.reveal-print .pdf-page:has(.pr-go.visible) .pr-montage img {
+  animation: none;
+  opacity: 1;
+  transform: rotate(var(--r)) scale(1);
 }
 
 .reveal .pr-stats {
@@ -1428,8 +1456,8 @@ html.reveal-print .pdf-page {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Half of what the replies add below the full tweet: (278 + 130 + 95 - 410) / 2. */
-  transform: translateY(47px);
+  /* Half of what the replies add below the full tweet: (250 + 130 + 95 - 345) / 2. */
+  transform: translateY(65px);
   transition: transform 0.6s ease-in-out 0.25s;
 }
 .reveal section:has(.ex-r1-go.visible) .ex { transform: none; }
@@ -1446,14 +1474,14 @@ html.reveal-print .pdf-page {
 .reveal .ex-tweet {
   position: relative;
   width: 602px;
-  height: 278px;
+  height: 250px;
 }
 .reveal .ex-card {
   position: absolute;
   top: 0;
   left: 0;
   width: 600px;
-  height: 408px;
+  height: 343px;
   overflow: hidden;
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -1463,10 +1491,10 @@ html.reveal-print .pdf-page {
 /* Around the counter row, as wide as the divider above it. */
 .reveal .ex-box {
   position: absolute;
-  left: 1.67%;
-  width: 74.5%;
-  top: 78%;
-  height: 10%;
+  left: 2.17%;
+  width: 95.6%;
+  top: 83%;
+  height: 12%;
   box-sizing: border-box;
   border: 3px solid var(--accent);
   border-radius: 6px;
@@ -1479,7 +1507,7 @@ html.reveal-print .pdf-page {
 .reveal section.ex-back:has(.ex-stats-go.visible) .ex-box { opacity: 0; transition: none; }
 /* The box leaves first, then the card crops to just above the timestamp while the block moves up. */
 .reveal section:has(.ex-r1-go.visible) .ex-box { opacity: 0; transition-duration: 0.2s; }
-.reveal section:has(.ex-r1-go.visible) .ex-card { height: 276px; }
+.reveal section:has(.ex-r1-go.visible) .ex-card { height: 248px; }
 
 .reveal .ex-reply {
   --indent: 64px;
@@ -1625,12 +1653,15 @@ html.reveal-print .pdf-page {
 .reveal .fix-go { display: none; }
 .reveal .columns.asm-code { gap: 28px; align-items: stretch; }
 .reveal .columns.asm-code > div:first-child { flex: 1.1 1 0; }
-.reveal .columns.asm-code pre { margin: 0; height: 100%; }
-.reveal .columns.asm-code pre.asm { font-size: var(--fs-code); }
+.reveal .columns.asm-code pre { margin: 0; }
+/* The left cell holds the prompt and the perfasm output on top of each other, so it fills the row. */
+.reveal .columns.asm-code pre.asm { height: 100%; font-size: var(--fs-code); }
 .reveal .columns.asm-code pre.asm code { height: 100%; box-sizing: border-box; }
+/* The fix listing sizes its own box: the column is .narrow, so the width follows the longest line
+   and the height the taller of the two variants, rather than the row. */
+.reveal .columns.asm-code > .narrow { align-self: center; }
 .reveal .columns.asm-code pre.fix-code { font-size: var(--fs-code); }
 .reveal pre.fix-code .rot-old { align-self: start; }
-.reveal .columns.asm-code pre.fix-code code { height: 100%; box-sizing: border-box; }
 .reveal pre.fix-code mark { text-decoration: none; }
 .reveal section:has(.fix-go.visible) pre.fix-code .rot-old { opacity: 0; }
 .reveal section:has(.fix-go.visible) pre.fix-code .rot-new { opacity: 1; }
