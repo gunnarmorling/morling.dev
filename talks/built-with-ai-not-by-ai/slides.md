@@ -1092,7 +1092,7 @@ agreed".
 
 ## "Make it faster, Claude!"
 
-<span class="subtitle">A 7 W box on the desk, 500 EUR, silent</span>
+<span class="subtitle">A 7W silent box on my desk</span>
 
 <div class="n300">
 <div class="n300-row">
