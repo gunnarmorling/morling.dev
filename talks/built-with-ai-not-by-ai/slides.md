@@ -48,16 +48,17 @@ Nine months of building a Parquet library with an agent
 
 <!-- .slide: class="wide" -->
 
+<span class="montage-go fragment" data-fragment-index="0"></span>
 <div class="montage">
   <h2>Do you remember the start of the year?</h2>
-  <img class="fragment" data-fragment-index="0" src="images/magic-willison.png" style="--x: 10px; --y: 20px; --r: -4deg" alt="Simon Willison, Dec 15: I ported JustHTML from Python to JavaScript with Codex CLI and GPT-5.2 in 4.5 hours">
-  <img class="fragment" data-fragment-index="0" src="images/magic-steinberger.png" style="--x: 390px; --y: 0px; --r: 2deg" alt="Peter Steinberger, Dec 28: Shipping at Inference-Speed">
-  <img class="fragment" data-fragment-index="1" src="images/magic-holland.png" style="--x: 770px; --y: 30px; --r: -2deg" alt="Burke Holland, Jan 5: Opus 4.5 is going to change everything">
-  <img class="fragment" data-fragment-index="1" src="images/magic-orosz.png" style="--x: 40px; --y: 230px; --r: 3deg" alt="Gergely Orosz, Jan 6: When AI writes almost all code, what happens to software engineering?">
-  <img class="fragment" data-fragment-index="1" src="images/magic-zvi.png" style="--x: 400px; --y: 190px; --r: -3deg" alt="Zvi Mowshowitz, Jan 9: Claude Codes">
-  <img class="fragment" data-fragment-index="1" src="images/magic-lambert.png" style="--x: 780px; --y: 250px; --r: 4deg" alt="Nathan Lambert, Jan 9: Claude Code Hits Different">
-  <img class="fragment" data-fragment-index="2" src="images/magic-antirez.png" style="--x: 200px; --y: 340px; --r: -1deg" alt="antirez, Jan 11: Don't fall into the anti-AI hype">
-  <img class="fragment" data-fragment-index="2" src="images/magic-huntley.png" style="--x: 620px; --y: 290px; --r: 2deg; --w: 360px" alt="Geoffrey Huntley, Jan 17: everything is a ralph loop">
+  <img src="images/magic-willison.png" style="--x: 10px; --y: 20px; --r: -4deg; --d: 0s" alt="Simon Willison, Dec 15: I ported JustHTML from Python to JavaScript with Codex CLI and GPT-5.2 in 4.5 hours">
+  <img src="images/magic-steinberger.png" style="--x: 390px; --y: 0px; --r: 2deg; --d: 0s" alt="Peter Steinberger, Dec 28: Shipping at Inference-Speed">
+  <img src="images/magic-holland.png" style="--x: 770px; --y: 30px; --r: -2deg; --d: 1.5s" alt="Burke Holland, Jan 5: Opus 4.5 is going to change everything">
+  <img src="images/magic-orosz.png" style="--x: 40px; --y: 230px; --r: 3deg; --d: 1.5s" alt="Gergely Orosz, Jan 6: When AI writes almost all code, what happens to software engineering?">
+  <img src="images/magic-zvi.png" style="--x: 400px; --y: 190px; --r: -3deg; --d: 1.5s" alt="Zvi Mowshowitz, Jan 9: Claude Codes">
+  <img src="images/magic-lambert.png" style="--x: 780px; --y: 250px; --r: 4deg; --d: 1.5s" alt="Nathan Lambert, Jan 9: Claude Code Hits Different">
+  <img src="images/magic-antirez.png" style="--x: 200px; --y: 340px; --r: -1deg; --d: 3s" alt="antirez, Jan 11: Don't fall into the anti-AI hype">
+  <img src="images/magic-huntley.png" style="--x: 620px; --y: 290px; --r: 2deg; --w: 360px; --d: 3s" alt="Geoffrey Huntley, Jan 17: everything is a ralph loop">
 </div>
 
 
@@ -137,7 +138,7 @@ try (ParquetFileReader file =
 <svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-axis" x1="96" y1="395" x2="1184" y2="395"/><line class="rtl-tick" x1="96" y1="389" x2="96" y2="401"/><text class="rtl-month" x="102" y="421">Jan</text><line class="rtl-tick" x1="282" y1="389" x2="282" y2="401"/><text class="rtl-month" x="288" y="421">Feb</text><line class="rtl-tick" x1="451" y1="389" x2="451" y2="401"/><text class="rtl-month" x="457" y="421">Mar</text><line class="rtl-tick" x1="637" y1="389" x2="637" y2="401"/><text class="rtl-month" x="643" y="421">Apr</text><line class="rtl-tick" x1="817" y1="389" x2="817" y2="401"/><text class="rtl-month" x="823" y="421">May</text><line class="rtl-tick" x1="1004" y1="389" x2="1004" y2="401"/><text class="rtl-month" x="1010" y="421">Jun</text></svg>
 <div class="rtl-event fragment" data-fragment-index="0"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="126" y1="395" x2="126" y2="298"/></svg><img class="rtl-card" src="images/tl-2026-01-06-announced.png" style="left: 96px; top: 195px; width: 260px; height: 103px" alt=""></div>
 <div class="rtl-event fragment" data-fragment-index="1"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="276" y1="395" x2="386" y2="298"/></svg><img class="rtl-card" src="images/tl-2026-01-31-perf.png" style="left: 370px; top: 158px; width: 330px; height: 140px" alt=""></div>
-<div class="rtl-event fragment" data-fragment-index="2"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="318" y1="395" x2="318" y2="492"/></svg><img class="rtl-card" src="images/x-2026-02-07-race-condition.png" style="left: 96px; top: 492px; width: 320px; height: 140px" alt=""></div>
+<div class="rtl-event fragment" data-fragment-index="2"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="318" y1="395" x2="318" y2="492"/></svg><img class="rtl-card" src="images/x-2026-02-07-race-condition.png" style="left: 96px; top: 492px; width: 320px; height: 129px" alt=""></div>
 <div class="rtl-event fragment" data-fragment-index="3"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="433" y1="395" x2="446" y2="492"/></svg><img class="rtl-card" src="images/tl-2026-02-26-alpha1.png" style="left: 430px; top: 492px; width: 360px; height: 134px" alt=""></div>
 <div class="rtl-event fragment" data-fragment-index="4"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="439" y1="395" x2="732" y2="298"/></svg><div class="rtl-card rtl-note" style="left: 716px; top: 186px; width: 234px; height: 112px">“Is Hardwood vibe-coded? <em>Absolutely not.</em>”</div></div>
 <div class="rtl-event fragment" data-fragment-index="0"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><circle class="rtl-dot" cx="114" cy="395" r="7"/><text class="rtl-label" x="114" y="379" text-anchor="middle">First commit</text></svg></div>
@@ -211,9 +212,7 @@ try (ParquetFileReader file =
 
 ## The line moved
 
-"External dependencies now have to earn their place, <em>and the bar has moved</em>."
-
-<span class="aside">Me, Apr 21</span>
+External dependencies now have to earn their place, <em>and the bar has moved</em>.
 
 
 ---
@@ -227,7 +226,7 @@ try (ParquetFileReader file =
 <svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-axis" x1="96" y1="395" x2="1184" y2="395"/><line class="rtl-tick" x1="96" y1="389" x2="96" y2="401"/><text class="rtl-month" x="102" y="421">Jan</text><line class="rtl-tick" x1="282" y1="389" x2="282" y2="401"/><text class="rtl-month" x="288" y="421">Feb</text><line class="rtl-tick" x1="451" y1="389" x2="451" y2="401"/><text class="rtl-month" x="457" y="421">Mar</text><line class="rtl-tick" x1="637" y1="389" x2="637" y2="401"/><text class="rtl-month" x="643" y="421">Apr</text><line class="rtl-tick" x1="817" y1="389" x2="817" y2="401"/><text class="rtl-month" x="823" y="421">May</text><line class="rtl-tick" x1="1004" y1="389" x2="1004" y2="401"/><text class="rtl-month" x="1010" y="421">Jun</text></svg>
 <div class="rtl-event"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="126" y1="395" x2="126" y2="298"/></svg><img class="rtl-card" src="images/tl-2026-01-06-announced.png" style="left: 96px; top: 195px; width: 260px; height: 103px" alt=""></div>
 <div class="rtl-event"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="276" y1="395" x2="386" y2="298"/></svg><img class="rtl-card" src="images/tl-2026-01-31-perf.png" style="left: 370px; top: 158px; width: 330px; height: 140px" alt=""></div>
-<div class="rtl-event"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="318" y1="395" x2="318" y2="492"/></svg><img class="rtl-card" src="images/x-2026-02-07-race-condition.png" style="left: 96px; top: 492px; width: 320px; height: 140px" alt=""></div>
+<div class="rtl-event"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="318" y1="395" x2="318" y2="492"/></svg><img class="rtl-card" src="images/x-2026-02-07-race-condition.png" style="left: 96px; top: 492px; width: 320px; height: 129px" alt=""></div>
 <div class="rtl-event"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="433" y1="395" x2="446" y2="492"/></svg><img class="rtl-card" src="images/tl-2026-02-26-alpha1.png" style="left: 430px; top: 492px; width: 360px; height: 134px" alt=""></div>
 <div class="rtl-event"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="439" y1="395" x2="732" y2="298"/></svg><div class="rtl-card rtl-note" style="left: 716px; top: 186px; width: 234px; height: 112px">“Is Hardwood vibe-coded? <em>Absolutely not.</em>”</div></div>
 <div class="rtl-event fragment" data-fragment-index="1"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="998" y1="395" x2="998" y2="298"/></svg><div class="rtl-card rtl-note rtl-geo" style="left: 966px; top: 228px; width: 218px; height: 70px">Geospatial pruning ships</div></div>
@@ -359,7 +358,7 @@ try (ParquetFileReader file =
 
 <!-- .slide: class="wide" -->
 
-## The agent types. I only decide.
+## The tax of context switching
 
 <span class="subtitle">Sep 9: 205 prompts to 21 sessions, one every 2.7 minutes</span>
 
@@ -388,9 +387,9 @@ I'm dialling it back.
 
 <!-- .slide: class="hero geo" data-background-image="images/geo-backdrop.svg" data-background-size="cover" -->
 
-## We caught it before Final.
+## It was on main for <em>five weeks</em>.
 
-It wasn't the tests. It wasn't the review.
+Merged May 1. Shipped in CR1.<br>Caught on June 4: not by the tests, and not by the review.
 
 
 ---
@@ -439,7 +438,7 @@ I no longer understand every line of it.
 <div class="ex">
   <div class="ex-tweet">
     <div class="ex-card">
-      <img src="images/08-tweet-exhausting.png" width="598" height="406" alt="Tweet: Finally realized why it's so exhausting and stressful to work with AI agents 8h a day.">
+      <img src="images/08-tweet-exhausting.png" width="600" height="341" alt="Tweet: Finally realized why it's so exhausting and stressful to work with AI agents 8h a day.">
       <span class="ex-box"></span>
     </div>
   </div>
@@ -487,7 +486,7 @@ I no longer understand every line of it.
 
 - A complete written specification
 - A public corpus of test files
-- Three implementations to check against
+- Other implementations to check against
 - Correct = <em>the bytes match</em>
 - Fast = <em>a number</em>
 - Greenfield. One decision-maker.
@@ -499,7 +498,6 @@ I no longer understand every line of it.
 
 - A twelve-year-old system, no spec
 - Tests that assert what the code does
-- Correct = the client hasn't called
 - Four teams and an architect with a veto
 
 </div>
@@ -690,7 +688,7 @@ They're a <em>mirror</em>.
 6.66%  mov  %rbp,%r10</mark>
 0.74%  shr  $0x3,%r10</code></pre>
 </div>
-<div>
+<div class="narrow">
 <pre class="rot-code fix-code"><code class="nohighlight" data-noescape><span class="rot-swap"><span class="rot-old"><span class="k">for</span> (<span class="k">int</span> i = 0; i &lt; count; i++) {
     <span class="c">// unpack the residual …</span>
     lastValue += delta + residual;
@@ -895,39 +893,7 @@ lastValue = value;</span></span></code></pre>
 
 <svg class="proto" viewBox="0 0 1000 460" width="1000" height="460"><g class="fragment" data-fragment-index="0"><rect x="25" y="350" width="310" height="90" fill="#354045" fill-opacity="0.25"/><text x="41" y="386" class="p-label" fill="#ffffff">1</text><text x="73" y="386" class="p-step" fill="#ffffff">Ask in prose</text><text x="31" y="304" class="p-sub" fill="#354045">Sep 4: a rule in CLAUDE.md</text><text x="31" y="330" class="p-sub" fill="#354045">Sep 8: “why again?”</text></g><g class="fragment" data-fragment-index="1"><rect x="345" y="260" width="310" height="180" fill="#354045" fill-opacity="0.55"/><text x="361" y="296" class="p-label" fill="#ffffff">2</text><text x="393" y="296" class="p-step" fill="#ffffff">Automated check</text><text x="351" y="214" class="p-sub" fill="#354045">Filler prose → PR build check</text><text x="351" y="240" class="p-sub" fill="#354045">var → compiler error</text></g><g class="fragment" data-fragment-index="2"><rect x="665" y="170" width="310" height="270" fill="#354045" fill-opacity="0.85"/><text x="681" y="206" class="p-label" fill="#ffffff">3</text><text x="713" y="206" class="p-step" fill="#ffffff">Unrepresentable</text><text x="671" y="124" class="p-sub" fill="#354045">Sep 14: co-author trailer</text><text x="671" y="150" class="p-sub" fill="#354045">off in the settings file</text></g></svg>
 
-
----
-
-
-## Prose rots. Checks don't.
-
-<span class="subtitle">One comment, in 29 filter matchers, May 11 to Sep 10</span>
-
-<span class="rot-go fragment" data-fragment-index="0"></span>
-<span class="rot-fix-go fragment" data-fragment-index="1"></span>
-
-<pre class="rot-code"><code class="nohighlight" data-noescape><span class="rot-swap"><span class="rot-old c">// Build the predicate bitmap ignoring nulls. The inner loop is fixed at 64
-// iterations and uses a branchless `(cond ? 1 : 0) &lt;&lt; b` pack so HotSpot
-// <mark class="rot-claim">fully unrolls it and auto-vectorizes the comparison</mark>. The tail is split
-// off to keep the hot loop's trip count constant at 64.</span><span class="rot-new c">// Build the predicate bitmap ignoring nulls; nulls are masked out in the
-// word-wise pass below. The comparison is branchless, but <mark class="rot-fixed">C2 does not</mark>
-// <mark class="rot-fixed">vectorize it</mark> — packing a vector compare into bitmap bits has no
-// autovectorization idiom, so this compiles to a scalar cmp/setcc/shl/or
-// chain unrolled 4x. The tail is split off to keep the hot loop's trip
-// count constant at 64.</span></span>
-<span class="k">for</span> (<span class="k">int</span> w = 0; w &lt; fullWords; w++) {
-    <span class="k">int</span> base = w &lt;&lt; 6;
-    <span class="k">long</span> word = 0L;
-    <span class="k">for</span> (<span class="k">int</span> b = 0; b &lt; 64; b++) {
-        word |= ((vals[base + b] &gt; lit) ? 1L : 0L) &lt;&lt; b;
-    }
-    outWords[w] = word;
-}</code></pre>
-
-<div class="rot-captions">
-<p class="aside rot-verdict">perfasm: six scalar instructions per value, no vector instructions, unrolled 4×.</p>
-<p class="aside rot-fix">Sep 10: rewritten from a measurement. <em>Still prose, so it can rot again.</em></p>
-</div>
+<p class="aside fragment" data-fragment-index="3">Prose rots. Checks don't.</p>
 
 
 ---
@@ -985,9 +951,11 @@ And I'm fine with that.
 
 ---
 
-<!-- .slide: class="hero-image" -->
+<!-- .slide: class="hero" -->
 
-<img src="images/x-2026-05-14-contributors-cant-follow.png" width="703" height="600" style="max-height: none" alt="May 14: agent-speed teams move at a pace that is hard for outside contributors to track">
+## AI lowered the bar to arrive.<br>It raised the bar to <em>stay</em>.
+
+<span class="aside">Good for the roadmap, harder for collaboration.</span>
 
 
 ---
@@ -1027,16 +995,16 @@ And I'm fine with that.
 
 <!-- .slide: class="hero" -->
 
-## "Built with AI, not by AI" is a quality claim.
-
-The agent owns more and more of the <em>how</em>.<br>It holds only if you're the arbiter of the <em>what</em>.
+# Review the claim, not the diff.
 
 
 ---
 
 <!-- .slide: class="hero" -->
 
-# Review the claim, not the diff.
+## "Built with AI, not by AI" is a quality claim.
+
+The agent owns more and more of the <em>how</em>.<br>It holds only if you're the arbiter of the <em>what</em>.
 
 
 ---
