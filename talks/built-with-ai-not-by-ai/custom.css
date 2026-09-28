@@ -113,7 +113,7 @@
 
 /* A small reminder of an earlier image under a statement. */
 .reveal section img.callback {
-  width: 460px;
+  width: 780px;
   opacity: 0.85;
   margin-top: 0.8em;
 }
@@ -685,6 +685,19 @@ html.grid-view.reveal-print .reveal .slides .pdf-page.grid-current {
 html.reveal-print .pdf-page:has(.montage-go.visible) .montage img {
   animation: none;
   opacity: 1;
+}
+
+/* The classpath wall takes the space the title and subtitle leave, and centres itself in it, so
+   the gap under the subtitle matches the gap down to the footer. */
+.reveal :is(.slides, .pdf-page) > section:has(> pre.classpath):not([style*="display: none"]) {
+  display: flex !important;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: 100%;
+  top: 0 !important;
+}
+.reveal :is(.slides, .pdf-page) > section:has(> pre.classpath) > pre.classpath {
+  margin: auto 0;
 }
 
 /* A wall of text in a terminal, e.g. a classpath. Use: <pre class="classpath"> */
@@ -1452,19 +1465,21 @@ html.reveal-print .pdf-page:has(.pr-go.visible) .pr-montage img {
 .reveal .ex-stats-go,
 .reveal .ex-r1-go,
 .reveal .ex-r2-go { display: none; }
+/* Sized from the tweet outwards at 1.25x the original composition, which is what the slide has
+   room for: the replies hold their space from the start, so 312 + 162 + 119 plus the heading is
+   the whole budget, and the block no longer shifts up when they arrive. */
 .reveal .ex {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Half of what the replies add below the full tweet: (250 + 130 + 95 - 345) / 2. */
-  transform: translateY(65px);
-  transition: transform 0.6s ease-in-out 0.25s;
 }
-.reveal section:has(.ex-r1-go.visible) .ex { transform: none; }
 .reveal .ex img {
   display: block;
   width: 100%;
   height: auto;
+  /* The theme caps section images at 95%, which would inset them inside the card and shift where
+     the crop falls: it has to land in the gap above the timestamp. */
+  max-width: none;
   max-height: none;
   margin: 0;
   border: 0;
@@ -1473,28 +1488,29 @@ html.reveal-print .pdf-page:has(.pr-go.visible) .pr-montage img {
 /* Holds the cropped height in the layout; the card inside hangs over it until it's cropped. */
 .reveal .ex-tweet {
   position: relative;
-  width: 602px;
-  height: 250px;
+  width: 752px;
+  height: 312px;
 }
 .reveal .ex-card {
   position: absolute;
   top: 0;
   left: 0;
-  width: 600px;
-  height: 343px;
+  width: 750px;
+  height: 429px;
   overflow: hidden;
   background: #fff;
   border: 1px solid #e5e7eb;
   box-shadow: 0 2px 14px rgba(0, 0, 0, 0.12);
   transition: height 0.6s ease-in-out 0.25s;
 }
-/* Around the counter row, as wide as the divider above it. */
+/* Around the counter row, as wide as the divider above it. Percentages of the card: the image
+   fills it, so they map straight onto the screenshot (divider y=584, counters y=621..653 of 682). */
 .reveal .ex-box {
   position: absolute;
-  left: 2.17%;
-  width: 95.6%;
-  top: 83%;
-  height: 12%;
+  left: 2.67%;
+  width: 94.6%;
+  top: 88.1%;
+  height: 9.2%;
   box-sizing: border-box;
   border: 3px solid var(--accent);
   border-radius: 6px;
@@ -1507,19 +1523,19 @@ html.reveal-print .pdf-page:has(.pr-go.visible) .pr-montage img {
 .reveal section.ex-back:has(.ex-stats-go.visible) .ex-box { opacity: 0; transition: none; }
 /* The box leaves first, then the card crops to just above the timestamp while the block moves up. */
 .reveal section:has(.ex-r1-go.visible) .ex-box { opacity: 0; transition-duration: 0.2s; }
-.reveal section:has(.ex-r1-go.visible) .ex-card { height: 248px; }
+.reveal section:has(.ex-r1-go.visible) .ex-card { height: 310px; }
 
 .reveal .ex-reply {
-  --indent: 64px;
+  --indent: 80px;
   position: relative;
   box-sizing: border-box;
-  width: 602px;
-  padding: 12px 0 0 var(--indent);
+  width: 752px;
+  padding: 15px 0 0 var(--indent);
   opacity: 0;
   transition: opacity 0.4s;
 }
-.reveal .ex-r1 { height: 130px; }
-.reveal .ex-r2 { height: 95px; }
+.reveal .ex-r1 { height: 162px; }
+.reveal .ex-r2 { height: 119px; }
 .reveal .ex-reply img {
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -1530,24 +1546,24 @@ html.reveal-print .pdf-page:has(.pr-go.visible) .pr-montage img {
 .reveal .ex-reply .ex-tail {
   content: "";
   position: absolute;
-  left: 28px;
+  left: 35px;
   background: #cfd9de;
 }
 .reveal .ex-reply::before {
   top: 0;
-  width: 3px;
-  height: calc(6px + 50%);
+  width: 4px;
+  height: calc(8px + 50%);
 }
 .reveal .ex-reply::after {
-  top: calc(6px + 50%);
-  width: calc(var(--indent) - 28px);
-  height: 3px;
+  top: calc(8px + 50%);
+  width: calc(var(--indent) - 35px);
+  height: 4px;
 }
 /* Carries the line on past a reply once another one follows it. */
 .reveal .ex-reply .ex-tail {
-  top: calc(6px + 50%);
+  top: calc(8px + 50%);
   bottom: 0;
-  width: 3px;
+  width: 4px;
   opacity: 0;
   transition: opacity 0.4s;
 }
@@ -1772,6 +1788,18 @@ html.reveal-print .pdf-page:has(.pr-go.visible) .pr-montage img {
 }
 .reveal section:has(> p > img.pyramid) > p.aside,
 .reveal section:has(img.pyramid) > p.aside { transform: translateY(-32px); }
+
+/* The link to the post, in the top right. The pyramid's box reaches x=1036, but its artwork at
+   that height does not, so the code can be wider than the bare margin and still clear the drawing. */
+.reveal section img.qr {
+  position: absolute;
+  right: 28px;
+  top: 56px;
+  width: 240px;
+  height: auto;
+  max-height: none;
+  margin: 0;
+}
 
 /* The role line under the name on the closing slide. */
 .reveal .signoff span.signoff-role { font-size: 28px; font-weight: 400; color: var(--r-main-color); margin-bottom: 4px; }

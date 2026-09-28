@@ -25,19 +25,24 @@ the room believing this story actually happened to you.
 ## A contributor's pull request
 
 <div class="stamped">
-  <img src="images/01-geo-pr-413.png" width="1100" height="445" style="max-height: none" alt="PR #413, merged May 1">
-  <div class="stamp fragment" data-fragment-index="0" style="left: 770px; top: 60px; --rot: -5deg; --c: #2e7d32">✓ Tests green</div>
-  <div class="stamp fragment" data-fragment-index="1" style="left: 740px; top: 140px; --rot: 3deg; --c: #2e7d32">✓ Merged, May 1</div>
-  <div class="stamp fragment" data-fragment-index="2" style="left: 640px; top: 220px; --rot: -4deg; --c: #2e7d32">✓ Shipped in 1.0.0.CR1</div>
+  <img src="images/01-geo-pr-173.png" width="1100" height="445" style="max-height: none" alt="Pull request #173, Support geospatial statistics and bounding box metadata, closed">
+  <div class="stamp fragment" data-fragment-index="0" style="left: 770px; top: 60px; --rot: -5deg; --c: #2e7d32">&#10003; Tests green</div>
+  <div class="stamp fragment" data-fragment-index="1" style="left: 740px; top: 140px; --rot: 3deg; --c: #2e7d32">&#10003; Merged, May 1</div>
+  <div class="stamp fragment" data-fragment-index="2" style="left: 640px; top: 220px; --rot: -4deg; --c: #2e7d32">&#10003; Shipped in 1.0.0.CR1</div>
   <div class="stamp stamp-big fragment" data-fragment-index="3" style="left: 60px; top: 320px; --rot: -5deg; --c: #c62828">The feature couldn't work</div>
 </div>
 
 Note:
 Set the scene plainly: an outside contributor, LLM-assisted, offering
 page-level geospatial pruning for Hardwood. Skip pages whose bounding box
-can't intersect the query geometry. Their work, their commit. I fixed a few
-loose ends and merged it on May 1 as #413, which keeps their authorship (their
-original PR, #173, was superseded). So the review, and the merge, were mine.
+can't intersect the query geometry. Their work, their commit.
+
+This is their pull request, #173: four commits, 33 files, +1,507 lines, sixteen
+comments over five weeks. I was the reviewer. It shows as closed because I
+carried the work into #413 and merged it there on May 1, keeping their
+authorship on the commit. So the review, and the merge, were mine.
+
+Don't name the contributor, and don't read the handle out.
 
 Coherent code. Sensible names. Reads like the rest of the codebase. Say
 explicitly: this is not bad code. If you are waiting for the slide where the AI
@@ -321,7 +326,7 @@ compile scope. Size from Maven Central.
 
 <!-- .slide: class="hero" -->
 
-## The line moved
+## Make vs. buy
 
 External dependencies now have to earn their place, <em>and the bar has moved</em>.
 
@@ -589,7 +594,7 @@ Land it on the cost, then the confession on the next slide.
 
 I'm dialling it back.
 
-<img class="callback" src="images/x-2026-07-03-context-switching-tax.png" width="460" height="150" alt="Jul 3: the context switching tax is brutal, even just for two sessions in parallel">
+<img class="callback" src="images/x-2026-07-03-context-switching-tax.png" width="780" height="254" alt="Jul 3: the context switching tax is brutal, even just for two sessions in parallel">
 
 Note:
 The conclusion from the chart. This is the honest one. Say the real reason.
@@ -610,18 +615,6 @@ different kind of tired and our industry is not talking about it.
 
 Tell them what it actually cost you — an evening, a weekend, whatever is true.
 Fully personal here. This is the beat no other AI talk has.
-
----
-
-<!-- .slide: class="hero-image" -->
-
-<img class="post" src="images/x-2026-07-31-like-a-psychopath.png" alt="Jul 31: Saw a guy working on his code. No multi-agent setup. Using just Claude and his CLI. Like a psychopath.">
-
-Note:
-Straight after the confession, no setup. Let them laugh; it's aimed at the
-elaborate setups, and that includes mine. 602 likes.
-
-Then on: at that pace, something slips.
 
 ---
 
@@ -937,23 +930,6 @@ guessing whether they were right, all day. That was midnight.
 
 ---
 
-<!-- .slide: class="hero" -->
-
-## What a feedback loop can check, you can hand off.
-
-The rest stays with you.
-
-Note:
-Pre-empt the "so, write tests" reaction. Tests aren't new. What's new is the
-economics: when a human typed the code, tests were a safety net and review
-caught the rest. When an agent types it, the feedback loops you have set the
-limit on what you can hand off. Not the model.
-
-"The rest stays with you" is where the last part of this act goes: review what
-no feedback loop can see.
-
----
-
 ## Stop being the loop
 
 <svg class="cycle" viewBox="0 80 1088 475" width="1088" height="475"><defs><marker id="cycle-head" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="cycle-head"/></marker></defs><path class="cycle-arc" d="M581.0 186.3 L585.5 187.6 L589.9 189.1 L594.3 190.8 L598.7 192.7 L602.9 194.8 L607.1 197.0 L611.2 199.4 L615.2 201.9 L619.2 204.7 L623.0 207.5 L626.7 210.6 L630.3 213.7 L633.7 217.1 L637.1 220.5 L640.3 224.1 L643.3 227.8 L646.3 231.7 L649.0 235.6 L651.7 239.7 L654.1 243.9 L656.4 248.2 L658.6 252.5 L660.5 257.0 L662.3 261.6" marker-end="url(#cycle-head)"/><path class="cycle-arc" d="M665.4 339.4 L663.9 344.2 L662.3 349.0 L660.4 353.7 L658.4 358.3 L656.2 362.8 L653.8 367.3 L651.3 371.7 L648.5 375.9 L645.6 380.1 L642.5 384.2 L639.3 388.1 L635.9 391.9 L632.4 395.6 L628.7 399.2 L624.9 402.6 L620.9 405.8 L616.8 408.9 L612.6 411.9 L608.2 414.6 L603.7 417.3 L599.2 419.7 L594.5 422.0 L589.8 424.0 L584.9 425.9" marker-end="url(#cycle-head)"/><path class="cycle-arc" d="M502.1 429.0 L497.0 427.4 L492.0 425.6 L487.0 423.7 L482.1 421.5 L477.3 419.2 L472.5 416.6 L467.9 413.9 L463.4 411.0 L458.9 407.9 L454.6 404.6 L450.5 401.2 L446.4 397.6 L442.5 393.8 L438.8 389.9 L435.2 385.8 L431.7 381.6 L428.4 377.2 L425.3 372.7 L422.4 368.1 L419.6 363.4 L417.0 358.5 L414.7 353.6 L412.5 348.5 L410.5 343.4" marker-end="url(#cycle-head)"/><path class="cycle-arc" d="M407.4 255.6 L409.1 250.2 L411.0 244.9 L413.0 239.6 L415.3 234.4 L417.8 229.3 L420.5 224.3 L423.4 219.4 L426.5 214.7 L429.8 210.0 L433.3 205.4 L436.9 201.0 L440.8 196.8 L444.8 192.6 L448.9 188.7 L453.2 184.9 L457.7 181.2 L462.3 177.8 L467.1 174.5 L472.0 171.4 L477.0 168.5 L482.1 165.8 L487.4 163.3 L492.7 161.0 L498.1 158.9" marker-end="url(#cycle-head)"/><text class="cycle-label" x="544" y="110" text-anchor="middle"><tspan class="cycle-num">1</tspan>  Build the <tspan class="cycle-em">feedback loop</tspan></text><text class="cycle-sub" x="544" y="140" text-anchor="middle">so the agent finds out it’s wrong</text><text class="cycle-label" x="734" y="304" text-anchor="start"><tspan class="cycle-num">2</tspan>  Make it <tspan class="cycle-em">fast</tspan></text><text class="cycle-sub" x="734" y="334" text-anchor="start">or it gets skipped</text><text class="cycle-label" x="544" y="512" text-anchor="middle"><tspan class="cycle-num">3</tspan>  Review what <tspan class="cycle-em">no feedback loop</tspan> can see</text><text class="cycle-sub" x="544" y="542" text-anchor="middle">that part stays with you</text><text class="cycle-label" x="354" y="304" text-anchor="end"><tspan class="cycle-num">4</tspan>  Raise the <tspan class="cycle-em">floor</tspan></text><text class="cycle-sub" x="354" y="334" text-anchor="end">make every correction stick</text></svg>
@@ -965,6 +941,15 @@ once, clockwise from the top.
 The answer to "so, write tests": tests are the start of the first one. The
 other three are about keeping the loop usable, spending your own attention
 where no loop reaches, and making every correction stick.
+
+On step 1, the economics, because this is the part that is actually new: tests
+aren't. When a human typed the code, tests were a safety net and review caught
+the rest. When an agent types it, the feedback loops you have set the limit on
+what you can hand off. Not the model. So: what a feedback loop can check, you
+can hand off.
+
+On step 3, the other half of that line: the rest stays with you. The slide
+already says it, so point at it rather than repeating it twice.
 
 Don't explain the arrows. They don't quite close: each time round starts a
 little further out. The helix at the end of the act pays that off.
@@ -983,7 +968,7 @@ little further out. The helix at the end of the act pays that off.
 
 ---
 
-## So I can walk away
+## Trusting your agent
 
 <span class="subtitle">No browser session, no SSH keys, no home directory</span>
 
@@ -1443,6 +1428,8 @@ judgment stays with me.
 
 ![The Code Review Pyramid](images/07-code-review-pyramid-cropped.png) <!-- .element: class="plain pyramid" -->
 
+<img class="plain qr" src="images/qr_code_code_review_pyramid.png" width="190" height="190" alt="QR code linking to the Code Review Pyramid post">
+
 <p class="aside" style="margin: 6px 0 0">The base is the <em>what</em>. The top is the <em>how</em>.</p>
 
 Note:
@@ -1480,7 +1467,7 @@ claim, not the diff" is this pyramid, applied to AI output.
 <cite>Me, Aug 26</cite>
 </blockquote>
 
-<div class="doc-checks fragment" data-fragment-index="1">
+<div class="doc-checks fragment" data-fragment-index="0">
 <span class="doc-label">Passed it</span> <span>Tests</span> <span>Docs build</span>
 <span class="doc-label doc-caught">Caught it</span> <span class="doc-owner">Someone who knows the design</span>
 </div>
@@ -1490,14 +1477,14 @@ On arrival: a sentence from the writer docs. It reads like something a Parquet
 expert would write. Row groups are the unit people usually associate with
 parallel reads, in Spark for instance.
 
-Click 1: it's wrong for Hardwood. The reader runs two virtual threads per
-column and decodes pages concurrently inside a row group. Row-group size doesn't
-bound its parallelism at all. I flagged it, and it was corrected the next day
-(2c71576d).
+One click brings both halves, so say them as one thought. The correction first:
+it's wrong for Hardwood. The reader runs two virtual threads per column and
+decodes pages concurrently inside a row group. Row-group size doesn't bound its
+parallelism at all. I flagged it, and it was corrected the next day (2c71576d).
 
-Click 2: nothing else could have caught it. Tests don't read docs. The docs build
-checks form, not truth. The only check for a sentence about
-the design is someone who owns the design.
+Then straight into the line underneath: nothing else could have caught it. Tests
+don't read docs. The docs build checks form, not truth. The only check for a
+sentence about the design is someone who owns the design.
 
 That's the part of review that stays with you.
 
@@ -1523,7 +1510,7 @@ it's called that.
 
 ---
 
-## Automate the top: the ladder
+## Automate, automate, automate
 
 <svg class="proto" viewBox="0 0 1000 460" width="1000" height="460"><g class="fragment" data-fragment-index="0"><rect x="25" y="350" width="310" height="90" fill="#354045" fill-opacity="0.25"/><text x="41" y="386" class="p-label" fill="#ffffff">1</text><text x="73" y="386" class="p-step" fill="#ffffff">Ask in prose</text><text x="31" y="304" class="p-sub" fill="#354045">Sep 4: a rule in CLAUDE.md</text><text x="31" y="330" class="p-sub" fill="#354045">Sep 8: “why again?”</text></g><g class="fragment" data-fragment-index="1"><rect x="345" y="260" width="310" height="180" fill="#354045" fill-opacity="0.55"/><text x="361" y="296" class="p-label" fill="#ffffff">2</text><text x="393" y="296" class="p-step" fill="#ffffff">Automated check</text><text x="351" y="214" class="p-sub" fill="#354045">Filler prose → PR build check</text><text x="351" y="240" class="p-sub" fill="#354045">var → compiler error</text></g><g class="fragment" data-fragment-index="2"><rect x="665" y="170" width="310" height="270" fill="#354045" fill-opacity="0.85"/><text x="681" y="206" class="p-label" fill="#ffffff">3</text><text x="713" y="206" class="p-step" fill="#ffffff">Unrepresentable</text><text x="671" y="124" class="p-sub" fill="#354045">Sep 14: co-author trailer</text><text x="671" y="150" class="p-sub" fill="#354045">off in the settings file</text></g></svg>
 
@@ -1612,7 +1599,7 @@ Photo: "Meteorite" by Michael Elleray (CC BY 2.0, https://flic.kr/p/aCqL2a). Loo
 
 ## I no longer know every line.
 
-And I'm fine with that.
+And <em>I'm fine</em> with that.
 
 Note:
 The first price, and the biggest: the answer to the loss from midnight. Control
@@ -1623,14 +1610,19 @@ over every line is gone, and I've made my peace with it. Don't explain again how
 
 <!-- .slide: class="hero-image" -->
 
-## Expand, then consolidate
+## Clean-up stops being <em>optional</em>
 
 <div class="pair">
   <img src="images/x-2026-01-19-expand-and-consolidate.png" alt="Jan 19: an expand and consolidate pattern">
   <img src="images/li-2026-08-12-make-time-for-cleanup.png" alt="Aug 12: make time for clean-up, restructuring, refactoring">
 </div>
 
+<p class="aside">Expand, then consolidate.</p>
+
 Note:
+The second price, and this one lands on the code: at this pace, clean-up stops
+being something you get to later.
+
 January, as an observation. August, as a job description: make time for
 clean-up, interleaved with feature work, "or you'll end up with an
 incomprehensible pile of slop in no time."
@@ -1678,6 +1670,8 @@ part that gets less attention. The full post is in the cuts file.
 
 ## Nine months
 
+<span class="subtitle">What have we achieved?</span>
+
 <div class="columns nine-months">
 <div>
 
@@ -1698,6 +1692,10 @@ part that gets less attention. The full post is in the cuts file.
 </div>
 
 Note:
+Land the turn before the numbers, out loud: that was the price, all three of
+it. Here is the other side. The section promised both halves; this is where the
+second one starts.
+
 The joy, in numbers: this is what one person built in nine months, next to a
 day job. Don't read the table.
 
@@ -1737,22 +1735,9 @@ It's still fun.
 
 <!-- .slide: class="hero" -->
 
-# Review the claim, not the diff.
+## "Built <em>with AI</em>, not by AI".
 
-Note:
-What the arbiter does in practice: the claim is the what, the diff is the how.
-And it applies to the title too: "built with AI, not by AI" is a claim like any
-PR description.
-
-Let it stand alone. Don't add anything.
-
----
-
-<!-- .slide: class="hero" -->
-
-## "Built with AI, not by AI" is a quality claim.
-
-The agent owns more and more of the <em>how</em>.<br>It holds only if you're the arbiter of the <em>what</em>.
+The agent owns more and more of the <em>how</em>.<br>You are the arbiter of the <em>what</em>.
 
 Note:
 The title of this talk is a promise, the same one as the Feb 27 post: reviewed,
@@ -1772,6 +1757,23 @@ Where the what gets written down: an issue, before any code exists. Nothing
 starts without one, and every commit message carries its number. That isn't
 bookkeeping — it's the claim, stated while I still have to think about it, and
 it's what the diff gets reviewed against later.
+
+Then hand straight to the rule on the next slide: the title is a claim, so here
+is what you do with claims.
+
+---
+
+<!-- .slide: class="hero" -->
+
+# Review the claim, not the diff.
+
+Note:
+What being the arbiter comes down to, and the last thing they take away: the
+claim is the what, the diff is the how. The title was itself a claim, like any
+PR description; this is how you keep one honest. It is also the geo PR, inverted
+— I reviewed the diff and never asked about the claim.
+
+Let it stand alone. Don't add anything, and go straight into the recap.
 
 ---
 
@@ -1839,3 +1841,15 @@ magnitude.
 Say it as "on the order of $17k at API list prices". It isn't what I
 paid: a subscription costs a fraction. And it's only the sessions in this
 container.
+
+---
+
+<!-- .slide: class="hero-image" -->
+
+<img class="post" src="images/x-2026-07-31-like-a-psychopath.png" alt="Jul 31: Saw a guy working on his code. No multi-agent setup. Using just Claude and his CLI. Like a psychopath.">
+
+Note:
+Straight after the confession, no setup. Let them laugh; it's aimed at the
+elaborate setups, and that includes mine. 602 likes.
+
+Then on: at that pace, something slips.

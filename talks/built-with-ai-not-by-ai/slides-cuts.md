@@ -1345,3 +1345,21 @@ work just to understand the current state of the system.
 
 For consultancies: the colleague joining mid-project, and the client team you
 hand the code over to.
+
+
+---
+
+<!-- .slide: class="hero" -->
+
+## What a feedback loop can check, you can hand off.
+
+The rest stays with you.
+
+Note:
+Pre-empt the "so, write tests" reaction. Tests aren't new. What's new is the
+economics: when a human typed the code, tests were a safety net and review
+caught the rest. When an agent types it, the feedback loops you have set the
+limit on what you can hand off. Not the model.
+
+"The rest stays with you" is where the last part of this act goes: review what
+no feedback loop can see.
