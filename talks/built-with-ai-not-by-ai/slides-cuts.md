@@ -1277,3 +1277,71 @@ the claim undid it.
 Exact wording from the session transcript (05ac5299, Sep 7, 18:46 UTC), with
 cuts marked. The session was compacted later, so this is rendered, not a
 screenshot.
+
+
+---
+
+## Prose rots. Checks don't.
+
+<span class="subtitle">One comment, in 29 filter matchers, May 11 to Sep 10</span>
+
+<span class="rot-go fragment" data-fragment-index="0"></span>
+<span class="rot-fix-go fragment" data-fragment-index="1"></span>
+
+<pre class="rot-code"><code class="nohighlight" data-noescape><span class="rot-swap"><span class="rot-old c">// Build the predicate bitmap ignoring nulls. The inner loop is fixed at 64
+// iterations and uses a branchless `(cond ? 1 : 0) &lt;&lt; b` pack so HotSpot
+// <mark class="rot-claim">fully unrolls it and auto-vectorizes the comparison</mark>. The tail is split
+// off to keep the hot loop's trip count constant at 64.</span><span class="rot-new c">// Build the predicate bitmap ignoring nulls; nulls are masked out in the
+// word-wise pass below. The comparison is branchless, but <mark class="rot-fixed">C2 does not</mark>
+// <mark class="rot-fixed">vectorize it</mark> — packing a vector compare into bitmap bits has no
+// autovectorization idiom, so this compiles to a scalar cmp/setcc/shl/or
+// chain unrolled 4x. The tail is split off to keep the hot loop's trip
+// count constant at 64.</span></span>
+<span class="k">for</span> (<span class="k">int</span> w = 0; w &lt; fullWords; w++) {
+    <span class="k">int</span> base = w &lt;&lt; 6;
+    <span class="k">long</span> word = 0L;
+    <span class="k">for</span> (<span class="k">int</span> b = 0; b &lt; 64; b++) {
+        word |= ((vals[base + b] &gt; lit) ? 1L : 0L) &lt;&lt; b;
+    }
+    outWords[w] = word;
+}</code></pre>
+
+<div class="rot-captions">
+<p class="aside rot-verdict">perfasm: six scalar instructions per value, no vector instructions, unrolled 4×.</p>
+<p class="aside rot-fix">Sep 10: rewritten from a measurement. <em>Still prose, so it can rot again.</em></p>
+</div>
+
+Note:
+On arrival: the loop at the heart of 29 filter matchers, and the comment above
+it. It says the JIT unrolls the loop and vectorizes the comparison. That claim
+was the reason the code has its awkward branchless shape, and it sat there for
+four months.
+
+Click 1: perfasm on the compiled code (shown earlier in this part, no need to
+show assembly again). Six scalar instructions per value, not a single vector
+instruction. The comment was never true. It read well, it went through review,
+and nothing could check it until something ran.
+
+Click 2: how it was resolved. The comment now says what one perfasm run showed:
+branchless, but not vectorized, and why. It's still prose: a JDK update can make
+it wrong again, and nothing will notice. Only a check that runs keeps a claim
+true; for assembly that's impractical, so read such comments as claims with a
+date, not facts. Design docs are worth writing as input; they are not a record.
+
+Facts: the comment came in with #250 (a contributed PR, May 11) and was corrected
+in 49e59d81 (#456, Sep 10). Code from LongGtBatchMatcher::test; perfasm on C2
+level 4, JDK 25. Don't attribute the comment to anyone on stage.
+
+
+---
+
+<!-- .slide: class="hero-image" -->
+
+<img src="_inputs/images/x-2026-05-14-contributors-cant-follow.png" width="703" height="600" style="max-height: none" alt="May 14: agent-speed teams move at a pace that is hard for outside contributors to track">
+
+Note:
+A cost that lands on other people: at agent speed, anyone a step removed has to
+work just to understand the current state of the system.
+
+For consultancies: the colleague joining mid-project, and the client team you
+hand the code over to.

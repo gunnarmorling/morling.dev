@@ -83,23 +83,24 @@ Photo: "TNT" by Alex Holyoake (CC BY 2.0, https://flic.kr/p/AN2ZRn). Loosely con
 
 <!-- .slide: class="wide" -->
 
+<span class="montage-go fragment" data-fragment-index="0"></span>
 <div class="montage">
   <h2>Do you remember the start of the year?</h2>
-  <img class="fragment" data-fragment-index="0" src="images/magic-willison.png" style="--x: 10px; --y: 20px; --r: -4deg" alt="Simon Willison, Dec 15: I ported JustHTML from Python to JavaScript with Codex CLI and GPT-5.2 in 4.5 hours">
-  <img class="fragment" data-fragment-index="0" src="images/magic-steinberger.png" style="--x: 390px; --y: 0px; --r: 2deg" alt="Peter Steinberger, Dec 28: Shipping at Inference-Speed">
-  <img class="fragment" data-fragment-index="1" src="images/magic-holland.png" style="--x: 770px; --y: 30px; --r: -2deg" alt="Burke Holland, Jan 5: Opus 4.5 is going to change everything">
-  <img class="fragment" data-fragment-index="1" src="images/magic-orosz.png" style="--x: 40px; --y: 230px; --r: 3deg" alt="Gergely Orosz, Jan 6: When AI writes almost all code, what happens to software engineering?">
-  <img class="fragment" data-fragment-index="1" src="images/magic-zvi.png" style="--x: 400px; --y: 190px; --r: -3deg" alt="Zvi Mowshowitz, Jan 9: Claude Codes">
-  <img class="fragment" data-fragment-index="1" src="images/magic-lambert.png" style="--x: 780px; --y: 250px; --r: 4deg" alt="Nathan Lambert, Jan 9: Claude Code Hits Different">
-  <img class="fragment" data-fragment-index="2" src="images/magic-antirez.png" style="--x: 200px; --y: 340px; --r: -1deg" alt="antirez, Jan 11: Don't fall into the anti-AI hype">
-  <img class="fragment" data-fragment-index="2" src="images/magic-huntley.png" style="--x: 620px; --y: 290px; --r: 2deg; --w: 360px" alt="Geoffrey Huntley, Jan 17: everything is a ralph loop">
+  <img src="images/magic-willison.png" style="--x: 10px; --y: 20px; --r: -4deg; --d: 0s" alt="Simon Willison, Dec 15: I ported JustHTML from Python to JavaScript with Codex CLI and GPT-5.2 in 4.5 hours">
+  <img src="images/magic-steinberger.png" style="--x: 390px; --y: 0px; --r: 2deg; --d: 0s" alt="Peter Steinberger, Dec 28: Shipping at Inference-Speed">
+  <img src="images/magic-holland.png" style="--x: 770px; --y: 30px; --r: -2deg; --d: 1.5s" alt="Burke Holland, Jan 5: Opus 4.5 is going to change everything">
+  <img src="images/magic-orosz.png" style="--x: 40px; --y: 230px; --r: 3deg; --d: 1.5s" alt="Gergely Orosz, Jan 6: When AI writes almost all code, what happens to software engineering?">
+  <img src="images/magic-zvi.png" style="--x: 400px; --y: 190px; --r: -3deg; --d: 1.5s" alt="Zvi Mowshowitz, Jan 9: Claude Codes">
+  <img src="images/magic-lambert.png" style="--x: 780px; --y: 250px; --r: 4deg; --d: 1.5s" alt="Nathan Lambert, Jan 9: Claude Code Hits Different">
+  <img src="images/magic-antirez.png" style="--x: 200px; --y: 340px; --r: -1deg; --d: 3s" alt="antirez, Jan 11: Don't fall into the anti-AI hype">
+  <img src="images/magic-huntley.png" style="--x: 620px; --y: 290px; --r: 2deg; --w: 360px; --d: 3s" alt="Geoffrey Huntley, Jan 17: everything is a ralph loop">
 </div>
 
 Note:
-Ask the question to the room, then three clicks, oldest first: December
-(Willison, Steinberger), the first days of January (Holland, Orosz, Zvi,
-Lambert), mid-January (antirez, Huntley). Sources
-in _inputs/turn-of-year-posts.md.
+Ask the question to the room, then one click: the pile builds itself, oldest
+first, 1.5 s apart. December (Willison, Steinberger), the first days of January
+(Holland, Orosz, Zvi, Lambert), mid-January (antirez, Huntley). Keep talking
+over it. Sources in _inputs/turn-of-year-posts.md.
 
 Everyone spent the holidays with the new models. Software was solved.
 
@@ -226,7 +227,7 @@ not need it and it is not what they came for.
 <svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-axis" x1="96" y1="395" x2="1184" y2="395"/><line class="rtl-tick" x1="96" y1="389" x2="96" y2="401"/><text class="rtl-month" x="102" y="421">Jan</text><line class="rtl-tick" x1="282" y1="389" x2="282" y2="401"/><text class="rtl-month" x="288" y="421">Feb</text><line class="rtl-tick" x1="451" y1="389" x2="451" y2="401"/><text class="rtl-month" x="457" y="421">Mar</text><line class="rtl-tick" x1="637" y1="389" x2="637" y2="401"/><text class="rtl-month" x="643" y="421">Apr</text><line class="rtl-tick" x1="817" y1="389" x2="817" y2="401"/><text class="rtl-month" x="823" y="421">May</text><line class="rtl-tick" x1="1004" y1="389" x2="1004" y2="401"/><text class="rtl-month" x="1010" y="421">Jun</text></svg>
 <div class="rtl-event fragment" data-fragment-index="0"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="126" y1="395" x2="126" y2="298"/></svg><img class="rtl-card" src="images/tl-2026-01-06-announced.png" style="left: 96px; top: 195px; width: 260px; height: 103px" alt=""></div>
 <div class="rtl-event fragment" data-fragment-index="1"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="276" y1="395" x2="386" y2="298"/></svg><img class="rtl-card" src="images/tl-2026-01-31-perf.png" style="left: 370px; top: 158px; width: 330px; height: 140px" alt=""></div>
-<div class="rtl-event fragment" data-fragment-index="2"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="318" y1="395" x2="318" y2="492"/></svg><img class="rtl-card" src="images/x-2026-02-07-race-condition.png" style="left: 96px; top: 492px; width: 320px; height: 140px" alt=""></div>
+<div class="rtl-event fragment" data-fragment-index="2"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="318" y1="395" x2="318" y2="492"/></svg><img class="rtl-card" src="images/x-2026-02-07-race-condition.png" style="left: 96px; top: 492px; width: 320px; height: 129px" alt=""></div>
 <div class="rtl-event fragment" data-fragment-index="3"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="433" y1="395" x2="446" y2="492"/></svg><img class="rtl-card" src="images/tl-2026-02-26-alpha1.png" style="left: 430px; top: 492px; width: 360px; height: 134px" alt=""></div>
 <div class="rtl-event fragment" data-fragment-index="4"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="439" y1="395" x2="732" y2="298"/></svg><div class="rtl-card rtl-note" style="left: 716px; top: 186px; width: 234px; height: 112px">“Is Hardwood vibe-coded? <em>Absolutely not.</em>”</div></div>
 <div class="rtl-event fragment" data-fragment-index="0"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><circle class="rtl-dot" cx="114" cy="395" r="7"/><text class="rtl-label" x="114" y="379" text-anchor="middle">First commit</text></svg></div>
@@ -322,9 +323,7 @@ compile scope. Size from Maven Central.
 
 ## The line moved
 
-"External dependencies now have to earn their place, <em>and the bar has moved</em>."
-
-<span class="aside">Me, Apr 21</span>
+External dependencies now have to earn their place, <em>and the bar has moved</em>.
 
 Note:
 How it moved for me: an AWS request signer is not the kind of code you'd have
@@ -354,7 +353,7 @@ it, forever, including the part you didn't understand.
 <svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-axis" x1="96" y1="395" x2="1184" y2="395"/><line class="rtl-tick" x1="96" y1="389" x2="96" y2="401"/><text class="rtl-month" x="102" y="421">Jan</text><line class="rtl-tick" x1="282" y1="389" x2="282" y2="401"/><text class="rtl-month" x="288" y="421">Feb</text><line class="rtl-tick" x1="451" y1="389" x2="451" y2="401"/><text class="rtl-month" x="457" y="421">Mar</text><line class="rtl-tick" x1="637" y1="389" x2="637" y2="401"/><text class="rtl-month" x="643" y="421">Apr</text><line class="rtl-tick" x1="817" y1="389" x2="817" y2="401"/><text class="rtl-month" x="823" y="421">May</text><line class="rtl-tick" x1="1004" y1="389" x2="1004" y2="401"/><text class="rtl-month" x="1010" y="421">Jun</text></svg>
 <div class="rtl-event"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="126" y1="395" x2="126" y2="298"/></svg><img class="rtl-card" src="images/tl-2026-01-06-announced.png" style="left: 96px; top: 195px; width: 260px; height: 103px" alt=""></div>
 <div class="rtl-event"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="276" y1="395" x2="386" y2="298"/></svg><img class="rtl-card" src="images/tl-2026-01-31-perf.png" style="left: 370px; top: 158px; width: 330px; height: 140px" alt=""></div>
-<div class="rtl-event"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="318" y1="395" x2="318" y2="492"/></svg><img class="rtl-card" src="images/x-2026-02-07-race-condition.png" style="left: 96px; top: 492px; width: 320px; height: 140px" alt=""></div>
+<div class="rtl-event"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="318" y1="395" x2="318" y2="492"/></svg><img class="rtl-card" src="images/x-2026-02-07-race-condition.png" style="left: 96px; top: 492px; width: 320px; height: 129px" alt=""></div>
 <div class="rtl-event"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="433" y1="395" x2="446" y2="492"/></svg><img class="rtl-card" src="images/tl-2026-02-26-alpha1.png" style="left: 430px; top: 492px; width: 360px; height: 134px" alt=""></div>
 <div class="rtl-event"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="439" y1="395" x2="732" y2="298"/></svg><div class="rtl-card rtl-note" style="left: 716px; top: 186px; width: 234px; height: 112px">“Is Hardwood vibe-coded? <em>Absolutely not.</em>”</div></div>
 <div class="rtl-event fragment" data-fragment-index="1"><svg class="rtl-layer" viewBox="0 0 1280 720" width="1280" height="720"><line class="rtl-connector" x1="998" y1="395" x2="998" y2="298"/></svg><div class="rtl-card rtl-note rtl-geo" style="left: 966px; top: 228px; width: 218px; height: 70px">Geospatial pruning ships</div></div>
@@ -557,7 +556,7 @@ I have to be the brake, by hand, and I am not reliably good at it.
 
 <!-- .slide: class="wide" -->
 
-## The agent types. I only decide.
+## The tax of context switching
 
 <span class="subtitle">Sep 9: 205 prompts to 21 sessions, one every 2.7 minutes</span>
 
@@ -628,18 +627,23 @@ Then on: at that pace, something slips.
 
 <!-- .slide: class="hero geo" data-background-image="images/geo-backdrop.svg" data-background-size="cover" -->
 
-## We caught it before Final.
+## It was on main for <em>five weeks</em>.
 
-It wasn't the tests. It wasn't the review.
+Merged May 1. Shipped in CR1.<br>Caught on June 4: not by the tests, and not by the review.
 
 Note:
-At that pace, something slips. Back to the feature that doesn't exist.
+At that pace, something slips. Back to the feature that doesn't exist: the story
+has caught up with the prologue.
 
 Merged May 1, shipped in CR1 on May 31, fixed on June 4 (#608), three weeks
 before 1.0.0.Final.
 
-Back to the prologue: the story has caught up. Hold the question of what
-caught it open; it gets answered when we climb out.
+Say the reassurance out loud rather than putting it on the slide: we did catch it
+before Final. The room needs to hear it, and the slide needs to stay on the five
+weeks, because the next four slides live off that tension.
+
+Then hold the question of what caught it open, and say that you are holding it
+open. It gets answered when we climb out, on "What caught the geo bug?".
 
 ---
 
@@ -718,7 +722,7 @@ Let it sit. This is the identity question everyone in the room carries.
 <div class="ex">
   <div class="ex-tweet">
     <div class="ex-card">
-      <img src="images/08-tweet-exhausting.png" width="598" height="406" alt="Tweet: Finally realized why it's so exhausting and stressful to work with AI agents 8h a day.">
+      <img src="images/08-tweet-exhausting.png" width="600" height="341" alt="Tweet: Finally realized why it's so exhausting and stressful to work with AI agents 8h a day.">
       <span class="ex-box"></span>
     </div>
   </div>
@@ -814,7 +818,7 @@ theatre the rest of the talk gets discounted. Mean it.
 
 - A complete written specification
 - A public corpus of test files
-- Three implementations to check against
+- Other implementations to check against
 - Correct = <em>the bytes match</em>
 - Fast = <em>a number</em>
 - Greenfield. One decision-maker.
@@ -826,7 +830,6 @@ theatre the rest of the talk gets discounted. Mean it.
 
 - A twelve-year-old system, no spec
 - Tests that assert what the code does
-- Correct = the client hasn't called
 - Four teams and an architect with a veto
 
 </div>
@@ -1158,7 +1161,7 @@ you which instructions are hot, whether the loop vectorised, and what got inline
 6.66%  mov  %rbp,%r10</mark>
 0.74%  shr  $0x3,%r10</code></pre>
 </div>
-<div>
+<div class="narrow">
 <pre class="rot-code fix-code"><code class="nohighlight" data-noescape><span class="rot-swap"><span class="rot-old"><span class="k">for</span> (<span class="k">int</span> i = 0; i &lt; count; i++) {
     <span class="c">// unpack the residual …</span>
     lastValue += delta + residual;
@@ -1524,6 +1527,8 @@ it's called that.
 
 <svg class="proto" viewBox="0 0 1000 460" width="1000" height="460"><g class="fragment" data-fragment-index="0"><rect x="25" y="350" width="310" height="90" fill="#354045" fill-opacity="0.25"/><text x="41" y="386" class="p-label" fill="#ffffff">1</text><text x="73" y="386" class="p-step" fill="#ffffff">Ask in prose</text><text x="31" y="304" class="p-sub" fill="#354045">Sep 4: a rule in CLAUDE.md</text><text x="31" y="330" class="p-sub" fill="#354045">Sep 8: “why again?”</text></g><g class="fragment" data-fragment-index="1"><rect x="345" y="260" width="310" height="180" fill="#354045" fill-opacity="0.55"/><text x="361" y="296" class="p-label" fill="#ffffff">2</text><text x="393" y="296" class="p-step" fill="#ffffff">Automated check</text><text x="351" y="214" class="p-sub" fill="#354045">Filler prose → PR build check</text><text x="351" y="240" class="p-sub" fill="#354045">var → compiler error</text></g><g class="fragment" data-fragment-index="2"><rect x="665" y="170" width="310" height="270" fill="#354045" fill-opacity="0.85"/><text x="681" y="206" class="p-label" fill="#ffffff">3</text><text x="713" y="206" class="p-step" fill="#ffffff">Unrepresentable</text><text x="671" y="124" class="p-sub" fill="#354045">Sep 14: co-author trailer</text><text x="671" y="150" class="p-sub" fill="#354045">off in the settings file</text></g></svg>
 
+<p class="aside fragment" data-fragment-index="3">Prose rots. Checks don't.</p>
+
 Note:
 Every standard in the project starts at step one. The ones that matter get
 promoted.
@@ -1545,59 +1550,13 @@ forever). The hardwood CLI: "why did you do that instead of the skill?", said
 once, now written down. The performance rules from midnight: written down, not
 repeated in every session.
 
----
-
-
-## Prose rots. Checks don't.
-
-<span class="subtitle">One comment, in 29 filter matchers, May 11 to Sep 10</span>
-
-<span class="rot-go fragment" data-fragment-index="0"></span>
-<span class="rot-fix-go fragment" data-fragment-index="1"></span>
-
-<pre class="rot-code"><code class="nohighlight" data-noescape><span class="rot-swap"><span class="rot-old c">// Build the predicate bitmap ignoring nulls. The inner loop is fixed at 64
-// iterations and uses a branchless `(cond ? 1 : 0) &lt;&lt; b` pack so HotSpot
-// <mark class="rot-claim">fully unrolls it and auto-vectorizes the comparison</mark>. The tail is split
-// off to keep the hot loop's trip count constant at 64.</span><span class="rot-new c">// Build the predicate bitmap ignoring nulls; nulls are masked out in the
-// word-wise pass below. The comparison is branchless, but <mark class="rot-fixed">C2 does not</mark>
-// <mark class="rot-fixed">vectorize it</mark> — packing a vector compare into bitmap bits has no
-// autovectorization idiom, so this compiles to a scalar cmp/setcc/shl/or
-// chain unrolled 4x. The tail is split off to keep the hot loop's trip
-// count constant at 64.</span></span>
-<span class="k">for</span> (<span class="k">int</span> w = 0; w &lt; fullWords; w++) {
-    <span class="k">int</span> base = w &lt;&lt; 6;
-    <span class="k">long</span> word = 0L;
-    <span class="k">for</span> (<span class="k">int</span> b = 0; b &lt; 64; b++) {
-        word |= ((vals[base + b] &gt; lit) ? 1L : 0L) &lt;&lt; b;
-    }
-    outWords[w] = word;
-}</code></pre>
-
-<div class="rot-captions">
-<p class="aside rot-verdict">perfasm: six scalar instructions per value, no vector instructions, unrolled 4×.</p>
-<p class="aside rot-fix">Sep 10: rewritten from a measurement. <em>Still prose, so it can rot again.</em></p>
-</div>
-
-Note:
-On arrival: the loop at the heart of 29 filter matchers, and the comment above
-it. It says the JIT unrolls the loop and vectorizes the comparison. That claim
-was the reason the code has its awkward branchless shape, and it sat there for
-four months.
-
-Click 1: perfasm on the compiled code (shown earlier in this part, no need to
-show assembly again). Six scalar instructions per value, not a single vector
-instruction. The comment was never true. It read well, it went through review,
-and nothing could check it until something ran.
-
-Click 2: how it was resolved. The comment now says what one perfasm run showed:
-branchless, but not vectorized, and why. It's still prose: a JDK update can make
-it wrong again, and nothing will notice. Only a check that runs keeps a claim
-true; for assembly that's impractical, so read such comments as claims with a
-date, not facts. Design docs are worth writing as input; they are not a record.
-
-Facts: the comment came in with #250 (a contributed PR, May 11) and was corrected
-in 49e59d81 (#456, Sep 10). Code from LongGtBatchMatcher::test; perfasm on C2
-level 4, JDK 25. Don't attribute the comment to anyone on stage.
+Click 4, the line. Why the ones that matter have to move: a comment in the filter
+matchers claimed the JIT vectorized the loop. It read well, it went through
+review, and it was wrong for four months, until one perfasm run showed six scalar
+instructions per value. I rewrote it from the measurement, and it can go wrong
+again with the next JDK update, with nothing to notice. Prose states a claim;
+only a check keeps it true. (Came in May 11 with #250, corrected Sep 10 in
+49e59d81/#456. Don't attribute the comment to anyone on stage.)
 
 ---
 
@@ -1685,16 +1644,35 @@ agents.
 
 ---
 
-<!-- .slide: class="hero-image" -->
+<!-- .slide: class="hero" -->
 
-<img src="images/x-2026-05-14-contributors-cant-follow.png" width="703" height="600" style="max-height: none" alt="May 14: agent-speed teams move at a pace that is hard for outside contributors to track">
+## AI lowered the bar to arrive.<br>It raised the bar to <em>stay</em>.
+
+<span class="aside">Good for the roadmap, harder for collaboration.</span>
 
 Note:
-A cost that lands on other people: at agent speed, anyone a step removed has to
-work just to understand the current state of the system.
+Both ends of the same change, and the second half is the underdiscussed one.
 
-For consultancies: the colleague joining mid-project, and the client team you
-hand the code over to.
+Arriving got easier: a first PR on an unfamiliar project is a prompt away. The
+pull request this talk opened with came that way, and it was convincing rather
+than sloppy.
+
+Staying got harder: a team using agents well reshapes the architecture week by
+week, and anyone a step removed has to re-onboard to follow along. They can point
+an AI at the diff; not everyone has the time, or the tokens.
+
+The line to land it, from my own post on May 14:
+
+"It's the old pattern of the one teammate who rewrote half the system overnight
+while nobody was looking, except ten times over and on a public repo. Good for
+the roadmap, harder for collaboration."
+
+Then for this room: the colleague joining mid-project, and the client team you
+hand the code to, are both a step removed.
+
+If it comes up in Q&A: we talk a lot about what AI does to maintainers and to
+code quality. Who can still realistically follow along, and at what cost, is the
+part that gets less attention. The full post is in the cuts file.
 
 ---
 
@@ -1759,6 +1737,19 @@ It's still fun.
 
 <!-- .slide: class="hero" -->
 
+# Review the claim, not the diff.
+
+Note:
+What the arbiter does in practice: the claim is the what, the diff is the how.
+And it applies to the title too: "built with AI, not by AI" is a claim like any
+PR description.
+
+Let it stand alone. Don't add anything.
+
+---
+
+<!-- .slide: class="hero" -->
+
 ## "Built with AI, not by AI" is a quality claim.
 
 The agent owns more and more of the <em>how</em>.<br>It holds only if you're the arbiter of the <em>what</em>.
@@ -1781,19 +1772,6 @@ Where the what gets written down: an issue, before any code exists. Nothing
 starts without one, and every commit message carries its number. That isn't
 bookkeeping — it's the claim, stated while I still have to think about it, and
 it's what the diff gets reviewed against later.
-
----
-
-<!-- .slide: class="hero" -->
-
-# Review the claim, not the diff.
-
-Note:
-What the arbiter does in practice: the claim is the what, the diff is the how.
-And it applies to the title too: "built with AI, not by AI" is a claim like any
-PR description.
-
-Let it stand alone. Don't add anything.
 
 ---
 
