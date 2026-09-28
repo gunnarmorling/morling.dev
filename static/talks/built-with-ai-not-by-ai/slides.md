@@ -18,10 +18,10 @@ Nine months of building a Parquet library with an agent
 ## A contributor's pull request
 
 <div class="stamped">
-  <img src="images/01-geo-pr-413.png" width="1100" height="445" style="max-height: none" alt="PR #413, merged May 1">
-  <div class="stamp fragment" data-fragment-index="0" style="left: 770px; top: 60px; --rot: -5deg; --c: #2e7d32">✓ Tests green</div>
-  <div class="stamp fragment" data-fragment-index="1" style="left: 740px; top: 140px; --rot: 3deg; --c: #2e7d32">✓ Merged, May 1</div>
-  <div class="stamp fragment" data-fragment-index="2" style="left: 640px; top: 220px; --rot: -4deg; --c: #2e7d32">✓ Shipped in 1.0.0.CR1</div>
+  <img src="images/01-geo-pr-173.png" width="1100" height="445" style="max-height: none" alt="Pull request #173, Support geospatial statistics and bounding box metadata, closed">
+  <div class="stamp fragment" data-fragment-index="0" style="left: 770px; top: 60px; --rot: -5deg; --c: #2e7d32">&#10003; Tests green</div>
+  <div class="stamp fragment" data-fragment-index="1" style="left: 740px; top: 140px; --rot: 3deg; --c: #2e7d32">&#10003; Merged, May 1</div>
+  <div class="stamp fragment" data-fragment-index="2" style="left: 640px; top: 220px; --rot: -4deg; --c: #2e7d32">&#10003; Shipped in 1.0.0.CR1</div>
   <div class="stamp stamp-big fragment" data-fragment-index="3" style="left: 60px; top: 320px; --rot: -5deg; --c: #c62828">The feature couldn't work</div>
 </div>
 
@@ -210,7 +210,7 @@ try (ParquetFileReader file =
 
 <!-- .slide: class="hero" -->
 
-## The line moved
+## Make vs. buy
 
 External dependencies now have to earn their place, <em>and the bar has moved</em>.
 
@@ -373,14 +373,7 @@ External dependencies now have to earn their place, <em>and the bar has moved</e
 
 I'm dialling it back.
 
-<img class="callback" src="images/x-2026-07-03-context-switching-tax.png" width="460" height="150" alt="Jul 3: the context switching tax is brutal, even just for two sessions in parallel">
-
-
----
-
-<!-- .slide: class="hero-image" -->
-
-<img class="post" src="images/x-2026-07-31-like-a-psychopath.png" alt="Jul 31: Saw a guy working on his code. No multi-agent setup. Using just Claude and his CLI. Like a psychopath.">
+<img class="callback" src="images/x-2026-07-03-context-switching-tax.png" width="780" height="254" alt="Jul 3: the context switching tax is brutal, even just for two sessions in parallel">
 
 
 ---
@@ -548,15 +541,6 @@ I checked the <em>what</em>: by playing it.
 
 ---
 
-<!-- .slide: class="hero" -->
-
-## What a feedback loop can check, you can hand off.
-
-The rest stays with you.
-
-
----
-
 ## Stop being the loop
 
 <svg class="cycle" viewBox="0 80 1088 475" width="1088" height="475"><defs><marker id="cycle-head" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="cycle-head"/></marker></defs><path class="cycle-arc" d="M581.0 186.3 L585.5 187.6 L589.9 189.1 L594.3 190.8 L598.7 192.7 L602.9 194.8 L607.1 197.0 L611.2 199.4 L615.2 201.9 L619.2 204.7 L623.0 207.5 L626.7 210.6 L630.3 213.7 L633.7 217.1 L637.1 220.5 L640.3 224.1 L643.3 227.8 L646.3 231.7 L649.0 235.6 L651.7 239.7 L654.1 243.9 L656.4 248.2 L658.6 252.5 L660.5 257.0 L662.3 261.6" marker-end="url(#cycle-head)"/><path class="cycle-arc" d="M665.4 339.4 L663.9 344.2 L662.3 349.0 L660.4 353.7 L658.4 358.3 L656.2 362.8 L653.8 367.3 L651.3 371.7 L648.5 375.9 L645.6 380.1 L642.5 384.2 L639.3 388.1 L635.9 391.9 L632.4 395.6 L628.7 399.2 L624.9 402.6 L620.9 405.8 L616.8 408.9 L612.6 411.9 L608.2 414.6 L603.7 417.3 L599.2 419.7 L594.5 422.0 L589.8 424.0 L584.9 425.9" marker-end="url(#cycle-head)"/><path class="cycle-arc" d="M502.1 429.0 L497.0 427.4 L492.0 425.6 L487.0 423.7 L482.1 421.5 L477.3 419.2 L472.5 416.6 L467.9 413.9 L463.4 411.0 L458.9 407.9 L454.6 404.6 L450.5 401.2 L446.4 397.6 L442.5 393.8 L438.8 389.9 L435.2 385.8 L431.7 381.6 L428.4 377.2 L425.3 372.7 L422.4 368.1 L419.6 363.4 L417.0 358.5 L414.7 353.6 L412.5 348.5 L410.5 343.4" marker-end="url(#cycle-head)"/><path class="cycle-arc" d="M407.4 255.6 L409.1 250.2 L411.0 244.9 L413.0 239.6 L415.3 234.4 L417.8 229.3 L420.5 224.3 L423.4 219.4 L426.5 214.7 L429.8 210.0 L433.3 205.4 L436.9 201.0 L440.8 196.8 L444.8 192.6 L448.9 188.7 L453.2 184.9 L457.7 181.2 L462.3 177.8 L467.1 174.5 L472.0 171.4 L477.0 168.5 L482.1 165.8 L487.4 163.3 L492.7 161.0 L498.1 158.9" marker-end="url(#cycle-head)"/><text class="cycle-label" x="544" y="110" text-anchor="middle"><tspan class="cycle-num">1</tspan>  Build the <tspan class="cycle-em">feedback loop</tspan></text><text class="cycle-sub" x="544" y="140" text-anchor="middle">so the agent finds out it’s wrong</text><text class="cycle-label" x="734" y="304" text-anchor="start"><tspan class="cycle-num">2</tspan>  Make it <tspan class="cycle-em">fast</tspan></text><text class="cycle-sub" x="734" y="334" text-anchor="start">or it gets skipped</text><text class="cycle-label" x="544" y="512" text-anchor="middle"><tspan class="cycle-num">3</tspan>  Review what <tspan class="cycle-em">no feedback loop</tspan> can see</text><text class="cycle-sub" x="544" y="542" text-anchor="middle">that part stays with you</text><text class="cycle-label" x="354" y="304" text-anchor="end"><tspan class="cycle-num">4</tspan>  Raise the <tspan class="cycle-em">floor</tspan></text><text class="cycle-sub" x="354" y="334" text-anchor="end">make every correction stick</text></svg>
@@ -577,7 +561,7 @@ The rest stays with you.
 
 ---
 
-## So I can walk away
+## Trusting your agent
 
 <span class="subtitle">No browser session, no SSH keys, no home directory</span>
 
@@ -848,6 +832,8 @@ lastValue = value;</span></span></code></pre>
 
 ![The Code Review Pyramid](images/07-code-review-pyramid-cropped.png) <!-- .element: class="plain pyramid" -->
 
+<img class="plain qr" src="images/qr_code_code_review_pyramid.png" width="190" height="190" alt="QR code linking to the Code Review Pyramid post">
+
 <p class="aside" style="margin: 6px 0 0">The base is the <em>what</em>. The top is the <em>how</em>.</p>
 
 
@@ -868,7 +854,7 @@ lastValue = value;</span></span></code></pre>
 <cite>Me, Aug 26</cite>
 </blockquote>
 
-<div class="doc-checks fragment" data-fragment-index="1">
+<div class="doc-checks fragment" data-fragment-index="0">
 <span class="doc-label">Passed it</span> <span>Tests</span> <span>Docs build</span>
 <span class="doc-label doc-caught">Caught it</span> <span class="doc-owner">Someone who knows the design</span>
 </div>
@@ -889,7 +875,7 @@ lastValue = value;</span></span></code></pre>
 
 ---
 
-## Automate the top: the ladder
+## Automate, automate, automate
 
 <svg class="proto" viewBox="0 0 1000 460" width="1000" height="460"><g class="fragment" data-fragment-index="0"><rect x="25" y="350" width="310" height="90" fill="#354045" fill-opacity="0.25"/><text x="41" y="386" class="p-label" fill="#ffffff">1</text><text x="73" y="386" class="p-step" fill="#ffffff">Ask in prose</text><text x="31" y="304" class="p-sub" fill="#354045">Sep 4: a rule in CLAUDE.md</text><text x="31" y="330" class="p-sub" fill="#354045">Sep 8: “why again?”</text></g><g class="fragment" data-fragment-index="1"><rect x="345" y="260" width="310" height="180" fill="#354045" fill-opacity="0.55"/><text x="361" y="296" class="p-label" fill="#ffffff">2</text><text x="393" y="296" class="p-step" fill="#ffffff">Automated check</text><text x="351" y="214" class="p-sub" fill="#354045">Filler prose → PR build check</text><text x="351" y="240" class="p-sub" fill="#354045">var → compiler error</text></g><g class="fragment" data-fragment-index="2"><rect x="665" y="170" width="310" height="270" fill="#354045" fill-opacity="0.85"/><text x="681" y="206" class="p-label" fill="#ffffff">3</text><text x="713" y="206" class="p-step" fill="#ffffff">Unrepresentable</text><text x="671" y="124" class="p-sub" fill="#354045">Sep 14: co-author trailer</text><text x="671" y="150" class="p-sub" fill="#354045">off in the settings file</text></g></svg>
 
@@ -934,19 +920,21 @@ lastValue = value;</span></span></code></pre>
 
 ## I no longer know every line.
 
-And I'm fine with that.
+And <em>I'm fine</em> with that.
 
 
 ---
 
 <!-- .slide: class="hero-image" -->
 
-## Expand, then consolidate
+## Clean-up stops being <em>optional</em>
 
 <div class="pair">
   <img src="images/x-2026-01-19-expand-and-consolidate.png" alt="Jan 19: an expand and consolidate pattern">
   <img src="images/li-2026-08-12-make-time-for-cleanup.png" alt="Aug 12: make time for clean-up, restructuring, refactoring">
 </div>
+
+<p class="aside">Expand, then consolidate.</p>
 
 
 ---
@@ -961,6 +949,8 @@ And I'm fine with that.
 ---
 
 ## Nine months
+
+<span class="subtitle">What have we achieved?</span>
 
 <div class="columns nine-months">
 <div>
@@ -995,16 +985,16 @@ And I'm fine with that.
 
 <!-- .slide: class="hero" -->
 
-# Review the claim, not the diff.
+## "Built <em>with AI</em>, not by AI".
+
+The agent owns more and more of the <em>how</em>.<br>You are the arbiter of the <em>what</em>.
 
 
 ---
 
 <!-- .slide: class="hero" -->
 
-## "Built with AI, not by AI" is a quality claim.
-
-The agent owns more and more of the <em>how</em>.<br>It holds only if you're the arbiter of the <em>what</em>.
+# Review the claim, not the diff.
 
 
 ---
