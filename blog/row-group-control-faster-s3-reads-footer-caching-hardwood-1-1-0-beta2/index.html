@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Row-Group Control, Faster S3 Reads, Footer Caching: Hardwood 1.1.0.Beta2 Is Out - Gunnar Morling</title>
+	<link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png" />
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png" />
+	<link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+	<link rel="shortcut icon" href="/favicon/favicon.ico" />
+
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	
+	<link rel="preload" href="/fonts/raleway-v37-latin-200.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/raleway-v37-latin-300.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/raleway-v37-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+
+	<link rel="preload" href="/fonts/lato-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin>
+
+	<link rel="preload" href="/fonts/lora-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin><meta property="og:url" content="https://www.morling.dev/blog/row-group-control-faster-s3-reads-footer-caching-hardwood-1-1-0-beta2/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Row-Group Control, Faster S3 Reads, Footer Caching: Hardwood 1.1.0.Beta2 Is Out">
+  <meta property="og:description" content=" I’m happy to announce the release of Hardwood 1.1.0.Beta2! The latest version of the Hardwood open-source library for reading and writing Apache Parquet files brings new features for the writer, …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2026-10-12T21:00:00&#43;02:00">
+    <meta property="article:modified_time" content="2026-10-12T21:00:00&#43;02:00">
+
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Row-Group Control, Faster S3 Reads, Footer Caching: Hardwood 1.1.0.Beta2 Is Out">
+  <meta name="twitter:description" content=" I’m happy to announce the release of Hardwood 1.1.0.Beta2! The latest version of the Hardwood open-source library for reading and writing Apache Parquet files brings new features for the writer, …">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.7e747dab5a47b967474cfdc64085734aa21b459c2bc3519033238d0258bb7dcc.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
+	
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.20888cb6b76ed17eb07628f659718d130e32ea466294927dc4dfb410a3e3f3ab.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+	<script src="/js/main.min.9ee619eea7f51473f4284ef86c76bdb1b0089e19781ca97275924edf53be5bd4.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header">
+	<div class="header-image-container">
+		<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+	</div>
+	<div class="header-title">
+		<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+		<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+	</div>
+	<div class="header-nav-wrapper">
+		<nav class="row pre-nav">
+			<div class="pull-right">
+				<ul class="flat"><li>
+						<a href="/blog/index.xml" title="RSS FEED">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#rss"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://github.com/gunnarmorling" title="GitHub">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#github"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://twitter.com/gunnarmorling" title="Twitter">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+							</svg>
+						</a>
+					</li></ul>
+			</div>
+		</nav>
+		<nav class="row nav">
+			<div>
+				<ul class="flat">
+					
+					<li>
+						<a href="/blog">Blog</a>
+					</li>
+					
+					<li>
+						<a href="/projects/">Projects</a>
+					</li>
+					
+					<li>
+						<a href="/conferences/">Conferences</a>
+					</li>
+					
+					<li>
+						<a href="/podcasts/">Podcasts</a>
+					</li>
+					
+					<li>
+						<a href="/about/">About</a>
+					</li>
+					
+				</ul>
+			</div>
+			<div class="pull-right">
+				<div class="club">
+					<form id="myForm">
+						<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+						<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+					</form>
+				</div>
+			</div>
+		</nav>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Row-Group Control, Faster S3 Reads, Footer Caching: Hardwood 1.1.0.Beta2 Is Out</h1>
+				<div class="post-meta-line">
+					<span class="meta">Posted at Oct 12, 2026</span>
+					
+					<span class="post-tags-inline">
+						
+						<a href="/tags/parquet">parquet</a>
+						
+						<a href="/tags/open-source">open-source</a>
+						
+						<a href="/tags/java">java</a>
+						
+						<a href="/tags/performance">performance</a>
+						
+						<a href="/tags/hardwood">hardwood</a>
+						
+					</span>
+					
+				</div>
+			</div>
+
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_writer_improvements">Writer Improvements</a></li>
+<li><a href="#_performance_improvements">Performance Improvements</a></li>
+<li><a href="#_footer_caching_and_reuse">Footer Caching and Reuse</a></li>
+<li><a href="#_id_based_dictionary_access">Id-Based Dictionary Access</a></li>
+<li><a href="#_also_in_this_release">Also in This Release</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p>I’m happy to announce the release of Hardwood 1.1.0.Beta2! The latest version of the Hardwood open-source library for reading and writing Apache Parquet files brings new features for the writer, significantly improves performance for many different workloads, provides a new API for caching and reusing Parquet file footers, id-based dictionary access, and much more. You can retrieve Hardwood from <a href="https://central.sonatype.com/artifact/dev.hardwood/hardwood-core">Maven Central</a>; for the platform-specific CLI binaries check out our <a href="https://github.com/hardwood-hq/hardwood/releases/tag/v1.1.0.Beta2">GitHub Releases page</a>.</p>
+</div>
+<div class="sect1">
+<h2 id="_writer_improvements">Writer Improvements<a class="anchor" href="#_writer_improvements"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, the size of row groups emitted by the Hardwood file writer is driven by configurable limits to the row count and working set size. You now can also control row group boundaries more explicitly by calling <code>endRowGroup()</code>, for instance to make sure there’s a new row group for each month in a data set with ordered events:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+</pre></td><td class="code"><pre><span class="nc">Path</span> <span class="n">path</span> <span class="o">=</span> <span class="nc">Path</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">&#34;events.parquet&#34;</span><span class="o">);</span>
+
+<span class="k">try</span> <span class="o">(</span><span class="nc">ParquetFileWriter</span> <span class="n">writer</span> <span class="o">=</span> <span class="nc">ParquetFileWriter</span><span class="o">.</span><span class="na">create</span><span class="o">(</span>
+        <span class="nc">OutputFile</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">path</span><span class="o">),</span> <span class="n">schema</span><span class="o">))</span> <span class="o">{</span>
+
+    <span class="nc">RowWriter</span> <span class="n">rows</span> <span class="o">=</span> <span class="n">writer</span><span class="o">.</span><span class="na">rowWriter</span><span class="o">();</span>
+    <span class="nc">YearMonth</span> <span class="n">currentMonth</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+
+    <span class="k">for</span> <span class="o">(</span><span class="nc">Event</span> <span class="n">event</span> <span class="o">:</span> <span class="n">eventsSortedByDay</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">YearMonth</span> <span class="n">month</span> <span class="o">=</span> <span class="nc">YearMonth</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">event</span><span class="o">.</span><span class="na">day</span><span class="o">());</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">month</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">currentMonth</span><span class="o">))</span> <span class="o">{</span>
+            <span class="n">writer</span><span class="o">.</span><span class="na">endRowGroup</span><span class="o">();</span> <i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="o">}</span>
+        <span class="n">currentMonth</span> <span class="o">=</span> <span class="n">month</span><span class="o">;</span>
+
+        <span class="n">rows</span><span class="o">.</span><span class="na">writeRow</span><span class="o">(</span><span class="n">row</span> <span class="o">-&gt;</span> <span class="n">row</span>
+                <span class="o">.</span><span class="na">setDate</span><span class="o">(</span><span class="s">&#34;day&#34;</span><span class="o">,</span> <span class="n">event</span><span class="o">.</span><span class="na">day</span><span class="o">())</span>
+                <span class="o">.</span><span class="na">setLong</span><span class="o">(</span><span class="s">&#34;id&#34;</span><span class="o">,</span> <span class="n">event</span><span class="o">.</span><span class="na">id</span><span class="o">())</span>
+                <span class="o">.</span><span class="na">setString</span><span class="o">(</span><span class="s">&#34;payload&#34;</span><span class="o">,</span> <span class="n">event</span><span class="o">.</span><span class="na">payload</span><span class="o">()));</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Close the current row group whenever the month changes, so that each row group holds the events of one month</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>That way, a query like <code>day &gt;= 2026-10-01 AND day &lt; 2026-11-01</code> reads exactly the row groups of October, and no row group mixes events of two months.</p>
+</div>
+<div class="paragraph">
+<p>Via <code>tryWriteRow()</code>, the writer now also lets you skip individual bad records without aborting the entire write:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre><span class="k">try</span> <span class="o">(</span><span class="nc">ParquetFileWriter</span> <span class="n">writer</span> <span class="o">=</span>
+        <span class="nc">ParquetFileWriter</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="n">out</span><span class="o">,</span> <span class="n">schema</span><span class="o">))</span> <span class="o">{</span>
+
+    <span class="nc">RowWriter</span> <span class="n">rows</span> <span class="o">=</span> <span class="n">writer</span><span class="o">.</span><span class="na">rowWriter</span><span class="o">();</span>
+    <span class="k">for</span> <span class="o">(</span><span class="nc">Person</span> <span class="n">person</span> <span class="o">:</span> <span class="n">people</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">RowWriteResult</span> <span class="n">result</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="na">tryWriteRow</span><span class="o">(</span><span class="n">row</span> <span class="o">-&gt;</span> <span class="n">row</span>
+                <span class="o">.</span><span class="na">setLong</span><span class="o">(</span><span class="s">&#34;id&#34;</span><span class="o">,</span> <span class="n">person</span><span class="o">.</span><span class="na">id</span><span class="o">())</span>
+                <span class="o">.</span><span class="na">setString</span><span class="o">(</span><span class="s">&#34;name&#34;</span><span class="o">,</span> <span class="n">person</span><span class="o">.</span><span class="na">name</span><span class="o">()));</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">result</span> <span class="k">instanceof</span> <span class="nc">RowWriteResult</span><span class="o">.</span><span class="na">Rejected</span> <span class="n">rejected</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">err</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&#34;Skipped &#34;</span> <span class="o">+</span> <span class="n">person</span><span class="o">.</span><span class="na">id</span><span class="o">()</span> <span class="o">+</span> <span class="s">&#34;: &#34;</span>
+                    <span class="o">+</span> <span class="n">rejected</span><span class="o">.</span><span class="na">message</span><span class="o">());</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A record which the schema can’t hold, such as a null in a <code>REQUIRED</code> field, comes back as <code>Rejected</code>. The writer stays usable, and <code>close()</code> publishes every record that was accepted.</p>
+</div>
+<div class="paragraph">
+<p>In contrast, if a write fails with an exception, <code>close()</code> discards the output instead of publishing a partial file. <code>abort()</code> lets you abandon a pending write deliberately, for instance when the job producing the data is cancelled.</p>
+</div>
+<div class="paragraph">
+<p>Other writer improvements in this release include support for column and offset indexes (allowing page-level pruning when reading a file) and for Bloom filters. Bloom filters are space-efficient probabilistic data structures which can tell a reader with certainty if a given look-up key is not present in a row group, speeding up point queries (<code>eq()</code>, <code>in()</code>) against high-cardinality columns. They can have false positives though, i.e. the reader still needs to evaluate row groups passing the filter to determine whether the value actually is present or not. Bloom filters are written for the columns you name, with a false positive rate (FPR) of 1% by default. If needed, this can be fine-tuned per column (with a lower FPR resulting in a larger size of the filter):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre></td><td class="code"><pre><span class="nc">WriterConfig</span> <span class="n">config</span> <span class="o">=</span> <span class="nc">WriterConfig</span><span class="o">.</span><span class="na">builder</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">bloomFilter</span><span class="o">(</span><span class="s">&#34;customer_id&#34;</span><span class="o">)</span> <i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="o">.</span><span class="na">bloomFilter</span><span class="o">(</span><span class="s">&#34;session_id&#34;</span><span class="o">,</span> <span class="mf">0.001</span><span class="o">)</span> <i class="conum" data-value="2"></i><b>(2)</b>
+        <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+
+<span class="nc">Path</span> <span class="n">path</span> <span class="o">=</span> <span class="nc">Path</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">&#34;orders.parquet&#34;</span><span class="o">);</span>
+
+<span class="k">try</span> <span class="o">(</span><span class="nc">ParquetFileWriter</span> <span class="n">writer</span> <span class="o">=</span> <span class="nc">ParquetFileWriter</span><span class="o">.</span><span class="na">create</span><span class="o">(</span>
+        <span class="nc">OutputFile</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">path</span><span class="o">),</span> <span class="n">schema</span><span class="o">,</span> <span class="n">config</span><span class="o">))</span> <span class="o">{</span>
+
+    <span class="nc">RowWriter</span> <span class="n">rows</span> <span class="o">=</span> <span class="n">writer</span><span class="o">.</span><span class="na">rowWriter</span><span class="o">();</span>
+    <span class="k">for</span> <span class="o">(</span><span class="nc">Order</span> <span class="n">order</span> <span class="o">:</span> <span class="n">orders</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">rows</span><span class="o">.</span><span class="na">writeRow</span><span class="o">(</span><span class="n">row</span> <span class="o">-&gt;</span> <span class="n">row</span>
+                <span class="o">.</span><span class="na">setLong</span><span class="o">(</span><span class="s">&#34;customer_id&#34;</span><span class="o">,</span> <span class="n">order</span><span class="o">.</span><span class="na">customerId</span><span class="o">())</span>
+                <span class="o">.</span><span class="na">setString</span><span class="o">(</span><span class="s">&#34;session_id&#34;</span><span class="o">,</span> <span class="n">order</span><span class="o">.</span><span class="na">sessionId</span><span class="o">())</span>
+                <span class="o">.</span><span class="na">setDouble</span><span class="o">(</span><span class="s">&#34;amount&#34;</span><span class="o">,</span> <span class="n">order</span><span class="o">.</span><span class="na">amount</span><span class="o">()));</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Bloom filter with the default FPR of 1%</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Bloom filter with a custom FPR of 0.1%</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_performance_improvements">Performance Improvements<a class="anchor" href="#_performance_improvements"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hardwood’s Parquet reader is significantly faster for many workloads as of 1.1.0.Beta2. In particular when reading files from remote object storage (S3), read times have been reduced by reworking how file segments are fetched:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Bloom filters are loaded in coalesced requests for multiple columns and/or row groups</p>
+</li>
+<li>
+<p>Page indexes are only fetched for projected columns, and in addition one request covers several row groups</p>
+</li>
+<li>
+<p>While a row group is read, the first column chunk of the next one is prefetched</p>
+</li>
+<li>
+<p>Multi-file reads open each file only when the read reaches it, so time-to-first-result no longer grows with the number of files</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>There are also a number of improvements to query execution:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>When a column is used for filtering but isn’t part of the projection (e.g. <code>SELECT amount FROM events WHERE event_time &gt;= T</code>), the reader skips it entirely in row groups whose stats prove every row matches. This pays off for data sorted or clustered by the filter column, like querying a recent time window of an event log.</p>
+</li>
+<li>
+<p>If a string or binary column is dictionary-encoded, predicates on it are executed in the dictionary space (evaluated once per dictionary entry instead of once per row), avoiding repeated comparisons of the same value.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In addition, there have been improvements to several decoders, the internal array sizing logic avoids the allocation of humongous arrays (which caused GC overhead), and more.</p>
+</div>
+<div class="paragraph">
+<p>To ensure there are no performance regressions, we have set up a <a href="https://github.com/hardwood-hq/hardwood-benchmarks">performance benchmark suite</a> covering key workloads, which allows us to compare the results from two different Hardwood versions. Here are numbers from comparing 1.1.0.Beta1 to Beta2, showing 21 of 25 scenarios faster and the remaining four within noise, e.g. with a Bloom filter lookup on S3 going down from 6.8 s to 163 ms:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/hardwood_1_1_0_beta2_regression.png" alt="Benchmark comparison of Hardwood 1.1.0.Beta1 and 1.1.0.Beta2: 21 of 25 scenarios faster" width="none slower"/>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_footer_caching_and_reuse">Footer Caching and Reuse<a class="anchor" href="#_footer_caching_and_reuse"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When querying the same set of Parquet files repeatedly, for instance in a query engine opening a file once for each split it reads, or in a service opening a reader per request, re-parsing the same file footers on every open can become an overhead, as can the extra request needed for fetching large footers from S3.
+A footer only changes when its file is rewritten, so it can be cached, keyed on the file’s identity.
+This pattern is supported via the new <code>MetadataSource</code> extension point, allowing you to plug in custom caching logic.
+Here’s a simple in-memory example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre><span class="n">record</span> <span class="nf">FooterKey</span><span class="o">(</span><span class="nc">String</span> <span class="n">uri</span><span class="o">,</span> <span class="nc">String</span> <span class="n">etag</span><span class="o">)</span> <span class="o">{}</span>
+<span class="nc">Map</span><span class="o">&lt;</span><span class="nc">FooterKey</span><span class="o">,</span> <span class="nc">ParsedFooter</span><span class="o">&gt;</span> <span class="n">cache</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ConcurrentHashMap</span><span class="o">&lt;&gt;();</span>
+
+<span class="nc">MetadataSource</span> <span class="n">footers</span> <span class="o">=</span> <span class="n">file</span> <span class="o">-&gt;</span> <span class="o">{</span>
+    <span class="nc">FooterKey</span> <span class="n">key</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">FooterKey</span><span class="o">(</span>
+            <span class="n">file</span><span class="o">.</span><span class="na">name</span><span class="o">(),</span>
+            <span class="n">file</span><span class="o">.</span><span class="na">identity</span><span class="o">().</span><span class="na">orElseThrow</span><span class="o">());</span> <i class="conum" data-value="1"></i><b>(1)</b>
+
+    <span class="nc">ParsedFooter</span> <span class="n">footer</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">footer</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">footer</span> <span class="o">=</span> <span class="nc">ParsedFooter</span><span class="o">.</span><span class="na">readFrom</span><span class="o">(</span><span class="n">file</span><span class="o">);</span>
+        <span class="n">cache</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">footer</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="n">footer</span><span class="o">;</span>
+<span class="o">};</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The file’s identity; for S3 objects, that’s the ETag, which changes whenever the object is replaced</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>Install the source on a long-lived <code>HardwoodContext</code> and open readers with it:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="nc">HardwoodContext</span> <span class="n">context</span> <span class="o">=</span> <span class="nc">HardwoodContext</span><span class="o">.</span><span class="na">builder</span><span class="o">()</span> <i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="o">.</span><span class="na">metadataSource</span><span class="o">(</span><span class="n">footers</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+
+<span class="k">try</span> <span class="o">(</span><span class="nc">ParquetFileReader</span> <span class="n">reader</span> <span class="o">=</span> <span class="nc">ParquetFileReader</span><span class="o">.</span><span class="na">open</span><span class="o">(</span> <i class="conum" data-value="2"></i><b>(2)</b>
+        <span class="n">s3</span><span class="o">.</span><span class="na">inputFile</span><span class="o">(</span><span class="s">&#34;s3://my-bucket/trips.parquet&#34;</span><span class="o">),</span> <span class="n">context</span><span class="o">))</span> <span class="o">{</span>
+
+    <span class="c1">// the first open parses the footer; later opens use the cache</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Create the context once, e.g. on application start-up, and close it on shutdown</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td><code>s3</code> is an <code>S3Source</code>, configured with region and credentials</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>Each footer retrieved from a custom source is checked against the file’s identity (e.g. ETag for <code>S3InputFile</code>) and its length before any data is read, and a stale entry will fail with <code>StaleMetadataException</code>.
+The footer caching API is experimental and may still change.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_id_based_dictionary_access">Id-Based Dictionary Access<a class="anchor" href="#_id_based_dictionary_access"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Dictionary-encoded string and binary columns can now be accessed by id rather than by decoded column values, potentially yielding much faster processing, depending on the specifics of your business logic.
+As an example, let’s assume you have a <a href="https://github.com/gunnarmorling/1brc">1BRC</a>-style Parquet file with temperature measurements for a set of weather stations.
+The station names are dictionary-encoded, and we want to count the number of measurements per station.
+Instead of decoding the station name of every row and updating a hash map keyed by that <code>String</code>, the counts can be kept in an array indexed by each name’s dictionary id, resolving names only once per dictionary entry and batch:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre></td><td class="code"><pre><span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Long</span><span class="o">&gt;</span> <span class="n">rowsPerStation</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+<span class="k">try</span> <span class="o">(</span><span class="nc">ParquetFileReader</span> <span class="n">reader</span> <span class="o">=</span>
+         <span class="nc">ParquetFileReader</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="nc">InputFile</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">path</span><span class="o">));</span>
+     <span class="nc">ColumnReader</span> <span class="n">station</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="na">columnReader</span><span class="o">(</span><span class="s">&#34;station&#34;</span><span class="o">))</span> <span class="o">{</span>
+    <span class="k">while</span> <span class="o">(</span><span class="n">station</span><span class="o">.</span><span class="na">nextBatch</span><span class="o">())</span> <span class="o">{</span>
+        <span class="kt">int</span><span class="o">[]</span> <span class="n">ids</span> <span class="o">=</span> <span class="n">station</span><span class="o">.</span><span class="na">getDictionaryIds</span><span class="o">();</span> <i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="nc">BinaryDictionary</span> <span class="n">dictionary</span> <span class="o">=</span> <span class="n">station</span><span class="o">.</span><span class="na">getBinaryDictionary</span><span class="o">();</span>
+
+        <span class="kt">long</span><span class="o">[]</span> <span class="n">rowsPerEntry</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">long</span><span class="o">[</span><span class="n">dictionary</span><span class="o">.</span><span class="na">size</span><span class="o">()];</span>
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">station</span><span class="o">.</span><span class="na">getValueCount</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+            <span class="n">rowsPerEntry</span><span class="o">[</span><span class="n">ids</span><span class="o">[</span><span class="n">i</span><span class="o">]]++;</span>
+        <span class="o">}</span>
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">e</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">e</span> <span class="o">&lt;</span> <span class="n">rowsPerEntry</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">e</span><span class="o">++)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">rowsPerEntry</span><span class="o">[</span><span class="n">e</span><span class="o">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">rowsPerStation</span><span class="o">.</span><span class="na">merge</span><span class="o">(</span><span class="n">dictionary</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="n">e</span><span class="o">),</span>
+                        <span class="n">rowsPerEntry</span><span class="o">[</span><span class="n">e</span><span class="o">],</span> <span class="nl">Long:</span><span class="o">:</span><span class="n">sum</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>For each value of the batch, its index into the current row group’s dictionary</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>For brevity, this assumes a column without nulls (a null’s id is <code>-1</code>) that is dictionary-encoded throughout; for batches without a dictionary, <code>getDictionaryIds()</code> returns <code>null</code>, and their values can be read via <code>getStrings()</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_also_in_this_release">Also in This Release<a class="anchor" href="#_also_in_this_release"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Besides these key additions, the release contains a wide range of other improvements and fixes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Filter predicates: <code>isNull()</code> and <code>isNotNull()</code> on struct, <code>LIST</code> and <code>MAP</code> groups; <code>in()</code> for every literal type except <code>boolean</code>; <code>in</code> and <code>notIn</code> in the parquet-java compatibility <code>FilterApi</code></p>
+</li>
+<li>
+<p><code>TIMESTAMP</code> columns stored as <code>FIXED_LEN_BYTE_ARRAY(12)</code>, spanning the years 0001 to 9999 at nanosecond precision, can be read, filtered and written</p>
+</li>
+<li>
+<p><code>OutputFile.inMemory()</code> writes a Parquet file to memory</p>
+</li>
+<li>
+<p>CLI: the interactive <code>dive</code> TUI lets you jump to a given row or row group, and <code>print</code>/<code>convert</code> select the same rows with <code>--skip</code> and <code>--row-group</code>; <code>schema -F AVRO</code> and <code>-F PROTO</code> emit schemas which Avro and <code>protoc</code> accept; <code>convert --format json</code> writes nested values as JSON objects and arrays; the native binary reads <code>ZSTD</code>-compressed files</p>
+</li>
+<li>
+<p>Several cases where filters returned wrong rows were fixed, e.g. for <code>NaN</code> values and unsigned integer columns</p>
+</li>
+<li>
+<p>Fixes for projecting columns whose name contains a dot, and for S3 endpoints that name their default port</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Check out the <a href="https://hardwood.dev/latest/release-notes/#110beta2-2026-10-11">release notes</a> for the complete list, including several breaking changes (most notably, a reworked exception model, and index-based accessors following the projection’s column order rather than the schema order) and the <a href="https://hardwood.dev/api-changes/1.1.0.Beta2/">API changes report</a> for all changes to the public API.
+See the <a href="https://github.com/hardwood-hq/hardwood/milestone/9?closed=1">1.1.0.Beta2 milestone</a> for the full list of all 165 resolved issues.</p>
+</div>
+<div class="paragraph">
+<p>A big thank you to everyone who contributed to this release: <a href="https://github.com/arnabnandy7">Arnab Nandy</a>, <a href="https://github.com/nitrogen404">Chandan Dhamande</a>, <a href="https://github.com/dhoard">Doug Hoard</a>, <a href="https://github.com/iifawzi">Fawzi Essam</a>, <a href="https://github.com/Fhatu12">Fhatuwani Sikhwari</a>, <a href="https://github.com/kogupta">Kohinoor Gupta</a>, <a href="https://github.com/ZhaoMJ">Mingjie Zhao</a>, <a href="https://github.com/mohamedibrahim54">Mohamed Ibrahim Elsawy</a>, <a href="https://github.com/MovinduJay">Movindu Jayathilake</a>, and <a href="https://github.com/shril">Shril Kumar</a>.</p>
+</div>
+<div class="paragraph">
+<p>As we’re approaching the release candidate phase for Hardwood 1.1,
+we’re going to focus on building out the writer (S3 support, column chunk parallelism),
+further improving performance, and overall stabilization of the project.</p>
+</div>
+<div class="paragraph">
+<p>Please give the new release a try, and let us know about your feedback via GitHub issues and discussions!</p>
+</div>
+</div>
+</div>
+			</div>
+
+			
+			
+			
+			<div class="related-posts">
+				<h3>Read Next</h3>
+				<ul>
+					
+					<li><a href="/blog/parquet-file-write-support-bloom-filters-improved-performance-hardwood-1-1-0-beta1/">Parquet File Write Support, Bloom Filters, Improved Performance: Hardwood 1.1.0.Beta1 Is Out</a> <span class="meta">Aug 31, 2026</span></li>
+					
+					<li><a href="/blog/fast-path-for-fixed-length-lists-in-parquet/">A Fast Path for Fixed-Length Lists in Parquet</a> <span class="meta">Jul 22, 2026</span></li>
+					
+					<li><a href="/blog/hardwood-1-0-fast-lightweight-apache-parquet-reader-for-the-jvm/">Hardwood 1.0: A Fast, Lightweight Apache Parquet Reader for the JVM</a> <span class="meta">Jun 25, 2026</span></li>
+					
+				</ul>
+			</div>
+			
+			
+		</div>
+
+		<div class="post-footer">
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<div class="header-image-container" style="flex-shrink: 0;">
+					<img class="footer-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+				</div>
+				<p style="margin: 0;">Gunnar Morling is an open-source software engineer in the Java and data streaming space, currently working as a Technologist at Confluent. Previously, he helped to build a realtime stream processing platform based on Apache Flink and led the Debezium project, a distributed platform for change data capture. He is a Java Champion and has founded multiple open source projects such as Hardwood, kcctl, JfrUnit, and MapStruct.</p>
+			</div>
+		</div>
+
+		
+		
+		<div class="post-discussions">
+			<p>Comment below, or join the discussion on
+			<a href="https://hn.algolia.com/?query=morling.dev/blog/row-group-control-faster-s3-reads-footer-caching-hardwood-1-1-0-beta2/">Hacker News</a>,
+			<a href="https://lobste.rs/search?q=domain:morling.dev+title:%22Row-Group%20Control%2c%20Faster%20S3%20Reads%2c%20Footer%20Caching%3a%20Hardwood%201.1.0.Beta2%20Is%20Out%22&what=stories">Lobsters</a>, and
+			<a href="https://www.reddit.com/search/?q=url:morling.dev/blog/row-group-control-faster-s3-reads-footer-caching-hardwood-1-1-0-beta2/">Reddit</a>.
+			</p>
+		</div>
+		<div id="disqus_thread"></div>
+
+<script>
+  
+  window.addEventListener('load', function() {
+    
+    setTimeout(function() {
+      const commentsContainer = document.getElementById('disqus_thread');
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', 'gunnarmorling/discussions.morling.dev');
+      script.setAttribute('data-repo-id', 'R_kgDOGXzqNQ');
+      script.setAttribute('data-category', 'Announcements');
+      script.setAttribute('data-category-id', 'DIC_kwDOGXzqNc4B_2Pq');
+      script.setAttribute('data-mapping', 'title');
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-theme', 'light');
+      script.setAttribute('data-lang', 'en');
+      script.setAttribute('crossorigin', 'anonymous');
+      script.async = true;
+      commentsContainer.appendChild(script);
+    }, 100);
+  });
+</script>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2026 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
