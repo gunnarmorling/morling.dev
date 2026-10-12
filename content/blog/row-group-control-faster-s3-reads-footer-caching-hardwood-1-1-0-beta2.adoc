@@ -1,0 +1,230 @@
+---
+title: "Row-Group Control, Faster S3 Reads, Footer Caching: Hardwood 1.1.0.Beta2 Is Out"
+date: 2026-10-12T21:00:00+02:00
+draft: false
+markup: adoc
+tags:
+  - parquet
+  - open-source
+  - java
+  - performance
+  - hardwood
+
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+I'm happy to announce the release of Hardwood 1.1.0.Beta2! The latest version of the Hardwood open-source library for reading and writing Apache Parquet files brings new features for the writer, significantly improves performance for many different workloads, provides a new API for caching and reusing Parquet file footers, id-based dictionary access, and much more. You can retrieve Hardwood from https://central.sonatype.com/artifact/dev.hardwood/hardwood-core[Maven Central]; for the platform-specific CLI binaries check out our https://github.com/hardwood-hq/hardwood/releases/tag/v1.1.0.Beta2[GitHub Releases page].
+
+<!--more-->
+
+== Writer Improvements
+
+By default, the size of row groups emitted by the Hardwood file writer is driven by configurable limits to the row count and working set size. You now can also control row group boundaries more explicitly by calling `endRowGroup()`, for instance to make sure there's a new row group for each month in a data set with ordered events:
+
+[source,java,linenums=true]
+----
+Path path = Path.of("events.parquet");
+
+try (ParquetFileWriter writer = ParquetFileWriter.create(
+        OutputFile.of(path), schema)) {
+
+    RowWriter rows = writer.rowWriter();
+    YearMonth currentMonth = null;
+
+    for (Event event : eventsSortedByDay) {
+        YearMonth month = YearMonth.from(event.day());
+        if (!month.equals(currentMonth)) {
+            writer.endRowGroup(); // <1>
+        }
+        currentMonth = month;
+
+        rows.writeRow(row -> row
+                .setDate("day", event.day())
+                .setLong("id", event.id())
+                .setString("payload", event.payload()));
+    }
+}
+----
+<1> Close the current row group whenever the month changes, so that each row group holds the events of one month
+
+That way, a query like `day >= 2026-10-01 AND day < 2026-11-01` reads exactly the row groups of October, and no row group mixes events of two months.
+
+Via `tryWriteRow()`, the writer now also lets you skip individual bad records without aborting the entire write:
+
+[source,java,linenums=true]
+----
+try (ParquetFileWriter writer =
+        ParquetFileWriter.create(out, schema)) {
+
+    RowWriter rows = writer.rowWriter();
+    for (Person person : people) {
+        RowWriteResult result = rows.tryWriteRow(row -> row
+                .setLong("id", person.id())
+                .setString("name", person.name()));
+
+        if (result instanceof RowWriteResult.Rejected rejected) {
+            System.err.println("Skipped " + person.id() + ": "
+                    + rejected.message());
+        }
+    }
+}
+----
+
+A record which the schema can't hold, such as a null in a `REQUIRED` field, comes back as `Rejected`. The writer stays usable, and `close()` publishes every record that was accepted.
+
+In contrast, if a write fails with an exception, `close()` discards the output instead of publishing a partial file. `abort()` lets you abandon a pending write deliberately, for instance when the job producing the data is cancelled.
+
+Other writer improvements in this release include support for column and offset indexes (allowing page-level pruning when reading a file) and for Bloom filters. Bloom filters are space-efficient probabilistic data structures which can tell a reader with certainty if a given look-up key is not present in a row group, speeding up point queries (`eq()`, `in()`) against high-cardinality columns. They can have false positives though, i.e. the reader still needs to evaluate row groups passing the filter to determine whether the value actually is present or not. Bloom filters are written for the columns you name, with a false positive rate (FPR) of 1% by default. If needed, this can be fine-tuned per column (with a lower FPR resulting in a larger size of the filter):
+
+[source,java,linenums=true]
+----
+WriterConfig config = WriterConfig.builder()
+        .bloomFilter("customer_id") // <1>
+        .bloomFilter("session_id", 0.001) // <2>
+        .build();
+
+Path path = Path.of("orders.parquet");
+
+try (ParquetFileWriter writer = ParquetFileWriter.create(
+        OutputFile.of(path), schema, config)) {
+
+    RowWriter rows = writer.rowWriter();
+    for (Order order : orders) {
+        rows.writeRow(row -> row
+                .setLong("customer_id", order.customerId())
+                .setString("session_id", order.sessionId())
+                .setDouble("amount", order.amount()));
+    }
+}
+----
+<1> Bloom filter with the default FPR of 1%
+<2> Bloom filter with a custom FPR of 0.1%
+
+== Performance Improvements
+
+Hardwood's Parquet reader is significantly faster for many workloads as of 1.1.0.Beta2. In particular when reading files from remote object storage (S3), read times have been reduced by reworking how file segments are fetched:
+
+* Bloom filters are loaded in coalesced requests for multiple columns and/or row groups
+* Page indexes are only fetched for projected columns, and in addition one request covers several row groups
+* While a row group is read, the first column chunk of the next one is prefetched
+* Multi-file reads open each file only when the read reaches it, so time-to-first-result no longer grows with the number of files
+
+There are also a number of improvements to query execution:
+
+* When a column is used for filtering but isn't part of the projection (e.g. `SELECT amount FROM events WHERE event_time >= T`), the reader skips it entirely in row groups whose stats prove every row matches. This pays off for data sorted or clustered by the filter column, like querying a recent time window of an event log.
+* If a string or binary column is dictionary-encoded, predicates on it are executed in the dictionary space (evaluated once per dictionary entry instead of once per row), avoiding repeated comparisons of the same value.
+
+In addition, there have been improvements to several decoders, the internal array sizing logic avoids the allocation of humongous arrays (which caused GC overhead), and more.
+
+To ensure there are no performance regressions, we have set up a https://github.com/hardwood-hq/hardwood-benchmarks[performance benchmark suite] covering key workloads, which allows us to compare the results from two different Hardwood versions. Here are numbers from comparing 1.1.0.Beta1 to Beta2, showing 21 of 25 scenarios faster and the remaining four within noise, e.g. with a Bloom filter lookup on S3 going down from 6.8 s to 163 ms:
+
+image::hardwood_1_1_0_beta2_regression.png[Benchmark comparison of Hardwood 1.1.0.Beta1 and 1.1.0.Beta2: 21 of 25 scenarios faster, none slower]
+
+== Footer Caching and Reuse
+
+When querying the same set of Parquet files repeatedly, for instance in a query engine opening a file once for each split it reads, or in a service opening a reader per request, re-parsing the same file footers on every open can become an overhead, as can the extra request needed for fetching large footers from S3.
+A footer only changes when its file is rewritten, so it can be cached, keyed on the file's identity.
+This pattern is supported via the new `MetadataSource` extension point, allowing you to plug in custom caching logic.
+Here's a simple in-memory example:
+
+[source,java,linenums=true]
+----
+record FooterKey(String uri, String etag) {}
+Map<FooterKey, ParsedFooter> cache = new ConcurrentHashMap<>();
+
+MetadataSource footers = file -> {
+    FooterKey key = new FooterKey(
+            file.name(),
+            file.identity().orElseThrow()); // <1>
+
+    ParsedFooter footer = cache.get(key);
+    if (footer == null) {
+        footer = ParsedFooter.readFrom(file);
+        cache.put(key, footer);
+    }
+    return footer;
+};
+----
+<1> The file's identity; for S3 objects, that's the ETag, which changes whenever the object is replaced
+
+Install the source on a long-lived `HardwoodContext` and open readers with it:
+
+[source,java,linenums=true]
+----
+HardwoodContext context = HardwoodContext.builder() // <1>
+        .metadataSource(footers)
+        .build();
+
+try (ParquetFileReader reader = ParquetFileReader.open( // <2>
+        s3.inputFile("s3://my-bucket/trips.parquet"), context)) {
+
+    // the first open parses the footer; later opens use the cache
+}
+----
+<1> Create the context once, e.g. on application start-up, and close it on shutdown
+<2> `s3` is an `S3Source`, configured with region and credentials
+
+Each footer retrieved from a custom source is checked against the file's identity (e.g. ETag for `S3InputFile`) and its length before any data is read, and a stale entry will fail with `StaleMetadataException`.
+The footer caching API is experimental and may still change.
+
+== Id-Based Dictionary Access
+
+Dictionary-encoded string and binary columns can now be accessed by id rather than by decoded column values, potentially yielding much faster processing, depending on the specifics of your business logic.
+As an example, let's assume you have a https://github.com/gunnarmorling/1brc[1BRC]-style Parquet file with temperature measurements for a set of weather stations.
+The station names are dictionary-encoded, and we want to count the number of measurements per station.
+Instead of decoding the station name of every row and updating a hash map keyed by that `String`, the counts can be kept in an array indexed by each name's dictionary id, resolving names only once per dictionary entry and batch:
+
+[source,java,linenums=true]
+----
+Map<String, Long> rowsPerStation = new HashMap<>();
+try (ParquetFileReader reader =
+         ParquetFileReader.open(InputFile.of(path));
+     ColumnReader station = reader.columnReader("station")) {
+    while (station.nextBatch()) {
+        int[] ids = station.getDictionaryIds(); // <1>
+        BinaryDictionary dictionary = station.getBinaryDictionary();
+
+        long[] rowsPerEntry = new long[dictionary.size()];
+        for (int i = 0; i < station.getValueCount(); i++) {
+            rowsPerEntry[ids[i]]++;
+        }
+        for (int e = 0; e < rowsPerEntry.length; e++) {
+            if (rowsPerEntry[e] > 0) {
+                rowsPerStation.merge(dictionary.getString(e),
+                        rowsPerEntry[e], Long::sum);
+            }
+        }
+    }
+}
+----
+<1> For each value of the batch, its index into the current row group's dictionary
+
+For brevity, this assumes a column without nulls (a null's id is `-1`) that is dictionary-encoded throughout; for batches without a dictionary, `getDictionaryIds()` returns `null`, and their values can be read via `getStrings()`.
+
+== Also in This Release
+
+Besides these key additions, the release contains a wide range of other improvements and fixes:
+
+* Filter predicates: `isNull()` and `isNotNull()` on struct, `LIST` and `MAP` groups; `in()` for every literal type except `boolean`; `in` and `notIn` in the parquet-java compatibility `FilterApi`
+* `TIMESTAMP` columns stored as `FIXED_LEN_BYTE_ARRAY(12)`, spanning the years 0001 to 9999 at nanosecond precision, can be read, filtered and written
+* `OutputFile.inMemory()` writes a Parquet file to memory
+* CLI: the interactive `dive` TUI lets you jump to a given row or row group, and `print`/`convert` select the same rows with `--skip` and `--row-group`; `schema -F AVRO` and `-F PROTO` emit schemas which Avro and `protoc` accept; `convert --format json` writes nested values as JSON objects and arrays; the native binary reads `ZSTD`-compressed files
+* Several cases where filters returned wrong rows were fixed, e.g. for `NaN` values and unsigned integer columns
+* Fixes for projecting columns whose name contains a dot, and for S3 endpoints that name their default port
+
+Check out the https://hardwood.dev/latest/release-notes/#110beta2-2026-10-11[release notes] for the complete list, including several breaking changes (most notably, a reworked exception model, and index-based accessors following the projection's column order rather than the schema order) and the https://hardwood.dev/api-changes/1.1.0.Beta2/[API changes report] for all changes to the public API.
+See the https://github.com/hardwood-hq/hardwood/milestone/9?closed=1[1.1.0.Beta2 milestone] for the full list of all 165 resolved issues.
+
+A big thank you to everyone who contributed to this release: https://github.com/arnabnandy7[Arnab Nandy], https://github.com/nitrogen404[Chandan Dhamande], https://github.com/dhoard[Doug Hoard], https://github.com/iifawzi[Fawzi Essam], https://github.com/Fhatu12[Fhatuwani Sikhwari], https://github.com/kogupta[Kohinoor Gupta], https://github.com/ZhaoMJ[Mingjie Zhao], https://github.com/mohamedibrahim54[Mohamed Ibrahim Elsawy], https://github.com/MovinduJay[Movindu Jayathilake], and https://github.com/shril[Shril Kumar].
+
+As we're approaching the release candidate phase for Hardwood 1.1,
+we're going to focus on building out the writer (S3 support, column chunk parallelism),
+further improving performance, and overall stabilization of the project.
+
+Please give the new release a try, and let us know about your feedback via GitHub issues and discussions!
