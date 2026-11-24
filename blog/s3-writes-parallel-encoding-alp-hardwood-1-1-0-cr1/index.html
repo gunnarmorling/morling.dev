@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-DD997656SV"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-DD997656SV');
+	</script>
+
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Writing to S3, Parallel Writes, ALP: Hardwood 1.1.0.CR1 Is Out - Gunnar Morling</title>
+	<link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png" />
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png" />
+	<link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+	<link rel="shortcut icon" href="/favicon/favicon.ico" />
+
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	
+	<link rel="preload" href="/fonts/raleway-v37-latin-200.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/raleway-v37-latin-300.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/raleway-v37-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+
+	<link rel="preload" href="/fonts/lato-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lato-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin>
+
+	<link rel="preload" href="/fonts/lora-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/fonts/lora-latin-700-italic.woff2" as="font" type="font/woff2" crossorigin><meta property="og:url" content="https://www.morling.dev/blog/s3-writes-parallel-encoding-alp-hardwood-1-1-0-cr1/">
+  <meta property="og:site_name" content="Gunnar Morling">
+  <meta property="og:title" content="Writing to S3, Parallel Writes, ALP: Hardwood 1.1.0.CR1 Is Out">
+  <meta property="og:description" content=" When the first preview of Hardwood’s writer shipped with 1.1.0.Beta1, it came with two notable gaps: it was single-threaded, and it couldn’t write to S3. Both are closed now, and I’m happy to …">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="blog">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2026-11-24T17:45:00&#43;01:00">
+    <meta property="article:modified_time" content="2026-11-24T17:45:00&#43;01:00">
+
+<meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Writing to S3, Parallel Writes, ALP: Hardwood 1.1.0.CR1 Is Out">
+  <meta name="twitter:description" content=" When the first preview of Hardwood’s writer shipped with 1.1.0.Beta1, it came with two notable gaps: it was single-threaded, and it couldn’t write to S3. Both are closed now, and I’m happy to …">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.min.efd5060e5dbdbc4655a896b01b99c2b759dc5710f5cfda5ed34c2259de325469.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.min.7e747dab5a47b967474cfdc64085734aa21b459c2bc3519033238d0258bb7dcc.css" />
+
+	
+	<link rel="stylesheet" type="text/css" href="/css/base16.dark.min.c40398d5ec04ac387c57141dc29e820fc4012da1cf2af8235004fc9945fa76a8.css" />
+	
+	<link rel="stylesheet" type="text/css" href="/css/morlingdev.min.b746b7f722a2bd5b8f1a1db568d6814da1fb301d89dccac0390e7a418f1ef678.css" />
+	
+
+	<script>
+		const searchUrl = "https:\/\/search-morling-dev.onrender.com\/";
+		const apiKey = "ff90d45f4afad3bd914c";
+	</script>
+	<script src="/js/main.min.9ee619eea7f51473f4284ef86c76bdb1b0089e19781ca97275924edf53be5bd4.js"></script>
+	<script src="https://www.morling.dev//js/medium-zoom.min.js"></script>
+
+	<noscript>
+		<style type="text/css">
+			.club { display:none; }
+		</style>
+	</noscript>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header">
+	<div class="header-image-container">
+		<img class="header-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+	</div>
+	<div class="header-title">
+		<h1 class="site-title"><a href="https://www.morling.dev/">Gunnar Morling</a></h1>
+		<div class="site-description"><h2>Random Musings on All Things Software Engineering</h2></div>
+	</div>
+	<div class="header-nav-wrapper">
+		<nav class="row pre-nav">
+			<div class="pull-right">
+				<ul class="flat"><li>
+						<a href="/blog/index.xml" title="RSS FEED">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#rss"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://github.com/gunnarmorling" title="GitHub">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#github"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://bsky.app/profile/gunnarmorling.dev" title="Bluesky">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#cloud"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://twitter.com/gunnarmorling" title="Twitter">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#twitter"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://www.linkedin.com/in/gunnar-morling/" title="LinkedIn">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#linkedin"/>
+							</svg>
+						</a>
+					</li><li>
+						<a href="https://mastodon.online/@gunnarmorling" title="Mastodon">
+							<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<use xlink:href="/svg/feather-sprite.svg#message-square"/>
+							</svg>
+						</a>
+					</li></ul>
+			</div>
+		</nav>
+		<nav class="row nav">
+			<div>
+				<ul class="flat">
+					
+					<li>
+						<a href="/blog">Blog</a>
+					</li>
+					
+					<li>
+						<a href="/projects/">Projects</a>
+					</li>
+					
+					<li>
+						<a href="/conferences/">Conferences</a>
+					</li>
+					
+					<li>
+						<a href="/podcasts/">Podcasts</a>
+					</li>
+					
+					<li>
+						<a href="/about/">About</a>
+					</li>
+					
+				</ul>
+			</div>
+			<div class="pull-right">
+				<div class="club">
+					<form id="myForm">
+						<input type="text" id="inputSearch" name="q" placeholder="Search..." onfocus="warmUp(this)">
+						<button type="submit" id="buttonSubmitSearch" style="line-height: normal;"><i id="iconSearch" class="fa fa-search"></i></button>
+					</form>
+				</div>
+			</div>
+		</nav>
+	</div>
+</div>
+
+<script type="text/javascript">
+	window.addEventListener( "load", function () {
+		const form = document.getElementById( "myForm" );
+
+		form.addEventListener("submit", function (event) {
+			event.preventDefault();
+			sendData(new FormData(form));
+		});
+	});
+</script>
+
+
+		<div id = "main-content">
+			<div class="post-header">
+				<h1 class="title">Writing to S3, Parallel Writes, ALP: Hardwood 1.1.0.CR1 Is Out</h1>
+				<div class="post-meta-line">
+					<span class="meta">Posted at Nov 24, 2026</span>
+					
+					<span class="post-tags-inline">
+						
+						<a href="/tags/parquet">parquet</a>
+						
+						<a href="/tags/open-source">open-source</a>
+						
+						<a href="/tags/java">java</a>
+						
+						<a href="/tags/performance">performance</a>
+						
+						<a href="/tags/hardwood">hardwood</a>
+						
+					</span>
+					
+				</div>
+			</div>
+
+			<div class="post-content">
+				<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_writing_to_s3_and_parallel_writes">Writing to S3 and Parallel Writes</a></li>
+<li><a href="#_further_writer_additions">Further Writer Additions</a></li>
+<li><a href="#_new_format_features">New Format Features</a></li>
+<li><a href="#_performance_improvements">Performance Improvements</a></li>
+<li><a href="#_also_in_this_release">Also in This Release</a></li>
+<li><a href="#_wrapping_up">Wrapping Up</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p>When the first preview of Hardwood’s writer shipped with 1.1.0.Beta1, it came with two notable gaps: it was single-threaded, and it couldn’t write to S3.
+Both are closed now, and I’m happy to announce the first release candidate for Hardwood 1.1!</p>
+</div>
+<div class="paragraph">
+<p>Besides rounding out the writer, this release brings support for the latest Parquet file format additions (ALP encoding, <code>FILE</code> logical type),
+and it substantially improves the performance of local as well as remote file reads.
+We’ve also hardened the reader against untrusted files and set up a nightly benchmark suite for catching performance regressions.</p>
+</div>
+<div class="paragraph">
+<p>You can fetch the Hardwood library JARs from <a href="https://central.sonatype.com/search?q=hardwood">Maven Central</a>.
+Binaries for the Hardwood CLI are available on the <a href="https://github.com/hardwood-hq/hardwood/releases/tag/v1.1.0.CR1">GitHub releases page</a>.
+Let’s dig in!</p>
+</div>
+<div class="sect1">
+<h2 id="_writing_to_s3_and_parallel_writes">Writing to S3 and Parallel Writes<a class="anchor" href="#_writing_to_s3_and_parallel_writes"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Just like Hardwood’s reader, which had S3 support early on, the writer can now write Parquet files directly to S3 and S3-compatible object stores.
+The <code>S3Source</code> object which you already use for reading has been expanded to hand out output files, too:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre></td><td class="code"><pre><span class="nc">List</span><span class="o">&lt;</span><span class="nc">Event</span><span class="o">&gt;</span> <span class="n">events</span> <span class="o">=</span> <span class="o">...;</span>
+
+<span class="k">try</span> <span class="o">(</span><span class="nc">S3Source</span> <span class="n">s3</span> <span class="o">=</span> <span class="nc">S3Source</span><span class="o">.</span><span class="na">builder</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">region</span><span class="o">(</span><span class="s">&#34;eu-west-1&#34;</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">credentials</span><span class="o">(</span><span class="nc">S3Credentials</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">accessKeyId</span><span class="o">,</span> <span class="n">secretKey</span><span class="o">))</span>
+        <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+     <span class="nc">ParquetFileWriter</span> <span class="n">writer</span> <span class="o">=</span> <span class="nc">ParquetFileWriter</span><span class="o">.</span><span class="na">create</span><span class="o">(</span>
+         <span class="n">s3</span><span class="o">.</span><span class="na">outputFile</span><span class="o">(</span><span class="s">&#34;s3://my-bucket/events/2026-11.parquet&#34;</span><span class="o">),</span> <i class="conum" data-value="1"></i><b>(1)</b>
+         <span class="n">schema</span><span class="o">))</span> <span class="o">{</span>
+
+    <span class="nc">RowWriter</span> <span class="n">rows</span> <span class="o">=</span> <span class="n">writer</span><span class="o">.</span><span class="na">rowWriter</span><span class="o">();</span>
+    <span class="k">for</span> <span class="o">(</span><span class="nc">Event</span> <span class="n">event</span> <span class="o">:</span> <span class="n">events</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">rows</span><span class="o">.</span><span class="na">writeRow</span><span class="o">(</span><span class="n">row</span> <span class="o">-&gt;</span> <span class="n">row</span>
+                <span class="o">.</span><span class="na">setDate</span><span class="o">(</span><span class="s">&#34;day&#34;</span><span class="o">,</span> <span class="n">event</span><span class="o">.</span><span class="na">day</span><span class="o">())</span>
+                <span class="o">.</span><span class="na">setLong</span><span class="o">(</span><span class="s">&#34;id&#34;</span><span class="o">,</span> <span class="n">event</span><span class="o">.</span><span class="na">id</span><span class="o">())</span>
+                <span class="o">.</span><span class="na">setString</span><span class="o">(</span><span class="s">&#34;payload&#34;</span><span class="o">,</span> <span class="n">event</span><span class="o">.</span><span class="na">payload</span><span class="o">()));</span>
+    <span class="o">}</span>
+<span class="o">}</span> <i class="conum" data-value="2"></i><b>(2)</b>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>An <code>OutputFile</code> for the given S3 object</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The object becomes visible at the key when the writer is closed</td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>Larger files are streamed to S3 as a multipart upload while they are written:
+whenever a part (8 MiB by default, configurable via <code>uploadPartSize()</code>) is full, it is uploaded in the background,
+with up to four uploads in flight while the writer continues with the next part.</p>
+</div>
+<div class="paragraph">
+<p>The second big change to the writer is that it now makes use of multiple CPU cores.
+When a row group is flushed, its column chunks are encoded and compressed in parallel.
+By default, the writer uses one thread per available processor.
+If you want to control the number of threads, or share one thread pool between several writers and readers,
+pass a <code>HardwoodContext</code> when creating the writer, e.g. <code>HardwoodContext.create(4)</code> to use up to four threads,
+or <code>create(0)</code> to run all encoding and decoding work on the calling thread.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_further_writer_additions">Further Writer Additions<a class="anchor" href="#_further_writer_additions"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Some other writer additions made it into this release:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>For codecs like <code>ZSTD</code> you can now set the compression level, allowing you to trade write time for file size.</p>
+</li>
+<li>
+<p>If your rows are sorted, you can declare the sort order via <code>sortingColumns()</code>.
+It is recorded in the metadata of each row group, so that query engines can take advantage of it.
+The writer verifies the declared order as rows come in, failing the write when a row is out of order.</p>
+</li>
+<li>
+<p>Optionally, data pages can be written in the <code>DATA_PAGE_V2</code> format, which keeps repetition and definition levels uncompressed and states each page’s row count in its header, letting readers skip pages or locate nulls without decompressing them.</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre><span class="nc">WriterConfig</span> <span class="n">config</span> <span class="o">=</span> <span class="nc">WriterConfig</span><span class="o">.</span><span class="na">builder</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">compression</span><span class="o">(</span><span class="nc">Compression</span><span class="o">.</span><span class="na">zstd</span><span class="o">().</span><span class="na">level</span><span class="o">(</span><span class="mi">9</span><span class="o">))</span> <i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="o">.</span><span class="na">sortingColumns</span><span class="o">(</span> <i class="conum" data-value="2"></i><b>(2)</b>
+                <span class="nc">SortingColumn</span><span class="o">.</span><span class="na">ascending</span><span class="o">(</span><span class="s">&#34;vendor&#34;</span><span class="o">,</span> <span class="no">NULLS_LAST</span><span class="o">),</span>
+                <span class="nc">SortingColumn</span><span class="o">.</span><span class="na">descending</span><span class="o">(</span><span class="s">&#34;pickup_ts&#34;</span><span class="o">,</span> <span class="no">NULLS_LAST</span><span class="o">))</span>
+        <span class="o">.</span><span class="na">dataPageVersion</span><span class="o">(</span><span class="nc">DataPageVersion</span><span class="o">.</span><span class="na">V2</span><span class="o">)</span> <i class="conum" data-value="3"></i><b>(3)</b>
+        <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tbody><tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>ZSTD at level 9 instead of the default level 3</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Rows are sorted by vendor, and by pickup time within each vendor</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Write <code>DATA_PAGE_V2</code> pages instead of <code>DATA_PAGE</code></td>
+</tr>
+</tbody></table>
+</div>
+<div class="paragraph">
+<p>Finally, <code>StructBuilder.setValue()</code> accepts values in the form the reader’s <code>getValue()</code> returns them,
+making it easy to copy rows from one file to another without having to dispatch on each field’s type.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_new_format_features">New Format Features<a class="anchor" href="#_new_format_features"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hardwood 1.1.0.CR1 supports two recent additions to the Parquet format specification.
+First, <a href="https://parquet.apache.org/docs/file-format/data-pages/encodings/#adaptive-lossless-floating-point-alp—​10">ALP</a> (Adaptive Lossless Floating-Point), a new encoding for <code>FLOAT</code> and <code>DOUBLE</code> columns:</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>Many floating-point values in practice are decimals with a fixed, small number of fractional digits, such as prices or sensor measurements.
+ALP multiplies such values by a power of ten, turning for instance 12.34 into the integer 1234,
+and bit-packs these integers relative to the smallest one of each block of 1,024 values,
+so that the closer together the values of a block are, the fewer bits each one takes up.
+Values which can’t be represented that way are stored as-is, so the encoding is lossless.</p>
+</div>
+</blockquote>
+</div>
+<div class="paragraph">
+<p>ALP is currently marked as a preview feature in the Parquet spec, so make sure your consumers can read it before using it.
+Hardwood reads ALP-encoded columns, and writes them when requested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="java"><table class="linenotable"><tbody><tr><td class="linenos gl"><pre class="lineno">1
+2
+3
+</pre></td><td class="code"><pre><span class="nc">WriterConfig</span> <span class="n">config</span> <span class="o">=</span> <span class="nc">WriterConfig</span><span class="o">.</span><span class="na">builder</span><span class="o">()</span>
+    <span class="o">.</span><span class="na">encoding</span><span class="o">(</span><span class="s">&#34;latitude&#34;</span><span class="o">,</span> <span class="nc">ColumnEncoding</span><span class="o">.</span><span class="na">ALP</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+</pre></td></tr></tbody></table></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In a quick test, I rewrote the latitude and longitude columns of a sample of 3.75M rows from the <a href="https://registry.opendata.aws/gbif/">GBIF species occurrence data set</a> with Hardwood.
+Here are the sizes of the two columns, compared to the original files:</p>
+</div>
+<table class="tableblock frame-all grid-all stripes-even fit-content centered">
+<colgroup>
+<col/>
+<col/>
+<col/>
+<col/>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">File</th>
+<th class="tableblock halign-left valign-top">Encoding</th>
+<th class="tableblock halign-left valign-top">Codec</th>
+<th class="tableblock halign-left valign-top">Size</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Original GBIF files</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dictionary, falling back to <code>PLAIN</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Snappy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">53.9 MB</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hardwood, default</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dictionary, falling back to <code>PLAIN</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ZSTD</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">36.6 MB</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hardwood, ALP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ALP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ZSTD</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">27.0 MB</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hardwood, ALP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ALP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">none</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">27.0 MB</p></td>
+</tr>
+</tbody>
+</table>
+<div class="openblock">
+<div class="content">
+<div class="paragraph">
+<p>Compared to Hardwood’s default encoding, ALP takes up 26% less space in this particular case.
+Writing the two columns into an in-memory file is five times faster with ALP and no compression<sup>1</sup> than with the default encoding and ZSTD (85 ms vs. 443 ms),
+and reading them back almost four times faster (20 ms vs. 77 ms), measured on <a href="https://speakerdeck.com/gunnarmorling/hardwood-building-a-parquet-library-from-scratch-with-a-little-help-from-ai-devoxx-belgium-2026?slide=40">my little N300 box</a>.
+That said, ALP isn’t a good fit for all kinds of floating-point data:
+columns with comparatively few distinct values are typically better served by dictionary encoding,
+so measure which columns benefit and enable ALP for those.</p>
+</div>
+<div class="sidebarblock aside">
+<div class="content">
+<div class="paragraph">
+<p>[1] ZSTD doesn’t shrink ALP-encoded data any further, as ALP already packs each value into the minimum number of bits, so compression can be skipped.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Second, the new <code>FILE</code> logical type for a group describing a binary object, such as an image or a PDF document,
+either stored inline or in external storage, referenced by a URI (optionally with an offset and size, e.g. pointing to an entry in a larger archive).
+Hardwood reads such groups as validated <code>PqFile</code> objects, and writes them via <code>setFile()</code>.</p>
+</div>
+<div class="paragraph">
+<p>Besides these spec additions, Hardwood now also supports field ids (as used by Apache Iceberg, Delta Lake and DuckLake to identify columns independently of their names),
+which are exposed on <code>ColumnSchema</code> and <code>SchemaNode</code>, can be set when building a schema, and are retained when rewriting a file.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_performance_improvements">Performance Improvements<a class="anchor" href="#_performance_improvements"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To enable further improvements to Hardwood’s performance,
+we have decided to completely rethink how the fetching and decoding of pages is organized within the read engine.
+The idea is simple: a read is now split into small jobs, such as fetching a byte range or decoding a page.
+They are executed by a <a href="https://www.linkedin.com/posts/gunnar-morling_story-time-how-i-set-out-to-build-a-parser-share-7526329413693730826-2ChQ/">scheduler</a>, which runs them in the order of the rows they serve.
+Fetching happens on virtual threads and decoding on the thread pool of the read’s <code>HardwoodContext</code>, so neither has to wait for the other.
+And as requests are capped at 16 MiB, decoding starts as soon as the first chunk of a column has arrived, keeping all cores busy.
+Further improvements include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An S3 object of up to 256 KiB is read in the single request which opens it; for larger files, the footer and the page index usually come with that first request</p>
+</li>
+<li>
+<p>Multi-file reads open the next files ahead of time, fetching their footers and first data while earlier files are still being read</p>
+</li>
+<li>
+<p>Uncompressed fixed-width values are read in place from the page, and row readers projecting only flat columns take a faster path</p>
+</li>
+<li>
+<p>Batches, dictionaries and decompressed pages no longer become humongous G1 objects on heaps below 4 GB, avoiding the associated GC overhead</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To spot regressions early, we set up an automated performance benchmark suite.
+It runs every night, recording wall-clock time, CPU time, allocations and peak live set of each scenario,
+and uses <a href="https://otava.apache.org/">Apache Otava</a> to detect change points in the resulting time series, which are published on the <a href="https://hardwood.dev/hardwood-benchmark-results/">benchmark results page</a>.</p>
+</div>
+<div class="paragraph">
+<p>I recently also <a href="https://www.linkedin.com/feed/update/urn:li:ugcPost:7526735097228869632/">re-ran</a> the benchmarks from the <a href="https://www.morling.dev/blog/hardwood-1-0-fast-lightweight-apache-parquet-reader-for-the-jvm/">1.0 announcement</a> on the N300,
+comparing Hardwood 1.0 and a recent development snapshot against the latest parquet-java (1.18.2).
+A full scan with the column reader is now 1.8× faster than with Hardwood 1.0, and more than twice as fast when limited to a single core:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/hardwood_1_1_0_cr1_flat_columnar.png" alt="Flat full scan with the column reader: Hardwood 1.0.0.Final vs. main vs. parquet-java 1.18.2"/>
+</div>
+</div>
+<div class="paragraph">
+<p>Filtered scans benefit too: on one core, a scan of 50M rows where every row matches went from 2.9 s to 0.37 s, as the filter column can be skipped when row-group statistics show that all rows match
+(<a href="https://github.com/hardwood-hq/hardwood-benchmarks/tree/main/publications/2026-11-12-n300-rerun">raw data and scripts</a>):</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/images/hardwood_1_1_0_cr1_filtered.png" alt="Filtered scan with predicate push-down: Hardwood 1.0.0.Final vs. main vs. parquet-java 1.18.2"/>
+</div>
+</div>
+<div class="paragraph">
+<p>As always, these are numbers from specific workloads on one specific machine, so you should do your own testing too.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_also_in_this_release">Also in This Release<a class="anchor" href="#_also_in_this_release"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To harden reads of untrusted files, the reader now validates every size, count and length a file declares before allocating anything based on it,
+failing with a <code>ParquetReadException</code> instead of allocating without bound.
+The parsing of footers and page headers, page decoding, and decompression are fuzzed with <a href="https://github.com/CodeIntelligenceTesting/jazzer">Jazzer</a>.</p>
+</div>
+<div class="paragraph">
+<p>Other notable changes include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Reads fail with an exception instead of hanging when they can no longer make progress, e.g. after running out of heap</p>
+</li>
+<li>
+<p>S3: public buckets can be read without credentials (<code>S3Source.Builder.anonymous()</code>), a read fails if the object was replaced after opening, and stalled responses are retried</p>
+</li>
+<li>
+<p>Fixes for shredded Variants and for files using the deprecated <code>BIT_PACKED</code> level encoding</p>
+</li>
+<li>
+<p>CLI: <code>--log-file</code> captures detailed logs, such as the byte ranges fetched from S3, and S3 reads fall back to unsigned requests when no credentials are configured</p>
+</li>
+<li>
+<p>CLI releases ship with checksums and build provenance attestations, verifiable via <code>gh attestation verify</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This release contains a few breaking changes, most notably the new <code>LogicalType.FileType</code> and <code>Encoding.ALP</code>, which require an additional case in exhaustive <code>switch</code> statements over these types,
+and the new <code>fieldId</code> component of <code>ColumnSchema</code> and <code>SchemaNode.GroupNode</code>, so that schemas which differ only in their field ids are no longer equal.
+If you’ve used the writer of the 1.1 preview releases, note that <code>WriterConfig</code> now takes a <code>Compression</code> object and <code>FileSchema.Builder</code> and <code>StructBuilder</code> declare leaf columns via <code>primitive(…​)</code>.
+Check out the <a href="https://hardwood.dev/latest/release-notes/#110cr1-2026-11-24">release notes</a> for details,
+and the <a href="https://hardwood.dev/api-changes/1.1.0.CR1/">API changes report</a> for all changes to the public API.
+See the <a href="https://github.com/hardwood-hq/hardwood/milestone/10?closed=1">1.1.0.CR1 milestone</a> for all 157 resolved issues.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_wrapping_up">Wrapping Up<a class="anchor" href="#_wrapping_up"></a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A big thank you to everyone who contributed to this release: <a href="https://github.com/ifesdjeen">Alex Petrov</a>, <a href="https://github.com/Gerrrr">Alex Sorokoumov</a>, <a href="https://github.com/arouel">André Rouél</a>, <a href="https://github.com/arnabnandy7">Arnab Nandy</a>, <a href="https://github.com/nitrogen404">Chandan Dhamande</a>, <a href="https://github.com/iifawzi">Fawzi Essam</a>, <a href="https://github.com/jerolba">Jeronimo López</a>, <a href="https://github.com/mghildiy">Manish</a>, <a href="https://github.com/mvanhorn">Matt Van Horn</a>, <a href="https://github.com/25mattm">Matthew Mullett</a>, <a href="https://github.com/OmarAbdelmawgoud5">Omar Abdelmawgoud</a>, <a href="https://github.com/ommkd">ommkd</a>, <a href="https://github.com/perfloop-agent">Perfloop Agent</a>, and <a href="https://github.com/rionmonster">Rion Williams</a>.</p>
+</div>
+<div class="paragraph">
+<p>As for next steps, we’re planning to release a second candidate in about two weeks, with the public API of Hardwood 1.1 in its final shape,
+followed by Hardwood 1.1.0.Final as an early Christmas present before the holidays.</p>
+</div>
+<div class="paragraph">
+<p><a href="https://hardwood.dev/latest/#roadmap">Beyond that</a>, Hardwood 1.2 will bring a higher-level API for copying and transforming Parquet files,
+which copies unchanged data as-is and only re-encodes what a transformation touches,
+e.g. for compacting small files or dropping a column.
+Other potential additions include support for Parquet modular encryption, a strict memory quota for reads, and several additions around the <code>VARIANT</code> column type.</p>
+</div>
+<div class="paragraph">
+<p>Until then, please give the release candidate a try, in particular the new writer features such as writing to S3,
+and let us know your feedback via GitHub issues and discussions!</p>
+</div>
+</div>
+</div>
+			</div>
+
+			
+			
+			
+			<div class="related-posts">
+				<h3>Read Next</h3>
+				<ul>
+					
+					<li><a href="/blog/row-group-control-faster-s3-reads-footer-caching-hardwood-1-1-0-beta2/">Row-Group Control, Faster S3 Reads, Footer Caching: Hardwood 1.1.0.Beta2 Is Out</a> <span class="meta">Oct 12, 2026</span></li>
+					
+					<li><a href="/blog/parquet-file-write-support-bloom-filters-improved-performance-hardwood-1-1-0-beta1/">Parquet File Write Support, Bloom Filters, Improved Performance: Hardwood 1.1.0.Beta1 Is Out</a> <span class="meta">Aug 31, 2026</span></li>
+					
+					<li><a href="/blog/fast-path-for-fixed-length-lists-in-parquet/">A Fast Path for Fixed-Length Lists in Parquet</a> <span class="meta">Jul 22, 2026</span></li>
+					
+				</ul>
+			</div>
+			
+			
+		</div>
+
+		<div class="post-footer">
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<div class="header-image-container" style="flex-shrink: 0;">
+					<img class="footer-image" src="/images/gunnar_morling.jpg" alt="Gunnar Morling">
+				</div>
+				<p style="margin: 0;">Gunnar Morling is an open-source software engineer in the Java and data streaming space, currently working as a Technologist at Confluent. Previously, he helped to build a realtime stream processing platform based on Apache Flink and led the Debezium project, a distributed platform for change data capture. He is a Java Champion and has founded multiple open source projects such as Hardwood, kcctl, JfrUnit, and MapStruct.</p>
+			</div>
+		</div>
+
+		
+		
+		<div class="post-discussions">
+			<p>Comment below, or join the discussion on
+			<a href="https://hn.algolia.com/?query=morling.dev/blog/s3-writes-parallel-encoding-alp-hardwood-1-1-0-cr1/">Hacker News</a>,
+			<a href="https://lobste.rs/search?q=domain:morling.dev+title:%22Writing%20to%20S3%2c%20Parallel%20Writes%2c%20ALP%3a%20Hardwood%201.1.0.CR1%20Is%20Out%22&what=stories">Lobsters</a>, and
+			<a href="https://www.reddit.com/search/?q=url:morling.dev/blog/s3-writes-parallel-encoding-alp-hardwood-1-1-0-cr1/">Reddit</a>.
+			</p>
+		</div>
+		<div id="disqus_thread"></div>
+
+<script>
+  
+  window.addEventListener('load', function() {
+    
+    setTimeout(function() {
+      const commentsContainer = document.getElementById('disqus_thread');
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', 'gunnarmorling/discussions.morling.dev');
+      script.setAttribute('data-repo-id', 'R_kgDOGXzqNQ');
+      script.setAttribute('data-category', 'Announcements');
+      script.setAttribute('data-category-id', 'DIC_kwDOGXzqNc4B_2Pq');
+      script.setAttribute('data-mapping', 'title');
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-theme', 'light');
+      script.setAttribute('data-lang', 'en');
+      script.setAttribute('crossorigin', 'anonymous');
+      script.async = true;
+      commentsContainer.appendChild(script);
+    }, 100);
+  });
+</script>
+
+<noscript>Please enable JavaScript, or join the <a href="https://github.com/gunnarmorling/discussions.morling.dev/discussions/">discussion on GitHub</a>.</noscript>
+</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> © 2019 - 2026 Gunnar Morling |  Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons BY-SA 4.0</a> | <a href="/ai">How I use (and don't use) AI</a></div>
+	</nav>
+</div><script>
+	mediumZoom(document.querySelectorAll('div.imageblock > div.content > img'))
+</script>
+
+</body>
+</html>
