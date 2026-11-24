@@ -8,7 +8,7 @@ jobs:
   preview:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         submodules: true
         ref: refs/pull/${{ github.event.pull_request.number }}/merge
@@ -20,7 +20,7 @@ jobs:
       run: docker run --rm -v $PWD:/src gunnarmorling/hugo-builder:20261124 bash -c "cd /src && hugo -F --environment staging"
 
     - name: Preview
-      uses: afc163/surge-preview@v1
+      uses: afc163/surge-preview@bf90a5a86111f6311ca42f0a5a0f80fb0fb03cec # v1.13.0
       id: preview_step
       with:
         surge_token: ${{ secrets.SURGE_TOKEN }}
