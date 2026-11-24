@@ -1,0 +1,222 @@
+---
+title: "Writing to S3, Parallel Writes, ALP: Hardwood 1.1.0.CR1 Is Out"
+date: 2026-11-24T17:45:00+01:00
+draft: false
+markup: adoc
+tags:
+  - parquet
+  - open-source
+  - java
+  - performance
+  - hardwood
+
+---
+:source-highlighter: rouge
+:rouge-style: base16.dark
+:icons: font
+:imagesdir: /images
+ifdef::env-github[]
+:imagesdir: ../../static/images
+endif::[]
+
+When the first preview of Hardwood's writer shipped with 1.1.0.Beta1, it came with two notable gaps: it was single-threaded, and it couldn't write to S3.
+Both are closed now, and I'm happy to announce the first release candidate for Hardwood 1.1!
+
+Besides rounding out the writer, this release brings support for the latest Parquet file format additions (ALP encoding, `FILE` logical type),
+and it substantially improves the performance of local as well as remote file reads.
+We've also hardened the reader against untrusted files and set up a nightly benchmark suite for catching performance regressions.
+
+You can fetch the Hardwood library JARs from https://central.sonatype.com/search?q=hardwood[Maven Central].
+Binaries for the Hardwood CLI are available on the https://github.com/hardwood-hq/hardwood/releases/tag/v1.1.0.CR1[GitHub releases page].
+Let's dig in!
+
+<!--more-->
+
+== Writing to S3 and Parallel Writes
+
+Just like Hardwood's reader, which had S3 support early on, the writer can now write Parquet files directly to S3 and S3-compatible object stores.
+The `S3Source` object which you already use for reading has been expanded to hand out output files, too:
+
+[source,java,linenums=true]
+----
+List<Event> events = ...;
+
+try (S3Source s3 = S3Source.builder()
+        .region("eu-west-1")
+        .credentials(S3Credentials.of(accessKeyId, secretKey))
+        .build();
+     ParquetFileWriter writer = ParquetFileWriter.create(
+         s3.outputFile("s3://my-bucket/events/2026-11.parquet"), // <1>
+         schema)) {
+
+    RowWriter rows = writer.rowWriter();
+    for (Event event : events) {
+        rows.writeRow(row -> row
+                .setDate("day", event.day())
+                .setLong("id", event.id())
+                .setString("payload", event.payload()));
+    }
+} // <2>
+----
+<1> An `OutputFile` for the given S3 object
+<2> The object becomes visible at the key when the writer is closed
+
+Larger files are streamed to S3 as a multipart upload while they are written:
+whenever a part (8 MiB by default, configurable via `uploadPartSize()`) is full, it is uploaded in the background,
+with up to four uploads in flight while the writer continues with the next part.
+
+The second big change to the writer is that it now makes use of multiple CPU cores.
+When a row group is flushed, its column chunks are encoded and compressed in parallel.
+By default, the writer uses one thread per available processor.
+If you want to control the number of threads, or share one thread pool between several writers and readers,
+pass a `HardwoodContext` when creating the writer, e.g. `HardwoodContext.create(4)` to use up to four threads,
+or `create(0)` to run all encoding and decoding work on the calling thread.
+
+== Further Writer Additions
+
+Some other writer additions made it into this release:
+
+* For codecs like `ZSTD` you can now set the compression level, allowing you to trade write time for file size.
+* If your rows are sorted, you can declare the sort order via `sortingColumns()`.
+It is recorded in the metadata of each row group, so that query engines can take advantage of it.
+The writer verifies the declared order as rows come in, failing the write when a row is out of order.
+* Optionally, data pages can be written in the `DATA_PAGE_V2` format, which keeps repetition and definition levels uncompressed and states each page's row count in its header, letting readers skip pages or locate nulls without decompressing them.
+
+[source,java,linenums=true]
+----
+WriterConfig config = WriterConfig.builder()
+        .compression(Compression.zstd().level(9)) // <1>
+        .sortingColumns( // <2>
+                SortingColumn.ascending("vendor", NULLS_LAST),
+                SortingColumn.descending("pickup_ts", NULLS_LAST))
+        .dataPageVersion(DataPageVersion.V2) // <3>
+        .build();
+----
+<1> ZSTD at level 9 instead of the default level 3
+<2> Rows are sorted by vendor, and by pickup time within each vendor
+<3> Write `DATA_PAGE_V2` pages instead of `DATA_PAGE`
+
+Finally, `StructBuilder.setValue()` accepts values in the form the reader's `getValue()` returns them,
+making it easy to copy rows from one file to another without having to dispatch on each field's type.
+
+== New Format Features
+
+Hardwood 1.1.0.CR1 supports two recent additions to the Parquet format specification.
+First, https://parquet.apache.org/docs/file-format/data-pages/encodings/#adaptive-lossless-floating-point-alp--10[ALP] (Adaptive Lossless Floating-Point), a new encoding for `FLOAT` and `DOUBLE` columns:
+
+> Many floating-point values in practice are decimals with a fixed, small number of fractional digits, such as prices or sensor measurements.
+> ALP multiplies such values by a power of ten, turning for instance 12.34 into the integer 1234,
+> and bit-packs these integers relative to the smallest one of each block of 1,024 values,
+> so that the closer together the values of a block are, the fewer bits each one takes up.
+> Values which can't be represented that way are stored as-is, so the encoding is lossless.
+
+ALP is currently marked as a preview feature in the Parquet spec, so make sure your consumers can read it before using it.
+Hardwood reads ALP-encoded columns, and writes them when requested:
+
+[source,java,linenums=true]
+----
+WriterConfig config = WriterConfig.builder()
+    .encoding("latitude", ColumnEncoding.ALP)
+    .build();
+----
+
+In a quick test, I rewrote the latitude and longitude columns of a sample of 3.75M rows from the https://registry.opendata.aws/gbif/[GBIF species occurrence data set] with Hardwood.
+Here are the sizes of the two columns, compared to the original files:
+
+[.centered%autowidth,cols="2,3,1,1",options="header",stripes=even]
+|===
+| File | Encoding | Codec | Size
+| Original GBIF files | Dictionary, falling back to `PLAIN` | Snappy | 53.9 MB
+| Hardwood, default | Dictionary, falling back to `PLAIN` | ZSTD | 36.6 MB
+| Hardwood, ALP | ALP | ZSTD | 27.0 MB
+| Hardwood, ALP | ALP | none | 27.0 MB
+|===
+
+--
+Compared to Hardwood's default encoding, ALP takes up 26% less space in this particular case.
+Writing the two columns into an in-memory file is five times faster with ALP and no compression+++<sup>1</sup>+++ than with the default encoding and ZSTD (85 ms vs. 443 ms),
+and reading them back almost four times faster (20 ms vs. 77 ms), measured on https://speakerdeck.com/gunnarmorling/hardwood-building-a-parquet-library-from-scratch-with-a-little-help-from-ai-devoxx-belgium-2026?slide=40[my little N300 box].
+That said, ALP isn't a good fit for all kinds of floating-point data:
+columns with comparatively few distinct values are typically better served by dictionary encoding,
+so measure which columns benefit and enable ALP for those.
+
+[.aside]
+****
+[1] ZSTD doesn't shrink ALP-encoded data any further, as ALP already packs each value into the minimum number of bits, so compression can be skipped.
+****
+--
+
+Second, the new `FILE` logical type for a group describing a binary object, such as an image or a PDF document,
+either stored inline or in external storage, referenced by a URI (optionally with an offset and size, e.g. pointing to an entry in a larger archive).
+Hardwood reads such groups as validated `PqFile` objects, and writes them via `setFile()`.
+
+Besides these spec additions, Hardwood now also supports field ids (as used by Apache Iceberg, Delta Lake and DuckLake to identify columns independently of their names),
+which are exposed on `ColumnSchema` and `SchemaNode`, can be set when building a schema, and are retained when rewriting a file.
+
+== Performance Improvements
+
+To enable further improvements to Hardwood's performance,
+we have decided to completely rethink how the fetching and decoding of pages is organized within the read engine.
+The idea is simple: a read is now split into small jobs, such as fetching a byte range or decoding a page.
+They are executed by a https://www.linkedin.com/posts/gunnar-morling_story-time-how-i-set-out-to-build-a-parser-share-7526329413693730826-2ChQ/[scheduler], which runs them in the order of the rows they serve.
+Fetching happens on virtual threads and decoding on the thread pool of the read's `HardwoodContext`, so neither has to wait for the other.
+And as requests are capped at 16 MiB, decoding starts as soon as the first chunk of a column has arrived, keeping all cores busy.
+Further improvements include:
+
+* An S3 object of up to 256 KiB is read in the single request which opens it; for larger files, the footer and the page index usually come with that first request
+* Multi-file reads open the next files ahead of time, fetching their footers and first data while earlier files are still being read
+* Uncompressed fixed-width values are read in place from the page, and row readers projecting only flat columns take a faster path
+* Batches, dictionaries and decompressed pages no longer become humongous G1 objects on heaps below 4 GB, avoiding the associated GC overhead
+
+To spot regressions early, we set up an automated performance benchmark suite.
+It runs every night, recording wall-clock time, CPU time, allocations and peak live set of each scenario,
+and uses https://otava.apache.org/[Apache Otava] to detect change points in the resulting time series, which are published on the https://hardwood.dev/hardwood-benchmark-results/[benchmark results page].
+
+I recently also https://www.linkedin.com/feed/update/urn:li:ugcPost:7526735097228869632/[re-ran] the benchmarks from the https://www.morling.dev/blog/hardwood-1-0-fast-lightweight-apache-parquet-reader-for-the-jvm/[1.0 announcement] on the N300,
+comparing Hardwood 1.0 and a recent development snapshot against the latest parquet-java (1.18.2).
+A full scan with the column reader is now 1.8× faster than with Hardwood 1.0, and more than twice as fast when limited to a single core:
+
+image::hardwood_1_1_0_cr1_flat_columnar.png[Flat full scan with the column reader: Hardwood 1.0.0.Final vs. main vs. parquet-java 1.18.2]
+
+Filtered scans benefit too: on one core, a scan of 50M rows where every row matches went from 2.9 s to 0.37 s, as the filter column can be skipped when row-group statistics show that all rows match
+(https://github.com/hardwood-hq/hardwood-benchmarks/tree/main/publications/2026-11-12-n300-rerun[raw data and scripts]):
+
+image::hardwood_1_1_0_cr1_filtered.png[Filtered scan with predicate push-down: Hardwood 1.0.0.Final vs. main vs. parquet-java 1.18.2]
+
+As always, these are numbers from specific workloads on one specific machine, so you should do your own testing too.
+
+== Also in This Release
+
+To harden reads of untrusted files, the reader now validates every size, count and length a file declares before allocating anything based on it,
+failing with a `ParquetReadException` instead of allocating without bound.
+The parsing of footers and page headers, page decoding, and decompression are fuzzed with https://github.com/CodeIntelligenceTesting/jazzer[Jazzer].
+
+Other notable changes include:
+
+* Reads fail with an exception instead of hanging when they can no longer make progress, e.g. after running out of heap
+* S3: public buckets can be read without credentials (`S3Source.Builder.anonymous()`), a read fails if the object was replaced after opening, and stalled responses are retried
+* Fixes for shredded Variants and for files using the deprecated `BIT_PACKED` level encoding
+* CLI: `--log-file` captures detailed logs, such as the byte ranges fetched from S3, and S3 reads fall back to unsigned requests when no credentials are configured
+* CLI releases ship with checksums and build provenance attestations, verifiable via `gh attestation verify`
+
+This release contains a few breaking changes, most notably the new `LogicalType.FileType` and `Encoding.ALP`, which require an additional case in exhaustive `switch` statements over these types,
+and the new `fieldId` component of `ColumnSchema` and `SchemaNode.GroupNode`, so that schemas which differ only in their field ids are no longer equal.
+If you've used the writer of the 1.1 preview releases, note that `WriterConfig` now takes a `Compression` object and `FileSchema.Builder` and `StructBuilder` declare leaf columns via `primitive(...)`.
+Check out the https://hardwood.dev/latest/release-notes/#110cr1-2026-11-24[release notes] for details,
+and the https://hardwood.dev/api-changes/1.1.0.CR1/[API changes report] for all changes to the public API.
+See the https://github.com/hardwood-hq/hardwood/milestone/10?closed=1[1.1.0.CR1 milestone] for all 157 resolved issues.
+
+== Wrapping Up
+
+A big thank you to everyone who contributed to this release: https://github.com/ifesdjeen[Alex Petrov], https://github.com/Gerrrr[Alex Sorokoumov], https://github.com/arouel[André Rouél], https://github.com/arnabnandy7[Arnab Nandy], https://github.com/nitrogen404[Chandan Dhamande], https://github.com/iifawzi[Fawzi Essam], https://github.com/jerolba[Jeronimo López], https://github.com/mghildiy[Manish], https://github.com/mvanhorn[Matt Van Horn], https://github.com/25mattm[Matthew Mullett], https://github.com/OmarAbdelmawgoud5[Omar Abdelmawgoud], https://github.com/ommkd[ommkd], https://github.com/perfloop-agent[Perfloop Agent], and https://github.com/rionmonster[Rion Williams].
+
+As for next steps, we're planning to release a second candidate in about two weeks, with the public API of Hardwood 1.1 in its final shape,
+followed by Hardwood 1.1.0.Final as an early Christmas present before the holidays.
+
+https://hardwood.dev/latest/#roadmap[Beyond that], Hardwood 1.2 will bring a higher-level API for copying and transforming Parquet files,
+which copies unchanged data as-is and only re-encodes what a transformation touches,
+e.g. for compacting small files or dropping a column.
+Other potential additions include support for Parquet modular encryption, a strict memory quota for reads, and several additions around the `VARIANT` column type.
+
+Until then, please give the release candidate a try, in particular the new writer features such as writing to S3,
+and let us know your feedback via GitHub issues and discussions!
